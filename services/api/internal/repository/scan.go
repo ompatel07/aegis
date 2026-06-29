@@ -10,13 +10,16 @@ import (
 	"github.com/aegis-platform/api/internal/models"
 )
 
-// scanColumns lists the scalar scan columns. We avoid SELECT * because the
-// table also has raw_* JSONB columns that the API's Scan model deliberately omits.
+// scanColumns lists the scalar scan columns, qualified with the `s` alias so
+// the list is safe inside JOINs (scans and projects share column names like
+// `id` and `created_at`). We avoid SELECT * because the table also has raw_*
+// JSONB columns that the API's Scan model deliberately omits. Postgres strips
+// the `s.` qualifier from result column names, so sqlx StructScan still maps them.
 const scanColumns = `
-	id, project_id, trigger, status, branch, commit_sha,
-	quality_score, security_score, deployment_score, overall_score, overall_grade,
-	quality_issues_total, security_issues_total, secrets_found, vulnerabilities_found,
-	queued_at, started_at, completed_at, duration_seconds, error_message, created_at`
+	s.id, s.project_id, s.trigger, s.status, s.branch, s.commit_sha,
+	s.quality_score, s.security_score, s.deployment_score, s.overall_score, s.overall_grade,
+	s.quality_issues_total, s.security_issues_total, s.secrets_found, s.vulnerabilities_found,
+	s.queued_at, s.started_at, s.completed_at, s.duration_seconds, s.error_message, s.created_at`
 
 // ScanRepository handles persistence for scans.
 type ScanRepository struct {
@@ -76,9 +79,9 @@ func (r *ScanRepository) ListByProject(ctx context.Context, projectID string, li
 
 	q := `
 		SELECT ` + scanColumns + `
-		FROM scans
-		WHERE project_id = $1
-		ORDER BY created_at DESC
+		FROM scans s
+		WHERE s.project_id = $1
+		ORDER BY s.created_at DESC
 		LIMIT $2 OFFSET $3`
 	scans := []models.Scan{}
 	if err := r.db.SelectContext(ctx, &scans, q, projectID, limit, offset); err != nil {

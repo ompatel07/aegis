@@ -1,175 +1,174 @@
 # Aegis Phase 1 — Verification Report
 
-_Date: 2026-06-29_
+_Last updated: 2026-06-30 — full runtime verification (Docker now installed)._
 
 ## Environment
 
 | Item | Value |
 | --- | --- |
-| OS | Windows 11 Home Single Language, build 10.0.26200 |
-| Architecture | x64 (AMD64) |
-| Shell | PowerShell 5.1 (non-elevated) |
-| node | v24.15.0 |
-| npm | 11.12.1 |
-| python | 3.13.7 (`python`; `python3` is only the MS Store stub) |
+| OS | Windows 11 Home Single Language, build 26200 (x64) |
+| Docker | 29.5.3 (Docker Desktop 4.78.0, WSL2 backend, linux/amd64 engine) |
+| Docker Compose | v5.1.4 |
+| node / npm | v24.15.0 / 11.12.1 |
+| python | 3.13.7 |
+| go | portable go1.22.12 (used for local compile checks) |
 | git | 2.53.0 |
-| go | **not installed** → worked around with a portable `go1.22.12` zip (no admin needed) |
-| docker / docker compose | **not installed** |
-| make | **not installed** |
-| openssl | **not installed** |
-| WSL2 | **not installed** |
 
-> **Key constraint:** Docker is absent and cannot be installed here (no admin
-> rights, no WSL2, requires a reboot). Because the scanner engines (Semgrep,
-> Trivy, Gitleaks) are Linux-only and the whole runtime is container-based, the
-> live-runtime steps (5–8) could not be executed. Everything that can be verified
-> **without** Docker was verified for real.
+Docker + WSL2 were installed by the user between verification passes, which
+unblocked the full containerized run. Every step has now been executed for real.
 
 ---
 
 ## Step-by-step results
 
-### Step 1 — Toolchain check · ❌ FAIL (blocking tools missing)
-Missing: `go`, `docker`, `docker compose`, `make`, `openssl`, WSL2. Present:
-node, npm, python, git. I did not stop entirely — I obtained a **portable Go
-toolchain** (official `go1.22.12` zip, extracted to a temp dir, no admin/UAC) to
-unblock Step 2, and proceeded with every check that does not require Docker.
+### Step 1 — Toolchain check · ✅ PASS
+Docker 29.5.3 + Compose v5.1.4 present and the engine is running
+(`docker run hello-world` succeeded on the WSL2 Linux backend).
 
 ### Step 2 — Go services compile check · ✅ PASS
-Ran against both modules with portable Go 1.22.12:
+Portable Go 1.22.12: `go mod tidy`, `go vet ./...` (0 warnings), `go build ./...`,
+`go test ./...` all clean for **api** and **orchestrator**; scoring unit tests
+pass; `gofmt` clean.
 
-| Check | services/api | services/orchestrator |
-| --- | --- | --- |
-| `go mod tidy` (generates go.sum) | ✅ | ✅ |
-| `go vet ./...` | ✅ 0 warnings | ✅ 0 warnings |
-| `go build ./...` | ✅ all 12 pkgs | ✅ all 10 pkgs |
-| `go test ./...` | ✅ (no test files) | ✅ **scoring tests pass** (`ok internal/scoring`) |
-| `gofmt -l` | ✅ clean after `gofmt -w` | ✅ clean after `gofmt -w` |
+### Step 3 — Python scanner static checks · ✅ PASS (runtime via Docker)
+`compileall` clean; normalizer unit tests 5/5 pass locally. Native Windows can't
+install Semgrep — but inside the Docker image all three tools are present and the
+scanner's `/health` reports `semgrep:true, trivy:true, gitleaks:true`.
 
-The orchestrator scoring unit tests (security penalties, quality weights,
-deployment step weighting, overall score + grade thresholds) all pass.
+### Step 4 — Frontend typecheck + build · ✅ PASS (1 fix)
+`npm install` (lockfile generated), `tsc --noEmit` 0 errors, `npm run lint` clean,
+`npm run build` green after fixing the `/login` Suspense issue (see Issues).
 
-### Step 3 — Python scanner static checks · ⚠️ PASS WITH CAVEATS
-- `python -m compileall` on the whole scanner: ✅ syntax-clean (all 23 modules).
-- Scanner unit tests (`tests/test_normalizer.py`, severity normalization /
-  CVSS→severity / CWE extraction): ✅ **5/5 pass** in a minimal venv (pydantic +
-  pytest).
-- `pip install -r requirements.txt`: ❌ **not possible on native Windows** —
-  `semgrep` has no Windows wheel and fails to build from source (`pip install
-  --dry-run semgrep==1.97.0` → "Getting requirements to build wheel did not run
-  successfully"). This is expected: Semgrep/Trivy/Gitleaks are Linux tools. The
-  scanner is designed to run **only inside its Linux Docker image**, so this is a
-  platform limitation of the verification host, not a code defect.
+### Step 5 — Docker compose config + build · ✅ PASS (3 fixes)
+`docker compose config` valid. `docker compose build` produced all 4 images
+(scanner 1.44 GB, web 226 MB, orchestrator 34 MB, api 39.8 MB) after fixing the
+Trivy install + adding `.dockerignore` files (see Issues).
 
-### Step 4 — Frontend typecheck + build · ⚠️ PASS WITH FIXES
-- `npm install`: ✅ 461 packages, **`package-lock.json` generated**.
-- `npx tsc --noEmit`: ✅ **0 type errors** (all hand-written API/response types
-  are internally consistent).
-- `npm run lint`: ✅ no ESLint warnings or errors.
-- `npm run build`: ❌ → ✅ after **1 fix** (see Issues). Final build is green:
-  all 8 routes compiled, middleware bundled, standalone output produced.
+### Step 6 — Full stack boot · ✅ PASS
+`docker compose up -d` brought up all services healthy:
 
-### Step 5 — Docker compose config + build · ❌ NOT RUN
-Docker is not installed. Compose file was hand-validated for schema in the build
-phase but **not** validated by `docker compose config`, and **no images were
-built**.
+```
+postgres      healthy        redis         healthy
+scanner       healthy        api           healthy
+web           healthy        orchestrator  running (worker processing)
+nginx         running        migrate       exited 0
+```
 
-### Step 6 — Full stack boot · ❌ NOT RUN
-Requires Docker. Stack was never booted.
+- **migrate** applied all 5 migrations (users, projects, scans, findings,
+  github_integrations) and exited 0.
+- **api** `/api/health` → 200 `{database:ok, redis:ok}`.
+- **orchestrator** logs: "database connected", "worker listening for scan jobs",
+  asynq "Starting processing".
+- **scanner** `/health` → 200 with all three tools available.
 
-### Step 7 — End-to-end smoke test · ❌ NOT RUN (most important gap)
-Requires the running stack. **A real scan against a vulnerable repo was never
-executed**, so I cannot confirm the pipeline produces findings/scores end to end.
-This is the single most important unverified item.
+### Step 7 — End-to-end smoke test · ✅ PASS (1 fix — see below)
+Registered a user → created a project for **OWASP/NodeGoat** → triggered a scan →
+polled to completion → fetched findings. First attempt surfaced a real API bug
+(ambiguous `id` column on the scan read path, fixed below); after the fix the
+scan completed and returned rich, well-formed findings. **Details in the next
+section.**
 
-### Step 8 — Dashboard check · ❌ NOT RUN (live)
-No running server to curl. However, `next build` proves every page compiles and
-`/login` prerenders, which is partial evidence the dashboard is structurally sound.
+### Step 8 — Dashboard check · ✅ PASS
+Through nginx: `/login` → 200 (renders "Aegis"), `/register` → 200, `/` → 307
+redirect to login (auth middleware working), `/api/auth/providers` → 200
+(NextAuth reachable, confirming the nginx `/api/auth/` vs `/api/` split).
 
-### Step 9 — Teardown + commit · ⚠️ PARTIAL
-- Teardown: N/A (nothing was running).
-- Commit: the directory was **not a git repository**, so I initialized one and
-  committed the scaffold plus all verification artifacts (lockfiles, go.sum,
-  fixes, this report).
+### Step 9 — Teardown + commit · ⚠️ PARTIAL (by request)
+The user asked to set up + test and pause for the next prompt, so the **stack was
+left running** (not torn down). Verification fixes were committed.
 
 ---
 
 ## End-to-end smoke test result
 
-**NOT EXECUTED.** Blocked by the missing Docker runtime. No repository was
-scanned, so there are no scores, no findings, and no sample findings to report.
-This must be run on a machine with Docker/WSL2 before relying on the scanner.
+- **Repo scanned:** https://github.com/OWASP/NodeGoat (branch master)
+- **Scan duration:** 180 s
+- **Status:** completed
+- **Pillar scores:** security **0**, quality **84**, deployment **100** →
+  overall **54**, grade **D**
+  - Verifies the scoring spec exactly: 0.40·0 + 0.35·84 + 0.25·100 = 54.4 → 54,
+    grade D (≥40). Security floored at 0 by the volume of critical/high findings.
+- **Findings:** 136 security · 8 quality · 3 secrets · **76 dependency CVEs**
+  - Security severity mix included 17 critical.
+
+### Sample findings (engine · severity · location · rule)
+1. `gitleaks` · **critical** · `artifacts/cert/server.key:1` · `private-key`
+   — exposed private key (CWE-798).
+2. `gitleaks` · **critical** · `config/env/development.js:6` · `generic-api-key`.
+3. `trivy` · **critical** · `package-lock.json` · `CVE-2020-7788`
+   — vulnerable npm dependency.
+4. `trivy` · **critical** · `package-lock.json` · `CVE-2021-44906`.
+5. `quality` · low · `Gruntfile.js:50` · `quality/long-function`
+   — function is 97 lines long.
+6. `quality` · low · `app/routes/profile.js` · `quality/duplicated-code`.
+
+Every finding carried proper `severity`, `engine`, `file_path`, `line_start`
+(where applicable — SCA findings reference the manifest), `rule_id`, and where
+relevant `cwe_id` / `cve_id`. **A known-vulnerable repo produced abundant,
+correctly-classified findings — the core scanning pipeline is verified working.**
 
 ---
 
 ## Issues found and fixed
 
-1. **`web/app/(auth)/login/page.tsx` — build-breaking `useSearchParams()` without
-   Suspense.** `next build` failed prerendering `/login` with
-   "useSearchParams() should be wrapped in a suspense boundary". This is a hard
-   Next.js 14 App Router requirement, not a warning. **Fix:** extracted the form
-   into an inner `LoginForm` component and wrapped it in `<Suspense>` in the
-   default-exported page. Rebuild is green. _(No `@ts-ignore`/`any` used.)_
+1. **`services/scanner/Dockerfile` — Trivy install failed (build blocker).**
+   Two problems: (a) the piped `install.sh` from Trivy's `main` branch is flaky
+   and aborted right after resolving the version; (b) the pinned `TRIVY_VERSION=
+   0.58.1` **does not exist** (latest is 0.71.2 — the URL 404'd). **Fix:** download
+   the Trivy release tarball directly (like Gitleaks), consolidate arch detection,
+   and bump to `0.71.2` (verified all download URLs resolve before rebuilding).
 
-2. **`gofmt` formatting on 6 Go files** (`config.go`, `httpx/response.go`,
-   `models/finding.go`, `models/scan.go`, `services/scan.go` in api;
-   `types/types.go` in orchestrator). Struct-tag alignment only. **Fix:**
-   `gofmt -w` (whitespace-only; no behavior change — build/vet/test still pass).
+2. **`web/.dockerignore` (new) — broken/oversized web image.** The web build
+   context was 347 MB because the host `node_modules`/`.next` were shipped, and
+   the Dockerfile's `COPY . .` would overwrite the Linux deps with **Windows**
+   binaries. **Fix:** added a `.dockerignore` excluding `node_modules`, `.next`,
+   `.env`, etc.
 
-3. **Generated dependency lock files** (were intentionally omitted from the
-   scaffold): `web/package-lock.json`, `services/api/go.sum` + go.mod indirect
-   block, `services/orchestrator/go.sum` + go.mod indirect block.
+3. **`services/scanner/.dockerignore` (new).** Excludes the local `.venv` and
+   caches from the build context.
+
+4. **`services/api/internal/repository/scan.go` — `GET /scans/:id` returned 500.**
+   `column reference "id" is ambiguous (SQLSTATE 42702)`: the scan
+   `GetByIDForUser` query JOINs `scans` and `projects`, but `scanColumns` listed
+   bare column names present in both tables (`id`, `created_at`, ...). **Fix:**
+   qualified every column in `scanColumns` with the `s.` alias and aliased the
+   table in `ListByProject` (`FROM scans s`). Verified the read path returns 200
+   and the scan completes. _(No tests were weakened; this was a real query bug.)_
+
+5. **`web/app/(auth)/login/page.tsx` (prior pass) — `useSearchParams()` without
+   `<Suspense>`** broke `next build` prerender of `/login`. Wrapped the form in a
+   `<Suspense>` boundary.
+
+6. **Dependency lock files generated** (prior pass): `web/package-lock.json`,
+   `services/api/go.sum`, `services/orchestrator/go.sum` (+ go.mod indirect).
 
 ---
 
 ## Outstanding issues
 
-1. **Live runtime unverified (Docker required).** Image builds (Step 5), stack
-   boot (Step 6), the end-to-end scan (Step 7), and the live dashboard (Step 8)
-   were not run. **Next step:** on a host with Docker Desktop + WSL2, run
-   `docker compose build`, `make dev`, then the DEVELOPMENT.md §3 curl flow
-   against a vulnerable repo (e.g. OWASP/NodeGoat) and confirm findings are
-   produced.
-
-2. **Scanner cannot run on native Windows** (Semgrep/Trivy/Gitleaks are Linux
-   tools). This is by design — it runs in its Docker image — but means scanner
-   *runtime* verification is impossible outside Linux/containers.
-
-3. **`next@14.2.18` has a published security advisory** (npm flagged it during
-   install: nextjs.org/blog/security-update-2025-12-11). Recommend bumping to the
-   latest patched 14.2.x in Phase 2.
-
-4. **Go was run from a portable zip**, not a managed install. The generated
-   `go.sum`/`go.mod` are valid and committed; a permanent Go install is only
-   needed for future local Go work (the Docker image builds Go itself).
+1. **`next@14.2.18` security advisory** (npm flagged at install). Recommend
+   bumping to the latest patched 14.2.x in Phase 2. Low risk for local dev.
+2. **Deployment-pillar smoke test depth.** Deployment scored 100 on NodeGoat; the
+   build/smoke harness ran but deeper validation (per-language build matrices)
+   would strengthen Phase 2. Not a defect — works as designed.
+3. **GitHub integration creation endpoint** remains deferred (webhook verification
+   is implemented and unit-consistent; no create-integration route yet).
 
 ---
 
 ## Recommendation
 
-⚠️ **Proceed with caveats.**
+✅ **Ready to proceed to Phase 2.**
 
-What is genuinely verified now: **all four codebases are sound at compile/build
-time** — the Go API and orchestrator compile, vet, and test clean (including the
-scoring tests); the scanner's pure-Python logic compiles and its unit tests pass;
-the Next.js frontend type-checks, lints, and builds (after one real fix). That is
-strong evidence the implementation is internally consistent and free of the
-compile/type errors that "never compiled" code usually hides.
+The full stack builds, boots healthy, and the end-to-end pipeline is **proven
+working**: a scan of a known-vulnerable repository produced 136 security findings,
+76 dependency CVEs, and 3 secrets, with correct severities, locations, rule IDs,
+and a correctly-computed grade. Auth, project CRUD, queue → worker → scanner
+fan-out, scoring, persistence, the API read paths, the reverse proxy, and the
+dashboard all function. Four real bugs were found and fixed during verification
+(Trivy version/install, two `.dockerignore` gaps, the ambiguous-column query, and
+the login Suspense boundary).
 
-What is **not** verified and must be before depending on Phase 1: the **live,
-containerized end-to-end run** — most importantly, that triggering a scan on a
-known-vulnerable repo actually yields findings and scores. That requires Docker
-(or WSL2), which this machine lacks.
-
-**Bottom line:** the code is build-clean and safe to continue developing on, but
-do **not** treat the scanning pipeline as proven until the Docker-based Steps 5–7
-are executed on a capable host.
-
-### To finish verification (on a Docker-capable machine)
-```bash
-wsl --install                 # then reboot, if not already present
-# install Docker Desktop, enable the WSL2 backend, start it
-cp .env.example .env          # set TOKEN_ENCRYPTION_KEY=$(openssl rand -hex 32), JWT secrets, NEXTAUTH_SECRET
-make dev                      # build + boot the whole stack
-# then run DEVELOPMENT.md §3: register → create project → trigger scan → poll → findings
-```
+Carry into Phase 2: bump Next.js to a patched release; add the
+create-integration endpoint; consider seeding a tiny in-repo vulnerable fixture
+for fast CI smoke scans.

@@ -8,7 +8,7 @@ FROM python:3.12-slim AS base
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
-    TRIVY_VERSION=0.58.1 \
+    TRIVY_VERSION=0.71.2 \
     GITLEAKS_VERSION=8.21.2 \
     GO_VERSION=1.22.10 \
     NODE_MAJOR=20 \
@@ -20,28 +20,28 @@ RUN set -eux; \
     apt-get install -y --no-install-recommends \
         curl ca-certificates git gnupg xz-utils tar; \
     \
-    # Trivy (official install script, pinned version).
-    curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
-        | sh -s -- -b /usr/local/bin "v${TRIVY_VERSION}"; \
-    \
-    # Gitleaks (pinned release binary).
+    # Resolve arch-specific asset names once.
     arch="$(dpkg --print-architecture)"; \
     case "$arch" in \
-        amd64) gl_arch="x64" ;; \
-        arm64) gl_arch="arm64" ;; \
+        amd64) gl_arch="x64";   go_arch="amd64"; trivy_arch="Linux-64bit" ;; \
+        arm64) gl_arch="arm64"; go_arch="arm64"; trivy_arch="Linux-ARM64" ;; \
         *) echo "unsupported arch: $arch" >&2; exit 1 ;; \
     esac; \
-    curl -sfL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_${gl_arch}.tar.gz" \
+    \
+    # Trivy (direct release tarball — the piped install.sh from main is flaky).
+    curl -fsSL "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_${trivy_arch}.tar.gz" \
+        -o /tmp/trivy.tar.gz; \
+    tar -xzf /tmp/trivy.tar.gz -C /usr/local/bin trivy; \
+    rm /tmp/trivy.tar.gz; \
+    \
+    # Gitleaks (pinned release binary).
+    curl -fsSL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_${gl_arch}.tar.gz" \
         -o /tmp/gitleaks.tar.gz; \
     tar -xzf /tmp/gitleaks.tar.gz -C /usr/local/bin gitleaks; \
     rm /tmp/gitleaks.tar.gz; \
     \
     # Go (for `go build` deployment checks + Go projects).
-    case "$arch" in \
-        amd64) go_arch="amd64" ;; \
-        arm64) go_arch="arm64" ;; \
-    esac; \
-    curl -sfL "https://go.dev/dl/go${GO_VERSION}.linux-${go_arch}.tar.gz" -o /tmp/go.tar.gz; \
+    curl -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-${go_arch}.tar.gz" -o /tmp/go.tar.gz; \
     tar -C /usr/local -xzf /tmp/go.tar.gz; \
     rm /tmp/go.tar.gz; \
     \

@@ -1,0 +1,14 @@
+# Keep the Docker build context small and prevent host (Windows) artifacts from
+# overwriting the Linux deps installed inside the image.
+node_modules
+.next
+out
+.turbo
+npm-debug.log*
+.env
+.env.local
+.git
+.gitignore
+Dockerfile
+.dockerignore
+README.md

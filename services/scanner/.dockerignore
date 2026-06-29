@@ -1,0 +1,12 @@
+# Keep the build context small; never ship the local virtualenv or caches.
+.venv
+venv
+__pycache__
+*.pyc
+.pytest_cache
+.ruff_cache
+.mypy_cache
+.env
+.git
+.dockerignore
+Dockerfile
