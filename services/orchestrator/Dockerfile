@@ -22,7 +22,9 @@ RUN mkdir -p /workspaces && chown aegis:aegis /workspaces
 USER aegis
 ENV WORKSPACE_DIR=/workspaces
 
+# busybox `pgrep -x` does not reliably match the binary name, so match by
+# pattern (the worker is PID 1, so any match means it's alive).
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD pgrep -x orchestrator >/dev/null || exit 1
+    CMD pgrep orchestrator >/dev/null || exit 1
 
 ENTRYPOINT ["/usr/local/bin/orchestrator"]
