@@ -1,0 +1,43 @@
+# Environment / secrets
+.env
+.env.local
+*.env
+!.env.example
+
+# Go
+services/api/bin/
+services/orchestrator/bin/
+*.test
+*.out
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Node / Next.js
+web/node_modules/
+web/.next/
+web/out/
+web/.turbo/
+node_modules/
+npm-debug.log*
+
+# Build / runtime
+dist/
+build/
+tmp/
+workspaces/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Docker
+**/.docker/

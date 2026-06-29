@@ -1,0 +1,138 @@
+// TypeScript types mirroring the Go API response shapes exactly.
+
+export type Severity = "critical" | "high" | "medium" | "low" | "info";
+export type Pillar = "quality" | "security" | "deployment";
+export type Engine = "semgrep" | "trivy" | "gitleaks" | "quality" | "deployment";
+export type ScanStatus = "queued" | "running" | "completed" | "failed";
+export type Grade = "A" | "B" | "C" | "D" | "F";
+
+// ── API envelopes ────────────────────────────────────────────────────────────
+export interface ApiSuccess<T> {
+  data: T;
+  meta: { timestamp: string };
+}
+
+export interface Paginated<T> {
+  data: T[];
+  meta: { page: number; per_page: number; total: number; timestamp: string };
+}
+
+export interface ApiError {
+  error: { code: string; message: string; details?: unknown };
+}
+
+// ── Domain models ────────────────────────────────────────────────────────────
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  role: "user" | "admin";
+  plan: "free" | "pro" | "enterprise";
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TokenPair {
+  access_token: string;
+  refresh_token: string;
+  expires_in: number;
+  token_type: string;
+}
+
+export interface AuthResponse {
+  user: User;
+  tokens: TokenPair;
+}
+
+export interface Project {
+  id: string;
+  user_id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  repo_url?: string;
+  repo_type?: "github" | "gitlab" | "bitbucket" | "upload";
+  default_branch: string;
+  language?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Scan {
+  id: string;
+  project_id: string;
+  trigger: "manual" | "webhook" | "scheduled";
+  status: ScanStatus;
+  branch?: string;
+  commit_sha?: string;
+  quality_score?: number;
+  security_score?: number;
+  deployment_score?: number;
+  overall_score?: number;
+  overall_grade?: Grade;
+  quality_issues_total: number;
+  security_issues_total: number;
+  secrets_found: number;
+  vulnerabilities_found: number;
+  queued_at: string;
+  started_at?: string;
+  completed_at?: string;
+  duration_seconds?: number;
+  error_message?: string;
+  created_at: string;
+}
+
+export interface Finding {
+  id: string;
+  scan_id: string;
+  pillar: Pillar;
+  engine: Engine;
+  rule_id: string;
+  rule_name: string;
+  severity: Severity;
+  title: string;
+  description?: string;
+  file_path: string;
+  line_start?: number;
+  line_end?: number;
+  column_start?: number;
+  column_end?: number;
+  cwe_id?: string;
+  cve_id?: string;
+  owasp_category?: string;
+  is_false_positive: boolean;
+  is_suppressed: boolean;
+  fix_suggestion?: string;
+  metadata?: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface SeverityCount {
+  pillar: Pillar;
+  severity: Severity;
+  count: number;
+}
+
+export interface ScanReport {
+  scan: Scan;
+  breakdown: SeverityCount[];
+}
+
+// ── Request payloads ─────────────────────────────────────────────────────────
+export interface CreateProjectInput {
+  name: string;
+  description?: string;
+  repo_url?: string;
+  repo_type?: Project["repo_type"];
+  default_branch?: string;
+  language?: string;
+}
+
+export interface FindingFilters {
+  pillar?: Pillar;
+  severity?: Severity;
+  engine?: Engine;
+  page?: number;
+  per_page?: number;
+  include_suppressed?: boolean;
+}

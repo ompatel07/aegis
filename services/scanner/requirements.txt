@@ -1,0 +1,23 @@
+# ─── Web framework ───────────────────────────────────────────────────────────
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+pydantic==2.10.4
+pydantic-settings==2.7.1
+python-multipart==0.0.20
+
+# ─── Structured logging ──────────────────────────────────────────────────────
+structlog==24.4.0
+
+# ─── SAST engine ─────────────────────────────────────────────────────────────
+semgrep==1.97.0
+
+# ─── Quality analysis ────────────────────────────────────────────────────────
+radon==6.0.1
+lizard==1.17.13
+
+# NOTE: trivy and gitleaks are installed as binaries in the Dockerfile, not pip.
+
+# ─── Tests ───────────────────────────────────────────────────────────────────
+pytest==8.3.4
+pytest-asyncio==0.25.0
+httpx==0.28.1

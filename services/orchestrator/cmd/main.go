@@ -1,0 +1,61 @@
+// Command orchestrator consumes scan jobs from Redis (Asynq), runs the 3-pillar
+// pipeline against each repository, scores the results, and persists them.
+package main
+
+import (
+	"context"
+	"fmt"
+	"os"
+
+	"github.com/aegis-platform/orchestrator/internal/adapters"
+	"github.com/aegis-platform/orchestrator/internal/config"
+	"github.com/aegis-platform/orchestrator/internal/logger"
+	"github.com/aegis-platform/orchestrator/internal/pipeline"
+	"github.com/aegis-platform/orchestrator/internal/store"
+	"github.com/aegis-platform/orchestrator/internal/worker"
+)
+
+func main() {
+	if err := run(); err != nil {
+		fmt.Fprintf(os.Stderr, "fatal: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+func run() error {
+	cfg, err := config.Load()
+	if err != nil {
+		return fmt.Errorf("load config: %w", err)
+	}
+	log := logger.New(cfg.LogLevel, cfg.LogPretty, "orchestrator")
+	log.Info().
+		Str("env", cfg.Environment).
+		Int("concurrency", cfg.WorkerConcurrency).
+		Str("scanner", cfg.ScannerBaseURL).
+		Msg("starting orchestrator")
+
+	// ── Dependencies ─────────────────────────────────────────────────────────
+	st, err := store.Connect(context.Background(), cfg.DatabaseURL, cfg.DBMaxOpenConns, cfg.DBMaxIdleConns, cfg.DBConnMaxLifetime)
+	if err != nil {
+		return fmt.Errorf("connect database: %w", err)
+	}
+	defer st.Close()
+	log.Info().Msg("database connected")
+
+	gitClient := adapters.NewGitClient(cfg.WorkspaceDir, cfg.GitCloneDepth)
+	scannerClient := adapters.NewScannerClient(cfg.ScannerBaseURL, cfg.ScannerTimeout)
+	pipe := pipeline.New(scannerClient, log)
+	processor := worker.NewScanProcessor(st, gitClient, pipe, cfg.MaxRepoSizeMB, log)
+
+	// ── Worker server (Asynq traps SIGINT/SIGTERM and shuts down gracefully) ──
+	server := worker.NewServer(
+		cfg.RedisAddr, cfg.RedisPassword, cfg.RedisDB, cfg.WorkerConcurrency, processor, log,
+	)
+
+	log.Info().Msg("worker listening for scan jobs")
+	if err := server.Run(); err != nil {
+		return fmt.Errorf("worker server: %w", err)
+	}
+	log.Info().Msg("worker stopped cleanly")
+	return nil
+}

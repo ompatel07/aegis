@@ -1,0 +1,23 @@
+[project]
+name = "aegis-scanner"
+version = "1.0.0"
+description = "Aegis stateless code analysis engine"
+requires-python = ">=3.12"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.black]
+line-length = 100
+target-version = ["py312"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+# Pragmatic default rule set; allow the private-name imports we use deliberately.
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501"]
