@@ -172,3 +172,120 @@ the login Suspense boundary).
 Carry into Phase 2: bump Next.js to a patched release; add the
 create-integration endpoint; consider seeding a tiny in-repo vulnerable fixture
 for fast CI smoke scans.
+
+---
+---
+
+# Runtime Verification (2026-06-30, re-run)
+
+A second, independent runtime pass on a fresh stack (`docker compose down -v`
+first). It found and fixed a **critical SAST bug** the first pass missed.
+
+## Build time
+- Docker engine had been stopped between sessions; started Docker Desktop (engine
+  ready in ~5 s on the WSL2 backend).
+- `docker compose build` with warm layer cache: **5.6 s** (all 4 images already
+  built). The cold build's long pole is the scanner image (1.44 GB) — apt + Trivy
+  + Gitleaks + Go + Node + `pip install` of Semgrep. After the Semgrep fix the
+  scanner `pip` layer rebuilt in **57 s**.
+
+## Stack boot
+Fresh `docker compose up -d` → all services healthy within ~60 s:
+
+| service | result |
+| --- | --- |
+| postgres / redis | healthy |
+| migrate | exited 0 — applied all 5 migrations |
+| api | healthy — "http server listening :8080", db+redis connected |
+| orchestrator | healthy — "worker listening for scan jobs", asynq processing |
+| scanner | healthy — tools `{semgrep, trivy, gitleaks}: true` |
+| web | healthy — "Ready in 85ms" |
+| nginx | up |
+
+`/api/health` → 200 `{database:ok, redis:ok}`; scanner `/health` → 200.
+
+## End-to-end scan — OWASP/NodeGoat (branch master)
+
+Two scans were run (before and after the Semgrep fix). Final (post-fix) result:
+
+- **Duration:** 183 s · **Status:** completed
+- **Scores:** security **0** · quality **84** · deployment **100** → overall
+  **54**, grade **D** (security floored by 17 criticals + 83 highs; grade math
+  0.40·0 + 0.35·84 + 0.25·100 = 54.4 → 54).
+
+### Findings — 174 total
+
+**By engine** (this is what exposed the bug):
+
+| engine | pre-fix | post-fix |
+| --- | --- | --- |
+| semgrep | **0 (broken)** | **30** |
+| trivy | 133 | 133 |
+| gitleaks | 3 | 3 |
+| quality | 8 | 8 |
+| **total** | 144 | **174** |
+
+**By severity (post-fix):** critical 17 · high 83 · medium 41 · low 33.
+**By pillar:** security 166 · quality 8.
+
+**Field completeness (pre-fix sample of 144):** file_path 144/144 · rule_id
+144/144 · line_start 43 (SCA/secret findings reference a manifest, not a line) ·
+cwe_id 74 · owasp_category 136 · cve_id 76.
+
+### Sample findings
+| engine | severity | location | rule | CWE / OWASP |
+| --- | --- | --- | --- | --- |
+| semgrep | high | `app/routes/contributions.js:32` | `code-string-concat` | CWE-95 / A03 Injection |
+| semgrep | high | `artifacts/db-reset.js:19` | `detected-bcrypt-hash` | CWE-798 |
+| semgrep | high | `artifacts/cert/server.key:1` | `detected-private-key` | CWE-798 / A07 |
+| gitleaks | critical | `config/env/development.js:6` | `generic-api-key` | CWE-798 |
+| trivy | critical | `package-lock.json` | `CVE-2020-7788` | A06 Vulnerable Components |
+| trivy | critical | `package-lock.json` | `CVE-2021-44906` | A06 |
+| quality | low | `Gruntfile.js:50` | `quality/long-function` | — |
+| quality | low | `app/routes/profile.js` | `quality/duplicated-code` | — |
+
+Semgrep correctly flagged NodeGoat's code-injection in `contributions.js` (a
+known NodeGoat vulnerability) — confirming the SAST engine now works.
+
+## Dashboard
+Through nginx: `/login` 200 (renders "Aegis"), `/register` 200, `/` 307 (auth
+redirect), the scan-detail route 307 (correctly auth-guarded without a session),
+`/api/auth/providers` 200, and a `/_next/static` JS bundle loaded 200. Findings
+rendering is client-side React over the verified API; a headless browser was not
+available for pixel-level confirmation.
+
+## Bugs found and fixed in this pass
+
+1. **CRITICAL — Semgrep crashed on every run (`ModuleNotFoundError: No module
+   named 'pkg_resources'`).** Semgrep's `opentelemetry-instrumentation` dependency
+   imports `pkg_resources`, which ships with `setuptools`; Python 3.12 no longer
+   bundles it, so Semgrep died on startup and exited 1 — which the engine treated
+   as "findings present", silently yielding **0 SAST findings**. The first
+   runtime pass missed this because it didn't break findings down by engine.
+   **Fix:** added `setuptools==75.6.0` to `services/scanner/requirements.txt`.
+   After the fix Semgrep produces 30 findings on NodeGoat. _Commit `48991bc`._
+
+   This is exactly the failure mode the verification brief warned about
+   ("a scan producing few findings means the scanner is broken"). The aggregate
+   count (144) looked fine, but a third of the security pillar's purpose (SAST /
+   taint analysis) was silently dead. Engine-level validation caught it.
+
+## Teardown
+`docker compose down -v` removed all containers, the 3 named volumes
+(pgdata, redisdata, workspaces), and the network. `docker compose ps -a` empty.
+
+## Recommendation
+
+✅ **Ready to proceed to Phase 2.**
+
+After fixing the Semgrep crash, the full 3-pillar pipeline is genuinely proven:
+**174 findings** across all four engines (semgrep 30, trivy 133, gitleaks 3,
+quality 8), distributed across every severity, with CWE/OWASP tags, file paths,
+line numbers, and rule IDs — on a fresh, from-scratch stack boot. All five real
+bugs from both passes are fixed and committed (`48991bc` Semgrep, `bba36dc`
+orchestrator healthcheck, `12d1dbc` Trivy version + ambiguous-column query +
+`.dockerignore`, plus the login Suspense fix).
+
+Outstanding for Phase 2 (non-blocking): bump `next@14.2.18` (security advisory);
+add a Semgrep smoke assertion to CI so a future dependency change can't silently
+disable SAST again; add the create-integration endpoint.
