@@ -10,6 +10,10 @@ structlog==24.4.0
 
 # ─── SAST engine ─────────────────────────────────────────────────────────────
 semgrep==1.97.0
+# setuptools provides pkg_resources, which semgrep's opentelemetry-instrumentation
+# dependency imports at runtime. Python 3.12 no longer bundles setuptools, so
+# without this semgrep crashes on startup (ModuleNotFoundError: pkg_resources).
+setuptools==75.6.0
 
 # ─── Quality analysis ────────────────────────────────────────────────────────
 radon==6.0.1
