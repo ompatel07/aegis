@@ -1,13 +1,17 @@
 """Semgrep SAST engine.
 
-Runs Semgrep with OWASP/security base packs plus language-appropriate rule
-packs, then normalizes each result into a `Finding`. Semgrep's taint-mode rules
-(shipped inside the security packs) provide the cross-file dataflow that catches
-SQLi / XSS / SSRF — the SonarQube-competing capability.
+Runs Semgrep with OWASP/security base packs, language-appropriate rule packs,
+and Aegis's own custom taint-mode rulesets, then normalizes each result into a
+`Finding`. The custom rules (rules/taint/*.yaml) add cross-file dataflow
+detection for SQLi / XSS / command injection / SSRF / path traversal / NoSQL /
+LDAP injection across Python, JS/TS, Go and Java — the SonarQube/Snyk-competing
+capability. Each ships with positive + sanitized-negative tests (`semgrep
+--test`) so false positives are caught before release.
 """
 from __future__ import annotations
 
 import json
+import os
 
 from config import Settings
 from logging_config import get_logger
@@ -28,9 +32,10 @@ log = get_logger("semgrep")
 
 # Canonical Semgrep registry packs per language (valid registry shortcuts).
 _LANGUAGE_RULESETS: dict[str, list[str]] = {
+    # p/nodejsscan adds ~150 Node-specific security rules on top of p/javascript.
     "python": ["p/python"],
-    "javascript": ["p/javascript"],
-    "typescript": ["p/typescript"],
+    "javascript": ["p/javascript", "p/nodejsscan"],
+    "typescript": ["p/typescript", "p/nodejsscan"],
     "java": ["p/java"],
     "go": ["p/golang"],
     "ruby": ["p/ruby"],
@@ -43,6 +48,13 @@ _IAC_RULESETS: dict[str, list[str]] = {
     "docker": ["p/dockerfile"],
     "terraform": ["p/terraform"],
 }
+
+# Absolute path to Aegis's bundled custom taint rulesets. Shipped in the image
+# at /app/rules/taint (COPY . .); also resolves correctly when run from a local
+# checkout. Passed as an extra --config alongside the registry packs.
+_CUSTOM_RULES_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "rules", "taint"
+)
 
 
 def _select_configs(settings: Settings, languages: list[str], project_types: list[str]) -> list[str]:
@@ -62,6 +74,28 @@ def _select_configs(settings: Settings, languages: list[str], project_types: lis
     return ordered
 
 
+def _custom_rules_dir() -> str | None:
+    """Return the custom rules dir if it exists and is non-empty, else None."""
+    try:
+        if os.path.isdir(_CUSTOM_RULES_DIR) and any(
+            name.endswith((".yaml", ".yml")) for name in os.listdir(_CUSTOM_RULES_DIR)
+        ):
+            return _CUSTOM_RULES_DIR
+    except OSError as exc:  # pragma: no cover — defensive
+        log.warning("semgrep.custom_rules_stat_failed", path=_CUSTOM_RULES_DIR, error=str(exc))
+    return None
+
+
+def _build_args(settings: Settings, configs: list[str], path: str) -> list[str]:
+    """Assemble the semgrep CLI invocation for the given config list."""
+    args = [settings.semgrep_bin, "scan", "--json", "--quiet", "--metrics", "off",
+            "--disable-version-check", "--timeout", "60", "--max-target-bytes", "2000000"]
+    for cfg in configs:
+        args += ["--config", cfg]
+    args.append(path)
+    return args
+
+
 async def run(req: ScanRequest, settings: Settings) -> EngineResult:
     """Execute Semgrep against `req.path` and return normalized findings."""
     if not binary_available(settings.semgrep_bin):
@@ -78,20 +112,33 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
         languages = languages or detection.languages
         project_types = project_types or detection.project_types
 
-    configs = _select_configs(settings, languages, project_types)
+    registry_configs = _select_configs(settings, languages, project_types)
+    custom_dir = _custom_rules_dir()
+    configs = registry_configs + ([custom_dir] if custom_dir else [])
 
-    args = [settings.semgrep_bin, "scan", "--json", "--quiet", "--metrics", "off",
-            "--disable-version-check", "--timeout", "60", "--max-target-bytes", "2000000"]
-    for cfg in configs:
-        args += ["--config", cfg]
-    args.append(req.path)
+    async def _semgrep(cfgs: list[str]):
+        # Semgrep exits 0 (no findings) or 1 (findings present); >=2 is an error.
+        return await run_command(
+            _build_args(settings, cfgs, req.path),
+            cwd=req.path, timeout=settings.semgrep_timeout_seconds,
+            allowed_returncodes=(0, 1),
+            env={"SEMGREP_RULES_CACHE_DIR": settings.semgrep_rules_cache},
+        )
 
-    # Semgrep exits 0 (no findings) or 1 (findings present); >=2 is an error.
-    result = await run_command(
-        args, cwd=req.path, timeout=settings.semgrep_timeout_seconds,
-        allowed_returncodes=(0, 1),
-        env={"SEMGREP_RULES_CACHE_DIR": settings.semgrep_rules_cache},
-    )
+    result = await _semgrep(configs)
+
+    # A hard error (rc >= 2) after including the custom rulesets must not lose the
+    # entire SAST run. Log it and retry with the registry packs only: a broken
+    # custom rule degrades to registry coverage rather than dropping all findings.
+    # A genuine semgrep failure then still surfaces below (as a degraded engine).
+    custom_applied = custom_dir is not None
+    if custom_applied and not result.timed_out and result.returncode not in (0, 1):
+        log.warning(
+            "semgrep.custom_rules_failed_retrying",
+            error=normalizer.truncate(result.stderr, 1000),
+        )
+        custom_applied = False
+        result = await _semgrep(registry_configs)
 
     if result.timed_out:
         return EngineResult.failed(
@@ -117,6 +164,14 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
         )
 
     findings = _parse(raw, req.path)
+    custom_count = sum(1 for f in findings if f.rule_id.startswith("aegis-"))
+    log.info(
+        "semgrep.completed",
+        findings=len(findings),
+        custom_findings=custom_count,
+        custom_rules_applied=custom_applied,
+        errors=len(raw.get("errors", []) or []),
+    )
     return EngineResult(
         engine=Engine.SEMGREP,
         pillar=Pillar.SECURITY,
@@ -140,6 +195,12 @@ def _parse(raw: dict, root: str) -> list[Finding]:
         check_id = item.get("check_id", "unknown-rule")
         rule_short = check_id.rsplit(".", 1)[-1]
         message = extra.get("message") or rule_short
+        # Rules loaded from the local custom dir are namespaced by semgrep with a
+        # path-derived prefix (e.g. "rules.taint.aegis-js-xss"). Normalize custom
+        # findings to their stable public id; keep registry ids canonical.
+        is_custom = rule_short.startswith("aegis-")
+        rule_id = rule_short if is_custom else check_id
+        ruleset = "aegis-custom" if is_custom else "registry"
 
         severity = normalizer.normalize_semgrep_severity(extra.get("severity", ""), metadata)
 
@@ -147,7 +208,7 @@ def _parse(raw: dict, root: str) -> list[Finding]:
             Finding(
                 pillar=Pillar.SECURITY,
                 engine=Engine.SEMGREP,
-                rule_id=check_id,
+                rule_id=rule_id,
                 rule_name=normalizer.truncate(rule_short, 500) or rule_short,
                 severity=severity,
                 title=normalizer.truncate(message.splitlines()[0], 1000) or rule_short,
@@ -161,6 +222,7 @@ def _parse(raw: dict, root: str) -> list[Finding]:
                 owasp_category=normalizer.extract_owasp(metadata),
                 fix_suggestion=normalizer.truncate(extra.get("fix"), 8000),
                 metadata={
+                    "ruleset": ruleset,
                     "confidence": metadata.get("confidence"),
                     "references": metadata.get("references"),
                     "category": metadata.get("category"),

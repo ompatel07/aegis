@@ -1,0 +1,255 @@
+rules:
+  # ── SQL injection ────────────────────────────────────────────────────────────
+  - id: aegis-java-sql-injection
+    mode: taint
+    languages: [java]
+    severity: ERROR
+    message: >-
+      Untrusted request data flows into a raw SQL statement. Use a
+      PreparedStatement with '?' placeholders and setXxx() bind parameters, never
+      string concatenation of request data into the query.
+    metadata:
+      cwe:
+        - "CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"
+      owasp:
+        - "A03:2021 - Injection"
+      category: security
+      subcategory: [vuln]
+      confidence: HIGH
+      likelihood: HIGH
+      impact: HIGH
+      technology: [java]
+      references:
+        - https://owasp.org/Top10/A03_2021-Injection/
+    pattern-sources: &request_sources
+      - pattern-either:
+          - pattern: $REQ.getParameter(...)
+          - pattern: $REQ.getParameterValues(...)
+          - pattern: $REQ.getHeader(...)
+          - pattern: $REQ.getHeaders(...)
+          - pattern: $REQ.getQueryString()
+          - pattern: $REQ.getCookies()
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $STMT.executeQuery($SQL)
+              - pattern: $STMT.execute($SQL)
+              - pattern: $STMT.executeUpdate($SQL)
+              - pattern: $CONN.prepareStatement($SQL)
+          - focus-metavariable: $SQL
+
+  # ── Cross-site scripting ─────────────────────────────────────────────────────
+  - id: aegis-java-xss
+    mode: taint
+    languages: [java]
+    severity: ERROR
+    message: >-
+      Untrusted request data is written to the HTTP response without HTML
+      encoding, enabling XSS. Encode output with OWASP Encoder
+      (Encode.forHtml(value)) or a template engine with contextual autoescaping.
+    metadata:
+      cwe:
+        - "CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"
+      owasp:
+        - "A03:2021 - Injection"
+      category: security
+      subcategory: [vuln]
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: MEDIUM
+      technology: [java, servlet]
+      references:
+        - https://owasp.org/www-community/attacks/xss/
+    pattern-sources: *request_sources
+    pattern-sanitizers:
+      - pattern-either:
+          - pattern: org.owasp.encoder.Encode.forHtml(...)
+          - pattern: Encode.forHtml(...)
+          - pattern: ESAPI.encoder().encodeForHTML(...)
+          - pattern: StringEscapeUtils.escapeHtml4(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $RESP.getWriter().write($S)
+              - pattern: $RESP.getWriter().print($S)
+              - pattern: $RESP.getWriter().println($S)
+              - pattern: $OUT.write($S)
+              - pattern: $OUT.print($S)
+              - pattern: $OUT.println($S)
+          - focus-metavariable: $S
+
+  # ── OS command injection ─────────────────────────────────────────────────────
+  - id: aegis-java-command-injection
+    mode: taint
+    languages: [java]
+    severity: ERROR
+    message: >-
+      Untrusted request data flows into an OS command. Runtime.exec(String) and
+      single-argument ProcessBuilder pass the whole command through the OS,
+      allowing injection. Pass a fixed program plus a separate argument array
+      (new ProcessBuilder("prog", arg1, arg2)) and validate the program name.
+    metadata:
+      cwe:
+        - "CWE-78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')"
+      owasp:
+        - "A03:2021 - Injection"
+      category: security
+      subcategory: [vuln]
+      confidence: HIGH
+      likelihood: HIGH
+      impact: HIGH
+      technology: [java]
+      references:
+        - https://owasp.org/www-community/attacks/Command_Injection
+    pattern-sources: *request_sources
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: Runtime.getRuntime().exec($CMD)
+              - pattern: new ProcessBuilder($CMD)
+          - focus-metavariable: $CMD
+
+  # ── Server-side request forgery ──────────────────────────────────────────────
+  - id: aegis-java-ssrf
+    mode: taint
+    languages: [java]
+    severity: ERROR
+    message: >-
+      Untrusted request data is used to build the target of a server-side HTTP
+      request (SSRF). Validate the URL against a strict host allowlist before use.
+    metadata:
+      cwe:
+        - "CWE-918: Server-Side Request Forgery (SSRF)"
+      owasp:
+        - "A10:2021 - Server-Side Request Forgery (SSRF)"
+      category: security
+      subcategory: [vuln]
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: MEDIUM
+      technology: [java]
+      references:
+        - https://owasp.org/Top10/A10_2021-Server-Side_Request_Forgery_%28SSRF%29/
+    pattern-sources: *request_sources
+    pattern-sanitizers:
+      - pattern-either:
+          - pattern: validateUrl(...)
+          - pattern: isAllowedUrl(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: new java.net.URL($U)
+              - pattern: new URL($U)
+              - pattern: java.net.URI.create($U)
+              - pattern: URI.create($U)
+              - pattern: new HttpGet($U)
+          - focus-metavariable: $U
+
+  # ── Path traversal ───────────────────────────────────────────────────────────
+  - id: aegis-java-path-traversal
+    mode: taint
+    languages: [java]
+    severity: ERROR
+    message: >-
+      Untrusted request data flows into a filesystem path, enabling path
+      traversal. Reduce to a bare filename with FilenameUtils.getName(), resolve
+      it under a fixed base directory, and verify the canonical path stays within.
+    metadata:
+      cwe:
+        - "CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')"
+      owasp:
+        - "A01:2021 - Broken Access Control"
+      category: security
+      subcategory: [vuln]
+      confidence: HIGH
+      likelihood: MEDIUM
+      impact: MEDIUM
+      technology: [java]
+      references:
+        - https://owasp.org/www-community/attacks/Path_Traversal
+    pattern-sources: *request_sources
+    pattern-sanitizers:
+      - pattern-either:
+          - pattern: org.apache.commons.io.FilenameUtils.getName(...)
+          - pattern: FilenameUtils.getName(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: new java.io.File($P)
+              - pattern: new File($P)
+              - pattern: new FileInputStream($P)
+              - pattern: new FileReader($P)
+              - pattern: Paths.get($P, ...)
+              - pattern: java.nio.file.Paths.get($P, ...)
+          - focus-metavariable: $P
+
+  # ── NoSQL injection (MongoDB) ────────────────────────────────────────────────
+  - id: aegis-java-nosql-injection
+    mode: taint
+    languages: [java]
+    severity: WARNING
+    message: >-
+      User-controlled data is parsed directly into a MongoDB query document. An
+      attacker can inject query operators ($where, $ne) to bypass logic. Build
+      queries with typed filters (Filters.eq) and coerce values to the expected
+      type instead of parsing raw request bodies into query documents.
+    metadata:
+      cwe:
+        - "CWE-943: Improper Neutralization of Special Elements in Data Query Logic"
+      owasp:
+        - "A03:2021 - Injection"
+      category: security
+      subcategory: [vuln]
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: MEDIUM
+      technology: [java, mongodb]
+      references:
+        - https://owasp.org/www-community/Injection_Flaws
+    pattern-sources: *request_sources
+    pattern-sanitizers:
+      - pattern-either:
+          - pattern: new ObjectId(...)
+          - pattern: String.valueOf(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $COLL.find($Q)
+              - pattern: $COLL.find($Q, ...)
+              - pattern: $COLL.deleteOne($Q)
+              - pattern: $COLL.deleteMany($Q)
+              - pattern: $COLL.updateOne($Q, ...)
+          - focus-metavariable: $Q
+
+  # ── LDAP injection ───────────────────────────────────────────────────────────
+  - id: aegis-java-ldap-injection
+    mode: taint
+    languages: [java]
+    severity: ERROR
+    message: >-
+      Untrusted request data is used to build a JNDI/LDAP search filter, enabling
+      LDAP injection. Escape filter values with an LDAP encoder
+      (e.g. OWASP Encode.forLdap()) before interpolating them.
+    metadata:
+      cwe:
+        - "CWE-90: Improper Neutralization of Special Elements used in an LDAP Query ('LDAP Injection')"
+      owasp:
+        - "A03:2021 - Injection"
+      category: security
+      subcategory: [vuln]
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: MEDIUM
+      technology: [java, ldap]
+      references:
+        - https://owasp.org/www-community/attacks/LDAP_Injection
+    pattern-sources: *request_sources
+    pattern-sanitizers:
+      - pattern-either:
+          - pattern: Encode.forLdap(...)
+          - pattern: encodeForLDAP(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $CTX.search($NAME, $FILTER, $CONTROLS)
+          - focus-metavariable: $FILTER

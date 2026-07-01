@@ -1,0 +1,315 @@
+rules:
+  # ── SQL injection ────────────────────────────────────────────────────────────
+  - id: aegis-js-sql-injection
+    mode: taint
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      Untrusted request data flows into a raw SQL query string. An attacker can
+      alter the query. Use parameterized queries / placeholders
+      (db.query("... WHERE id = ?", [value])) or a query builder that escapes
+      values; never concatenate request data into SQL.
+    metadata:
+      cwe:
+        - "CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"
+      owasp:
+        - "A03:2021 - Injection"
+      category: security
+      subcategory: [vuln]
+      confidence: HIGH
+      likelihood: HIGH
+      impact: HIGH
+      technology: [javascript, typescript, node]
+      references:
+        - https://owasp.org/Top10/A03_2021-Injection/
+    pattern-sources: &request_sources
+      - pattern-either:
+          - pattern: req.query
+          - pattern: req.body
+          - pattern: req.params
+          - pattern: req.cookies
+          - pattern: req.headers
+          - pattern: request.query
+          - pattern: request.body
+          - pattern: request.params
+          - pattern: request.cookies
+          - pattern: request.headers
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $DB.query($SQL, ...)
+              - pattern: $DB.execute($SQL, ...)
+              - pattern: $CONN.raw($SQL, ...)
+          - focus-metavariable: $SQL
+
+  # ── Cross-site scripting ─────────────────────────────────────────────────────
+  - id: aegis-js-xss
+    mode: taint
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      Untrusted request data is written to an HTTP response or the DOM without
+      escaping, enabling XSS. Encode output for the HTML context
+      (e.g. DOMPurify.sanitize(), he.encode(), validator.escape()) or render
+      through a template engine with contextual autoescaping.
+    metadata:
+      cwe:
+        - "CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"
+      owasp:
+        - "A03:2021 - Injection"
+      category: security
+      subcategory: [vuln]
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: MEDIUM
+      technology: [javascript, typescript, node, browser]
+      references:
+        - https://owasp.org/www-community/attacks/xss/
+    pattern-sources: *request_sources
+    pattern-sanitizers:
+      - pattern-either:
+          - pattern: DOMPurify.sanitize(...)
+          - pattern: sanitizeHtml(...)
+          - pattern: he.encode(...)
+          - pattern: validator.escape(...)
+          - pattern: escapeHtml(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $RES.send($H)
+              - pattern: $RES.write($H)
+              - pattern: $RES.end($H)
+              - pattern: $EL.innerHTML = $H
+              - pattern: document.write($H)
+          - focus-metavariable: $H
+
+  # ── OS command injection ─────────────────────────────────────────────────────
+  - id: aegis-js-command-injection
+    mode: taint
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      Untrusted request data flows into a shell command executed by child_process
+      exec/execSync, allowing arbitrary command execution. Use execFile/spawn with
+      an argument array (no shell), and validate the program name against an
+      allowlist.
+    metadata:
+      cwe:
+        - "CWE-78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')"
+      owasp:
+        - "A03:2021 - Injection"
+      category: security
+      subcategory: [vuln]
+      confidence: HIGH
+      likelihood: HIGH
+      impact: HIGH
+      technology: [javascript, typescript, node]
+      references:
+        - https://owasp.org/www-community/attacks/Command_Injection
+    pattern-sources: *request_sources
+    pattern-sanitizers:
+      - pattern-either:
+          - pattern: shellQuote.quote(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: child_process.exec($CMD, ...)
+              - pattern: child_process.execSync($CMD, ...)
+              - pattern: cp.exec($CMD, ...)
+              - pattern: cp.execSync($CMD, ...)
+              - pattern: exec($CMD, ...)
+              - pattern: execSync($CMD, ...)
+          - focus-metavariable: $CMD
+
+  # ── Server-side request forgery ──────────────────────────────────────────────
+  - id: aegis-js-ssrf
+    mode: taint
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      Untrusted request data is used as the target URL of a server-side HTTP
+      request (SSRF). Validate the URL against a strict host allowlist before
+      issuing the request (e.g. an isAllowedUrl()/validateUrl() helper).
+    metadata:
+      cwe:
+        - "CWE-918: Server-Side Request Forgery (SSRF)"
+      owasp:
+        - "A10:2021 - Server-Side Request Forgery (SSRF)"
+      category: security
+      subcategory: [vuln]
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: MEDIUM
+      technology: [javascript, typescript, node]
+      references:
+        - https://owasp.org/Top10/A10_2021-Server-Side_Request_Forgery_%28SSRF%29/
+    pattern-sources: *request_sources
+    pattern-sanitizers:
+      - pattern-either:
+          - pattern: isAllowedUrl(...)
+          - pattern: validateUrl(...)
+          - pattern: isSafeUrl(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: axios.get($U, ...)
+              - pattern: axios.post($U, ...)
+              - pattern: axios.put($U, ...)
+              - pattern: axios.delete($U, ...)
+              - pattern: axios($U, ...)
+              - pattern: fetch($U, ...)
+              - pattern: http.get($U, ...)
+              - pattern: http.request($U, ...)
+              - pattern: https.get($U, ...)
+              - pattern: https.request($U, ...)
+              - pattern: got($U, ...)
+          - focus-metavariable: $U
+
+  # ── Path traversal ───────────────────────────────────────────────────────────
+  - id: aegis-js-path-traversal
+    mode: taint
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      Untrusted request data flows into a filesystem path, enabling path
+      traversal. Reduce to a bare filename with path.basename(), join under a
+      fixed base directory, and verify the resolved path stays within it.
+    metadata:
+      cwe:
+        - "CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')"
+      owasp:
+        - "A01:2021 - Broken Access Control"
+      category: security
+      subcategory: [vuln]
+      confidence: HIGH
+      likelihood: MEDIUM
+      impact: MEDIUM
+      technology: [javascript, typescript, node]
+      references:
+        - https://owasp.org/www-community/attacks/Path_Traversal
+    pattern-sources: *request_sources
+    pattern-sanitizers:
+      - pattern-either:
+          - pattern: path.basename(...)
+          - pattern: sanitizeFilename(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: fs.readFile($P, ...)
+              - pattern: fs.readFileSync($P, ...)
+              - pattern: fs.createReadStream($P, ...)
+              - pattern: fs.writeFile($P, ...)
+              - pattern: fs.writeFileSync($P, ...)
+              - pattern: fs.unlink($P, ...)
+              - pattern: fs.unlinkSync($P, ...)
+              - pattern: $RES.sendFile($P, ...)
+          - focus-metavariable: $P
+
+  # ── NoSQL injection (MongoDB) ────────────────────────────────────────────────
+  - id: aegis-js-nosql-injection
+    mode: taint
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: >-
+      A user-controlled object is passed directly as a MongoDB query. When the
+      value comes from req.body/req.query (parsed JSON or querystring), an
+      attacker can inject query operators ($ne, $gt, $where) to bypass auth or
+      extract data. Coerce query values to the expected scalar type
+      (String(value), or an explicit ObjectId) before querying.
+    metadata:
+      cwe:
+        - "CWE-943: Improper Neutralization of Special Elements in Data Query Logic"
+      owasp:
+        - "A03:2021 - Injection"
+      category: security
+      subcategory: [vuln]
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: MEDIUM
+      technology: [javascript, typescript, node, mongodb]
+      references:
+        - https://owasp.org/www-community/Injection_Flaws
+    pattern-sources: *request_sources
+    pattern-sanitizers:
+      - pattern-either:
+          - pattern: String(...)
+          - pattern: parseInt(...)
+          - pattern: mongoSanitize(...)
+          - pattern: ObjectId(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $COLL.find($Q, ...)
+              - pattern: $COLL.findOne($Q, ...)
+              - pattern: $COLL.findOneAndUpdate($Q, ...)
+              - pattern: $COLL.update($Q, ...)
+              - pattern: $COLL.updateOne($Q, ...)
+              - pattern: $COLL.updateMany($Q, ...)
+              - pattern: $COLL.deleteOne($Q, ...)
+              - pattern: $COLL.deleteMany($Q, ...)
+              - pattern: $COLL.remove($Q, ...)
+          - focus-metavariable: $Q
+
+  # ── LDAP injection ───────────────────────────────────────────────────────────
+  - id: aegis-js-ldap-injection
+    mode: taint
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      Untrusted request data is used to build an LDAP search filter (ldapjs),
+      enabling LDAP injection. Escape filter values before interpolation
+      (e.g. an escapeFilter()/filterEscape() helper).
+    metadata:
+      cwe:
+        - "CWE-90: Improper Neutralization of Special Elements used in an LDAP Query ('LDAP Injection')"
+      owasp:
+        - "A03:2021 - Injection"
+      category: security
+      subcategory: [vuln]
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: MEDIUM
+      technology: [javascript, typescript, node, ldap]
+      references:
+        - https://owasp.org/www-community/attacks/LDAP_Injection
+    pattern-sources: *request_sources
+    pattern-sanitizers:
+      - pattern-either:
+          - pattern: escapeFilter(...)
+          - pattern: filterEscape(...)
+    pattern-sinks:
+      - patterns:
+          - pattern: $CLIENT.search($BASE, $OPTS, ...)
+          - focus-metavariable: $OPTS
+
+  # ── Code injection (eval / dynamic code) ─────────────────────────────────────
+  - id: aegis-js-code-injection
+    mode: taint
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      Untrusted request data flows into a dynamic code-evaluation sink
+      (eval / new Function / vm), allowing remote code execution. Never evaluate
+      request data as code. Parse structured input with JSON.parse and validate
+      it; for arithmetic use a safe expression evaluator, not eval.
+    metadata:
+      cwe:
+        - "CWE-95: Improper Neutralization of Directives in Dynamically Evaluated Code ('Eval Injection')"
+      owasp:
+        - "A03:2021 - Injection"
+      category: security
+      subcategory: [vuln]
+      confidence: HIGH
+      likelihood: HIGH
+      impact: HIGH
+      technology: [javascript, typescript, node]
+      references:
+        - https://owasp.org/www-community/attacks/Code_Injection
+    pattern-sources: *request_sources
+    pattern-sinks:
+      - pattern-either:
+          - pattern: eval($X)
+          - pattern: new Function(...)
+          - pattern: vm.runInThisContext($X, ...)
+          - pattern: vm.runInContext($X, ...)
+          - pattern: vm.runInNewContext($X, ...)

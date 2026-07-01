@@ -35,7 +35,7 @@ class Settings(BaseSettings):
 
     # ── Semgrep ──────────────────────────────────────────────────────────────
     semgrep_base_configs: str = Field(
-        default="p/owasp-top-ten,p/r2c-security-audit,p/default,p/secrets,p/supply-chain"
+        default="p/owasp-top-ten,p/r2c-security-audit,p/default,p/secrets,p/supply-chain,p/cwe-top-25"
     )
     semgrep_rules_cache: str = "/opt/aegis/cache/semgrep"
     trivy_cache_dir: str = "/opt/aegis/cache/trivy"

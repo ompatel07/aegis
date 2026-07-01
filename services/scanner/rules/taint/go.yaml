@@ -1,0 +1,270 @@
+rules:
+  # ── SQL injection ────────────────────────────────────────────────────────────
+  - id: aegis-go-sql-injection
+    mode: taint
+    languages: [go]
+    severity: ERROR
+    message: >-
+      Untrusted request data flows into a raw SQL query string. Use parameterized
+      queries with placeholders (db.Query("... WHERE id = $1", value)) or an ORM;
+      never build SQL with fmt.Sprintf/string concatenation of request data.
+    metadata:
+      cwe:
+        - "CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"
+      owasp:
+        - "A03:2021 - Injection"
+      category: security
+      subcategory: [vuln]
+      confidence: HIGH
+      likelihood: HIGH
+      impact: HIGH
+      technology: [go]
+      references:
+        - https://owasp.org/Top10/A03_2021-Injection/
+    pattern-sources: &request_sources
+      - pattern-either:
+          - pattern: $R.URL.Query().Get(...)
+          - pattern: $R.FormValue(...)
+          - pattern: $R.PostFormValue(...)
+          - pattern: $R.Header.Get(...)
+          - pattern: $C.Query(...)
+          - pattern: $C.DefaultQuery(...)
+          - pattern: $C.Param(...)
+          - pattern: $C.PostForm(...)
+          - pattern: mux.Vars($R)[...]
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $DB.Query($Q, ...)
+              - pattern: $DB.QueryRow($Q, ...)
+              - pattern: $DB.Exec($Q, ...)
+              - pattern: $DB.QueryContext($CTX, $Q, ...)
+              - pattern: $DB.QueryRowContext($CTX, $Q, ...)
+              - pattern: $DB.ExecContext($CTX, $Q, ...)
+          - focus-metavariable: $Q
+          # Only flag dynamically-built query strings. A pure string literal as
+          # the query (with values passed as separate bind params) is a correct
+          # parameterized query and must never be flagged.
+          - metavariable-pattern:
+              metavariable: $Q
+              patterns:
+                - pattern-not: '"..."'
+
+  # ── Cross-site scripting ─────────────────────────────────────────────────────
+  - id: aegis-go-xss
+    mode: taint
+    languages: [go]
+    severity: ERROR
+    message: >-
+      Untrusted request data is written to the HTTP response without HTML
+      encoding, enabling XSS. Use the html/template package (contextual
+      autoescaping) or html.EscapeString() before writing user data.
+    metadata:
+      cwe:
+        - "CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"
+      owasp:
+        - "A03:2021 - Injection"
+      category: security
+      subcategory: [vuln]
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: MEDIUM
+      technology: [go]
+      references:
+        - https://owasp.org/www-community/attacks/xss/
+    pattern-sources: *request_sources
+    pattern-sanitizers:
+      - pattern-either:
+          - pattern: html.EscapeString(...)
+          - pattern: template.HTMLEscapeString(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - patterns:
+                  - pattern: fmt.Fprintf($W, $FMT, ...)
+                  - focus-metavariable: $FMT
+              - patterns:
+                  - pattern: io.WriteString($W, $S)
+                  - focus-metavariable: $S
+              - patterns:
+                  - pattern: $W.Write($B)
+                  - focus-metavariable: $B
+
+  # ── OS command injection ─────────────────────────────────────────────────────
+  - id: aegis-go-command-injection
+    mode: taint
+    languages: [go]
+    severity: ERROR
+    message: >-
+      Untrusted request data is passed to a shell (sh -c) via os/exec, allowing
+      arbitrary command execution. Invoke the program directly with an argument
+      slice (exec.Command("prog", arg1, arg2)) instead of routing through a shell.
+    metadata:
+      cwe:
+        - "CWE-78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')"
+      owasp:
+        - "A03:2021 - Injection"
+      category: security
+      subcategory: [vuln]
+      confidence: HIGH
+      likelihood: HIGH
+      impact: HIGH
+      technology: [go]
+      references:
+        - https://owasp.org/www-community/attacks/Command_Injection
+    pattern-sources: *request_sources
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: exec.Command("sh", "-c", $CMD)
+              - pattern: exec.Command("bash", "-c", $CMD)
+              - pattern: exec.Command("/bin/sh", "-c", $CMD)
+              - pattern: exec.Command("/bin/bash", "-c", $CMD)
+              - pattern: exec.CommandContext($CTX, "sh", "-c", $CMD)
+              - pattern: exec.CommandContext($CTX, "bash", "-c", $CMD)
+          - focus-metavariable: $CMD
+
+  # ── Server-side request forgery ──────────────────────────────────────────────
+  - id: aegis-go-ssrf
+    mode: taint
+    languages: [go]
+    severity: ERROR
+    message: >-
+      Untrusted request data is used as the target URL of a server-side HTTP
+      request (SSRF). Validate the URL against a strict host allowlist before
+      issuing the request.
+    metadata:
+      cwe:
+        - "CWE-918: Server-Side Request Forgery (SSRF)"
+      owasp:
+        - "A10:2021 - Server-Side Request Forgery (SSRF)"
+      category: security
+      subcategory: [vuln]
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: MEDIUM
+      technology: [go]
+      references:
+        - https://owasp.org/Top10/A10_2021-Server-Side_Request_Forgery_%28SSRF%29/
+    pattern-sources: *request_sources
+    pattern-sanitizers:
+      - pattern-either:
+          - pattern: validateURL(...)
+          - pattern: isAllowedURL(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: http.Get($U)
+              - pattern: http.Post($U, ...)
+              - pattern: http.Head($U)
+              - pattern: http.PostForm($U, ...)
+              - pattern: http.NewRequest($M, $U, ...)
+              - pattern: http.NewRequestWithContext($CTX, $M, $U, ...)
+          - focus-metavariable: $U
+
+  # ── Path traversal ───────────────────────────────────────────────────────────
+  - id: aegis-go-path-traversal
+    mode: taint
+    languages: [go]
+    severity: ERROR
+    message: >-
+      Untrusted request data flows into a filesystem path, enabling path
+      traversal. Reduce to a bare filename with filepath.Base(), join under a
+      fixed base directory, and verify the cleaned path stays within it.
+    metadata:
+      cwe:
+        - "CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')"
+      owasp:
+        - "A01:2021 - Broken Access Control"
+      category: security
+      subcategory: [vuln]
+      confidence: HIGH
+      likelihood: MEDIUM
+      impact: MEDIUM
+      technology: [go]
+      references:
+        - https://owasp.org/www-community/attacks/Path_Traversal
+    pattern-sources: *request_sources
+    pattern-sanitizers:
+      - pattern-either:
+          - pattern: filepath.Base(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: os.Open($P)
+              - pattern: os.OpenFile($P, ...)
+              - pattern: os.ReadFile($P)
+              - pattern: ioutil.ReadFile($P)
+              - pattern: os.Remove($P)
+              - pattern: os.Create($P)
+              - pattern: http.ServeFile($W, $R, $P)
+          - focus-metavariable: $P
+
+  # ── NoSQL injection (MongoDB / mongo-go-driver) ──────────────────────────────
+  - id: aegis-go-nosql-injection
+    mode: taint
+    languages: [go]
+    severity: WARNING
+    message: >-
+      User-controlled data is used to build a MongoDB query filter. If it reaches
+      a query operator, an attacker can manipulate the query. Coerce query values
+      to the expected type (e.g. primitive.ObjectIDFromHex, strconv.Atoi) before
+      building the filter.
+    metadata:
+      cwe:
+        - "CWE-943: Improper Neutralization of Special Elements in Data Query Logic"
+      owasp:
+        - "A03:2021 - Injection"
+      category: security
+      subcategory: [vuln]
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: MEDIUM
+      technology: [go, mongodb]
+      references:
+        - https://owasp.org/www-community/Injection_Flaws
+    pattern-sources: *request_sources
+    pattern-sanitizers:
+      - pattern-either:
+          - pattern: primitive.ObjectIDFromHex(...)
+          - pattern: strconv.Atoi(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $COLL.Find($CTX, $Q, ...)
+              - pattern: $COLL.FindOne($CTX, $Q, ...)
+              - pattern: $COLL.DeleteOne($CTX, $Q, ...)
+              - pattern: $COLL.DeleteMany($CTX, $Q, ...)
+              - pattern: $COLL.UpdateOne($CTX, $Q, ...)
+          - focus-metavariable: $Q
+
+  # ── LDAP injection ───────────────────────────────────────────────────────────
+  - id: aegis-go-ldap-injection
+    mode: taint
+    languages: [go]
+    severity: ERROR
+    message: >-
+      Untrusted request data is used to build an LDAP search filter (go-ldap),
+      enabling LDAP injection. Escape filter values with ldap.EscapeFilter()
+      before interpolating them.
+    metadata:
+      cwe:
+        - "CWE-90: Improper Neutralization of Special Elements used in an LDAP Query ('LDAP Injection')"
+      owasp:
+        - "A03:2021 - Injection"
+      category: security
+      subcategory: [vuln]
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: MEDIUM
+      technology: [go, ldap]
+      references:
+        - https://owasp.org/www-community/attacks/LDAP_Injection
+    pattern-sources: *request_sources
+    pattern-sanitizers:
+      - pattern-either:
+          - pattern: ldap.EscapeFilter(...)
+    pattern-sinks:
+      - patterns:
+          - pattern: ldap.NewSearchRequest($BASE, $SCOPE, $DEREF, $SIZE, $TIME, $TYPESONLY, $FILTER, ...)
+          - focus-metavariable: $FILTER
