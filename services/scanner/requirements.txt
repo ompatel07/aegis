@@ -18,6 +18,9 @@ setuptools==75.6.0
 # ─── Quality analysis ────────────────────────────────────────────────────────
 radon==6.0.1
 lizard==1.17.13
+# Pygments lexers drive token-normalized duplicate-code detection (rename- and
+# whitespace-insensitive). Pure Python — no C toolchain needed in the slim image.
+pygments==2.18.0
 
 # NOTE: trivy and gitleaks are installed as binaries in the Dockerfile, not pip.
 

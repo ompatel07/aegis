@@ -10,8 +10,8 @@ score) and individual `Finding`s for the worst offenders.
 """
 from __future__ import annotations
 
-import hashlib
 import os
+import re
 
 import lizard
 
@@ -28,7 +28,7 @@ from models.scan_result import (
     Severity,
     SeveritySummary,
 )
-from utils import normalizer
+from utils import duplication, normalizer
 from utils.language_detector import IGNORED_DIRS, _EXTENSION_MAP
 
 log = get_logger("quality")
@@ -37,9 +37,31 @@ log = get_logger("quality")
 _CC_WARN = 11           # cyclomatic complexity considered a smell
 _CC_HIGH = 21           # high-severity complexity
 _LONG_FUNC_NLOC = 80    # function length (lines of code) considered too long
-_MANY_PARAMS = 6        # parameter count considered a smell
-_DUP_WINDOW = 6         # consecutive normalized lines forming a duplication block
+_GOD_FUNC_NLOC = 500    # "god function" — far too large, high severity
+_MANY_PARAMS = 6        # parameter count considered a smell (>5)
+_MAX_NESTING = 4        # nesting depth beyond this is a smell
+_MAGIC_MIN = 6          # magic-number count per file before we flag it
+_CLONE_SEV_HIGH = 250   # clone token length -> high severity
+_CLONE_SEV_MEDIUM = 120 # clone token length -> medium severity
 _MAX_FILE_BYTES = 1_500_000
+
+# "Unremarkable" numeric literals that are not magic numbers.
+_ALLOWED_NUMS = {"0", "1", "2", "-1", "0.0", "1.0", "0x0", "100", "1000"}
+_NUM_RE = re.compile(r"(?<![\w.$#])-?\d+(?:\.\d+)?(?![\w.])")
+_CONST_DEF_RE = re.compile(
+    r"^\s*(?:export\s+)?(?:public\s+|private\s+|protected\s+)?"
+    r"(?:const|final|static|readonly|val|let|var|#define|enum)\b"
+    r"|^\s*[A-Z_][A-Z0-9_]{2,}\s*[:=]"
+)
+
+# Tech-debt markers left in comments, and leftover debug output per language.
+_TECH_DEBT_RE = re.compile(r"(?://|#|/\*|\*|<!--)\s*@?\s*\b(TODO|FIXME|HACK|XXX)\b")
+_DEBUG_PATTERNS = {
+    "javascript": re.compile(r"\bconsole\.(?:log|debug|trace)\s*\(|\bdebugger\b"),
+    "typescript": re.compile(r"\bconsole\.(?:log|debug|trace)\s*\(|\bdebugger\b"),
+    "python": re.compile(r"\b(?:pdb\.set_trace|breakpoint)\s*\("),
+    "java": re.compile(r"\bSystem\.out\.print|\.printStackTrace\s*\("),
+}
 
 # Single-line comment markers per language family (best-effort heuristic).
 _LINE_COMMENT = {
@@ -93,17 +115,24 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
 
         total_code_lines += info.nloc
         rel = normalizer.relative_path(path, req.path)
+        file_lines = _read_lines(path)
 
         for fn in info.function_list:
             total_functions += 1
             total_cc += fn.cyclomatic_complexity
             max_cc = max(max_cc, fn.cyclomatic_complexity)
-            findings.extend(_function_findings(fn, rel, language))
+            findings.extend(_function_findings(fn, rel, language, file_lines))
+
+        for maker in (_magic_number_finding, _tech_debt_finding, _debug_statement_finding):
+            extra = maker(file_lines, rel, language)
+            if extra:
+                findings.append(extra)
 
     avg_cc = (total_cc / total_functions) if total_functions else 0.0
 
-    dup_pct, dup_findings = _duplication(files, req.path)
-    findings.extend(dup_findings)
+    dup_count, clones = duplication.find_clones(files, req.path)
+    findings.extend(_duplication_findings(clones))
+    dup_pct = min(100.0, (dup_count / total_code_lines * 100.0)) if total_code_lines else 0.0
 
     comment_density = _comment_density(files)
     has_tests = _has_tests(files)
@@ -133,7 +162,7 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
 
 # ── Findings ─────────────────────────────────────────────────────────────────
 
-def _function_findings(fn, rel_path: str, language: str) -> list[Finding]:
+def _function_findings(fn, rel_path: str, language: str, file_lines: list[str]) -> list[Finding]:
     out: list[Finding] = []
     cc = fn.cyclomatic_complexity
 
@@ -157,7 +186,24 @@ def _function_findings(fn, rel_path: str, language: str) -> list[Finding]:
             )
         )
 
-    if fn.nloc >= _LONG_FUNC_NLOC:
+    # God function vs merely-long function are mutually exclusive (no double report).
+    if fn.nloc >= _GOD_FUNC_NLOC:
+        out.append(
+            Finding(
+                pillar=Pillar.QUALITY, engine=Engine.QUALITY,
+                rule_id="quality/god-function", rule_name="God function",
+                severity=Severity.HIGH,
+                title=f"Function '{fn.name}' is {fn.nloc} lines long",
+                description=(
+                    f"'{fn.name}' spans {fn.nloc} lines (threshold {_GOD_FUNC_NLOC}). A function "
+                    "this large is doing far too much and is nearly impossible to test in "
+                    "isolation. Break it into cohesive units."
+                ),
+                file_path=rel_path, line_start=fn.start_line, line_end=fn.end_line,
+                metadata={"nloc": fn.nloc, "language": language},
+            )
+        )
+    elif fn.nloc >= _LONG_FUNC_NLOC:
         out.append(
             Finding(
                 pillar=Pillar.QUALITY, engine=Engine.QUALITY,
@@ -188,80 +234,202 @@ def _function_findings(fn, rel_path: str, language: str) -> list[Finding]:
                 metadata={"parameter_count": fn.parameter_count, "language": language},
             )
         )
+
+    nesting = _max_nesting(file_lines, fn.start_line, fn.end_line, language)
+    if nesting > _MAX_NESTING:
+        out.append(
+            Finding(
+                pillar=Pillar.QUALITY, engine=Engine.QUALITY,
+                rule_id="quality/deep-nesting", rule_name="Deeply nested code",
+                severity=Severity.MEDIUM,
+                title=f"Function '{fn.name}' nests {nesting} levels deep",
+                description=(
+                    f"'{fn.name}' reaches a nesting depth of {nesting} (threshold {_MAX_NESTING}). "
+                    "Deep nesting hurts readability; use guard clauses / early returns or extract "
+                    "the inner blocks into helpers."
+                ),
+                file_path=rel_path, line_start=fn.start_line, line_end=fn.end_line,
+                metadata={"nesting_depth": nesting, "language": language},
+            )
+        )
     return out
 
 
 # ── Duplication ──────────────────────────────────────────────────────────────
 
-def _duplication(files: list[tuple[str, str]], root: str) -> tuple[float, list[Finding]]:
-    """Block-level duplication via a sliding window of normalized lines.
-
-    Returns the duplicated-line percentage and a finding per duplicated file.
-    """
-    block_locations: dict[str, list[tuple[str, int]]] = {}
-    per_file_lines: dict[str, list[str]] = {}
-    total_lines = 0
-
-    for path, _lang in files:
-        lines = _read_normalized_lines(path)
-        if not lines:
-            continue
-        rel = normalizer.relative_path(path, root)
-        per_file_lines[rel] = lines
-        total_lines += len(lines)
-        for i in range(0, max(0, len(lines) - _DUP_WINDOW + 1)):
-            window = "\n".join(lines[i : i + _DUP_WINDOW])
-            digest = hashlib.sha1(window.encode("utf-8")).hexdigest()
-            block_locations.setdefault(digest, []).append((rel, i))
-
-    duplicated_lines = 0
-    files_with_dupes: dict[str, int] = {}
-    for locations in block_locations.values():
-        if len(locations) > 1:
-            # Count the redundant copies (all but the first occurrence).
-            for rel, _idx in locations[1:]:
-                duplicated_lines += _DUP_WINDOW
-                files_with_dupes[rel] = files_with_dupes.get(rel, 0) + 1
-
-    dup_pct = (duplicated_lines / total_lines * 100.0) if total_lines else 0.0
-    dup_pct = min(dup_pct, 100.0)
-
-    findings: list[Finding] = []
-    for rel, blocks in sorted(files_with_dupes.items(), key=lambda kv: -kv[1])[:50]:
-        findings.append(
+def _duplication_findings(clones: list[dict]) -> list[Finding]:
+    """Build findings from token-normalized clone regions (severity by length)."""
+    out: list[Finding] = []
+    for c in clones[:60]:
+        tokens = c["tokens"]
+        if tokens >= _CLONE_SEV_HIGH:
+            severity = Severity.MEDIUM  # duplication is a maintainability, not a security, smell
+        elif tokens >= _CLONE_SEV_MEDIUM:
+            severity = Severity.LOW
+        else:
+            severity = Severity.LOW
+        peers = c.get("peers") or []
+        peer_txt = ("; also at " + ", ".join(peers)) if peers else ""
+        out.append(
             Finding(
                 pillar=Pillar.QUALITY, engine=Engine.QUALITY,
                 rule_id="quality/duplicated-code", rule_name="Duplicated code",
-                severity=Severity.LOW,
-                title=f"{blocks} duplicated block(s) detected in {rel}",
-                description=(
-                    f"{blocks} block(s) of {_DUP_WINDOW}+ consecutive lines in '{rel}' "
-                    "appear elsewhere in the codebase. Extract shared logic to reduce "
-                    "maintenance cost and drift."
+                severity=severity,
+                title=(
+                    f"Duplicated block of {c['lines']} lines "
+                    f"({c['occurrences']} copies) in {c['file']}"
                 ),
-                file_path=rel,
-                metadata={"duplicate_blocks": blocks, "window": _DUP_WINDOW},
+                description=(
+                    f"Lines {c['line_start']}-{c['line_end']} of '{c['file']}' are a "
+                    f"token-for-token duplicate (identifiers/formatting aside) of "
+                    f"{c['occurrences'] - 1} other location(s){peer_txt}. Extract the shared "
+                    "logic to a single function to avoid drift and duplicated bug-fixes."
+                ),
+                file_path=c["file"],
+                line_start=c["line_start"], line_end=c["line_end"],
+                metadata={
+                    "clone_tokens": tokens,
+                    "clone_lines": c["lines"],
+                    "occurrences": c["occurrences"],
+                    "peers": peers,
+                },
             )
         )
-    return dup_pct, findings
+    return out
 
 
-def _read_normalized_lines(path: str) -> list[str]:
-    """Read a file and return stripped, non-trivial lines for duplication hashing."""
+# ── Nesting depth ─────────────────────────────────────────────────────────────
+
+def _max_nesting(file_lines: list[str], start_line: int, end_line: int, language: str) -> int:
+    """Best-effort maximum control-flow nesting depth of a function body."""
+    if not file_lines or start_line < 1:
+        return 0
+    body = file_lines[start_line - 1 : end_line]
+    if not body:
+        return 0
+    if language in ("python", "ruby"):
+        return _indent_nesting(body)
+    return _brace_nesting(body)
+
+
+def _indent_nesting(body: list[str]) -> int:
+    base = None
+    max_depth = 0
+    for raw in body:
+        line = raw.expandtabs(4)
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        indent = len(line) - len(line.lstrip(" "))
+        if base is None:  # the def line sets the baseline
+            base = indent
+            continue
+        depth = max(0, (indent - base)) // 4
+        max_depth = max(max_depth, depth)
+    return max_depth
+
+
+def _brace_nesting(body: list[str]) -> int:
+    depth = 0
+    max_depth = 0
+    for raw in body:
+        for ch in raw:
+            if ch == "{":
+                depth += 1
+                max_depth = max(max_depth, depth)
+            elif ch == "}":
+                depth = max(0, depth - 1)
+    # The function's own outermost block is depth 1; don't count it as nesting.
+    return max(0, max_depth - 1)
+
+
+# ── Magic numbers ─────────────────────────────────────────────────────────────
+
+def _magic_number_finding(file_lines: list[str], rel: str, language: str) -> Finding | None:
+    if any(hint in rel.lower() for hint in _TEST_HINTS):
+        return None  # test fixtures legitimately contain many literals
+    marker = _LINE_COMMENT.get(language)
+    hits: list[int] = []
+    for lineno, raw in enumerate(file_lines, start=1):
+        s = raw.strip()
+        if not s or (marker and s.startswith(marker)) or s.startswith(("/*", "*", '"""', "'''")):
+            continue
+        if _CONST_DEF_RE.search(s):
+            continue
+        for m in _NUM_RE.finditer(s):
+            if m.group(0) not in _ALLOWED_NUMS:
+                hits.append(lineno)
+    if len(hits) < _MAGIC_MIN:
+        return None
+    sample = sorted(set(hits))[:10]
+    return Finding(
+        pillar=Pillar.QUALITY, engine=Engine.QUALITY,
+        rule_id="quality/magic-numbers", rule_name="Magic numbers",
+        severity=Severity.LOW,
+        title=f"{len(hits)} unexplained numeric literals in {rel}",
+        description=(
+            f"'{rel}' uses {len(hits)} magic numbers (e.g. lines "
+            f"{', '.join(map(str, sample))}). Extract them into named constants so their "
+            "meaning is explicit and changes happen in one place."
+        ),
+        file_path=rel, line_start=sample[0] if sample else None,
+        metadata={"magic_number_count": len(hits), "sample_lines": sample, "language": language},
+    )
+
+
+def _tech_debt_finding(file_lines: list[str], rel: str, language: str) -> Finding | None:
+    hits = [i for i, line in enumerate(file_lines, start=1) if _TECH_DEBT_RE.search(line)]
+    if not hits:
+        return None
+    sample = hits[:10]
+    return Finding(
+        pillar=Pillar.QUALITY, engine=Engine.QUALITY,
+        rule_id="quality/tech-debt-marker", rule_name="Unresolved tech-debt marker",
+        severity=Severity.LOW,
+        title=f"{len(hits)} TODO/FIXME marker(s) in {rel}",
+        description=(
+            f"'{rel}' contains {len(hits)} unresolved TODO/FIXME/HACK marker(s) (lines "
+            f"{', '.join(map(str, sample))}). Track these as issues and resolve them rather "
+            "than leaving reminders in the code."
+        ),
+        file_path=rel, line_start=sample[0],
+        metadata={"marker_count": len(hits), "sample_lines": sample, "language": language},
+    )
+
+
+def _debug_statement_finding(file_lines: list[str], rel: str, language: str) -> Finding | None:
+    if any(hint in rel.lower() for hint in _TEST_HINTS):
+        return None  # tests legitimately produce console output
+    pattern = _DEBUG_PATTERNS.get(language)
+    if pattern is None:
+        return None
+    hits = [i for i, line in enumerate(file_lines, start=1) if pattern.search(line)]
+    if not hits:
+        return None
+    sample = hits[:10]
+    return Finding(
+        pillar=Pillar.QUALITY, engine=Engine.QUALITY,
+        rule_id="quality/leftover-debug", rule_name="Leftover debug output",
+        severity=Severity.LOW,
+        title=f"{len(hits)} leftover debug statement(s) in {rel}",
+        description=(
+            f"'{rel}' has {len(hits)} leftover debug statement(s) (e.g. console.log / "
+            f"debugger, lines {', '.join(map(str, sample))}). Remove them or route through "
+            "a structured logger so production output is controlled."
+        ),
+        file_path=rel, line_start=sample[0],
+        metadata={"debug_count": len(hits), "sample_lines": sample, "language": language},
+    )
+
+
+def _read_lines(path: str) -> list[str]:
     try:
         if os.path.getsize(path) > _MAX_FILE_BYTES:
             return []
         with open(path, "r", encoding="utf-8", errors="ignore") as fh:
-            raw = fh.readlines()
+            return fh.read().splitlines()
     except OSError:
         return []
-    out = []
-    for line in raw:
-        stripped = line.strip()
-        # Ignore blank lines and braces-only lines — they create noise.
-        if len(stripped) > 3 and stripped not in ("});", "});"):
-            out.append(stripped)
-    return out
 
 
 # ── Documentation / tests / coverage ─────────────────────────────────────────
@@ -370,10 +538,33 @@ def _collect_files(root: str, max_files: int = 20_000) -> list[tuple[str, str]]:
     for dirpath, dirnames, filenames in os.walk(root):
         dirnames[:] = [d for d in dirnames if d not in IGNORED_DIRS]
         for name in filenames:
-            _, ext = os.path.splitext(name)
-            language = _EXTENSION_MAP.get(ext.lower())
-            if language:
-                out.append((os.path.join(dirpath, name), language))
-                if len(out) >= max_files:
-                    return out
+            low = name.lower()
+            if ".min." in low or low.endswith((".bundle.js", ".bundle.css")):
+                continue  # generated/minified — not human-authored source
+            _, ext = os.path.splitext(low)
+            language = _EXTENSION_MAP.get(ext)
+            if not language:
+                continue
+            path = os.path.join(dirpath, name)
+            if _looks_minified(path):
+                continue
+            out.append((path, language))
+            if len(out) >= max_files:
+                return out
     return out
+
+
+def _looks_minified(path: str) -> bool:
+    """Cheap heuristic: files with very long lines are bundled/minified, not
+    source we should assess for quality or duplication."""
+    try:
+        with open(path, "r", encoding="utf-8", errors="ignore") as fh:
+            head = fh.read(20_000)
+    except OSError:
+        return False
+    if not head:
+        return False
+    lines = head.splitlines() or [head]
+    longest = max((len(line) for line in lines), default=0)
+    avg = sum(len(line) for line in lines) / len(lines)
+    return longest > 2000 or avg > 300

@@ -93,9 +93,10 @@ test-web: ## Run frontend tests
 	cd web && npm run test --if-present
 
 .PHONY: smoke
-smoke: ## Engine smoke test in Docker — asserts every engine finds issues + taint rules pass
+smoke: ## Engine smoke + rule/analysis unit tests in Docker (the safety-net gate)
 	$(COMPOSE) run --rm --no-deps scanner \
-		python -m pytest tests/test_engines_smoke.py tests/test_taint_rules.py -v
+		python -m pytest tests/test_engines_smoke.py tests/test_taint_rules.py \
+			tests/test_reachability.py tests/test_duplication.py tests/test_quality_checks.py -v
 
 .PHONY: lint
 lint: lint-api lint-orchestrator lint-scanner lint-web ## Lint all services
