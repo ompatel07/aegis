@@ -23,8 +23,10 @@ func NewScanHandler(scans *services.ScanService, log zerolog.Logger) *ScanHandle
 }
 
 type triggerRequest struct {
-	Branch    string `json:"branch" validate:"omitempty,max=255"`
-	CommitSHA string `json:"commit_sha" validate:"omitempty,max=64"`
+	Branch          string `json:"branch" validate:"omitempty,max=255"`
+	CommitSHA       string `json:"commit_sha" validate:"omitempty,max=64"`
+	DeepScanEnabled bool   `json:"deep_scan_enabled"`
+	DeepScanEngine  string `json:"deep_scan_engine" validate:"omitempty,oneof=joern codeql"`
 }
 
 type patchFindingRequest struct {
@@ -62,6 +64,7 @@ func (h *ScanHandler) Trigger(w http.ResponseWriter, r *http.Request) {
 
 	scan, err := h.scans.Trigger(r.Context(), projectID, userID, services.TriggerInput{
 		Branch: req.Branch, CommitSHA: req.CommitSHA,
+		DeepScan: req.DeepScanEnabled, DeepScanEngine: req.DeepScanEngine,
 	})
 	if err != nil {
 		writeServiceError(w, h.log, err)

@@ -31,6 +31,8 @@ class Engine(str, Enum):
     GITLEAKS = "gitleaks"
     QUALITY = "quality"
     DEPLOYMENT = "deployment"
+    CODEQL = "codeql"
+    JOERN = "joern"
 
 
 class EngineStatus(str, Enum):

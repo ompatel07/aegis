@@ -6,6 +6,8 @@ fetches code itself — that keeps it stateless and side-effect free.
 """
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import BaseModel, Field, field_validator
 
 
@@ -30,6 +32,19 @@ class ScanRequest(BaseModel):
         if not v or not v.strip():
             raise ValueError("path must not be empty")
         return v
+
+
+class DeepScanRequest(ScanRequest):
+    """Opt-in deep (interprocedural, cross-file) taint scan request.
+
+    `engine` selects the deep-scan backend. Joern (Apache-2.0) is the bundled
+    default; CodeQL is an opt-in slot that only runs where the customer has
+    installed the CodeQL CLI under their own license.
+    """
+
+    engine: Literal["joern", "codeql"] = Field(
+        default="joern", description="Deep-scan backend to use."
+    )
 
 
 class DeploymentRequest(ScanRequest):

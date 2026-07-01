@@ -31,6 +31,12 @@ type deploymentRequest struct {
 	StartTimeoutSeconds int  `json:"start_timeout_seconds"`
 }
 
+// deepRequest selects the deep-scan backend (joern default, codeql opt-in).
+type deepRequest struct {
+	scanRequest
+	Engine string `json:"engine"`
+}
+
 func NewScannerClient(baseURL string, timeout time.Duration) *ScannerClient {
 	c := resty.New().
 		SetBaseURL(baseURL).
@@ -92,5 +98,18 @@ func (s *ScannerClient) Deployment(ctx context.Context, path, scanID string, lan
 		scanRequest:         s.base(path, scanID, langs, ptypes),
 		SmokeTest:           true,
 		StartTimeoutSeconds: 30,
+	})
+}
+
+// Deep runs the opt-in interprocedural taint scan (Joern or CodeQL). When the
+// selected backend's tool is absent the scanner returns status=skipped (200),
+// which surfaces here as a normal EngineResult, not an error.
+func (s *ScannerClient) Deep(ctx context.Context, path, scanID, engine string) (*types.EngineResult, error) {
+	if engine == "" {
+		engine = "joern"
+	}
+	return s.call(ctx, "/scan/deep", deepRequest{
+		scanRequest: s.base(path, scanID, nil, nil),
+		Engine:      engine,
 	})
 }

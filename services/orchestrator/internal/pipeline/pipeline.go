@@ -83,3 +83,26 @@ func (p *Pipeline) Run(ctx context.Context, dir, scanID string, det Detection) [
 	wg.Wait()
 	return results
 }
+
+// Deep runs the opt-in interprocedural taint scan after the fast fan-out. A
+// transport failure is captured as a degraded result (never fails the scan); an
+// absent backend tool surfaces from the scanner as status="skipped".
+func (p *Pipeline) Deep(ctx context.Context, dir, scanID, engine string) *types.EngineResult {
+	if engine == "" {
+		engine = "joern"
+	}
+	res, err := p.scanner.Deep(ctx, dir, scanID, engine)
+	if err != nil {
+		p.log.Error().Err(err).Str("engine", engine).Str("scan_id", scanID).
+			Msg("deep scan failed (degraded)")
+		return &types.EngineResult{
+			Engine: engine, Pillar: types.PillarSecurity, Status: "failed", Error: err.Error(),
+		}
+	}
+	p.log.Info().
+		Str("engine", engine).Str("scan_id", scanID).
+		Str("status", res.Status).Int("findings", len(res.Findings)).
+		Float64("duration_s", res.DurationSeconds).
+		Msg("deep scan completed")
+	return res
+}

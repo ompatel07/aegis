@@ -27,9 +27,22 @@ func NewScanService(
 
 // TriggerInput carries optional overrides for a manual scan.
 type TriggerInput struct {
-	Branch    string
-	CommitSHA string
-	Trigger   string // defaults to manual
+	Branch         string
+	CommitSHA      string
+	Trigger        string // defaults to manual
+	DeepScan       bool   // opt-in interprocedural taint analysis
+	DeepScanEngine string // joern (default) | codeql
+}
+
+// resolveDeepEngine defaults an opt-in deep scan to Joern (the bundled engine).
+func resolveDeepEngine(enabled bool, engine string) string {
+	if !enabled {
+		return ""
+	}
+	if engine == "" {
+		return "joern"
+	}
+	return engine
 }
 
 // Trigger creates a queued scan and publishes the job. On publish failure the
@@ -66,12 +79,14 @@ func (s *ScanService) Trigger(ctx context.Context, projectID, userID string, in 
 	}
 
 	payload := queue.ScanPayload{
-		ScanID:    scan.ID,
-		ProjectID: projectID,
-		RepoURL:   *project.RepoURL,
-		Branch:    branch,
-		CommitSHA: in.CommitSHA,
-		Trigger:   trigger,
+		ScanID:          scan.ID,
+		ProjectID:       projectID,
+		RepoURL:         *project.RepoURL,
+		Branch:          branch,
+		CommitSHA:       in.CommitSHA,
+		Trigger:         trigger,
+		DeepScanEnabled: in.DeepScan,
+		DeepScanEngine:  resolveDeepEngine(in.DeepScan, in.DeepScanEngine),
 	}
 	if project.RepoType != nil {
 		payload.RepoType = *project.RepoType

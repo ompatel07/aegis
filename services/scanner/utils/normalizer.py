@@ -107,6 +107,18 @@ def relative_path(absolute: str, root: str) -> str:
         return absolute
 
 
+def to_repo_relative(path: str, root: str) -> str:
+    """Repo-relative path whether `path` is absolute (relativize against root) or
+    already relative (normalize a leading ./). Used for deep-scan tools that
+    report paths in either form (Joern: absolute; CodeQL SARIF: relative)."""
+    if not path:
+        return path
+    if os.path.isabs(path):
+        return relative_path(path, root)
+    p = path.replace("\\", "/")
+    return p[2:] if p.startswith("./") else p
+
+
 def truncate(text: str | None, limit: int) -> str | None:
     """Truncate overly long strings so they fit DB columns / stay readable."""
     if text is None:

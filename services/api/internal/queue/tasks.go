@@ -17,4 +17,8 @@ type ScanPayload struct {
 	CommitSHA string `json:"commit_sha"`
 	Trigger   string `json:"trigger"`
 	Language  string `json:"language"`
+
+	// Deep scan (opt-in interprocedural taint analysis: joern | codeql).
+	DeepScanEnabled bool   `json:"deep_scan_enabled,omitempty"`
+	DeepScanEngine  string `json:"deep_scan_engine,omitempty"`
 }

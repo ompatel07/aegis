@@ -82,6 +82,14 @@ func (p *ScanProcessor) ProcessTask(ctx context.Context, task *asynq.Task) error
 	// ── Scan (parallel fan-out) ──────────────────────────────────────────────
 	results := p.pipe.Run(ctx, checkout.Dir, payload.ScanID, det)
 
+	// ── Deep scan (opt-in) ───────────────────────────────────────────────────
+	// Runs after the fast fan-out; merged + deduped so the same vuln is not
+	// double-reported. A skipped/failed deep scan never fails the overall scan.
+	if payload.DeepScanEnabled {
+		deep := p.pipe.Deep(ctx, checkout.Dir, payload.ScanID, payload.DeepScanEngine)
+		results = pipeline.MergeDeep(results, deep)
+	}
+
 	// ── Aggregate + score ────────────────────────────────────────────────────
 	agg := pipeline.Aggregate(results)
 

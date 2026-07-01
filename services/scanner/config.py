@@ -32,6 +32,11 @@ class Settings(BaseSettings):
     semgrep_bin: str = "semgrep"
     trivy_bin: str = "trivy"
     gitleaks_bin: str = "gitleaks"
+    # Deep-scan backends. Joern (Apache-2.0) is bundled; codeql is opt-in and
+    # only used where the customer has installed the CLI under their own license.
+    joern_bin: str = "joern"
+    joern_parse_bin: str = "joern-parse"
+    codeql_bin: str = "codeql"
 
     # ── Semgrep ──────────────────────────────────────────────────────────────
     semgrep_base_configs: str = Field(
@@ -46,6 +51,11 @@ class Settings(BaseSettings):
     gitleaks_timeout_seconds: int = 300
     quality_timeout_seconds: int = 300
     deployment_timeout_seconds: int = 900
+    deep_scan_timeout_seconds: int = 1800  # CPG build + dataflow is slow
+
+    # ── Deep scan (Joern / CodeQL) ───────────────────────────────────────────
+    # Joern's CPG build is memory-hungry; skip deep scan for very large repos.
+    deep_scan_max_repo_mb: int = 500
 
     # ── Deployment engine ────────────────────────────────────────────────────
     deployment_build_enabled: bool = True
