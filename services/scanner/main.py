@@ -14,6 +14,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from config import get_settings
+from engines import gitleaks_engine, quality_engine, semgrep_engine, trivy_engine
 from logging_config import configure_logging, get_logger
 from routers import deployment, quality, sast, sca, secrets
 from utils.sandbox import binary_available
@@ -69,6 +70,52 @@ async def health() -> JSONResponse:
     # Healthy as long as the process serves; tool gaps are surfaced, not fatal.
     return JSONResponse(
         {"status": "ok", "service": "scanner", "tools": tools, "environment": settings.environment}
+    )
+
+
+# Path to the planted-vulnerability fixture bundled in the image.
+_SMOKE_FIXTURE = os.path.join(os.path.dirname(__file__), "tests", "fixtures", "vulnerable_app")
+
+
+@app.get("/health/engines", tags=["health"])
+async def health_engines() -> JSONResponse:
+    """Run every engine against the smoke fixture and report per-engine health.
+
+    Returns 200 when all engines find issues, 503 if any engine is broken (0
+    findings or a failure). Used by `make smoke` and for live debugging so a
+    silently-dead engine (e.g. a crashed tool) is caught immediately.
+    """
+    from models.scan_request import ScanRequest
+    from models.scan_result import EngineStatus
+
+    req = ScanRequest(path=_SMOKE_FIXTURE, scan_id="health-engines")
+    engines = {
+        "semgrep": semgrep_engine.run,
+        "trivy": trivy_engine.run,
+        "gitleaks": gitleaks_engine.run,
+        "quality": quality_engine.run,
+    }
+
+    report: dict[str, dict] = {}
+    all_ok = True
+    for name, run_fn in engines.items():
+        try:
+            result = await run_fn(req, settings)
+            ok = result.status != EngineStatus.FAILED and len(result.findings) > 0
+            report[name] = {
+                "ok": ok,
+                "status": result.status.value,
+                "findings": len(result.findings),
+                "error": result.error,
+            }
+        except Exception as exc:  # noqa: BLE001 — surface, never crash the probe
+            ok = False
+            report[name] = {"ok": False, "status": "exception", "findings": 0, "error": str(exc)}
+        all_ok = all_ok and ok
+
+    return JSONResponse(
+        status_code=200 if all_ok else 503,
+        content={"status": "ok" if all_ok else "degraded", "engines": report},
     )
 
 

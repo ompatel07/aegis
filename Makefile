@@ -92,6 +92,11 @@ test-scanner: ## Run Python scanner tests
 test-web: ## Run frontend tests
 	cd web && npm run test --if-present
 
+.PHONY: smoke
+smoke: ## Engine smoke test in Docker — asserts every engine finds issues
+	$(COMPOSE) run --rm --no-deps scanner \
+		python -m pytest tests/test_engines_smoke.py -v
+
 .PHONY: lint
 lint: lint-api lint-orchestrator lint-scanner lint-web ## Lint all services
 

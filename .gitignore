@@ -3,6 +3,9 @@
 .env.local
 *.env
 !.env.example
+# Keep the security smoke-test fixture's .env (fake credentials only, needed by
+# the Gitleaks/Trivy smoke tests on a fresh checkout).
+!services/scanner/tests/fixtures/vulnerable_app/.env
 
 # Go
 services/api/bin/

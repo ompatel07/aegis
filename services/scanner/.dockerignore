@@ -6,7 +6,11 @@ __pycache__
 .pytest_cache
 .ruff_cache
 .mypy_cache
-.env
+# Anchor to the context root so we don't accidentally drop the smoke fixture's
+# tests/fixtures/vulnerable_app/.env (Gitleaks/Trivy need it).
+/.env
 .git
 .dockerignore
 Dockerfile
+# Belt-and-suspenders: always keep test fixtures in the build context.
+!tests/fixtures/**
