@@ -29,6 +29,34 @@ func TestSecurityScoreFloorsAtZero(t *testing.T) {
 	}
 }
 
+func TestSecurityScoreReachabilityWeighting(t *testing.T) {
+	mk := func(reachable, direct any) types.Finding {
+		md := map[string]any{}
+		if reachable != nil {
+			md["reachable"] = reachable
+		}
+		if direct != nil {
+			md["is_direct"] = direct
+		}
+		return types.Finding{Pillar: types.PillarSecurity, Severity: types.SeverityCritical, Metadata: md}
+	}
+	cases := []struct {
+		name string
+		f    types.Finding
+		want int
+	}{
+		{"unreachable halves penalty", mk(false, true), 88}, // 25*0.5=12.5 -> round(87.5)=88
+		{"reachable direct dep +20%", mk(true, true), 70},   // 25*1.2=30 -> 70
+		{"reachable transitive full", mk(true, false), 75},  // 25*1.0 -> 75
+		{"undetermined -> full penalty", mk(nil, nil), 75},  // no reachable key -> 1.0
+	}
+	for _, c := range cases {
+		if got := SecurityScore([]types.Finding{c.f}); got != c.want {
+			t.Errorf("%s: SecurityScore = %d, want %d", c.name, got, c.want)
+		}
+	}
+}
+
 func TestQualityScoreWeightedAverage(t *testing.T) {
 	m := &types.QualityMetrics{
 		ComplexityScore:      100, // *0.30

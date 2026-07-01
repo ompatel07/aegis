@@ -21,7 +21,7 @@ from models.scan_result import (
     Pillar,
     SeveritySummary,
 )
-from utils import normalizer
+from utils import normalizer, reachability
 from utils.sandbox import binary_available, run_with_retry
 
 log = get_logger("trivy")
@@ -72,7 +72,21 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
             scan_id=req.scan_id, duration_seconds=result.duration_seconds,
         )
 
-    findings = _parse(raw, req.path)
+    # Reachability index (import/usage graph). Best-effort: a failure here must
+    # never fail SCA — findings then simply carry reachable=None (full penalty).
+    try:
+        index = reachability.build_index(req.path)
+    except Exception as exc:  # noqa: BLE001
+        log.warning("trivy.reachability_index_failed", error=str(exc))
+        index = None
+
+    findings = _parse(raw, req.path, index)
+    reachable = sum(1 for f in findings if (f.metadata or {}).get("reachable") is True)
+    log.info(
+        "trivy.completed",
+        findings=len(findings),
+        reachable_deps=reachable,
+    )
     return EngineResult(
         engine=Engine.TRIVY,
         pillar=Pillar.SECURITY,
@@ -85,17 +99,23 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
     )
 
 
-def _parse(raw: dict, root: str) -> list[Finding]:
+def _parse(raw: dict, root: str, index: "reachability.ReachabilityIndex | None") -> list[Finding]:
     findings: list[Finding] = []
     for res in raw.get("Results", []) or []:
         target = res.get("Target", "")
-        findings.extend(_parse_vulnerabilities(res, target))
+        ecosystem = reachability.ecosystem_for_type(res.get("Type"))
+        findings.extend(_parse_vulnerabilities(res, target, ecosystem, index))
         findings.extend(_parse_misconfigurations(res, target))
     findings.sort(key=lambda f: (_rank(f), f.file_path))
     return findings
 
 
-def _parse_vulnerabilities(res: dict, target: str) -> list[Finding]:
+def _parse_vulnerabilities(
+    res: dict,
+    target: str,
+    ecosystem: str | None,
+    index: "reachability.ReachabilityIndex | None",
+) -> list[Finding]:
     out: list[Finding] = []
     for vuln in res.get("Vulnerabilities", []) or []:
         score = _best_cvss(vuln.get("CVSS", {}))
@@ -109,6 +129,10 @@ def _parse_vulnerabilities(res: dict, target: str) -> list[Finding]:
             f"Upgrade {pkg} from {installed} to {fixed} or later."
             if fixed else f"No fixed version published yet for {pkg} {installed}."
         )
+
+        reach: dict = {}
+        if index is not None and ecosystem is not None and pkg:
+            reach = index.annotate(ecosystem, pkg)
 
         out.append(
             Finding(
@@ -133,6 +157,13 @@ def _parse_vulnerabilities(res: dict, target: str) -> list[Finding]:
                     "cvss_score": score,
                     "primary_url": vuln.get("PrimaryURL"),
                     "data_source": (vuln.get("DataSource") or {}).get("Name"),
+                    # Reachability (import/usage-level). reachable is None when
+                    # undetermined; is_direct None when no manifest was found.
+                    "reachable": reach.get("reachable"),
+                    "reachable_files": reach.get("reachable_files", []),
+                    "reachable_file_count": reach.get("reachable_file_count"),
+                    "is_direct": reach.get("is_direct"),
+                    "reachability_ecosystem": reach.get("reachability_ecosystem"),
                 },
             )
         )

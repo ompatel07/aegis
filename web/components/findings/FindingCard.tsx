@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { SeverityBadge } from "./SeverityBadge";
+import { ReachabilityBadge, ReachabilityDetail } from "./ReachabilityBadge";
 import { useApi } from "@/lib/use-api";
 import type { Finding } from "@/lib/types";
 import { FileCode2, ShieldAlert } from "lucide-react";
@@ -42,6 +43,7 @@ export function FindingCard({ finding, onUpdated }: { finding: Finding; onUpdate
             <div className="flex flex-wrap items-center gap-2">
               <SeverityBadge severity={finding.severity} />
               <Badge className="border-border bg-secondary text-secondary-foreground">{finding.engine}</Badge>
+              <ReachabilityBadge metadata={finding.metadata} />
               {finding.is_suppressed ? (
                 <Badge className="border-border bg-muted text-muted-foreground">suppressed</Badge>
               ) : null}
@@ -69,6 +71,8 @@ export function FindingCard({ finding, onUpdated }: { finding: Finding; onUpdate
           {finding.cwe_id ? <DetailRow label="CWE" value={finding.cwe_id} /> : null}
           {finding.cve_id ? <DetailRow label="CVE" value={finding.cve_id} /> : null}
           {finding.owasp_category ? <DetailRow label="OWASP" value={finding.owasp_category} /> : null}
+
+          <ReachabilityDetail metadata={finding.metadata} />
 
           {finding.description ? (
             <div>
