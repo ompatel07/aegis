@@ -137,6 +137,7 @@ func run() error {
 				r.Get("/{scanId}", scanH.Get)
 				r.Get("/{scanId}/findings", scanH.ListFindings)
 				r.Get("/{scanId}/report", reportH.Get)
+				r.Get("/{scanId}/export/sarif", scanH.ExportSARIF)
 			})
 
 			r.Patch("/findings/{findingId}", scanH.PatchFinding)

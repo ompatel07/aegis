@@ -8,7 +8,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScanStatusBadge } from "@/components/dashboard/ScanStatusBadge";
 import { FindingsList } from "@/components/findings/FindingsList";
+import { Button } from "@/components/ui/button";
 import { cn, formatDate, formatDuration, gradeColor, scoreColor } from "@/lib/utils";
+import { Download } from "lucide-react";
+import { useState } from "react";
 
 export default function ScanDetailPage() {
   const { id, scanId } = useParams<{ id: string; scanId: string }>();
@@ -43,6 +46,7 @@ export default function ScanDetailPage() {
               {scan.overall_grade}
             </span>
           ) : null}
+          {isDone ? <ExportSarifButton scanId={scanId} /> : null}
         </div>
         <p className="mt-1 text-sm text-muted-foreground">
           {scan.branch ? `branch ${scan.branch} · ` : ""}
@@ -94,6 +98,34 @@ export default function ScanDetailPage() {
         </>
       ) : null}
     </div>
+  );
+}
+
+function ExportSarifButton({ scanId }: { scanId: string }) {
+  const api = useApi();
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function download() {
+    setBusy(true);
+    setErr(null);
+    try {
+      await api.exportSarif(scanId);
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <span className="ml-auto flex items-center gap-2">
+      {err ? <span className="text-xs text-destructive">{err}</span> : null}
+      <Button variant="outline" size="sm" onClick={download} disabled={busy} title="Download SARIF 2.1.0">
+        <Download className="mr-1 h-4 w-4" />
+        {busy ? "Exporting…" : "Export SARIF"}
+      </Button>
+    </span>
   );
 }
 

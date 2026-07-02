@@ -69,11 +69,34 @@ export function createApi(token?: string) {
         .then((r) => r.data)
         .catch(normalizeError),
 
-    triggerScan: (projectId: string, body?: { branch?: string; commit_sha?: string }) =>
+    triggerScan: (
+      projectId: string,
+      body?: {
+        branch?: string;
+        commit_sha?: string;
+        deep_scan_enabled?: boolean;
+        deep_scan_engine?: "joern" | "codeql";
+      },
+    ) =>
       http
         .post<ApiSuccess<Scan>>(`/projects/${projectId}/scans`, body ?? {})
         .then((r) => r.data.data)
         .catch(normalizeError),
+
+    // Downloads the scan's findings as a SARIF 2.1.0 file (browser download).
+    exportSarif: async (scanId: string) => {
+      const r = await http
+        .get(`/scans/${scanId}/export/sarif`, { responseType: "blob" })
+        .catch(normalizeError);
+      const url = URL.createObjectURL(r.data as Blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `aegis-${scanId}.sarif`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    },
 
     getScan: (scanId: string) =>
       http

@@ -6,6 +6,7 @@ import (
 	"github.com/aegis-platform/api/internal/models"
 	"github.com/aegis-platform/api/internal/queue"
 	"github.com/aegis-platform/api/internal/repository"
+	"github.com/aegis-platform/api/internal/sarif"
 )
 
 // ScanService triggers scans and reads scan/report data, enforcing ownership.
@@ -178,6 +179,24 @@ func (s *ScanService) BuildReport(ctx context.Context, scanID, userID string) (*
 		return nil, err
 	}
 	return &Report{Scan: scan, Breakdown: breakdown}, nil
+}
+
+// ExportSARIF builds a SARIF 2.1.0 log for a scan the user owns, for upload to
+// GitHub code scanning or any SARIF consumer.
+func (s *ScanService) ExportSARIF(ctx context.Context, scanID, userID string) (*sarif.Log, error) {
+	scan, err := s.scans.GetByIDForUser(ctx, scanID, userID)
+	if err != nil {
+		return nil, err
+	}
+	findings, err := s.findings.AllByScan(ctx, scanID)
+	if err != nil {
+		return nil, err
+	}
+	repoURL := ""
+	if project, perr := s.projects.GetByID(ctx, scan.ProjectID); perr == nil && project.RepoURL != nil {
+		repoURL = *project.RepoURL
+	}
+	return sarif.Build(scan, findings, repoURL), nil
 }
 
 // ListFindings returns filtered findings for a scan the user owns.

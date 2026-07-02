@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -71,6 +73,25 @@ func (h *ScanHandler) Trigger(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	httpx.WriteSuccess(w, http.StatusAccepted, scan)
+}
+
+// ExportSARIF handles GET /api/v1/scans/{scanId}/export/sarif — a SARIF 2.1.0
+// document of the scan's findings, suitable for GitHub code scanning upload.
+func (h *ScanHandler) ExportSARIF(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.UserID(r.Context())
+	scanID := chi.URLParam(r, "scanId")
+
+	log, err := h.scans.ExportSARIF(r.Context(), scanID, userID)
+	if err != nil {
+		writeServiceError(w, h.log, err)
+		return
+	}
+	w.Header().Set("Content-Type", "application/sarif+json")
+	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="aegis-%s.sarif"`, scanID))
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(log); err != nil {
+		h.log.Error().Err(err).Str("scan_id", scanID).Msg("failed to encode SARIF")
+	}
 }
 
 // Get handles GET /api/v1/scans/{scanId} — scan detail with finding breakdown.

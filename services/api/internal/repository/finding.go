@@ -79,6 +79,21 @@ func (r *FindingRepository) ListByScan(
 	return findings, total, nil
 }
 
+// AllByScan returns every finding for a scan, unpaginated — for exports (SARIF).
+// Capped defensively so a pathological scan can't stream unbounded rows.
+func (r *FindingRepository) AllByScan(ctx context.Context, scanID string) ([]models.Finding, error) {
+	q := fmt.Sprintf(`
+		SELECT * FROM findings
+		WHERE scan_id = $1
+		ORDER BY %s, file_path, line_start NULLS LAST
+		LIMIT 50000`, severityRankSQL)
+	findings := []models.Finding{}
+	if err := r.db.SelectContext(ctx, &findings, q, scanID); err != nil {
+		return nil, err
+	}
+	return findings, nil
+}
+
 // severityRankSQL maps severities to an orderable rank (critical = 0).
 const severityRankSQL = `
 	CASE severity
