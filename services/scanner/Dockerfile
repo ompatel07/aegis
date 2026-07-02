@@ -12,6 +12,7 @@ ENV PYTHONUNBUFFERED=1 \
     GITLEAKS_VERSION=8.21.2 \
     GO_VERSION=1.22.10 \
     NODE_MAJOR=20 \
+    JOERN_VERSION=4.0.570 \
     PATH=/usr/local/go/bin:/usr/local/bin:$PATH
 
 # ── System deps + Trivy + Gitleaks + Node + Go ───────────────────────────────
@@ -51,6 +52,24 @@ RUN set -eux; \
     \
     apt-get purge -y --auto-remove gnupg; \
     rm -rf /var/lib/apt/lists/*
+
+# ── Optional: Joern deep-scan engine (Apache-2.0) + JRE ───────────────────────
+# Enabled only for the dedicated deep-scan sidecar (INCLUDE_JOERN=true); the
+# fast-path scanner image stays lean. joern-cli is ~2GB unpacked, so it is
+# intentionally isolated behind this build arg rather than bundled everywhere.
+ARG INCLUDE_JOERN=false
+RUN set -eux; \
+    if [ "$INCLUDE_JOERN" = "true" ]; then \
+        apt-get update; \
+        apt-get install -y --no-install-recommends openjdk-17-jre-headless unzip; \
+        curl -fsSL "https://github.com/joernio/joern/releases/download/v${JOERN_VERSION}/joern-cli.zip" \
+            -o /tmp/joern-cli.zip; \
+        unzip -q /tmp/joern-cli.zip -d /opt; \
+        rm /tmp/joern-cli.zip; \
+        ln -sf /opt/joern-cli/joern /usr/local/bin/joern; \
+        ln -sf /opt/joern-cli/joern-parse /usr/local/bin/joern-parse; \
+        rm -rf /var/lib/apt/lists/*; \
+    fi
 
 # ── Python dependencies (cached layer) ───────────────────────────────────────
 WORKDIR /app

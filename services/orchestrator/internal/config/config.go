@@ -26,6 +26,7 @@ type Config struct {
 	WorkerConcurrency int
 
 	ScannerBaseURL string
+	ScannerDeepURL string // deep-scan sidecar (Joern); falls back to ScannerBaseURL
 	ScannerTimeout time.Duration
 
 	WorkspaceDir  string
@@ -49,6 +50,7 @@ func Load() (*Config, error) {
 	v.SetDefault("REDIS_DB", 0)
 	v.SetDefault("WORKER_CONCURRENCY", 5)
 	v.SetDefault("SCANNER_BASE_URL", "http://localhost:8000")
+	v.SetDefault("SCANNER_DEEP_URL", "")
 	v.SetDefault("SCANNER_TIMEOUT_SECONDS", 900)
 	v.SetDefault("WORKSPACE_DIR", "/tmp/aegis-workspaces")
 	v.SetDefault("MAX_REPO_SIZE_MB", 512)
@@ -67,6 +69,7 @@ func Load() (*Config, error) {
 		RedisDB:           v.GetInt("REDIS_DB"),
 		WorkerConcurrency: v.GetInt("WORKER_CONCURRENCY"),
 		ScannerBaseURL:    v.GetString("SCANNER_BASE_URL"),
+		ScannerDeepURL:    v.GetString("SCANNER_DEEP_URL"),
 		ScannerTimeout:    time.Duration(v.GetInt("SCANNER_TIMEOUT_SECONDS")) * time.Second,
 		WorkspaceDir:      v.GetString("WORKSPACE_DIR"),
 		MaxRepoSizeMB:     v.GetInt("MAX_REPO_SIZE_MB"),
@@ -78,6 +81,12 @@ func Load() (*Config, error) {
 	}
 	if cfg.ScannerBaseURL == "" {
 		return nil, fmt.Errorf("SCANNER_BASE_URL is required")
+	}
+	// Deep scans go to a dedicated sidecar (it bundles the heavy Joern CLI). When
+	// unset, deep scans fall back to the main scanner (which returns skipped
+	// unless it happens to have Joern installed).
+	if cfg.ScannerDeepURL == "" {
+		cfg.ScannerDeepURL = cfg.ScannerBaseURL
 	}
 	return cfg, nil
 }

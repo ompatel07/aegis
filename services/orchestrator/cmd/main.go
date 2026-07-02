@@ -44,7 +44,8 @@ func run() error {
 
 	gitClient := adapters.NewGitClient(cfg.WorkspaceDir, cfg.GitCloneDepth)
 	scannerClient := adapters.NewScannerClient(cfg.ScannerBaseURL, cfg.ScannerTimeout)
-	pipe := pipeline.New(scannerClient, log)
+	deepClient := adapters.NewScannerClient(cfg.ScannerDeepURL, cfg.ScannerTimeout)
+	pipe := pipeline.New(scannerClient, deepClient, log)
 	processor := worker.NewScanProcessor(st, gitClient, pipe, cfg.MaxRepoSizeMB, log)
 
 	// ── Worker server (Asynq traps SIGINT/SIGTERM and shuts down gracefully) ──

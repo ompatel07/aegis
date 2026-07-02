@@ -55,6 +55,8 @@ services:
   scanner:
     build:
       context: ./services/scanner
+      args:
+        INCLUDE_JOERN: "false"  # lean fast-path image; Joern lives in deep-scanner
     restart: unless-stopped
     environment:
       SCANNER_HOST: 0.0.0.0
@@ -71,6 +73,33 @@ services:
       timeout: 5s
       retries: 3
       start_period: 20s
+
+  # ── Deep-scan sidecar (Joern; heavy, opt-in via the "deep" profile) ─────────
+  # The same scanner app + the bundled Joern CLI (~6.5GB image). Kept out of the
+  # default stack so the fast path stays lean. Enable with:
+  #   docker compose --profile deep up -d --build deep-scanner
+  # then point the orchestrator at it: SCANNER_DEEP_URL=http://deep-scanner:8000
+  deep-scanner:
+    profiles: ["deep"]
+    build:
+      context: ./services/scanner
+      args:
+        INCLUDE_JOERN: "true"
+    restart: unless-stopped
+    environment:
+      SCANNER_HOST: 0.0.0.0
+      SCANNER_PORT: 8000
+      LOG_LEVEL: INFO
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      DEPLOYMENT_BUILD_ENABLED: "false"
+    volumes:
+      - workspaces:/workspaces
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
 
   # ── API gateway (Go) ────────────────────────────────────────────────────────
   api:
@@ -115,6 +144,9 @@ services:
       DATABASE_URL: postgres://${POSTGRES_USER:-aegis}:${POSTGRES_PASSWORD:-aegis}@postgres:5432/${POSTGRES_DB:-aegis}?sslmode=disable
       REDIS_ADDR: redis:6379
       SCANNER_BASE_URL: http://scanner:8000
+      # Deep scans go here. Defaults to the main scanner (which returns "skipped"
+      # for deep). Set to http://deep-scanner:8000 when running the deep profile.
+      SCANNER_DEEP_URL: ${SCANNER_DEEP_URL:-http://scanner:8000}
       WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-5}
       WORKSPACE_DIR: /workspaces
     volumes:

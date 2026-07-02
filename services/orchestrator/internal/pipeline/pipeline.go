@@ -15,11 +15,15 @@ import (
 // Pipeline runs the scanner engines for a checked-out repository.
 type Pipeline struct {
 	scanner *adapters.ScannerClient
+	deep    *adapters.ScannerClient // deep-scan sidecar (may equal scanner)
 	log     zerolog.Logger
 }
 
-func New(scanner *adapters.ScannerClient, log zerolog.Logger) *Pipeline {
-	return &Pipeline{scanner: scanner, log: log}
+func New(scanner, deep *adapters.ScannerClient, log zerolog.Logger) *Pipeline {
+	if deep == nil {
+		deep = scanner
+	}
+	return &Pipeline{scanner: scanner, deep: deep, log: log}
 }
 
 // engineCall describes one scanner invocation and the pillar it belongs to (so a
@@ -91,7 +95,7 @@ func (p *Pipeline) Deep(ctx context.Context, dir, scanID, engine string) *types.
 	if engine == "" {
 		engine = "joern"
 	}
-	res, err := p.scanner.Deep(ctx, dir, scanID, engine)
+	res, err := p.deep.Deep(ctx, dir, scanID, engine)
 	if err != nil {
 		p.log.Error().Err(err).Str("engine", engine).Str("scan_id", scanID).
 			Msg("deep scan failed (degraded)")
