@@ -40,6 +40,12 @@ type Scan struct {
 	CompletedAt     *time.Time `db:"completed_at" json:"completed_at,omitempty"`
 	DurationSeconds *int       `db:"duration_seconds" json:"duration_seconds,omitempty"`
 
-	ErrorMessage *string   `db:"error_message" json:"error_message,omitempty"`
-	CreatedAt    time.Time `db:"created_at" json:"created_at"`
+	ErrorMessage *string `db:"error_message" json:"error_message,omitempty"`
+
+	// Phase 2B: rule reproducibility + retroactive re-evaluation.
+	RulePackVersion *string `db:"rule_pack_version" json:"rule_pack_version,omitempty"`
+	NeedsReeval     bool    `db:"needs_reeval" json:"needs_reeval"`
+	ReevalReason    *string `db:"reeval_reason" json:"reeval_reason,omitempty"`
+
+	CreatedAt time.Time `db:"created_at" json:"created_at"`
 }

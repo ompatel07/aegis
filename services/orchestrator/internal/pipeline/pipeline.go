@@ -37,13 +37,13 @@ type engineCall struct {
 // Run invokes all five scanner endpoints in parallel. A failure in one engine
 // is captured as a degraded result (Error set, no findings) rather than failing
 // the whole scan — partial intelligence is better than none.
-func (p *Pipeline) Run(ctx context.Context, dir, scanID string, det Detection) []*types.EngineResult {
+func (p *Pipeline) Run(ctx context.Context, dir, scanID string, det Detection, customRules []string) []*types.EngineResult {
 	langs := det.Languages
 	ptypes := det.ProjectTypes
 
 	calls := []engineCall{
 		{"semgrep", types.PillarSecurity, func(c context.Context) (*types.EngineResult, error) {
-			return p.scanner.SAST(c, dir, scanID, langs, ptypes)
+			return p.scanner.SAST(c, dir, scanID, langs, ptypes, customRules)
 		}},
 		{"trivy", types.PillarSecurity, func(c context.Context) (*types.EngineResult, error) {
 			return p.scanner.SCA(c, dir, scanID, langs, ptypes)

@@ -27,6 +27,9 @@ type Aggregated struct {
 	RawGitleaks json.RawMessage
 	RawQuality  json.RawMessage
 
+	// RulePackVersion is the semgrep rule set used, recorded for reproducibility.
+	RulePackVersion string
+
 	// EngineErrors records engines that failed so the scan can note degradation.
 	EngineErrors map[string]string
 }
@@ -43,6 +46,9 @@ func Aggregate(results []*types.EngineResult) Aggregated {
 		byEngine[r.Engine] = r
 		if r.Error != "" {
 			agg.EngineErrors[r.Engine] = r.Error
+		}
+		if r.Engine == "semgrep" && r.RulePackVersion != "" {
+			agg.RulePackVersion = r.RulePackVersion
 		}
 		// Collect findings from every engine, dropping suppressed-by-default none.
 		agg.Findings = append(agg.Findings, r.Findings...)

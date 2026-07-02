@@ -111,4 +111,5 @@ type EngineResult struct {
 	DurationSeconds  float64           `json:"duration_seconds"`
 	ScanID           string            `json:"scan_id"`
 	Error            string            `json:"error"`
+	RulePackVersion  string            `json:"rule_pack_version"`
 }

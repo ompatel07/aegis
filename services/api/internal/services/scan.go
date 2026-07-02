@@ -14,6 +14,7 @@ type ScanService struct {
 	projects  *repository.ProjectRepository
 	scans     *repository.ScanRepository
 	findings  *repository.FindingRepository
+	rules     *repository.ProjectRuleRepository
 	publisher *queue.Publisher
 }
 
@@ -21,9 +22,10 @@ func NewScanService(
 	projects *repository.ProjectRepository,
 	scans *repository.ScanRepository,
 	findings *repository.FindingRepository,
+	rules *repository.ProjectRuleRepository,
 	publisher *queue.Publisher,
 ) *ScanService {
-	return &ScanService{projects: projects, scans: scans, findings: findings, publisher: publisher}
+	return &ScanService{projects: projects, scans: scans, findings: findings, rules: rules, publisher: publisher}
 }
 
 // TriggerInput carries optional overrides for a manual scan.
@@ -95,6 +97,9 @@ func (s *ScanService) Trigger(ctx context.Context, projectID, userID string, in 
 	if project.Language != nil {
 		payload.Language = *project.Language
 	}
+	if rules, rerr := s.rules.YAMLForProject(ctx, projectID); rerr == nil && len(rules) > 0 {
+		payload.CustomRules = rules
+	}
 
 	if _, err := s.publisher.EnqueueScan(ctx, payload); err != nil {
 		// Roll the scan into a failed state rather than leaving it queued.
@@ -141,6 +146,9 @@ func (s *ScanService) TriggerWebhook(ctx context.Context, projectID, branch, com
 	}
 	if project.Language != nil {
 		payload.Language = *project.Language
+	}
+	if rules, rerr := s.rules.YAMLForProject(ctx, projectID); rerr == nil && len(rules) > 0 {
+		payload.CustomRules = rules
 	}
 	if _, err := s.publisher.EnqueueScan(ctx, payload); err != nil {
 		_ = s.scans.MarkFailed(ctx, scan.ID, "failed to enqueue scan job")

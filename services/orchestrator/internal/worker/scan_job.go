@@ -80,7 +80,7 @@ func (p *ScanProcessor) ProcessTask(ctx context.Context, task *asynq.Task) error
 		Msg("project detected")
 
 	// ── Scan (parallel fan-out) ──────────────────────────────────────────────
-	results := p.pipe.Run(ctx, checkout.Dir, payload.ScanID, det)
+	results := p.pipe.Run(ctx, checkout.Dir, payload.ScanID, det, payload.CustomRules)
 
 	// ── Deep scan (opt-in) ───────────────────────────────────────────────────
 	// Runs after the fast fan-out; merged + deduped so the same vuln is not

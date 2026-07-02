@@ -22,6 +22,7 @@ type scanRequest struct {
 	ScanID       string   `json:"scan_id"`
 	Languages    []string `json:"languages,omitempty"`
 	ProjectTypes []string `json:"project_types,omitempty"`
+	CustomRules  []string `json:"custom_rules,omitempty"`
 }
 
 // deploymentRequest extends scanRequest with build controls.
@@ -72,9 +73,11 @@ func (s *ScannerClient) base(path, scanID string, langs, ptypes []string) scanRe
 	return scanRequest{Path: path, ScanID: scanID, Languages: langs, ProjectTypes: ptypes}
 }
 
-// SAST runs Semgrep.
-func (s *ScannerClient) SAST(ctx context.Context, path, scanID string, langs, ptypes []string) (*types.EngineResult, error) {
-	return s.call(ctx, "/scan/sast", s.base(path, scanID, langs, ptypes))
+// SAST runs Semgrep, applying any per-project custom rules on top of the packs.
+func (s *ScannerClient) SAST(ctx context.Context, path, scanID string, langs, ptypes, customRules []string) (*types.EngineResult, error) {
+	body := s.base(path, scanID, langs, ptypes)
+	body.CustomRules = customRules
+	return s.call(ctx, "/scan/sast", body)
 }
 
 // SCA runs Trivy.

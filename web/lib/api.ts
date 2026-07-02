@@ -11,6 +11,7 @@ import type {
   IntelligenceStatus,
   Notification,
   Paginated,
+  ProjectRule,
   Project,
   Scan,
   ScanReport,
@@ -85,6 +86,25 @@ export function createApi(token?: string) {
       http
         .post<ApiSuccess<Scan>>(`/projects/${projectId}/scans`, body ?? {})
         .then((r) => r.data.data)
+        .catch(normalizeError),
+
+    // ── Custom rules ─────────────────────────────────────────────────────────
+    listRules: (projectId: string) =>
+      http
+        .get<ApiSuccess<ProjectRule[]>>(`/projects/${projectId}/rules`)
+        .then((r) => r.data.data)
+        .catch(normalizeError),
+
+    createRule: (projectId: string, body: { name: string; rule_yaml: string }) =>
+      http
+        .post<ApiSuccess<ProjectRule>>(`/projects/${projectId}/rules`, body)
+        .then((r) => r.data.data)
+        .catch(normalizeError),
+
+    deleteRule: (ruleId: string) =>
+      http
+        .delete(`/rules/${ruleId}`)
+        .then(() => undefined)
         .catch(normalizeError),
 
     // ── Intelligence ─────────────────────────────────────────────────────────

@@ -5,6 +5,7 @@ check that reports which underlying binaries are available.
 """
 from __future__ import annotations
 
+import asyncio
 import os
 from contextlib import asynccontextmanager
 
@@ -16,7 +17,7 @@ from fastapi.responses import JSONResponse
 from config import get_settings
 from engines import gitleaks_engine, quality_engine, semgrep_engine, trivy_engine
 from logging_config import configure_logging, get_logger
-from routers import deep, deployment, quality, sast, sca, secrets
+from routers import deep, deployment, quality, rules, sast, sca, secrets
 from utils.sandbox import binary_available
 
 settings = get_settings()
@@ -38,8 +39,40 @@ async def lifespan(app: FastAPI):
     if missing:
         log.warning("startup.tools_missing", missing=missing)
     log.info("startup", environment=settings.environment, tools=tools)
+
+    # Keep rule packs / vuln DBs fresh in the background (on boot + every 6h).
+    refresh_task = asyncio.create_task(_rulepack_refresh_loop())
     yield
+    refresh_task.cancel()
     log.info("shutdown")
+
+
+async def _rulepack_refresh_loop() -> None:
+    """Refresh the Trivy vuln DB periodically so scans use current advisories.
+    Semgrep registry rules are cached and re-fetched by semgrep itself."""
+    from utils.sandbox import run_command
+
+    while True:
+        try:
+            if binary_available(settings.trivy_bin):
+                res = await run_command(
+                    [settings.trivy_bin, "image", "--download-db-only",
+                     "--cache-dir", settings.trivy_cache_dir],
+                    timeout=600, allowed_returncodes=(0,),
+                )
+                if res.ok:
+                    log.info("rulepack.trivy_db_refreshed")
+                else:
+                    log.warning("rulepack.trivy_db_refresh_failed",
+                                error=(res.stderr or "")[:300])
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:  # noqa: BLE001 — never crash on a refresh error
+            log.warning("rulepack.refresh_failed", error=str(exc))
+        try:
+            await asyncio.sleep(6 * 3600)
+        except asyncio.CancelledError:
+            raise
 
 
 app = FastAPI(
@@ -55,6 +88,7 @@ app.include_router(secrets.router)
 app.include_router(quality.router)
 app.include_router(deployment.router)
 app.include_router(deep.router)
+app.include_router(rules.router)
 
 
 def _tool_status() -> dict[str, bool]:

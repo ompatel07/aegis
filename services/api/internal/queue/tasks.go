@@ -21,4 +21,7 @@ type ScanPayload struct {
 	// Deep scan (opt-in interprocedural taint analysis: joern | codeql).
 	DeepScanEnabled bool   `json:"deep_scan_enabled,omitempty"`
 	DeepScanEngine  string `json:"deep_scan_engine,omitempty"`
+
+	// Per-project custom Semgrep rules (YAML documents) to apply for this scan.
+	CustomRules []string `json:"custom_rules,omitempty"`
 }

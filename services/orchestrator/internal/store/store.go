@@ -101,6 +101,7 @@ func (s *Store) SaveResults(ctx context.Context, scanID string, agg pipeline.Agg
 			raw_semgrep_output = $11, raw_trivy_output = $12,
 			raw_gitleaks_output = $13, raw_quality_output = $14,
 			error_message = $15,
+			rule_pack_version = $16,
 			completed_at = now(),
 			duration_seconds = GREATEST(0, EXTRACT(EPOCH FROM (now() - COALESCE(started_at, queued_at)))::int)
 		WHERE id = $1`
@@ -112,7 +113,7 @@ func (s *Store) SaveResults(ctx context.Context, scanID string, agg pipeline.Agg
 		agg.SecretsFound, agg.VulnerabilitiesFound,
 		[]byte(agg.RawSemgrep), []byte(agg.RawTrivy),
 		[]byte(agg.RawGitleaks), []byte(agg.RawQuality),
-		errMsg,
+		errMsg, nullStr(agg.RulePackVersion),
 	); err != nil {
 		return fmt.Errorf("update scan: %w", err)
 	}

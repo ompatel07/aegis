@@ -36,6 +36,9 @@ type Config struct {
 	TokenEncryptionKey string
 
 	RateLimitRPM int
+
+	// Scanner service — used to validate uploaded custom rules with semgrep.
+	ScannerBaseURL string
 }
 
 // Load reads configuration from environment variables (and an optional .env via
@@ -61,12 +64,14 @@ func Load() (*Config, error) {
 	v.SetDefault("JWT_ACCESS_TTL_MINUTES", 15)
 	v.SetDefault("JWT_REFRESH_TTL_HOURS", 168)
 	v.SetDefault("RATE_LIMIT_RPM", 120)
+	v.SetDefault("SCANNER_BASE_URL", "http://scanner:8000")
 
 	cfg := &Config{
 		Environment:        v.GetString("ENVIRONMENT"),
 		LogLevel:           v.GetString("LOG_LEVEL"),
 		LogPretty:          v.GetBool("LOG_PRETTY"),
 		HTTPPort:           v.GetInt("API_PORT"),
+		ScannerBaseURL:     v.GetString("SCANNER_BASE_URL"),
 		CORSOrigins:        splitAndTrim(v.GetString("CORS_ALLOWED_ORIGINS")),
 		ShutdownTimeout:    time.Duration(v.GetInt("SHUTDOWN_TIMEOUT_SECONDS")) * time.Second,
 		DatabaseURL:        v.GetString("DATABASE_URL"),

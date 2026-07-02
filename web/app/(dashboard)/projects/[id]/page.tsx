@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ScanStatusBadge } from "@/components/dashboard/ScanStatusBadge";
 import { TrendChart } from "@/components/dashboard/TrendChart";
 import { GitHubIntegrationCard } from "@/components/dashboard/GitHubIntegrationCard";
+import { CustomRulesCard } from "@/components/dashboard/CustomRulesCard";
 import { cn, formatDate, formatDuration, gradeColor, scoreColor } from "@/lib/utils";
 import { Play } from "lucide-react";
 
@@ -74,6 +75,7 @@ export default function ProjectDetailPage() {
       ) : null}
 
       {canScan ? <GitHubIntegrationCard projectId={id} /> : null}
+      <CustomRulesCard projectId={id} />
 
       <TrendChart scans={scans} />
 

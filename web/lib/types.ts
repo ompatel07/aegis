@@ -187,3 +187,12 @@ export interface Notification {
   is_read: boolean;
   created_at: string;
 }
+
+// ── Custom rules ─────────────────────────────────────────────────────────────
+export interface ProjectRule {
+  id: string;
+  project_id: string;
+  name: string;
+  rule_yaml: string;
+  created_at: string;
+}

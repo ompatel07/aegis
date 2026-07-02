@@ -10,8 +10,12 @@ capability. Each ships with positive + sanitized-negative tests (`semgrep
 """
 from __future__ import annotations
 
+import datetime
+import hashlib
 import json
 import os
+import shutil
+import tempfile
 
 from config import Settings
 from logging_config import get_logger
@@ -74,6 +78,33 @@ def _select_configs(settings: Settings, languages: list[str], project_types: lis
     return ordered
 
 
+def _write_project_rules(rules: list[str] | None) -> str | None:
+    """Write per-project custom rule YAML docs to a temp dir for this scan."""
+    if not rules:
+        return None
+    try:
+        d = tempfile.mkdtemp(prefix="aegis-project-rules-")
+        for i, doc in enumerate(rules):
+            with open(os.path.join(d, f"rule_{i}.yaml"), "w", encoding="utf-8") as fh:
+                fh.write(doc)
+        return d
+    except OSError as exc:  # noqa: BLE001
+        log.warning("semgrep.project_rules_write_failed", error=str(exc))
+        return None
+
+
+def _rule_pack_version(configs: list[str], custom_rules: list[str] | None) -> str:
+    """A reproducible id for the rule set used: date + hash of the config set.
+    Recorded on the scan so re-scans can surface rule-pack changes."""
+    h = hashlib.sha256()
+    for c in sorted(configs):
+        h.update(c.encode())
+    for r in custom_rules or []:
+        h.update(r.encode())
+    date = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d")
+    return f"rp-{date}-{h.hexdigest()[:10]}"
+
+
 def _custom_rules_dir() -> str | None:
     """Return the custom rules dir if it exists and is non-empty, else None."""
     try:
@@ -114,7 +145,15 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
 
     registry_configs = _select_configs(settings, languages, project_types)
     custom_dir = _custom_rules_dir()
+
+    # Per-project custom rules (already validated at upload) live for the duration
+    # of this scan in a temp dir added on top of the registry + Aegis packs.
+    project_rules_dir = _write_project_rules(req.custom_rules)
+    if project_rules_dir:
+        registry_configs = registry_configs + [project_rules_dir]
+
     configs = registry_configs + ([custom_dir] if custom_dir else [])
+    rule_pack_version = _rule_pack_version(configs, req.custom_rules)
 
     async def _semgrep(cfgs: list[str]):
         # Semgrep exits 0 (no findings) or 1 (findings present); >=2 is an error.
@@ -163,6 +202,9 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
             scan_id=req.scan_id, duration_seconds=result.duration_seconds,
         )
 
+    if project_rules_dir:
+        shutil.rmtree(project_rules_dir, ignore_errors=True)
+
     findings = _parse(raw, req.path)
     from enrichment import enricher
 
@@ -173,6 +215,8 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
         findings=len(findings),
         custom_findings=custom_count,
         custom_rules_applied=custom_applied,
+        project_rules=len(req.custom_rules or []),
+        rule_pack_version=rule_pack_version,
         errors=len(raw.get("errors", []) or []),
     )
     return EngineResult(
@@ -184,6 +228,7 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
         raw=raw,
         duration_seconds=result.duration_seconds,
         scan_id=req.scan_id,
+        rule_pack_version=rule_pack_version,
     )
 
 
@@ -198,12 +243,14 @@ def _parse(raw: dict, root: str) -> list[Finding]:
         check_id = item.get("check_id", "unknown-rule")
         rule_short = check_id.rsplit(".", 1)[-1]
         message = extra.get("message") or rule_short
-        # Rules loaded from the local custom dir are namespaced by semgrep with a
-        # path-derived prefix (e.g. "rules.taint.aegis-js-xss"). Normalize custom
-        # findings to their stable public id; keep registry ids canonical.
-        is_custom = rule_short.startswith("aegis-")
-        rule_id = rule_short if is_custom else check_id
-        ruleset = "aegis-custom" if is_custom else "registry"
+        # Rules loaded from a local dir are namespaced by semgrep with a
+        # path-derived prefix (e.g. "rules.taint.aegis-js-xss" for our bundled
+        # packs, or "tmp.aegis-project-rules-XXXX.rule" for per-project rules).
+        # Normalize both to their stable rule id; keep registry ids canonical.
+        is_project = "aegis-project-rules-" in check_id
+        is_aegis = rule_short.startswith("aegis-")
+        rule_id = rule_short if (is_project or is_aegis) else check_id
+        ruleset = "project-custom" if is_project else ("aegis-custom" if is_aegis else "registry")
 
         severity = normalizer.normalize_semgrep_severity(extra.get("severity", ""), metadata)
 

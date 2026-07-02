@@ -19,7 +19,8 @@ const scanColumns = `
 	s.id, s.project_id, s.trigger, s.status, s.branch, s.commit_sha,
 	s.quality_score, s.security_score, s.deployment_score, s.overall_score, s.overall_grade,
 	s.quality_issues_total, s.security_issues_total, s.secrets_found, s.vulnerabilities_found,
-	s.queued_at, s.started_at, s.completed_at, s.duration_seconds, s.error_message, s.created_at`
+	s.queued_at, s.started_at, s.completed_at, s.duration_seconds, s.error_message, s.created_at,
+	s.rule_pack_version, s.needs_reeval, s.reeval_reason`
 
 // ScanRepository handles persistence for scans.
 type ScanRepository struct {

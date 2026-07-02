@@ -162,6 +162,8 @@ class EngineResult(BaseModel):
     duration_seconds: float = 0.0
     scan_id: str | None = None
     error: str | None = None
+    # Reproducible id of the rule set used (semgrep), recorded on the scan.
+    rule_pack_version: str | None = None
 
     @classmethod
     def failed(

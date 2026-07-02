@@ -81,12 +81,14 @@ func run() error {
 	findingRepo := repository.NewFindingRepository(db)
 	integrationRepo := repository.NewGithubIntegrationRepository(db)
 	intelligenceRepo := repository.NewIntelligenceRepository(db)
+	projectRuleRepo := repository.NewProjectRuleRepository(db)
 
 	// ── Services ─────────────────────────────────────────────────────────────
 	authSvc := services.NewAuthService(userRepo, tokens, sessions)
 	projectSvc := services.NewProjectService(projectRepo)
-	scanSvc := services.NewScanService(projectRepo, scanRepo, findingRepo, publisher)
+	scanSvc := services.NewScanService(projectRepo, scanRepo, findingRepo, projectRuleRepo, publisher)
 	integrationSvc := services.NewIntegrationService(projectRepo, integrationRepo, encryptor)
+	ruleSvc := services.NewRuleService(projectRepo, projectRuleRepo, cfg.ScannerBaseURL)
 
 	// ── Handlers ─────────────────────────────────────────────────────────────
 	authH := handlers.NewAuthHandler(authSvc, log)
@@ -95,6 +97,7 @@ func run() error {
 	reportH := handlers.NewReportHandler(scanSvc, log)
 	integrationH := handlers.NewIntegrationHandler(integrationSvc, log)
 	intelligenceH := handlers.NewIntelligenceHandler(intelligenceRepo, log)
+	ruleH := handlers.NewRuleHandler(ruleSvc, log)
 	webhookH := handlers.NewWebhookHandler(integrationRepo, scanSvc, log)
 	healthH := handlers.NewHealthHandler(db, rdb)
 
@@ -141,6 +144,8 @@ func run() error {
 				r.Post("/{id}/scans", scanH.Trigger)
 				r.Get("/{id}/integrations", integrationH.ListForProject)
 				r.Post("/{id}/integrations/github", integrationH.Connect)
+				r.Get("/{id}/rules", ruleH.List)
+				r.Post("/{id}/rules", ruleH.Create)
 			})
 
 			r.Route("/scans", func(r chi.Router) {
@@ -152,6 +157,7 @@ func run() error {
 
 			r.Patch("/findings/{findingId}", scanH.PatchFinding)
 			r.Delete("/integrations/{integrationId}", integrationH.Delete)
+			r.Delete("/rules/{ruleId}", ruleH.Delete)
 
 			r.Get("/intelligence/status", intelligenceH.Status)
 			r.Get("/notifications", intelligenceH.ListNotifications)

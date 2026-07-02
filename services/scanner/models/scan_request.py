@@ -25,6 +25,10 @@ class ScanRequest(BaseModel):
     project_types: list[str] | None = Field(
         default=None, description="Optional pre-detected project types (node, go, ...)."
     )
+    custom_rules: list[str] | None = Field(
+        default=None,
+        description="Per-project custom Semgrep rule YAML documents, applied on top of the registry + Aegis packs.",
+    )
 
     @field_validator("path")
     @classmethod
