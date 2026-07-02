@@ -164,6 +164,9 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
         )
 
     findings = _parse(raw, req.path)
+    from enrichment import enricher
+
+    enricher.enrich_all(findings)
     custom_count = sum(1 for f in findings if f.rule_id.startswith("aegis-"))
     log.info(
         "semgrep.completed",

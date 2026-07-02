@@ -145,6 +145,10 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
         has_tests=has_tests, coverage_pct=coverage_pct,
     )
 
+    from enrichment import enricher
+
+    enricher.enrich_all(findings)
+
     return EngineResult(
         engine=Engine.QUALITY,
         pillar=Pillar.QUALITY,

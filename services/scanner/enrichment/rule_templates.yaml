@@ -1,0 +1,256 @@
+# Context-rich finding templates.
+#
+# Keyed by a lookup key derived from each finding (see enricher._lookup_key):
+#   taint:<class>   — our custom taint rules + Joern/CodeQL deep findings
+#   quality/<rule>  — the quality engine's smells
+#   gitleaks:<id>   — secret findings (falls back to gitleaks:default)
+#   trivy:cve       — dependency CVEs (CVSS is parsed into context_metadata)
+#   trivy:secret / trivy:misconfig
+#   docker:base-image — Dockerfile image-size analysis
+#
+# {placeholders} are filled from the finding's metadata + fields; a missing
+# placeholder degrades to "?" rather than erroring. Registry Semgrep rules have
+# no template and fall back to their own rule metadata.
+
+# ── Injection / taint classes (shared by aegis-*, joern/*, codeql) ────────────
+taint:sql-injection:
+  title_human: "SQL injection"
+  impact: "An attacker can read, modify or delete arbitrary database records by injecting SQL through untrusted input."
+  risk_level: critical
+  remediation_action: "Use parameterized queries / prepared statements — never concatenate user input into SQL."
+  estimated_effort: moderate
+  remediation_details: |
+    Pass every user-controlled value as a bound parameter, not string
+    concatenation:
+    ```python
+    # unsafe
+    cur.execute("SELECT * FROM users WHERE id = " + user_id)
+    # safe
+    cur.execute("SELECT * FROM users WHERE id = %s", (user_id,))
+    ```
+    Prefer an ORM or query builder that parameterizes by default.
+
+taint:command-injection:
+  title_human: "OS command injection"
+  impact: "An attacker can execute arbitrary commands on the server, leading to full host compromise."
+  risk_level: critical
+  remediation_action: "Avoid the shell — pass an argument array to the process API and validate the program name."
+  estimated_effort: moderate
+  remediation_details: |
+    Do not build shell strings from user input. Invoke the program directly with
+    a fixed argument list so the OS never re-parses it:
+    ```python
+    # unsafe: subprocess.call("ping " + host, shell=True)
+    subprocess.run(["ping", "-c", "1", host])   # no shell
+    ```
+
+taint:code-injection:
+  title_human: "Code injection (eval)"
+  impact: "Untrusted input is evaluated as code, allowing remote code execution."
+  risk_level: critical
+  remediation_action: "Never eval() request data. Parse structured input and validate it explicitly."
+  estimated_effort: moderate
+  remediation_details: |
+    Replace `eval`/`new Function`/`exec` on request data with a safe parser
+    (`JSON.parse`, `ast.literal_eval`) or an allow-listed operation table.
+
+taint:xss:
+  title_human: "Cross-site scripting (XSS)"
+  impact: "An attacker can run scripts in victims' browsers to steal sessions, keystrokes, or perform actions as the user."
+  risk_level: high
+  remediation_action: "Contextually escape all user data on output, or render through an auto-escaping template."
+  estimated_effort: moderate
+  remediation_details: |
+    Encode output for the HTML context (e.g. `markupsafe.escape`,
+    `DOMPurify.sanitize`, OWASP Java Encoder) and enable template autoescaping.
+
+taint:ssrf:
+  title_human: "Server-side request forgery (SSRF)"
+  impact: "An attacker can make the server call internal services or cloud metadata endpoints, exposing secrets."
+  risk_level: high
+  remediation_action: "Validate the URL against a strict host allow-list before making the request."
+  estimated_effort: moderate
+  remediation_details: |
+    Resolve and check the target host against an allow-list, reject internal /
+    link-local ranges, and disable redirects to untrusted hosts.
+
+taint:path-traversal:
+  title_human: "Path traversal"
+  impact: "An attacker can read or write files outside the intended directory (e.g. ../../etc/passwd)."
+  risk_level: high
+  remediation_action: "Reduce input to a bare filename and resolve it under a fixed base directory; reject escapes."
+  estimated_effort: moderate
+  remediation_details: |
+    ```python
+    safe = werkzeug.utils.secure_filename(user_file)
+    path = os.path.join(BASE_DIR, safe)
+    assert os.path.realpath(path).startswith(BASE_DIR)
+    ```
+
+taint:nosql-injection:
+  title_human: "NoSQL injection"
+  impact: "An attacker can inject query operators to bypass authentication or extract documents."
+  risk_level: high
+  remediation_action: "Coerce query values to the expected scalar type before querying (String(x), ObjectId(x))."
+  estimated_effort: moderate
+  remediation_details: |
+    Never pass a raw request object as a Mongo query. Coerce each value:
+    ```js
+    users.findOne({ username: String(req.body.username) });
+    ```
+
+taint:ldap-injection:
+  title_human: "LDAP injection"
+  impact: "An attacker can alter the LDAP filter to bypass authentication or disclose directory data."
+  risk_level: high
+  remediation_action: "Escape filter values with an LDAP encoder before interpolating them."
+  estimated_effort: moderate
+  remediation_details: |
+    Use `ldap.filter.escape_filter_chars` / `Encode.forLdap` on every value that
+    goes into the search filter.
+
+# ── Quality smells ────────────────────────────────────────────────────────────
+quality/high-cyclomatic-complexity:
+  title_human: "Function is too complex"
+  impact: "Cyclomatic complexity {complexity} means {complexity} independent paths to test; complex code hides bugs and is costly to change."
+  risk_level: medium
+  remediation_action: "Extract helpers and simplify branching to bring complexity under 10."
+  estimated_effort: significant
+  remediation_details: |
+    Split the function along its decision points into small, named helpers with a
+    single responsibility. Replace nested conditionals with early returns.
+
+quality/god-function:
+  title_human: "God function (far too large)"
+  impact: "This function is {nloc} lines long — it does too much and is nearly impossible to test in isolation."
+  risk_level: high
+  remediation_action: "Break the function into cohesive units, each doing one thing."
+  estimated_effort: significant
+
+quality/long-function:
+  title_human: "Long function"
+  impact: "At {nloc} lines this function likely has multiple responsibilities."
+  risk_level: low
+  remediation_action: "Decompose into smaller functions."
+  estimated_effort: moderate
+
+quality/too-many-parameters:
+  title_human: "Too many parameters"
+  impact: "{parameter_count} parameters make the function hard to call correctly and easy to misuse."
+  risk_level: low
+  remediation_action: "Group related arguments into a parameter object / struct."
+  estimated_effort: quick
+
+quality/deep-nesting:
+  title_human: "Deeply nested code"
+  impact: "Nesting {nesting_depth} levels deep is hard to read and reason about."
+  risk_level: medium
+  remediation_action: "Use guard clauses / early returns, or extract inner blocks into helpers."
+  estimated_effort: moderate
+
+quality/duplicated-code:
+  title_human: "Duplicated code"
+  impact: "This {clone_lines}-line block is duplicated in {occurrences} places — bug fixes must be made in every copy."
+  risk_level: medium
+  remediation_action: "Extract the shared logic into a single function and call it from each site."
+  estimated_effort: moderate
+
+quality/magic-numbers:
+  title_human: "Magic numbers"
+  impact: "{magic_number_count} unexplained numeric literals make the code's intent unclear and changes error-prone."
+  risk_level: low
+  remediation_action: "Replace magic numbers with named constants."
+  estimated_effort: quick
+
+quality/tech-debt-marker:
+  title_human: "Unresolved tech-debt marker"
+  impact: "{marker_count} TODO/FIXME marker(s) signal known-incomplete work left in the code."
+  risk_level: informational
+  remediation_action: "Track each marker as an issue and resolve it."
+  estimated_effort: quick
+
+quality/leftover-debug:
+  title_human: "Leftover debug output"
+  impact: "{debug_count} debug statement(s) can leak information and clutter production logs."
+  risk_level: low
+  remediation_action: "Remove debug statements or route them through a structured logger."
+  estimated_effort: trivial
+
+# ── Secrets (gitleaks) ────────────────────────────────────────────────────────
+gitleaks:default:
+  title_human: "Hard-coded secret detected"
+  impact: "A credential committed to the repository can be used by anyone with read access, or anyone if the repo is public."
+  risk_level: high
+  remediation_action: "Rotate the secret immediately, then purge it from git history."
+  estimated_effort: quick
+  remediation_details: |
+    1. Revoke/rotate the exposed credential at the provider.
+    2. Remove it from history (`git filter-repo` or BFG) and force-push.
+    3. Move the secret to a secrets manager / environment variable.
+
+gitleaks:aws-access-token:
+  title_human: "AWS access key detected"
+  impact: "An exposed AWS key can be used to access or destroy cloud resources and run up cost — account takeover if public."
+  risk_level: critical
+  remediation_action: "Deactivate the key in IAM now, rotate it, and remove it from git history."
+  estimated_effort: quick
+
+gitleaks:aws-secret-key:
+  title_human: "AWS secret key detected"
+  impact: "An exposed AWS secret enables full API access to your cloud account."
+  risk_level: critical
+  remediation_action: "Deactivate and rotate the key in IAM, then purge from history."
+  estimated_effort: quick
+
+gitleaks:private-key:
+  title_human: "Private key detected"
+  impact: "A committed private key allows impersonation, decryption, or unauthorized server access."
+  risk_level: critical
+  remediation_action: "Revoke and reissue the key pair, then remove it from history."
+  estimated_effort: quick
+
+gitleaks:github-pat:
+  title_human: "GitHub token detected"
+  impact: "A GitHub PAT grants repo/org access — an attacker could read or modify your code and CI."
+  risk_level: critical
+  remediation_action: "Revoke the token in GitHub settings and rotate it."
+  estimated_effort: quick
+
+# ── Dependencies (Trivy CVEs) ─────────────────────────────────────────────────
+trivy:cve:
+  title_human: "Vulnerable dependency: {package} {installed_version}"
+  impact: "{cve_id} affects {package} {installed_version}. See the CVSS breakdown for exploitability and impact."
+  risk_level: high
+  remediation_action: "Upgrade {package} to {fixed_version} or later."
+  estimated_effort: quick
+  remediation_details: |
+    Bump the dependency to a fixed version and re-run the scan. If no fix is
+    published, assess reachability and apply a mitigation or pin an alternative.
+
+trivy:secret:
+  title_human: "Secret found in dependency scan"
+  impact: "A credential embedded in the codebase can be abused by anyone with access."
+  risk_level: high
+  remediation_action: "Rotate the secret and remove it from source control."
+  estimated_effort: quick
+
+trivy:misconfig:
+  title_human: "Insecure configuration"
+  impact: "A misconfiguration weakens the security posture of the build or runtime environment."
+  risk_level: medium
+  remediation_action: "Apply the recommended hardening from the resolution guidance."
+  estimated_effort: quick
+
+# ── Dockerfile image-size analysis (deployment engine) ────────────────────────
+docker:base-image:
+  title_human: "Oversized Docker base image"
+  impact: "Base image '{base_image}' is ~{current_mb}MB; a slimmer base cuts image size ~{reduction_pct}%, shrinking attack surface and pull time."
+  risk_level: low
+  remediation_action: "Switch the base image to {recommended_base}."
+  estimated_effort: quick
+  remediation_details: |
+    Large base images ship compilers and shells you don't need at runtime. Use a
+    slim/distroless base and multi-stage builds:
+    ```dockerfile
+    FROM {recommended_base}
+    ```

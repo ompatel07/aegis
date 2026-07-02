@@ -43,6 +43,15 @@ type Finding struct {
 
 	FixSuggestion string         `json:"fix_suggestion"`
 	Metadata      map[string]any `json:"metadata"`
+
+	// Context-rich enrichment (Phase 2B), populated by the scanner.
+	TitleHuman         string         `json:"title_human"`
+	Impact             string         `json:"impact"`
+	RiskLevel          string         `json:"risk_level"`
+	RemediationAction  string         `json:"remediation_action"`
+	RemediationDetails string         `json:"remediation_details"`
+	EstimatedEffort    string         `json:"estimated_effort"`
+	ContextMetadata    map[string]any `json:"context_metadata"`
 }
 
 // SeveritySummary holds per-severity counts.

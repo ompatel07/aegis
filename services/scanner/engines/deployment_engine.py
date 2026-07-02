@@ -46,6 +46,9 @@ async def run(req: DeploymentRequest, settings: Settings) -> EngineResult:
     report = DeploymentReport()
     findings: list[Finding] = []
 
+    # Dockerfile image-size analysis runs regardless of whether we build.
+    findings.extend(_dockerfile_findings(req.path))
+
     if not build_enabled:
         # Use a non-scored step name so a *disabled* build is not counted as a
         # *failed* build by the orchestrator's deployment scorer.
@@ -276,9 +279,103 @@ def _step_finding(rule_id: str, name: str, step: DeploymentStep, severity: Sever
 
 
 def _result(report, findings, req, status: EngineStatus) -> EngineResult:
+    from enrichment import enricher
+
+    enricher.enrich_all(findings)
     return EngineResult(
         engine=Engine.DEPLOYMENT, pillar=Pillar.DEPLOYMENT, status=status,
         findings=findings, summary=SeveritySummary.from_findings(findings),
         deployment_report=report, raw={"report": report.model_dump()},
         scan_id=req.scan_id,
     )
+
+
+# ── Dockerfile image-size analysis ────────────────────────────────────────────
+# Approx uncompressed pull sizes (MB) for common base families, plus the lean
+# recommendation. Used to surface "your image is X MB -> Y% smaller possible".
+_IMAGE_SIZES = {
+    "node": (1100, "node:20-slim", 240),
+    "python": (1020, "python:3.12-slim", 150),
+    "golang": (830, "golang:1.22-alpine", 350),
+    "openjdk": (470, "eclipse-temurin:21-jre", 280),
+    "ruby": (900, "ruby:3.3-slim", 200),
+    "php": (480, "php:8.3-fpm-alpine", 110),
+    "nginx": (190, "nginx:alpine", 50),
+    "debian": (120, "debian:12-slim", 80),
+    "ubuntu": (78, "ubuntu:24.04", 78),
+}
+_LEAN_MARKERS = ("alpine", "slim", "distroless", "scratch", "-jre", "busybox")
+_SKIP_DIRS = {".git", "node_modules", "vendor", "dist", "build", ".venv", "venv"}
+
+
+def _dockerfile_findings(root: str) -> list[Finding]:
+    out: list[Finding] = []
+    for dirpath, dirnames, filenames in os.walk(root):
+        dirnames[:] = [d for d in dirnames if d not in _SKIP_DIRS]
+        for name in filenames:
+            if name == "Dockerfile" or name.startswith("Dockerfile."):
+                path = os.path.join(dirpath, name)
+                try:
+                    with open(path, encoding="utf-8", errors="ignore") as fh:
+                        text = fh.read()
+                except OSError:
+                    continue
+                rel = os.path.relpath(path, root).replace(os.sep, "/")
+                f = _analyze_dockerfile(text, rel)
+                if f:
+                    out.append(f)
+    return out
+
+
+def _analyze_dockerfile(text: str, rel: str) -> Finding | None:
+    base = _final_base_image(text)
+    if not base:
+        return None
+    if any(m in base.lower() for m in _LEAN_MARKERS):
+        return None  # already lean
+
+    family = _image_family(base)
+    entry = _IMAGE_SIZES.get(family)
+    if not entry:
+        return None
+    current_mb, recommended, recommended_mb = entry
+    if recommended_mb >= current_mb:
+        return None
+    reduction_pct = round((current_mb - recommended_mb) / current_mb * 100)
+
+    return Finding(
+        pillar=Pillar.DEPLOYMENT, engine=Engine.DEPLOYMENT,
+        rule_id="docker:base-image", rule_name="Oversized Docker base image",
+        severity=Severity.LOW,
+        title=f"Base image '{base}' is large (~{current_mb}MB)",
+        description=(
+            f"'{rel}' builds on '{base}' (~{current_mb}MB). Switching to "
+            f"'{recommended}' (~{recommended_mb}MB) cuts image size ~{reduction_pct}% "
+            "and reduces attack surface and pull time."
+        ),
+        file_path=rel,
+        metadata={
+            "base_image": base,
+            "current_mb": current_mb,
+            "recommended_base": recommended,
+            "recommended_mb": recommended_mb,
+            "reduction_pct": reduction_pct,
+        },
+    )
+
+
+def _final_base_image(text: str) -> str | None:
+    """The image of the last FROM (the final stage of a multi-stage build)."""
+    base = None
+    for raw in text.splitlines():
+        line = raw.strip()
+        if line.upper().startswith("FROM "):
+            parts = line.split()
+            if len(parts) >= 2 and parts[1].lower() != "scratch":
+                base = parts[1]  # 'FROM node:20 AS build' -> 'node:20'
+    return base
+
+
+def _image_family(base: str) -> str:
+    repo = base.split(":", 1)[0]
+    return repo.split("/")[-1].lower()

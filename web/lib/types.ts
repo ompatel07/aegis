@@ -104,6 +104,14 @@ export interface Finding {
   is_suppressed: boolean;
   fix_suggestion?: string;
   metadata?: Record<string, unknown>;
+  // Context-rich enrichment (Phase 2B).
+  title_human?: string;
+  impact?: string;
+  risk_level?: "informational" | "low" | "medium" | "high" | "critical";
+  remediation_action?: string;
+  remediation_details?: string;
+  estimated_effort?: "trivial" | "quick" | "moderate" | "significant";
+  context_metadata?: Record<string, unknown>;
   created_at: string;
 }
 

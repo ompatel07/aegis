@@ -22,6 +22,10 @@ lizard==1.17.13
 # whitespace-insensitive). Pure Python — no C toolchain needed in the slim image.
 pygments==2.18.0
 
+# ─── Enrichment ──────────────────────────────────────────────────────────────
+# PyYAML loads the context-rich finding templates (enrichment/rule_templates.yaml).
+pyyaml==6.0.2
+
 # NOTE: trivy and gitleaks are installed as binaries in the Dockerfile, not pip.
 
 # ─── Tests ───────────────────────────────────────────────────────────────────

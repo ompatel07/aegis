@@ -78,6 +78,9 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
             pass
 
     findings = _parse(raw_findings, req.path)
+    from enrichment import enricher
+
+    enricher.enrich_all(findings)
     return EngineResult(
         engine=Engine.GITLEAKS,
         pillar=Pillar.SECURITY,

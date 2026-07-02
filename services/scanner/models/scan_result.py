@@ -75,6 +75,17 @@ class Finding(BaseModel):
     fix_suggestion: str | None = None
     metadata: dict | None = None
 
+    # ── Context-rich enrichment (Phase 2B) ───────────────────────────────────
+    # Populated by the enrichment layer so findings are actionable, not raw rule
+    # names. See enrichment/enricher.py + enrichment/rule_templates.yaml.
+    title_human: str | None = None          # "AWS secret key detected"
+    impact: str | None = None               # one-line concrete consequence
+    risk_level: str | None = None           # informational|low|medium|high|critical
+    remediation_action: str | None = None   # short imperative action
+    remediation_details: str | None = None  # markdown fix guide
+    estimated_effort: str | None = None     # trivial|quick|moderate|significant
+    context_metadata: dict | None = None    # engine-specific enrichment
+
 
 class SeveritySummary(BaseModel):
     critical: int = 0

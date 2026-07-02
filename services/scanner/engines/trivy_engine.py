@@ -21,6 +21,7 @@ from models.scan_result import (
     Pillar,
     SeveritySummary,
 )
+from enrichment import enricher
 from utils import normalizer, reachability
 from utils.sandbox import binary_available, run_with_retry
 
@@ -81,6 +82,7 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
         index = None
 
     findings = _parse(raw, req.path, index)
+    enricher.enrich_all(findings)
     reachable = sum(1 for f in findings if (f.metadata or {}).get("reachable") is True)
     log.info(
         "trivy.completed",
@@ -118,7 +120,9 @@ def _parse_vulnerabilities(
 ) -> list[Finding]:
     out: list[Finding] = []
     for vuln in res.get("Vulnerabilities", []) or []:
-        score = _best_cvss(vuln.get("CVSS", {}))
+        cvss = vuln.get("CVSS", {}) or {}
+        score = _best_cvss(cvss)
+        vector = _best_cvss_vector(cvss)
         severity = normalizer.cvss_to_severity(score, vuln.get("Severity"))
         pkg = vuln.get("PkgName", "")
         installed = vuln.get("InstalledVersion", "")
@@ -155,6 +159,7 @@ def _parse_vulnerabilities(
                     "installed_version": installed,
                     "fixed_version": fixed,
                     "cvss_score": score,
+                    "cvss_vector": vector,
                     "primary_url": vuln.get("PrimaryURL"),
                     "data_source": (vuln.get("DataSource") or {}).get("Name"),
                     # Reachability (import/usage-level). reachable is None when
@@ -213,6 +218,17 @@ def _best_cvss(cvss: dict) -> float | None:
         if isinstance(score, (int, float)):
             best = score if best is None else max(best, score)
     return best
+
+
+def _best_cvss_vector(cvss: dict) -> str | None:
+    """Return a CVSS v3 vector string (prefer nvd), for plain-English breakdown."""
+    preferred = (cvss or {}).get("nvd") if isinstance(cvss, dict) else None
+    if isinstance(preferred, dict) and preferred.get("V3Vector"):
+        return preferred["V3Vector"]
+    for source in (cvss or {}).values():
+        if isinstance(source, dict) and source.get("V3Vector"):
+            return source["V3Vector"]
+    return None
 
 
 def _rank(f: Finding) -> int:

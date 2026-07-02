@@ -84,6 +84,9 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
     if not analyzed:
         return _skipped(req.scan_id, "CodeQL database creation/analysis produced no output", total_duration)
 
+    from enrichment import enricher
+
+    enricher.enrich_all(findings)
     log.info("codeql.completed", scan_id=req.scan_id, findings=len(findings), languages=analyzed)
     return EngineResult(
         engine=Engine.CODEQL, pillar=Pillar.SECURITY, status=EngineStatus.COMPLETED,

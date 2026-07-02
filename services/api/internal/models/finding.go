@@ -44,5 +44,14 @@ type Finding struct {
 	FixSuggestion   *string `db:"fix_suggestion" json:"fix_suggestion,omitempty"`
 	Metadata        JSONB   `db:"metadata" json:"metadata,omitempty"`
 
+	// Context-rich enrichment (Phase 2B).
+	TitleHuman         *string `db:"title_human" json:"title_human,omitempty"`
+	Impact             *string `db:"impact" json:"impact,omitempty"`
+	RiskLevel          *string `db:"risk_level" json:"risk_level,omitempty"`
+	RemediationAction  *string `db:"remediation_action" json:"remediation_action,omitempty"`
+	RemediationDetails *string `db:"remediation_details" json:"remediation_details,omitempty"`
+	EstimatedEffort    *string `db:"estimated_effort" json:"estimated_effort,omitempty"`
+	ContextMetadata    JSONB   `db:"context_metadata" json:"context_metadata,omitempty"`
+
 	CreatedAt time.Time `db:"created_at" json:"created_at"`
 }
