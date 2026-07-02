@@ -136,3 +136,19 @@ export interface FindingFilters {
   per_page?: number;
   include_suppressed?: boolean;
 }
+
+// ── GitHub integration ───────────────────────────────────────────────────────
+export interface GithubIntegration {
+  id: string;
+  user_id: string;
+  project_id: string;
+  installation_id?: string;
+  created_at: string;
+}
+
+export interface ConnectGitHubResult {
+  integration: GithubIntegration;
+  webhook_url: string;
+  // Shown exactly once, at creation time.
+  webhook_secret: string;
+}

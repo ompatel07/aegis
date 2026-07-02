@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScanStatusBadge } from "@/components/dashboard/ScanStatusBadge";
 import { TrendChart } from "@/components/dashboard/TrendChart";
+import { GitHubIntegrationCard } from "@/components/dashboard/GitHubIntegrationCard";
 import { cn, formatDate, formatDuration, gradeColor, scoreColor } from "@/lib/utils";
 import { Play } from "lucide-react";
 
@@ -71,6 +72,8 @@ export default function ProjectDetailPage() {
       {trigger.isError ? (
         <p className="text-sm text-destructive">{(trigger.error as Error).message}</p>
       ) : null}
+
+      {canScan ? <GitHubIntegrationCard projectId={id} /> : null}
 
       <TrendChart scans={scans} />
 

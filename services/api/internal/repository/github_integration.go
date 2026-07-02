@@ -39,6 +39,40 @@ func (r *GithubIntegrationRepository) FindByRepoURLs(ctx context.Context, url1, 
 	return &gi, nil
 }
 
+// GetByProjectForUser returns the integration for a project the user owns.
+func (r *GithubIntegrationRepository) GetByProjectForUser(ctx context.Context, projectID, userID string) (*models.GithubIntegration, error) {
+	const q = `
+		SELECT gi.*
+		FROM github_integrations gi
+		JOIN projects p ON p.id = gi.project_id
+		WHERE gi.project_id = $1 AND p.user_id = $2`
+	var gi models.GithubIntegration
+	if err := r.db.GetContext(ctx, &gi, q, projectID, userID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrNotFound
+		}
+		return nil, err
+	}
+	return &gi, nil
+}
+
+// DeleteByIDForUser removes an integration the user owns (via project ownership).
+func (r *GithubIntegrationRepository) DeleteByIDForUser(ctx context.Context, id, userID string) error {
+	const q = `
+		DELETE FROM github_integrations gi
+		USING projects p
+		WHERE gi.id = $1 AND p.id = gi.project_id AND p.user_id = $2`
+	res, err := r.db.ExecContext(ctx, q, id, userID)
+	if err != nil {
+		return err
+	}
+	n, _ := res.RowsAffected()
+	if n == 0 {
+		return ErrNotFound
+	}
+	return nil
+}
+
 // Upsert creates or replaces the integration for a project.
 func (r *GithubIntegrationRepository) Upsert(ctx context.Context, gi *models.GithubIntegration) error {
 	const q = `

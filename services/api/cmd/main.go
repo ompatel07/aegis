@@ -69,6 +69,10 @@ func run() error {
 	// ── Auth primitives ──────────────────────────────────────────────────────
 	tokens := auth.NewTokenManager(cfg.JWTAccessSecret, cfg.JWTRefreshSecret, cfg.JWTAccessTTL, cfg.JWTRefreshTTL)
 	sessions := auth.NewSessionStore(rdb)
+	encryptor, err := auth.NewEncryptor(cfg.TokenEncryptionKey)
+	if err != nil {
+		return fmt.Errorf("init encryptor: %w", err)
+	}
 
 	// ── Repositories ─────────────────────────────────────────────────────────
 	userRepo := repository.NewUserRepository(db)
@@ -81,12 +85,14 @@ func run() error {
 	authSvc := services.NewAuthService(userRepo, tokens, sessions)
 	projectSvc := services.NewProjectService(projectRepo)
 	scanSvc := services.NewScanService(projectRepo, scanRepo, findingRepo, publisher)
+	integrationSvc := services.NewIntegrationService(projectRepo, integrationRepo, encryptor)
 
 	// ── Handlers ─────────────────────────────────────────────────────────────
 	authH := handlers.NewAuthHandler(authSvc, log)
 	projectH := handlers.NewProjectHandler(projectSvc, log)
 	scanH := handlers.NewScanHandler(scanSvc, log)
 	reportH := handlers.NewReportHandler(scanSvc, log)
+	integrationH := handlers.NewIntegrationHandler(integrationSvc, log)
 	webhookH := handlers.NewWebhookHandler(integrationRepo, scanSvc, log)
 	healthH := handlers.NewHealthHandler(db, rdb)
 
@@ -131,6 +137,8 @@ func run() error {
 				r.Delete("/{id}", projectH.Delete)
 				r.Get("/{id}/scans", scanH.ListForProject)
 				r.Post("/{id}/scans", scanH.Trigger)
+				r.Get("/{id}/integrations", integrationH.ListForProject)
+				r.Post("/{id}/integrations/github", integrationH.Connect)
 			})
 
 			r.Route("/scans", func(r chi.Router) {
@@ -141,6 +149,7 @@ func run() error {
 			})
 
 			r.Patch("/findings/{findingId}", scanH.PatchFinding)
+			r.Delete("/integrations/{integrationId}", integrationH.Delete)
 		})
 	})
 

@@ -3,9 +3,11 @@
 import axios, { AxiosError, type AxiosInstance } from "axios";
 import type {
   ApiSuccess,
+  ConnectGitHubResult,
   CreateProjectInput,
   Finding,
   FindingFilters,
+  GithubIntegration,
   Paginated,
   Project,
   Scan,
@@ -81,6 +83,25 @@ export function createApi(token?: string) {
       http
         .post<ApiSuccess<Scan>>(`/projects/${projectId}/scans`, body ?? {})
         .then((r) => r.data.data)
+        .catch(normalizeError),
+
+    // ── GitHub integration ───────────────────────────────────────────────────
+    listIntegrations: (projectId: string) =>
+      http
+        .get<ApiSuccess<GithubIntegration[]>>(`/projects/${projectId}/integrations`)
+        .then((r) => r.data.data)
+        .catch(normalizeError),
+
+    connectGitHub: (projectId: string, body?: { installation_id?: string; access_token?: string }) =>
+      http
+        .post<ApiSuccess<ConnectGitHubResult>>(`/projects/${projectId}/integrations/github`, body ?? {})
+        .then((r) => r.data.data)
+        .catch(normalizeError),
+
+    deleteIntegration: (integrationId: string) =>
+      http
+        .delete(`/integrations/${integrationId}`)
+        .then(() => undefined)
         .catch(normalizeError),
 
     // Downloads the scan's findings as a SARIF 2.1.0 file (browser download).
