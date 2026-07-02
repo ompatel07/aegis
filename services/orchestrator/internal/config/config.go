@@ -32,6 +32,12 @@ type Config struct {
 	WorkspaceDir  string
 	MaxRepoSizeMB int
 	GitCloneDepth int
+
+	// Intelligence feed. Both optional: NVD works without a key (lower rate
+	// limit); GHSA sync is skipped unless a GitHub token is provided.
+	IntelligenceEnabled bool
+	NVDAPIKey           string
+	GitHubToken         string
 }
 
 func Load() (*Config, error) {
@@ -55,6 +61,9 @@ func Load() (*Config, error) {
 	v.SetDefault("WORKSPACE_DIR", "/tmp/aegis-workspaces")
 	v.SetDefault("MAX_REPO_SIZE_MB", 512)
 	v.SetDefault("GIT_CLONE_DEPTH", 1)
+	v.SetDefault("INTELLIGENCE_ENABLED", true)
+	v.SetDefault("NVD_API_KEY", "")
+	v.SetDefault("GITHUB_TOKEN", "")
 
 	cfg := &Config{
 		Environment:       v.GetString("ENVIRONMENT"),
@@ -74,6 +83,10 @@ func Load() (*Config, error) {
 		WorkspaceDir:      v.GetString("WORKSPACE_DIR"),
 		MaxRepoSizeMB:     v.GetInt("MAX_REPO_SIZE_MB"),
 		GitCloneDepth:     v.GetInt("GIT_CLONE_DEPTH"),
+
+		IntelligenceEnabled: v.GetBool("INTELLIGENCE_ENABLED"),
+		NVDAPIKey:           v.GetString("NVD_API_KEY"),
+		GitHubToken:         v.GetString("GITHUB_TOKEN"),
 	}
 
 	if cfg.DatabaseURL == "" {

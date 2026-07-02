@@ -23,6 +23,10 @@ type Store struct {
 	db *sqlx.DB
 }
 
+// DB exposes the underlying pool for subsystems (e.g. intelligence) that run
+// their own queries against the same connection.
+func (s *Store) DB() *sqlx.DB { return s.db }
+
 // Connect opens and verifies a pooled connection.
 func Connect(ctx context.Context, dsn string, maxOpen, maxIdle int, maxLife time.Duration) (*Store, error) {
 	db, err := sqlx.Open("pgx", dsn)

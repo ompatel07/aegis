@@ -160,3 +160,30 @@ export interface ConnectGitHubResult {
   // Shown exactly once, at creation time.
   webhook_secret: string;
 }
+
+// ── Intelligence ─────────────────────────────────────────────────────────────
+export interface SyncStatus {
+  source: string;
+  last_started_at?: string;
+  last_completed_at?: string;
+  last_status?: string;
+  records_added: number;
+  records_updated: number;
+  next_sync?: string;
+}
+
+export interface IntelligenceStatus {
+  sources: SyncStatus[];
+  cve_counts: Record<string, number>;
+  total_cves: number;
+}
+
+export interface Notification {
+  id: string;
+  project_id?: string;
+  kind: string;
+  title: string;
+  body?: string;
+  is_read: boolean;
+  created_at: string;
+}

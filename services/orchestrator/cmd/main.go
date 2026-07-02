@@ -9,6 +9,7 @@ import (
 
 	"github.com/aegis-platform/orchestrator/internal/adapters"
 	"github.com/aegis-platform/orchestrator/internal/config"
+	"github.com/aegis-platform/orchestrator/internal/intelligence"
 	"github.com/aegis-platform/orchestrator/internal/logger"
 	"github.com/aegis-platform/orchestrator/internal/pipeline"
 	"github.com/aegis-platform/orchestrator/internal/store"
@@ -47,6 +48,19 @@ func run() error {
 	deepClient := adapters.NewScannerClient(cfg.ScannerDeepURL, cfg.ScannerTimeout)
 	pipe := pipeline.New(scannerClient, deepClient, log)
 	processor := worker.NewScanProcessor(st, gitClient, pipe, cfg.MaxRepoSizeMB, log)
+
+	// ── Live vulnerability intelligence (background sync + retroactive rescore) ─
+	if cfg.IntelligenceEnabled {
+		intelCtx, intelCancel := context.WithCancel(context.Background())
+		defer intelCancel()
+		intelStore := intelligence.NewStore(st.DB())
+		intelligence.NewScheduler(intelStore, log,
+			&intelligence.NVDSource{APIKey: cfg.NVDAPIKey},
+			&intelligence.OSVSource{Store: intelStore},
+			&intelligence.GHSASource{Token: cfg.GitHubToken},
+			&intelligence.SemgrepSource{},
+		).Start(intelCtx)
+	}
 
 	// ── Worker server (Asynq traps SIGINT/SIGTERM and shuts down gracefully) ──
 	server := worker.NewServer(

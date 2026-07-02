@@ -80,6 +80,7 @@ func run() error {
 	scanRepo := repository.NewScanRepository(db)
 	findingRepo := repository.NewFindingRepository(db)
 	integrationRepo := repository.NewGithubIntegrationRepository(db)
+	intelligenceRepo := repository.NewIntelligenceRepository(db)
 
 	// ── Services ─────────────────────────────────────────────────────────────
 	authSvc := services.NewAuthService(userRepo, tokens, sessions)
@@ -93,6 +94,7 @@ func run() error {
 	scanH := handlers.NewScanHandler(scanSvc, log)
 	reportH := handlers.NewReportHandler(scanSvc, log)
 	integrationH := handlers.NewIntegrationHandler(integrationSvc, log)
+	intelligenceH := handlers.NewIntelligenceHandler(intelligenceRepo, log)
 	webhookH := handlers.NewWebhookHandler(integrationRepo, scanSvc, log)
 	healthH := handlers.NewHealthHandler(db, rdb)
 
@@ -150,6 +152,10 @@ func run() error {
 
 			r.Patch("/findings/{findingId}", scanH.PatchFinding)
 			r.Delete("/integrations/{integrationId}", integrationH.Delete)
+
+			r.Get("/intelligence/status", intelligenceH.Status)
+			r.Get("/notifications", intelligenceH.ListNotifications)
+			r.Patch("/notifications/{id}/read", intelligenceH.MarkNotificationRead)
 		})
 	})
 

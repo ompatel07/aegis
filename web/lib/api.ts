@@ -8,6 +8,8 @@ import type {
   Finding,
   FindingFilters,
   GithubIntegration,
+  IntelligenceStatus,
+  Notification,
   Paginated,
   Project,
   Scan,
@@ -83,6 +85,25 @@ export function createApi(token?: string) {
       http
         .post<ApiSuccess<Scan>>(`/projects/${projectId}/scans`, body ?? {})
         .then((r) => r.data.data)
+        .catch(normalizeError),
+
+    // ── Intelligence ─────────────────────────────────────────────────────────
+    getIntelligenceStatus: () =>
+      http
+        .get<ApiSuccess<IntelligenceStatus>>("/intelligence/status")
+        .then((r) => r.data.data)
+        .catch(normalizeError),
+
+    listNotifications: () =>
+      http
+        .get<ApiSuccess<{ notifications: Notification[]; unread_count: number }>>("/notifications")
+        .then((r) => r.data.data)
+        .catch(normalizeError),
+
+    markNotificationRead: (id: string) =>
+      http
+        .patch(`/notifications/${id}/read`)
+        .then(() => undefined)
         .catch(normalizeError),
 
     // ── GitHub integration ───────────────────────────────────────────────────
