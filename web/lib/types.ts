@@ -145,6 +145,31 @@ export interface AISuggestion {
   provider: string;
 }
 
+export interface ExecRiskItem {
+  title: string;
+  severity: Severity;
+  impact?: string;
+  file: string;
+}
+
+export interface ExecTrend {
+  previous_grade: string;
+  current_grade: string;
+  overall_delta: number;
+  security_delta: number;
+  note: string;
+}
+
+export interface ExecReport {
+  project: string;
+  scan: Scan;
+  summary: string;
+  top_risks: ExecRiskItem[];
+  trend?: ExecTrend;
+  priorities: string[];
+  generated_by: string;
+}
+
 export interface FindingFilters {
   pillar?: Pillar;
   severity?: Severity;

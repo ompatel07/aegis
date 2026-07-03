@@ -10,7 +10,7 @@ import { ScanStatusBadge } from "@/components/dashboard/ScanStatusBadge";
 import { FindingsList } from "@/components/findings/FindingsList";
 import { Button } from "@/components/ui/button";
 import { cn, formatDate, formatDuration, gradeColor, scoreColor } from "@/lib/utils";
-import { Download } from "lucide-react";
+import { Download, FileText } from "lucide-react";
 import { useState } from "react";
 
 export default function ScanDetailPage() {
@@ -46,7 +46,17 @@ export default function ScanDetailPage() {
               {scan.overall_grade}
             </span>
           ) : null}
-          {isDone ? <ExportSarifButton scanId={scanId} /> : null}
+          {isDone ? (
+            <span className="ml-auto flex items-center gap-2">
+              <Link
+                href={`/projects/${id}/scans/${scanId}/report`}
+                className="inline-flex h-8 items-center gap-1 rounded-md border px-3 text-sm hover:bg-muted"
+              >
+                <FileText className="h-4 w-4" /> Executive report
+              </Link>
+              <ExportSarifButton scanId={scanId} />
+            </span>
+          ) : null}
         </div>
         <p className="mt-1 text-sm text-muted-foreground">
           {scan.branch ? `branch ${scan.branch} · ` : ""}

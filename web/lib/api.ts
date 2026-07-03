@@ -5,6 +5,7 @@ import type {
   AISuggestion,
   ApiSuccess,
   ConnectGitHubResult,
+  ExecReport,
   CreateProjectInput,
   Finding,
   FindingFilters,
@@ -183,6 +184,12 @@ export function createApi(token?: string) {
     getReport: (scanId: string) =>
       http
         .get<ApiSuccess<ScanReport>>(`/scans/${scanId}/report`)
+        .then((r) => r.data.data)
+        .catch(normalizeError),
+
+    getExecutiveReport: (scanId: string) =>
+      http
+        .get<ApiSuccess<ExecReport>>(`/scans/${scanId}/report/executive`)
         .then((r) => r.data.data)
         .catch(normalizeError),
 

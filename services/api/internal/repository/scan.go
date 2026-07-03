@@ -70,6 +70,25 @@ func (r *ScanRepository) GetByIDForUser(ctx context.Context, id, userID string) 
 	return &s, nil
 }
 
+// PreviousCompleted returns the most recent completed scan of a project before
+// the given time — for trend comparison. Returns ErrNotFound if there is none.
+func (r *ScanRepository) PreviousCompleted(ctx context.Context, projectID string, before interface{}) (*models.Scan, error) {
+	q := `
+		SELECT ` + scanColumns + `
+		FROM scans s
+		WHERE s.project_id = $1 AND s.status = 'completed' AND s.created_at < $2
+		ORDER BY s.created_at DESC
+		LIMIT 1`
+	var s models.Scan
+	if err := r.db.GetContext(ctx, &s, q, projectID, before); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrNotFound
+		}
+		return nil, err
+	}
+	return &s, nil
+}
+
 // ListByProject returns a page of scans for a project plus the total count.
 func (r *ScanRepository) ListByProject(ctx context.Context, projectID string, limit, offset int) ([]models.Scan, int, error) {
 	const countQ = `SELECT COUNT(*) FROM scans WHERE project_id = $1`

@@ -93,6 +93,7 @@ func run() error {
 	ruleSvc := services.NewRuleService(projectRepo, projectRuleRepo, cfg.ScannerBaseURL)
 	aiBackend := ai.New(ai.Config{Provider: cfg.AIProvider, Model: cfg.AIModel, APIKey: cfg.AIAPIKey, BaseURL: cfg.AIBaseURL})
 	aiSvc := services.NewAIService(aiBackend, findingRepo, aiAuditRepo)
+	reportSvc := services.NewReportService(scanRepo, findingRepo, projectRepo, aiBackend, aiAuditRepo)
 	log.Info().Str("provider", aiSvc.Provider()).Bool("enabled", aiSvc.Enabled()).Msg("AI layer")
 
 	// ── Handlers ─────────────────────────────────────────────────────────────
@@ -104,6 +105,7 @@ func run() error {
 	intelligenceH := handlers.NewIntelligenceHandler(intelligenceRepo, log)
 	ruleH := handlers.NewRuleHandler(ruleSvc, log)
 	aiH := handlers.NewAIHandler(aiSvc, log)
+	execReportH := handlers.NewExecReportHandler(reportSvc, log)
 	webhookH := handlers.NewWebhookHandler(integrationRepo, scanSvc, log)
 	healthH := handlers.NewHealthHandler(db, rdb)
 
@@ -158,6 +160,7 @@ func run() error {
 				r.Get("/{scanId}", scanH.Get)
 				r.Get("/{scanId}/findings", scanH.ListFindings)
 				r.Get("/{scanId}/report", reportH.Get)
+				r.Get("/{scanId}/report/executive", execReportH.Executive)
 				r.Get("/{scanId}/export/sarif", scanH.ExportSARIF)
 			})
 
