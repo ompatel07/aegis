@@ -52,6 +52,9 @@ type Finding struct {
 	RemediationDetails string         `json:"remediation_details"`
 	EstimatedEffort    string         `json:"estimated_effort"`
 	ContextMetadata    map[string]any `json:"context_metadata"`
+
+	// Local ML false-positive filter output (advisory).
+	FalsePositiveProbability *float64 `json:"false_positive_probability"`
 }
 
 // SeveritySummary holds per-severity counts.

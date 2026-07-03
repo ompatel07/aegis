@@ -86,6 +86,9 @@ class Finding(BaseModel):
     estimated_effort: str | None = None     # trivial|quick|moderate|significant
     context_metadata: dict | None = None    # engine-specific enrichment
 
+    # Local ML false-positive filter output (advisory: sorts + badges, never hides).
+    false_positive_probability: float | None = None
+
 
 class SeveritySummary(BaseModel):
     critical: int = 0

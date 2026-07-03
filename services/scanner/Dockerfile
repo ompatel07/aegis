@@ -19,7 +19,7 @@ ENV PYTHONUNBUFFERED=1 \
 RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
-        curl ca-certificates git gnupg xz-utils tar; \
+        curl ca-certificates git gnupg xz-utils tar libgomp1; \
     \
     # Resolve arch-specific asset names once.
     arch="$(dpkg --print-architecture)"; \
@@ -82,7 +82,7 @@ COPY . .
 # ── Non-root runtime user + writable caches ──────────────────────────────────
 RUN set -eux; \
     useradd --create-home --uid 10001 aegis; \
-    mkdir -p /opt/aegis/cache/semgrep /opt/aegis/cache/trivy /workspaces; \
+    mkdir -p /opt/aegis/cache/semgrep /opt/aegis/cache/trivy /opt/aegis/models /workspaces; \
     chown -R aegis:aegis /opt/aegis /workspaces /app
 
 USER aegis
@@ -90,7 +90,8 @@ USER aegis
 ENV SCANNER_HOST=0.0.0.0 \
     SCANNER_PORT=8000 \
     SEMGREP_RULES_CACHE=/opt/aegis/cache/semgrep \
-    TRIVY_CACHE_DIR=/opt/aegis/cache/trivy
+    TRIVY_CACHE_DIR=/opt/aegis/cache/trivy \
+    FP_MODEL_PATH=/opt/aegis/models/fp_classifier.joblib
 
 EXPOSE 8000
 

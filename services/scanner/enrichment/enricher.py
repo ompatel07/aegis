@@ -78,7 +78,19 @@ def enrich_all(findings: list[Finding]) -> list[Finding]:
         except Exception as exc:  # noqa: BLE001 — one bad finding must not abort
             log.debug("enrichment.finding_failed", rule_id=f.rule_id, error=str(exc))
             _fallback_only(f)
+    _score_false_positives(findings)
     return findings
+
+
+def _score_false_positives(findings: list[Finding]) -> None:
+    """Attach the local ML false-positive probability (advisory). Best-effort:
+    if the model or its deps are unavailable, findings are simply left unscored."""
+    try:
+        from ml import classifier
+
+        classifier.score_findings(findings)
+    except Exception as exc:  # noqa: BLE001 — ML must never break a scan
+        log.debug("enrichment.fp_scoring_skipped", error=str(exc))
 
 
 def _enrich(f: Finding, templates: dict) -> None:

@@ -124,7 +124,7 @@ func (s *Store) SaveResults(ctx context.Context, scanID string, agg pipeline.Agg
 	return nil
 }
 
-const findingColumnCount = 25
+const findingColumnCount = 26
 
 // insertFindings bulk-inserts findings in chunks (bounded by Postgres' param limit).
 func insertFindings(ctx context.Context, tx *sqlx.Tx, scanID string, findings []types.Finding) error {
@@ -150,7 +150,7 @@ func buildInsert(scanID string, chunk []types.Finding) (string, []any) {
 		 file_path, line_start, line_end, column_start, column_end,
 		 cwe_id, cve_id, owasp_category, fix_suggestion, metadata,
 		 title_human, impact, risk_level, remediation_action, remediation_details,
-		 estimated_effort, context_metadata) VALUES `)
+		 estimated_effort, context_metadata, false_positive_probability) VALUES `)
 
 	args := make([]any, 0, len(chunk)*findingColumnCount)
 	for i, f := range chunk {
@@ -175,6 +175,7 @@ func buildInsert(scanID string, chunk []types.Finding) (string, []any) {
 			nullStr(f.TitleHuman), nullStr(f.Impact), nullStr(f.RiskLevel),
 			nullStr(f.RemediationAction), nullStr(f.RemediationDetails),
 			nullStr(f.EstimatedEffort), metadataJSON(f.ContextMetadata),
+			f.FalsePositiveProbability,
 		)
 	}
 	return b.String(), args

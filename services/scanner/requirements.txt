@@ -26,6 +26,12 @@ pygments==2.18.0
 # PyYAML loads the context-rich finding templates (enrichment/rule_templates.yaml).
 pyyaml==6.0.2
 
+# ─── Local ML (privacy-safe false-positive filter) ───────────────────────────
+# Trains/scores on finding METADATA only — never source code. lightgbm needs
+# libgomp1 (added in the Dockerfile); scikit-learn provides CV metrics + joblib.
+lightgbm==4.5.0
+scikit-learn==1.5.2
+
 # NOTE: trivy and gitleaks are installed as binaries in the Dockerfile, not pip.
 
 # ─── Tests ───────────────────────────────────────────────────────────────────

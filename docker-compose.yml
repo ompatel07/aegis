@@ -67,6 +67,8 @@ services:
     volumes:
       # Shared with the orchestrator so it can read cloned repos by path.
       - workspaces:/workspaces
+      # Persist the trained false-positive model across restarts.
+      - models:/opt/aegis/models
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/health"]
       interval: 30s
@@ -196,3 +198,4 @@ volumes:
   pgdata:
   redisdata:
   workspaces:
+  models:

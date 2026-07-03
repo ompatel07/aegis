@@ -112,6 +112,7 @@ export interface Finding {
   remediation_details?: string;
   estimated_effort?: "trivial" | "quick" | "moderate" | "significant";
   context_metadata?: Record<string, unknown>;
+  false_positive_probability?: number;
   created_at: string;
 }
 

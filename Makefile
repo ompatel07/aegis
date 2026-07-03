@@ -97,7 +97,8 @@ smoke: ## Engine smoke + rule/analysis unit tests in Docker (the safety-net gate
 	$(COMPOSE) run --rm --no-deps scanner \
 		python -m pytest tests/test_engines_smoke.py tests/test_taint_rules.py \
 			tests/test_reachability.py tests/test_duplication.py tests/test_quality_checks.py \
-			tests/test_deep_engines.py tests/test_enrichment.py tests/test_rulepacks.py -v
+			tests/test_deep_engines.py tests/test_enrichment.py tests/test_rulepacks.py \
+			tests/test_ml.py -v
 
 .PHONY: lint
 lint: lint-api lint-orchestrator lint-scanner lint-web ## Lint all services

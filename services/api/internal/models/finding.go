@@ -53,5 +53,8 @@ type Finding struct {
 	EstimatedEffort    *string `db:"estimated_effort" json:"estimated_effort,omitempty"`
 	ContextMetadata    JSONB   `db:"context_metadata" json:"context_metadata,omitempty"`
 
+	// Local ML false-positive filter output (advisory: sorts + badge, never hides).
+	FalsePositiveProbability *float64 `db:"false_positive_probability" json:"false_positive_probability,omitempty"`
+
 	CreatedAt time.Time `db:"created_at" json:"created_at"`
 }

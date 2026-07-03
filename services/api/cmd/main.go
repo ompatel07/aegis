@@ -156,6 +156,7 @@ func run() error {
 			})
 
 			r.Patch("/findings/{findingId}", scanH.PatchFinding)
+			r.Post("/findings/{findingId}/feedback", scanH.Feedback)
 			r.Delete("/integrations/{integrationId}", integrationH.Delete)
 			r.Delete("/rules/{ruleId}", ruleH.Delete)
 

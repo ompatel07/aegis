@@ -36,6 +36,11 @@ type patchFindingRequest struct {
 	IsSuppressed    *bool `json:"is_suppressed"`
 }
 
+type feedbackRequest struct {
+	Action string `json:"action" validate:"required,oneof=marked_fp fixed suppressed ignored confirmed"`
+	Reason string `json:"reason" validate:"omitempty,max=2000"`
+}
+
 // ListForProject handles GET /api/v1/projects/{id}/scans.
 func (h *ScanHandler) ListForProject(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.UserID(r.Context())
@@ -92,6 +97,23 @@ func (h *ScanHandler) ExportSARIF(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(log); err != nil {
 		h.log.Error().Err(err).Str("scan_id", scanID).Msg("failed to encode SARIF")
 	}
+}
+
+// Feedback handles POST /api/v1/findings/{findingId}/feedback — records a user's
+// action on a finding (feeds the local false-positive classifier).
+func (h *ScanHandler) Feedback(w http.ResponseWriter, r *http.Request) {
+	var req feedbackRequest
+	if apiErr := httpx.DecodeAndValidate(w, r, &req); apiErr != nil {
+		httpx.WriteError(w, apiErr)
+		return
+	}
+	userID := middleware.UserID(r.Context())
+	findingID := chi.URLParam(r, "findingId")
+	if err := h.scans.RecordFeedback(r.Context(), findingID, userID, req.Action, req.Reason); err != nil {
+		writeServiceError(w, h.log, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // Get handles GET /api/v1/scans/{scanId} — scan detail with finding breakdown.

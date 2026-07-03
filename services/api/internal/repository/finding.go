@@ -64,11 +64,12 @@ func (r *FindingRepository) ListByScan(
 		return nil, 0, err
 	}
 
-	// Order by severity rank (critical first), then file/line for stability.
+	// Order by severity, then push likely false positives down within each band
+	// (FP-probability-adjusted priority), then file/line for stability.
 	listQ := fmt.Sprintf(`
 		SELECT * FROM findings
 		WHERE %s
-		ORDER BY %s, file_path, line_start NULLS LAST
+		ORDER BY %s, COALESCE(false_positive_probability, 0) ASC, file_path, line_start NULLS LAST
 		LIMIT $%d OFFSET $%d`, clause, severityRankSQL, idx, idx+1)
 	args = append(args, limit, offset)
 
@@ -85,13 +86,33 @@ func (r *FindingRepository) AllByScan(ctx context.Context, scanID string) ([]mod
 	q := fmt.Sprintf(`
 		SELECT * FROM findings
 		WHERE scan_id = $1
-		ORDER BY %s, file_path, line_start NULLS LAST
+		ORDER BY %s, COALESCE(false_positive_probability, 0) ASC, file_path, line_start NULLS LAST
 		LIMIT 50000`, severityRankSQL)
 	findings := []models.Finding{}
 	if err := r.db.SelectContext(ctx, &findings, q, scanID); err != nil {
 		return nil, err
 	}
 	return findings, nil
+}
+
+// InsertFeedback records a user's action on a finding (ownership-checked via
+// finding -> scan -> project -> user). Feeds the local FP classifier's training.
+func (r *FindingRepository) InsertFeedback(ctx context.Context, findingID, userID, action, reason string) error {
+	res, err := r.db.ExecContext(ctx,
+		`INSERT INTO finding_feedback (finding_id, user_id, action, reason)
+		 SELECT f.id, $2, $3, $4
+		   FROM findings f
+		   JOIN scans s    ON s.id = f.scan_id
+		   JOIN projects p ON p.id = s.project_id
+		  WHERE f.id = $1 AND p.user_id = $2`,
+		findingID, userID, action, reason)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ErrNotFound
+	}
+	return nil
 }
 
 // severityRankSQL maps severities to an orderable rank (critical = 0).

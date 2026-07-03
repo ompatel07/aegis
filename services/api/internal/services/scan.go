@@ -217,6 +217,24 @@ func (s *ScanService) ListFindings(
 	return s.findings.ListByScan(ctx, scanID, filter, limit, offset)
 }
 
+// RecordFeedback stores a user's action on a finding (for the FP classifier) and
+// reflects it on the finding's triage flags.
+func (s *ScanService) RecordFeedback(ctx context.Context, findingID, userID, action, reason string) error {
+	if err := s.findings.InsertFeedback(ctx, findingID, userID, action, reason); err != nil {
+		return err
+	}
+	yes, no := true, false
+	switch action {
+	case "marked_fp":
+		_, _ = s.findings.UpdateTriage(ctx, findingID, userID, &yes, nil)
+	case "suppressed", "ignored":
+		_, _ = s.findings.UpdateTriage(ctx, findingID, userID, nil, &yes)
+	case "confirmed", "fixed":
+		_, _ = s.findings.UpdateTriage(ctx, findingID, userID, &no, &no)
+	}
+	return nil
+}
+
 // UpdateFindingTriage flips suppression / false-positive flags for the user's finding.
 func (s *ScanService) UpdateFindingTriage(
 	ctx context.Context, findingID, userID string, isFalsePositive, isSuppressed *bool,

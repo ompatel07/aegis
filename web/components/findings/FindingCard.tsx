@@ -34,6 +34,15 @@ function EffortBadge({ effort }: { effort?: string }) {
   );
 }
 
+function LikelyFPBadge({ p }: { p?: number }) {
+  if (p == null || p <= 0.5) return null;
+  return (
+    <Badge className="border-slate-400/40 bg-slate-400/15 text-slate-500" title="Local ML estimate">
+      likely FP {Math.round(p * 100)}%
+    </Badge>
+  );
+}
+
 export function FindingCard({ finding, onUpdated }: { finding: Finding; onUpdated?: () => void }) {
   const api = useApi();
   const [open, setOpen] = useState(false);
@@ -55,6 +64,17 @@ export function FindingCard({ finding, onUpdated }: { finding: Finding; onUpdate
     }
   }
 
+  async function feedback(action: "marked_fp" | "confirmed") {
+    setBusy(true);
+    try {
+      await api.sendFeedback(finding.id, action);
+      onUpdated?.();
+      setOpen(false);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <>
       <Card
@@ -69,6 +89,7 @@ export function FindingCard({ finding, onUpdated }: { finding: Finding; onUpdate
               <SeverityBadge severity={finding.severity} />
               <Badge className="border-border bg-secondary text-secondary-foreground">{finding.engine}</Badge>
               <ReachabilityBadge metadata={finding.metadata} />
+              <LikelyFPBadge p={finding.false_positive_probability} />
               {finding.is_suppressed ? (
                 <Badge className="border-border bg-muted text-muted-foreground">suppressed</Badge>
               ) : null}
@@ -135,16 +156,14 @@ export function FindingCard({ finding, onUpdated }: { finding: Finding; onUpdate
         </div>
 
         <div className="mt-4 flex justify-end gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={busy}
-            onClick={() => triage({ is_false_positive: !finding.is_false_positive })}
-          >
-            {finding.is_false_positive ? "Unmark false positive" : "Mark false positive"}
+          <Button variant="secondary" size="sm" disabled={busy} onClick={() => feedback("confirmed")}>
+            Confirm
+          </Button>
+          <Button variant="outline" size="sm" disabled={busy} onClick={() => feedback("marked_fp")}>
+            Mark false positive
           </Button>
           <Button
-            variant="secondary"
+            variant="outline"
             size="sm"
             disabled={busy}
             onClick={() => triage({ is_suppressed: !finding.is_suppressed })}

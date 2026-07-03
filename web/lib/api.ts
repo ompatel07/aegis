@@ -178,6 +178,16 @@ export function createApi(token?: string) {
         .then((r) => r.data)
         .catch(normalizeError),
 
+    sendFeedback: (
+      findingId: string,
+      action: "marked_fp" | "confirmed" | "fixed" | "suppressed" | "ignored",
+      reason?: string,
+    ) =>
+      http
+        .post(`/findings/${findingId}/feedback`, { action, reason })
+        .then(() => undefined)
+        .catch(normalizeError),
+
     patchFinding: (
       findingId: string,
       body: { is_false_positive?: boolean; is_suppressed?: boolean },

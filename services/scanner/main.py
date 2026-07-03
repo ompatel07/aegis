@@ -40,6 +40,14 @@ async def lifespan(app: FastAPI):
         log.warning("startup.tools_missing", missing=missing)
     log.info("startup", environment=settings.environment, tools=tools)
 
+    # Load (or seed-train) the false-positive classifier so findings get scored.
+    try:
+        from ml import classifier
+
+        await asyncio.get_event_loop().run_in_executor(None, classifier.ensure_model)
+    except Exception as exc:  # noqa: BLE001 — ML is best-effort, never fatal
+        log.warning("startup.ml_model_unavailable", error=str(exc))
+
     # Keep rule packs / vuln DBs fresh in the background (on boot + every 6h).
     refresh_task = asyncio.create_task(_rulepack_refresh_loop())
     yield
