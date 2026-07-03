@@ -2,6 +2,7 @@
 // typed methods; the access token is injected as a Bearer header.
 import axios, { AxiosError, type AxiosInstance } from "axios";
 import type {
+  AISuggestion,
   ApiSuccess,
   ConnectGitHubResult,
   CreateProjectInput,
@@ -85,6 +86,19 @@ export function createApi(token?: string) {
     ) =>
       http
         .post<ApiSuccess<Scan>>(`/projects/${projectId}/scans`, body ?? {})
+        .then((r) => r.data.data)
+        .catch(normalizeError),
+
+    // ── AI fix suggestions ─────────────────────────────────────────────────────
+    getAiStatus: () =>
+      http
+        .get<ApiSuccess<{ enabled: boolean; provider: string }>>("/ai/status")
+        .then((r) => r.data.data)
+        .catch(normalizeError),
+
+    suggestFix: (findingId: string) =>
+      http
+        .post<ApiSuccess<AISuggestion>>(`/findings/${findingId}/suggest-fix`)
         .then((r) => r.data.data)
         .catch(normalizeError),
 

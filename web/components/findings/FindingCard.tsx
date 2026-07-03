@@ -9,7 +9,7 @@ import { SeverityBadge } from "./SeverityBadge";
 import { ReachabilityBadge, ReachabilityDetail } from "./ReachabilityBadge";
 import { useApi } from "@/lib/use-api";
 import type { Finding } from "@/lib/types";
-import { Clock, FileCode2, ShieldAlert, Wrench } from "lucide-react";
+import { Clock, FileCode2, ShieldAlert, Sparkles, Wrench } from "lucide-react";
 
 const RISK_CLASS: Record<string, string> = {
   critical: "border-red-500/40 bg-red-500/15 text-red-600 dark:text-red-400",
@@ -153,6 +153,8 @@ export function FindingCard({ finding, onUpdated }: { finding: Finding; onUpdate
               <p className="whitespace-pre-wrap text-muted-foreground">{finding.description}</p>
             </div>
           ) : null}
+
+          <AIFixSection findingId={finding.id} />
         </div>
 
         <div className="mt-4 flex justify-end gap-2">
@@ -214,6 +216,49 @@ function ContextMetadata({ data }: { data?: Record<string, unknown> }) {
           </>
         ) : null}
       </div>
+    </div>
+  );
+}
+
+function AIFixSection({ findingId }: { findingId: string }) {
+  const api = useApi();
+  const [busy, setBusy] = useState(false);
+  const [suggestion, setSuggestion] = useState<{ suggestion: string; model: string; provider: string } | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function getFix() {
+    setBusy(true);
+    setErr(null);
+    try {
+      setSuggestion(await api.suggestFix(findingId));
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="border-t pt-3">
+      <div className="flex items-center gap-2">
+        <Sparkles className="h-4 w-4" />
+        <span className="font-medium">AI fix suggestion</span>
+        <Button variant="secondary" size="sm" className="ml-auto" disabled={busy} onClick={getFix}>
+          {busy ? "Generating…" : "Get AI fix suggestion"}
+        </Button>
+      </div>
+      {err ? <p className="mt-2 text-xs text-destructive">{err}</p> : null}
+      {suggestion ? (
+        <div className="mt-2 space-y-2">
+          <pre className="max-h-64 overflow-auto whitespace-pre-wrap rounded-md bg-muted p-3 text-xs">
+            {suggestion.suggestion}
+          </pre>
+          <p className="text-xs text-muted-foreground">
+            Advisory only via {suggestion.provider}/{suggestion.model}. Review and apply manually —
+            Aegis never auto-applies changes.
+          </p>
+        </div>
+      ) : null}
     </div>
   );
 }

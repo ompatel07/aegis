@@ -95,6 +95,22 @@ func (r *FindingRepository) AllByScan(ctx context.Context, scanID string) ([]mod
 	return findings, nil
 }
 
+// ProjectContextForFinding resolves the owning project's id, AI-fix flag, and
+// language for a finding the user owns (finding -> scan -> project).
+func (r *FindingRepository) ProjectContextForFinding(ctx context.Context, findingID, userID string) (projectID string, aiEnabled bool, language *string, err error) {
+	err = r.db.QueryRowxContext(ctx,
+		`SELECT p.id, p.ai_fix_enabled, p.language
+		   FROM findings f
+		   JOIN scans s    ON s.id = f.scan_id
+		   JOIN projects p ON p.id = s.project_id
+		  WHERE f.id = $1 AND p.user_id = $2`,
+		findingID, userID).Scan(&projectID, &aiEnabled, &language)
+	if errors.Is(err, sql.ErrNoRows) {
+		err = ErrNotFound
+	}
+	return
+}
+
 // InsertFeedback records a user's action on a finding (ownership-checked via
 // finding -> scan -> project -> user). Feeds the local FP classifier's training.
 func (r *FindingRepository) InsertFeedback(ctx context.Context, findingID, userID, action, reason string) error {

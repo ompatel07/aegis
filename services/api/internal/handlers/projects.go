@@ -28,12 +28,14 @@ type projectRequest struct {
 	RepoType      *string `json:"repo_type" validate:"omitempty,oneof=github gitlab bitbucket upload"`
 	DefaultBranch string  `json:"default_branch" validate:"omitempty,max=255"`
 	Language      *string `json:"language" validate:"omitempty,max=64"`
+	AIFixEnabled  *bool   `json:"ai_fix_enabled"`
 }
 
 func (r projectRequest) toInput() services.ProjectInput {
 	return services.ProjectInput{
 		Name: r.Name, Description: r.Description, RepoURL: r.RepoURL,
 		RepoType: r.RepoType, DefaultBranch: r.DefaultBranch, Language: r.Language,
+		AIFixEnabled: r.AIFixEnabled,
 	}
 }
 

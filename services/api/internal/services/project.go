@@ -28,6 +28,7 @@ type ProjectInput struct {
 	RepoType      *string
 	DefaultBranch string
 	Language      *string
+	AIFixEnabled  *bool
 }
 
 func (s *ProjectService) Create(ctx context.Context, userID string, in ProjectInput) (*models.Project, error) {
@@ -73,6 +74,9 @@ func (s *ProjectService) Update(ctx context.Context, id, userID string, in Proje
 		existing.DefaultBranch = in.DefaultBranch
 	}
 	existing.Language = in.Language
+	if in.AIFixEnabled != nil {
+		existing.AIFixEnabled = *in.AIFixEnabled
+	}
 
 	if err := s.projects.Update(ctx, existing); err != nil {
 		return nil, err

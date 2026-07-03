@@ -39,6 +39,15 @@ type Config struct {
 
 	// Scanner service — used to validate uploaded custom rules with semgrep.
 	ScannerBaseURL string
+
+	// AI layer (opt-in, off by default). Provider is a single switch:
+	//   disabled | mock | claude | openai   (openai covers Azure/Bedrock/
+	//   self-hosted OpenAI-compatible endpoints via AIBaseURL). Changing it does
+	//   not touch any other subsystem.
+	AIProvider string
+	AIModel    string
+	AIAPIKey   string
+	AIBaseURL  string
 }
 
 // Load reads configuration from environment variables (and an optional .env via
@@ -65,6 +74,10 @@ func Load() (*Config, error) {
 	v.SetDefault("JWT_REFRESH_TTL_HOURS", 168)
 	v.SetDefault("RATE_LIMIT_RPM", 120)
 	v.SetDefault("SCANNER_BASE_URL", "http://scanner:8000")
+	v.SetDefault("AI_PROVIDER", "disabled")
+	v.SetDefault("AI_MODEL", "")
+	v.SetDefault("AI_API_KEY", "")
+	v.SetDefault("AI_BASE_URL", "")
 
 	cfg := &Config{
 		Environment:        v.GetString("ENVIRONMENT"),
@@ -72,6 +85,10 @@ func Load() (*Config, error) {
 		LogPretty:          v.GetBool("LOG_PRETTY"),
 		HTTPPort:           v.GetInt("API_PORT"),
 		ScannerBaseURL:     v.GetString("SCANNER_BASE_URL"),
+		AIProvider:         v.GetString("AI_PROVIDER"),
+		AIModel:            v.GetString("AI_MODEL"),
+		AIAPIKey:           v.GetString("AI_API_KEY"),
+		AIBaseURL:          v.GetString("AI_BASE_URL"),
 		CORSOrigins:        splitAndTrim(v.GetString("CORS_ALLOWED_ORIGINS")),
 		ShutdownTimeout:    time.Duration(v.GetInt("SHUTDOWN_TIMEOUT_SECONDS")) * time.Second,
 		DatabaseURL:        v.GetString("DATABASE_URL"),

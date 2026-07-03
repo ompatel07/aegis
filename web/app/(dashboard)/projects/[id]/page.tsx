@@ -12,7 +12,8 @@ import { TrendChart } from "@/components/dashboard/TrendChart";
 import { GitHubIntegrationCard } from "@/components/dashboard/GitHubIntegrationCard";
 import { CustomRulesCard } from "@/components/dashboard/CustomRulesCard";
 import { cn, formatDate, formatDuration, gradeColor, scoreColor } from "@/lib/utils";
-import { Play } from "lucide-react";
+import { Play, Sparkles } from "lucide-react";
+import type { Project } from "@/lib/types";
 
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -76,6 +77,7 @@ export default function ProjectDetailPage() {
 
       {canScan ? <GitHubIntegrationCard projectId={id} /> : null}
       <CustomRulesCard projectId={id} />
+      <AISettingsCard project={project} onChanged={() => projectQ.refetch()} />
 
       <TrendChart scans={scans} />
 
@@ -131,5 +133,51 @@ export default function ProjectDetailPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function AISettingsCard({ project, onChanged }: { project: Project; onChanged: () => void }) {
+  const api = useApi();
+  const statusQ = useQuery({ queryKey: ["ai-status"], queryFn: () => api.getAiStatus() });
+  const toggle = useMutation({
+    mutationFn: (enabled: boolean) =>
+      api.updateProject(project.id, {
+        name: project.name,
+        description: project.description,
+        repo_url: project.repo_url,
+        repo_type: project.repo_type,
+        default_branch: project.default_branch,
+        language: project.language,
+        ai_fix_enabled: enabled,
+      }),
+    onSuccess: onChanged,
+  });
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Sparkles className="h-4 w-4" /> AI fix suggestions
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3 text-sm">
+        <p className="text-muted-foreground">
+          Opt-in, snippet-only, and fully audited — Aegis never auto-applies changes. Backend:{" "}
+          {statusQ.data?.provider ?? "…"} ({statusQ.data?.enabled ? "configured" : "not configured"}).
+        </p>
+        <div className="flex items-center gap-3">
+          <span>{project.ai_fix_enabled ? "Enabled for this project" : "Disabled for this project"}</span>
+          <Button
+            variant="outline"
+            size="sm"
+            className="ml-auto"
+            disabled={toggle.isPending}
+            onClick={() => toggle.mutate(!project.ai_fix_enabled)}
+          >
+            {project.ai_fix_enabled ? "Disable" : "Enable"}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

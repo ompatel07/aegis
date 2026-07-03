@@ -120,6 +120,13 @@ services:
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-dev-refresh-secret-change-me}
       TOKEN_ENCRYPTION_KEY: ${TOKEN_ENCRYPTION_KEY:-0000000000000000000000000000000000000000000000000000000000000000}
       RATE_LIMIT_RPM: ${RATE_LIMIT_RPM:-120}
+      SCANNER_BASE_URL: http://scanner:8000
+      # AI layer: disabled | mock | claude | openai. Defaults to the credential-free
+      # mock; each project still opts in (ai_fix_enabled) before any call is made.
+      AI_PROVIDER: ${AI_PROVIDER:-mock}
+      AI_MODEL: ${AI_MODEL:-}
+      AI_API_KEY: ${AI_API_KEY:-}
+      AI_BASE_URL: ${AI_BASE_URL:-}
     depends_on:
       postgres:
         condition: service_healthy

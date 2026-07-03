@@ -21,6 +21,7 @@ type Project struct {
 	RepoType      *string   `db:"repo_type" json:"repo_type,omitempty"`
 	DefaultBranch string    `db:"default_branch" json:"default_branch"`
 	Language      *string   `db:"language" json:"language,omitempty"`
+	AIFixEnabled  bool      `db:"ai_fix_enabled" json:"ai_fix_enabled"`
 	CreatedAt     time.Time `db:"created_at" json:"created_at"`
 	UpdatedAt     time.Time `db:"updated_at" json:"updated_at"`
 }

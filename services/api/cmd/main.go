@@ -17,6 +17,7 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/redis/go-redis/v9"
 
+	"github.com/aegis-platform/api/internal/ai"
 	"github.com/aegis-platform/api/internal/auth"
 	"github.com/aegis-platform/api/internal/config"
 	"github.com/aegis-platform/api/internal/database"
@@ -82,6 +83,7 @@ func run() error {
 	integrationRepo := repository.NewGithubIntegrationRepository(db)
 	intelligenceRepo := repository.NewIntelligenceRepository(db)
 	projectRuleRepo := repository.NewProjectRuleRepository(db)
+	aiAuditRepo := repository.NewAIAuditRepository(db)
 
 	// ── Services ─────────────────────────────────────────────────────────────
 	authSvc := services.NewAuthService(userRepo, tokens, sessions)
@@ -89,6 +91,9 @@ func run() error {
 	scanSvc := services.NewScanService(projectRepo, scanRepo, findingRepo, projectRuleRepo, publisher)
 	integrationSvc := services.NewIntegrationService(projectRepo, integrationRepo, encryptor)
 	ruleSvc := services.NewRuleService(projectRepo, projectRuleRepo, cfg.ScannerBaseURL)
+	aiBackend := ai.New(ai.Config{Provider: cfg.AIProvider, Model: cfg.AIModel, APIKey: cfg.AIAPIKey, BaseURL: cfg.AIBaseURL})
+	aiSvc := services.NewAIService(aiBackend, findingRepo, aiAuditRepo)
+	log.Info().Str("provider", aiSvc.Provider()).Bool("enabled", aiSvc.Enabled()).Msg("AI layer")
 
 	// ── Handlers ─────────────────────────────────────────────────────────────
 	authH := handlers.NewAuthHandler(authSvc, log)
@@ -98,6 +103,7 @@ func run() error {
 	integrationH := handlers.NewIntegrationHandler(integrationSvc, log)
 	intelligenceH := handlers.NewIntelligenceHandler(intelligenceRepo, log)
 	ruleH := handlers.NewRuleHandler(ruleSvc, log)
+	aiH := handlers.NewAIHandler(aiSvc, log)
 	webhookH := handlers.NewWebhookHandler(integrationRepo, scanSvc, log)
 	healthH := handlers.NewHealthHandler(db, rdb)
 
@@ -157,6 +163,9 @@ func run() error {
 
 			r.Patch("/findings/{findingId}", scanH.PatchFinding)
 			r.Post("/findings/{findingId}/feedback", scanH.Feedback)
+			r.Post("/findings/{findingId}/suggest-fix", aiH.SuggestFix)
+			r.Get("/ai/status", aiH.Status)
+			r.Get("/ai/audit", aiH.Audit)
 			r.Delete("/integrations/{integrationId}", integrationH.Delete)
 			r.Delete("/rules/{ruleId}", ruleH.Delete)
 

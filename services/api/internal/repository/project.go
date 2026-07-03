@@ -88,11 +88,11 @@ func (r *ProjectRepository) Update(ctx context.Context, p *models.Project) error
 	const q = `
 		UPDATE projects
 		SET name = $1, description = $2, repo_url = $3, repo_type = $4,
-		    default_branch = $5, language = $6
-		WHERE id = $7 AND user_id = $8
+		    default_branch = $5, language = $6, ai_fix_enabled = $7
+		WHERE id = $8 AND user_id = $9
 		RETURNING updated_at`
 	err := r.db.QueryRowxContext(ctx, q,
-		p.Name, p.Description, p.RepoURL, p.RepoType, p.DefaultBranch, p.Language, p.ID, p.UserID,
+		p.Name, p.Description, p.RepoURL, p.RepoType, p.DefaultBranch, p.Language, p.AIFixEnabled, p.ID, p.UserID,
 	).Scan(&p.UpdatedAt)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {

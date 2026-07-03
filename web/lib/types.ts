@@ -54,6 +54,7 @@ export interface Project {
   repo_type?: "github" | "gitlab" | "bitbucket" | "upload";
   default_branch: string;
   language?: string;
+  ai_fix_enabled: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -135,6 +136,13 @@ export interface CreateProjectInput {
   repo_type?: Project["repo_type"];
   default_branch?: string;
   language?: string;
+  ai_fix_enabled?: boolean;
+}
+
+export interface AISuggestion {
+  suggestion: string;
+  model: string;
+  provider: string;
 }
 
 export interface FindingFilters {
