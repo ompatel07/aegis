@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -12,13 +13,23 @@ import (
 
 // ExecReport is a CISO-level, metadata-only executive summary of a scan.
 type ExecReport struct {
-	Project     string       `json:"project"`
-	Scan        *models.Scan `json:"scan"`
-	Summary     string       `json:"summary"`
-	TopRisks    []RiskItem   `json:"top_risks"`
-	Trend       *Trend       `json:"trend,omitempty"`
-	Priorities  []string     `json:"priorities"`
-	GeneratedBy string       `json:"generated_by"` // template | ai:<provider>
+	Project     string         `json:"project"`
+	Scan        *models.Scan   `json:"scan"`
+	Summary     string         `json:"summary"`
+	TopRisks    []RiskItem     `json:"top_risks"`
+	Trend       *Trend         `json:"trend,omitempty"`
+	Priorities  []string       `json:"priorities"`
+	AICode      *AICodeSummary `json:"ai_code,omitempty"`
+	GeneratedBy string         `json:"generated_by"` // template | ai:<provider>
+}
+
+// AICodeSummary is the executive view of AI-generated-code exposure.
+type AICodeSummary struct {
+	AIGeneratedPct   float64 `json:"ai_generated_pct"`
+	SafetyScore      int     `json:"safety_score"`
+	FindingsInAICode int     `json:"findings_in_ai_code"`
+	TopIssue         string  `json:"top_issue,omitempty"`
+	Note             string  `json:"note"`
 }
 
 type RiskItem struct {
@@ -72,6 +83,7 @@ func (s *ReportService) Executive(ctx context.Context, scanID, userID string) (*
 		TopRisks:    topRisks(findings, 5),
 		Trend:       s.trend(ctx, project.ID, scan),
 		Priorities:  priorities(findings),
+		AICode:      aiCodeSummary(scan),
 		GeneratedBy: "template",
 		Summary:     templateSummary(project.Name, scan, findings),
 	}
@@ -192,12 +204,55 @@ func metadataDigest(project string, scan *models.Scan, findings []models.Finding
 	fmt.Fprintf(&b, "Project: %s\nOverall grade: %s (security %d, quality %d, deployment %d)\n",
 		project, orDash(derefStr(scan.OverallGrade)), derefIntP(scan.SecurityScore),
 		derefIntP(scan.QualityScore), derefIntP(scan.DeploymentScore))
-	fmt.Fprintf(&b, "Security issues: %d, secrets: %d, vulnerable deps: %d\n\nTop findings (title | severity):\n",
+	fmt.Fprintf(&b, "Security issues: %d, secrets: %d, vulnerable deps: %d\n",
 		scan.SecurityIssuesTotal, scan.SecretsFound, scan.VulnerabilitiesFound)
+	if ac := aiCodeSummary(scan); ac != nil {
+		fmt.Fprintf(&b, "AI-generated code: %.0f%% of codebase, %d finding(s) in it, safety score %d/100\n",
+			ac.AIGeneratedPct, ac.FindingsInAICode, ac.SafetyScore)
+	}
+	b.WriteString("\nTop findings (title | severity):\n")
 	for i, r := range topRisks(findings, 10) {
 		fmt.Fprintf(&b, "%d. %s | %s\n", i+1, r.Title, r.Severity)
 	}
 	return b.String()
+}
+
+// aiCodeSummary builds the executive AI-code view from the scan's stored report.
+func aiCodeSummary(scan *models.Scan) *AICodeSummary {
+	if scan.AIGeneratedPct == nil {
+		return nil // AI-code pass did not run for this scan
+	}
+	sum := &AICodeSummary{AIGeneratedPct: *scan.AIGeneratedPct}
+	if scan.AICodeSafetyScore != nil {
+		sum.SafetyScore = *scan.AICodeSafetyScore
+	}
+	if len(scan.AICodeReport) > 0 {
+		var rep struct {
+			FindingsInAICode int `json:"findings_in_ai_code"`
+			TopAIIssues      []struct {
+				Title string `json:"title"`
+				Count int    `json:"count"`
+			} `json:"top_ai_issues"`
+		}
+		if err := json.Unmarshal(scan.AICodeReport, &rep); err == nil {
+			sum.FindingsInAICode = rep.FindingsInAICode
+			if len(rep.TopAIIssues) > 0 {
+				sum.TopIssue = rep.TopAIIssues[0].Title
+			}
+		}
+	}
+	switch {
+	case sum.AIGeneratedPct >= 40:
+		sum.Note = fmt.Sprintf("An estimated %.0f%% of the codebase appears AI-generated — a material share. "+
+			"AI-generated code carries ~2.7x the vulnerability density of human-written code, so the %d finding(s) "+
+			"in it warrant focused review.", sum.AIGeneratedPct, sum.FindingsInAICode)
+	case sum.AIGeneratedPct > 0:
+		sum.Note = fmt.Sprintf("An estimated %.0f%% of the codebase appears AI-generated, containing %d finding(s). "+
+			"AI-code safety score: %d/100.", sum.AIGeneratedPct, sum.FindingsInAICode, sum.SafetyScore)
+	default:
+		sum.Note = "No AI-generated code was detected in this scan."
+	}
+	return sum
 }
 
 func derefStr(s *string) string {

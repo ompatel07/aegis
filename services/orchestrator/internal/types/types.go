@@ -55,6 +55,25 @@ type Finding struct {
 
 	// Local ML false-positive filter output (advisory).
 	FalsePositiveProbability *float64 `json:"false_positive_probability"`
+
+	// AI-generated-code tagging (Phase 2C), set by the orchestrator from the
+	// AI-code pass's per-file scores.
+	InAIGeneratedCode      bool     `json:"in_ai_generated_code"`
+	AIGeneratedProbability *float64 `json:"ai_generated_probability"`
+}
+
+// AICodeResult mirrors the scanner's AI-generated-code analysis for a repo.
+type AICodeResult struct {
+	Status          string             `json:"status"`
+	FilesScored     int                `json:"files_scored"`
+	AIFileCount     int                `json:"ai_file_count"`
+	AIGeneratedPct  float64            `json:"ai_generated_pct"`
+	Threshold       float64            `json:"threshold"`
+	ModelAvailable  bool               `json:"model_available"`
+	FileScores      map[string]float64 `json:"file_scores"`
+	TopSignals      []string           `json:"top_signals"`
+	DurationSeconds float64            `json:"duration_seconds"`
+	Error           string             `json:"error"`
 }
 
 // SeveritySummary holds per-severity counts.

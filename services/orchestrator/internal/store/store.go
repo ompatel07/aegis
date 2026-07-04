@@ -102,6 +102,7 @@ func (s *Store) SaveResults(ctx context.Context, scanID string, agg pipeline.Agg
 			raw_gitleaks_output = $13, raw_quality_output = $14,
 			error_message = $15,
 			rule_pack_version = $16,
+			ai_generated_pct = $17, ai_code_safety_score = $18, ai_code_report = $19,
 			completed_at = now(),
 			duration_seconds = GREATEST(0, EXTRACT(EPOCH FROM (now() - COALESCE(started_at, queued_at)))::int)
 		WHERE id = $1`
@@ -114,6 +115,7 @@ func (s *Store) SaveResults(ctx context.Context, scanID string, agg pipeline.Agg
 		[]byte(agg.RawSemgrep), []byte(agg.RawTrivy),
 		[]byte(agg.RawGitleaks), []byte(agg.RawQuality),
 		errMsg, nullStr(agg.RulePackVersion),
+		agg.AIGeneratedPct, agg.AICodeSafetyScore, rawJSON(agg.AICodeReport),
 	); err != nil {
 		return fmt.Errorf("update scan: %w", err)
 	}
@@ -124,7 +126,7 @@ func (s *Store) SaveResults(ctx context.Context, scanID string, agg pipeline.Agg
 	return nil
 }
 
-const findingColumnCount = 26
+const findingColumnCount = 28
 
 // insertFindings bulk-inserts findings in chunks (bounded by Postgres' param limit).
 func insertFindings(ctx context.Context, tx *sqlx.Tx, scanID string, findings []types.Finding) error {
@@ -150,7 +152,8 @@ func buildInsert(scanID string, chunk []types.Finding) (string, []any) {
 		 file_path, line_start, line_end, column_start, column_end,
 		 cwe_id, cve_id, owasp_category, fix_suggestion, metadata,
 		 title_human, impact, risk_level, remediation_action, remediation_details,
-		 estimated_effort, context_metadata, false_positive_probability) VALUES `)
+		 estimated_effort, context_metadata, false_positive_probability,
+		 in_ai_generated_code, ai_generated_probability) VALUES `)
 
 	args := make([]any, 0, len(chunk)*findingColumnCount)
 	for i, f := range chunk {
@@ -176,9 +179,18 @@ func buildInsert(scanID string, chunk []types.Finding) (string, []any) {
 			nullStr(f.RemediationAction), nullStr(f.RemediationDetails),
 			nullStr(f.EstimatedEffort), metadataJSON(f.ContextMetadata),
 			f.FalsePositiveProbability,
+			f.InAIGeneratedCode, f.AIGeneratedProbability,
 		)
 	}
 	return b.String(), args
+}
+
+// rawJSON returns the raw JSON message, or SQL NULL when empty.
+func rawJSON(b json.RawMessage) any {
+	if len(b) == 0 {
+		return nil
+	}
+	return []byte(b)
 }
 
 // nullStr maps an empty string to SQL NULL.

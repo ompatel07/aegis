@@ -60,6 +60,13 @@ _CUSTOM_RULES_DIR = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "rules", "taint"
 )
 
+# Aegis's AI-generated-code failure-mode rules (Phase 2C TASK 3b): patterns LLMs
+# get wrong (missing authz, weak validation, deprecated crypto, insecure random,
+# JWT-without-verify, broad except, SQL concat with ORM present, …). Always-on.
+_AI_CODE_RULES_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "rules", "ai_code_taint"
+)
+
 
 def _select_configs(settings: Settings, languages: list[str], project_types: list[str]) -> list[str]:
     """Build the ordered, de-duplicated `--config` list for this scan."""
@@ -105,16 +112,20 @@ def _rule_pack_version(configs: list[str], custom_rules: list[str] | None) -> st
     return f"rp-{date}-{h.hexdigest()[:10]}"
 
 
-def _custom_rules_dir() -> str | None:
-    """Return the custom rules dir if it exists and is non-empty, else None."""
+def _bundled_rules_dir(path: str) -> str | None:
+    """Return a bundled Aegis rules dir if it exists and holds YAML, else None."""
     try:
-        if os.path.isdir(_CUSTOM_RULES_DIR) and any(
-            name.endswith((".yaml", ".yml")) for name in os.listdir(_CUSTOM_RULES_DIR)
+        if os.path.isdir(path) and any(
+            name.endswith((".yaml", ".yml")) for name in os.listdir(path)
         ):
-            return _CUSTOM_RULES_DIR
+            return path
     except OSError as exc:  # pragma: no cover — defensive
-        log.warning("semgrep.custom_rules_stat_failed", path=_CUSTOM_RULES_DIR, error=str(exc))
+        log.warning("semgrep.bundled_rules_stat_failed", path=path, error=str(exc))
     return None
+
+
+def _custom_rules_dir() -> str | None:
+    return _bundled_rules_dir(_CUSTOM_RULES_DIR)
 
 
 def _build_args(settings: Settings, configs: list[str], path: str) -> list[str]:
@@ -152,7 +163,9 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
     if project_rules_dir:
         registry_configs = registry_configs + [project_rules_dir]
 
-    configs = registry_configs + ([custom_dir] if custom_dir else [])
+    ai_code_dir = _bundled_rules_dir(_AI_CODE_RULES_DIR)
+    bundled = ([custom_dir] if custom_dir else []) + ([ai_code_dir] if ai_code_dir else [])
+    configs = registry_configs + bundled
     rule_pack_version = _rule_pack_version(configs, req.custom_rules)
 
     async def _semgrep(cfgs: list[str]):
@@ -249,8 +262,14 @@ def _parse(raw: dict, root: str) -> list[Finding]:
         # Normalize both to their stable rule id; keep registry ids canonical.
         is_project = "aegis-project-rules-" in check_id
         is_aegis = rule_short.startswith("aegis-")
-        rule_id = rule_short if (is_project or is_aegis) else check_id
-        ruleset = "project-custom" if is_project else ("aegis-custom" if is_aegis else "registry")
+        is_ai_code = rule_short.startswith("ai-code-")  # bundled AI-failure-mode pack
+        rule_id = rule_short if (is_project or is_aegis or is_ai_code) else check_id
+        ruleset = (
+            "project-custom" if is_project
+            else "ai-code" if is_ai_code
+            else "aegis-custom" if is_aegis
+            else "registry"
+        )
 
         severity = normalizer.normalize_semgrep_severity(extra.get("severity", ""), metadata)
 

@@ -47,5 +47,10 @@ type Scan struct {
 	NeedsReeval     bool    `db:"needs_reeval" json:"needs_reeval"`
 	ReevalReason    *string `db:"reeval_reason" json:"reeval_reason,omitempty"`
 
+	// Phase 2C: AI-generated-code analysis.
+	AIGeneratedPct    *float64 `db:"ai_generated_pct" json:"ai_generated_pct,omitempty"`
+	AICodeSafetyScore *int     `db:"ai_code_safety_score" json:"ai_code_safety_score,omitempty"`
+	AICodeReport      JSONB    `db:"ai_code_report" json:"ai_code_report,omitempty"`
+
 	CreatedAt time.Time `db:"created_at" json:"created_at"`
 }

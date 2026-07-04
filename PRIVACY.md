@@ -12,6 +12,7 @@ the code paths referenced.
 | Scanners (Semgrep, Trivy, Gitleaks, quality, Joern) | Yes — reads the cloned repo to analyze it | Your infrastructure (self-hosted scanner) |
 | Finding enrichment | No — operates on findings/metadata | Your scanner |
 | **Local ML false-positive filter** | **No — metadata only** | **Your scanner** |
+| **AI-generated-code detection** | **Reads file text locally to extract features; text never leaves** | **Your scanner** |
 | Vulnerability intelligence feed | No — package names + public CVE data | Your orchestrator |
 | **AI fix suggestions (opt-in)** | **Only the 10–30 flagged lines, if you enable it** | **Backend you choose** |
 | Executive AI reports (opt-in) | No — findings JSON only | Backend you choose |
@@ -61,6 +62,22 @@ When a user marks a finding false-positive / confirmed / fixed, we store the
 **action** and the finding's **metadata** (`finding_feedback` →
 `ml_training_data`). We do not store code. Feedback trains the local model on
 your own instance; it is not shared across tenants.
+
+## 3a. AI-generated-code detection — local, metadata output
+
+The AI-code classifier (`services/scanner/ml/ai_detect/`) scores each file on
+likelihood of being AI-generated. Like the scanners, it **reads file text inside
+your own infrastructure** to compute features — and, exactly like the scanners,
+**that text never leaves the scanner**. What it emits is metadata only: a
+per-file probability, a repo-level AI-code report (percentages, counts), and a
+boolean tag on findings. The model artifact is numeric tree splits over 14
+metadata features (docstring/naming/exception/style ratios — see
+`ml/ai_detect/features.py`); it cannot reconstruct code.
+
+The training dataset (`ml/ai_detect/ai_detect_features.csv`) contains **only
+extracted feature vectors** — no source code — so even the committed dataset
+preserves the boundary. Human samples are real pre-2021 OSS; the AI-positive
+class is real code refactored with documented AI tells (`ml/ai_detect/transform.py`).
 
 ## 4. Vulnerability intelligence feed
 

@@ -17,7 +17,7 @@ from fastapi.responses import JSONResponse
 from config import get_settings
 from engines import gitleaks_engine, quality_engine, semgrep_engine, trivy_engine
 from logging_config import configure_logging, get_logger
-from routers import deep, deployment, quality, rules, sast, sca, secrets
+from routers import ai_code, deep, deployment, quality, rules, sast, sca, secrets
 from utils.sandbox import binary_available
 
 settings = get_settings()
@@ -47,6 +47,14 @@ async def lifespan(app: FastAPI):
         await asyncio.get_event_loop().run_in_executor(None, classifier.ensure_model)
     except Exception as exc:  # noqa: BLE001 — ML is best-effort, never fatal
         log.warning("startup.ml_model_unavailable", error=str(exc))
+
+    # Load (or train from the committed dataset) the AI-generated-code classifier.
+    try:
+        from ml.ai_detect import classifier as ai_clf
+
+        await asyncio.get_event_loop().run_in_executor(None, ai_clf.ensure_model)
+    except Exception as exc:  # noqa: BLE001 — falls back to heuristic scoring
+        log.warning("startup.ai_detect_model_unavailable", error=str(exc))
 
     # Keep rule packs / vuln DBs fresh in the background (on boot + every 6h).
     refresh_task = asyncio.create_task(_rulepack_refresh_loop())
@@ -97,6 +105,7 @@ app.include_router(quality.router)
 app.include_router(deployment.router)
 app.include_router(deep.router)
 app.include_router(rules.router)
+app.include_router(ai_code.router)
 
 
 def _tool_status() -> dict[str, bool]:

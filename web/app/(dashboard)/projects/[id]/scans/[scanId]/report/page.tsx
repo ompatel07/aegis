@@ -78,6 +78,32 @@ export default function ExecutiveReportPage() {
         </Card>
       ) : null}
 
+      {r.ai_code ? (
+        <Card>
+          <CardHeader><CardTitle>AI-generated code exposure</CardTitle></CardHeader>
+          <CardContent className="text-sm">
+            <div className="mb-2 flex gap-6">
+              <div>
+                <div className="text-2xl font-bold text-violet-500">{Math.round(r.ai_code.ai_generated_pct)}%</div>
+                <div className="text-xs text-muted-foreground">of codebase AI-generated</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold">{r.ai_code.safety_score}</div>
+                <div className="text-xs text-muted-foreground">AI-code safety /100</div>
+              </div>
+              <div>
+                <div className="text-2xl font-bold">{r.ai_code.findings_in_ai_code}</div>
+                <div className="text-xs text-muted-foreground">findings in AI code</div>
+              </div>
+            </div>
+            <p className="text-muted-foreground">{r.ai_code.note}</p>
+            {r.ai_code.top_issue ? (
+              <p className="mt-1 text-muted-foreground">Most common issue in AI code: {r.ai_code.top_issue}.</p>
+            ) : null}
+          </CardContent>
+        </Card>
+      ) : null}
+
       <Card>
         <CardHeader><CardTitle>Top risks</CardTitle></CardHeader>
         <CardContent className="space-y-3">

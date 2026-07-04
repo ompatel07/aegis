@@ -142,7 +142,24 @@ def _candidate_keys(f: Finding) -> list[str]:
             keys.append(f"taint:{cls}")
     if rid.startswith("quality/"):
         keys.append(rid)
+    if rid.startswith("ai-code-"):
+        keys.append(f"ai-code:{_ai_code_mode(rid)}")
+        keys.append("ai-code:default")
     return keys
+
+
+def _ai_code_mode(rid: str) -> str:
+    """Map an ai-code-* rule id to its failure-mode template key."""
+    s = rid[len("ai-code-"):]
+    if s.endswith("-js"):
+        s = s[:-3]
+    aliases = {
+        "weak-crypto": "crypto", "insecure-random": "random",
+        "broad-except-pass": "exception", "empty-catch": "exception",
+        "jwt-no-verify": "jwt", "sql-string-build": "sql", "sql-concat": "sql",
+        "hardcoded-secret-default": "secret", "hardcoded-secret": "secret",
+    }
+    return aliases.get(s, s)
 
 
 def _taint_class(rid: str) -> str | None:

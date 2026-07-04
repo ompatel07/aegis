@@ -56,5 +56,10 @@ type Finding struct {
 	// Local ML false-positive filter output (advisory: sorts + badge, never hides).
 	FalsePositiveProbability *float64 `db:"false_positive_probability" json:"false_positive_probability,omitempty"`
 
+	// AI-generated-code tagging (Phase 2C): whether this finding sits in a file
+	// the AI-code classifier flagged, and that file's AI-generated probability.
+	InAIGeneratedCode      bool     `db:"in_ai_generated_code" json:"in_ai_generated_code"`
+	AIGeneratedProbability *float64 `db:"ai_generated_probability" json:"ai_generated_probability,omitempty"`
+
 	CreatedAt time.Time `db:"created_at" json:"created_at"`
 }

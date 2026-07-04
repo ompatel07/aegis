@@ -43,6 +43,21 @@ function LikelyFPBadge({ p }: { p?: number }) {
   );
 }
 
+function AICodeBadge({ finding }: { finding: Finding }) {
+  if (!finding.in_ai_generated_code) return null;
+  const pct = finding.ai_generated_probability != null
+    ? ` ${Math.round(finding.ai_generated_probability * 100)}%`
+    : "";
+  return (
+    <Badge
+      className="border-violet-400/40 bg-violet-400/15 text-violet-500"
+      title="This finding is in code the local classifier flagged as AI-generated"
+    >
+      AI-generated code{pct}
+    </Badge>
+  );
+}
+
 export function FindingCard({ finding, onUpdated }: { finding: Finding; onUpdated?: () => void }) {
   const api = useApi();
   const [open, setOpen] = useState(false);
@@ -90,6 +105,7 @@ export function FindingCard({ finding, onUpdated }: { finding: Finding; onUpdate
               <Badge className="border-border bg-secondary text-secondary-foreground">{finding.engine}</Badge>
               <ReachabilityBadge metadata={finding.metadata} />
               <LikelyFPBadge p={finding.false_positive_probability} />
+              <AICodeBadge finding={finding} />
               {finding.is_suppressed ? (
                 <Badge className="border-border bg-muted text-muted-foreground">suppressed</Badge>
               ) : null}
@@ -112,6 +128,7 @@ export function FindingCard({ finding, onUpdated }: { finding: Finding; onUpdate
             <SeverityBadge severity={finding.severity} />
             <Badge className="border-border bg-secondary text-secondary-foreground">{finding.engine}</Badge>
             <EffortBadge effort={finding.estimated_effort} />
+            <AICodeBadge finding={finding} />
           </div>
           <DialogTitle>{heading}</DialogTitle>
         </DialogHeader>

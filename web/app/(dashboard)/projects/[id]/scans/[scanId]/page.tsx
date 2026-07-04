@@ -7,6 +7,7 @@ import { useApi } from "@/lib/use-api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScanStatusBadge } from "@/components/dashboard/ScanStatusBadge";
+import { AICodeCard } from "@/components/dashboard/AICodeCard";
 import { FindingsList } from "@/components/findings/FindingsList";
 import { Button } from "@/components/ui/button";
 import { cn, formatDate, formatDuration, gradeColor, scoreColor } from "@/lib/utils";
@@ -88,6 +89,8 @@ export default function ScanDetailPage() {
             <ScoreCard title="Quality" score={scan.quality_score} subtitle={`${scan.quality_issues_total} issues`} />
             <ScoreCard title="Deployment" score={scan.deployment_score} subtitle={`${scan.vulnerabilities_found} vulns`} />
           </div>
+
+          <AICodeCard scan={scan} />
 
           <Tabs defaultValue="security">
             <TabsList>

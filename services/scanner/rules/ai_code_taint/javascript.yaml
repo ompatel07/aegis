@@ -1,0 +1,99 @@
+# AI-generated-code failure-mode rules — JavaScript/TypeScript (Phase 2C TASK 3b).
+# Positive + negative fixtures live in javascript.js (semgrep --test).
+rules:
+  - id: ai-code-weak-crypto-js
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      Weak/deprecated hash (MD5 or SHA-1). AI defaults to legacy algorithms. Use
+      sha256+ for integrity, or bcrypt/scrypt/argon2 for passwords.
+    metadata:
+      cwe: "CWE-327"
+      owasp: "A02:2021 - Cryptographic Failures"
+      category: ai-code
+      ai_failure_mode: deprecated-crypto
+    patterns:
+      - pattern-either:
+          - pattern: crypto.createHash("md5")
+          - pattern: crypto.createHash("sha1")
+
+  - id: ai-code-insecure-random-js
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: >-
+      Math.random() used to derive a security value. It is not cryptographically
+      secure. Use crypto.randomBytes()/crypto.randomUUID() for tokens and keys.
+    metadata:
+      cwe: "CWE-330"
+      category: ai-code
+      ai_failure_mode: insecure-random
+    patterns:
+      - pattern: $X = <... Math.random() ...>
+      - metavariable-regex:
+          metavariable: $X
+          regex: (?i).*(token|secret|key|password|passwd|nonce|otp|session).*
+
+  - id: ai-code-empty-catch-js
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: >-
+      Empty catch block silently swallows errors — a common AI defensive-coding
+      artifact. Handle the error or re-throw.
+    metadata:
+      cwe: "CWE-396"
+      category: ai-code
+      ai_failure_mode: broad-exception
+    patterns:
+      - pattern-either:
+          - pattern: try { ... } catch ($E) { }
+          - pattern: try { ... } catch { }
+
+  - id: ai-code-jwt-no-verify-js
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      jwt.decode() reads a token WITHOUT verifying its signature. AI frequently
+      uses decode() where verify() is required, allowing forged tokens. Use
+      jwt.verify(token, secret).
+    metadata:
+      cwe: "CWE-347"
+      category: ai-code
+      ai_failure_mode: jwt-no-verify
+    patterns:
+      - pattern: jwt.decode(...)
+
+  - id: ai-code-sql-concat-js
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      SQL query built by string concatenation/interpolation → injection. AI
+      assembles SQL by hand instead of using parameterized queries. Pass values
+      as query parameters.
+    metadata:
+      cwe: "CWE-89"
+      owasp: "A03:2021 - Injection"
+      category: ai-code
+      ai_failure_mode: sql-string-build
+    patterns:
+      - pattern-either:
+          - pattern: $DB.query("..." + ...)
+          - pattern: $DB.query(`...${...}...`)
+
+  - id: ai-code-hardcoded-secret-js
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      Secret-looking value hardcoded in source. AI bakes credentials into
+      defaults. Read from process.env or a secret manager.
+    metadata:
+      cwe: "CWE-798"
+      category: ai-code
+      ai_failure_mode: hardcoded-secret
+    patterns:
+      - pattern: const $P = $VAL;
+      - metavariable-regex:
+          metavariable: $P
+          regex: (?i)^(password|passwd|secret|secretkey|secret_key|apikey|api_key|token|accesskey|access_key)$
+      - metavariable-regex:
+          metavariable: $VAL
+          regex: ^["'].+["']$
