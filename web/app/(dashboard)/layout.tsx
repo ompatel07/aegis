@@ -6,13 +6,14 @@ import { signOut, useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { OrgSwitcher } from "@/components/dashboard/OrgSwitcher";
-import { FolderGit2, LayoutDashboard, LogOut, Radar, Settings, ShieldCheck, Users } from "lucide-react";
+import { FolderGit2, LayoutDashboard, LogOut, Plug, Radar, Settings, ShieldCheck, Users } from "lucide-react";
 
 const navItems = [
   { href: "/", label: "Overview", icon: LayoutDashboard },
   { href: "/projects", label: "Projects", icon: FolderGit2 },
   { href: "/intelligence", label: "Intelligence", icon: Radar },
   { href: "/organizations", label: "Teams", icon: Users },
+  { href: "/integrations", label: "Integrations", icon: Plug },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 

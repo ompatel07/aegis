@@ -87,6 +87,30 @@ func (s *PolicyService) Evaluate(ctx context.Context, scanID, userID string) (*P
 	return &PolicyResult{Passed: passed, HasPolicy: true, PolicyName: policy.Name, Checks: checks}, nil
 }
 
+// EvaluateSystem evaluates + stores a scan's policy result WITHOUT a user
+// context (for the GitHub App PR reconciler). Returns a nil result when there's
+// no active policy.
+func (s *PolicyService) EvaluateSystem(ctx context.Context, scanID string) (*PolicyResult, error) {
+	scan, err := s.scans.GetByID(ctx, scanID)
+	if err != nil {
+		return nil, err
+	}
+	policy, err := s.policies.GetActive(ctx, scan.ProjectID)
+	if err != nil {
+		if err == repository.ErrNotFound {
+			return &PolicyResult{Passed: true, HasPolicy: false, Checks: []models.PolicyCheck{}}, nil
+		}
+		return nil, err
+	}
+	findings, err := s.findings.AllByScan(ctx, scanID)
+	if err != nil {
+		return nil, err
+	}
+	passed, checks := evaluatePolicy(policy.Config(), scan, findings)
+	_ = s.policies.SaveEvaluation(ctx, scanID, &policy.ID, passed, checks)
+	return &PolicyResult{Passed: passed, HasPolicy: true, PolicyName: policy.Name, Checks: checks}, nil
+}
+
 // evaluatePolicy is the pure gate engine — deterministic given the config, the
 // scan's scores, and its findings (severity + new-vs-baseline).
 func evaluatePolicy(cfg models.PolicyConfig, scan *models.Scan, findings []models.Finding) (bool, []models.PolicyCheck) {

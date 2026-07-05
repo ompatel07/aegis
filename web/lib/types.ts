@@ -44,6 +44,22 @@ export interface AuthResponse {
   tokens: TokenPair;
 }
 
+// ── GitHub App (Phase 2C TASK 1) ─────────────────────────────────────────────
+export interface GHAppRepo {
+  id: string;
+  installation_id: number;
+  full_name: string;
+  default_branch?: string;
+  enabled: boolean;
+}
+
+export interface GHAppInstallation {
+  installation_id: number;
+  account_login: string;
+  account_type: string;
+  repos: GHAppRepo[];
+}
+
 // ── Policies (Phase 2C TASK 8) ───────────────────────────────────────────────
 export interface PolicyConfig {
   max_severity?: Severity;

@@ -52,6 +52,18 @@ func (r *ProjectRepository) GetByIDForUser(ctx context.Context, id, userID strin
 	return &p, nil
 }
 
+// FindIDByRepo returns a project id whose repo_url contains the given repo
+// full name (owner/name) — used to route GitHub App webhooks to a project.
+func (r *ProjectRepository) FindIDByRepo(ctx context.Context, fullName string) (string, error) {
+	var id string
+	err := r.db.GetContext(ctx, &id,
+		`SELECT id FROM projects WHERE repo_url ILIKE '%' || $1 || '%' ORDER BY created_at ASC LIMIT 1`, fullName)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", ErrNotFound
+	}
+	return id, err
+}
+
 // GetByID loads a project regardless of owner (internal use, e.g. webhooks).
 func (r *ProjectRepository) GetByID(ctx context.Context, id string) (*models.Project, error) {
 	const q = `SELECT * FROM projects WHERE id = $1`

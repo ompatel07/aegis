@@ -127,6 +127,15 @@ services:
       AI_MODEL: ${AI_MODEL:-}
       AI_API_KEY: ${AI_API_KEY:-}
       AI_BASE_URL: ${AI_BASE_URL:-}
+      # GitHub App (empty → disabled; the platform runs without it). Set these to
+      # enable auto-scan on push/PR, PR checks + a single updateable comment.
+      GITHUB_APP_ID: ${GITHUB_APP_ID:-}
+      GITHUB_APP_PRIVATE_KEY: ${GITHUB_APP_PRIVATE_KEY:-}
+      GITHUB_APP_WEBHOOK_SECRET: ${GITHUB_APP_WEBHOOK_SECRET:-}
+      GITHUB_APP_CLIENT_ID: ${GITHUB_APP_CLIENT_ID:-}
+      GITHUB_APP_CLIENT_SECRET: ${GITHUB_APP_CLIENT_SECRET:-}
+      GITHUB_APP_SLUG: ${GITHUB_APP_SLUG:-}
+      DASHBOARD_URL: ${DASHBOARD_URL:-http://localhost}
     depends_on:
       postgres:
         condition: service_healthy

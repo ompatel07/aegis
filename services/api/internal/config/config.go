@@ -48,6 +48,15 @@ type Config struct {
 	AIModel    string
 	AIAPIKey   string
 	AIBaseURL  string
+
+	// GitHub App (opt-in; when AppID/PrivateKey are unset the App is disabled).
+	GitHubAppID          string
+	GitHubAppPrivateKey  string
+	GitHubAppWebhookKey  string
+	GitHubAppClientID    string
+	GitHubAppClientSecret string
+	GitHubAppSlug        string
+	DashboardURL         string // public web URL for PR comment/report links
 }
 
 // Load reads configuration from environment variables (and an optional .env via
@@ -89,6 +98,13 @@ func Load() (*Config, error) {
 		AIModel:            v.GetString("AI_MODEL"),
 		AIAPIKey:           v.GetString("AI_API_KEY"),
 		AIBaseURL:          v.GetString("AI_BASE_URL"),
+		GitHubAppID:           v.GetString("GITHUB_APP_ID"),
+		GitHubAppPrivateKey:   v.GetString("GITHUB_APP_PRIVATE_KEY"),
+		GitHubAppWebhookKey:   v.GetString("GITHUB_APP_WEBHOOK_SECRET"),
+		GitHubAppClientID:     v.GetString("GITHUB_APP_CLIENT_ID"),
+		GitHubAppClientSecret: v.GetString("GITHUB_APP_CLIENT_SECRET"),
+		GitHubAppSlug:         v.GetString("GITHUB_APP_SLUG"),
+		DashboardURL:          v.GetString("DASHBOARD_URL"),
 		CORSOrigins:        splitAndTrim(v.GetString("CORS_ALLOWED_ORIGINS")),
 		ShutdownTimeout:    time.Duration(v.GetInt("SHUTDOWN_TIMEOUT_SECONDS")) * time.Second,
 		DatabaseURL:        v.GetString("DATABASE_URL"),

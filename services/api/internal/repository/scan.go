@@ -71,6 +71,20 @@ func (r *ScanRepository) GetByIDForUser(ctx context.Context, id, userID string) 
 	return &s, nil
 }
 
+// GetByID loads a scan without ownership checks (internal use: webhooks, PR
+// finalization). Callers must not expose it to unauthenticated users directly.
+func (r *ScanRepository) GetByID(ctx context.Context, id string) (*models.Scan, error) {
+	q := `SELECT ` + scanColumns + ` FROM scans s WHERE s.id = $1`
+	var s models.Scan
+	if err := r.db.GetContext(ctx, &s, q, id); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrNotFound
+		}
+		return nil, err
+	}
+	return &s, nil
+}
+
 // PreviousCompleted returns the most recent completed scan of a project before
 // the given time — for trend comparison. Returns ErrNotFound if there is none.
 func (r *ScanRepository) PreviousCompleted(ctx context.Context, projectID string, before interface{}) (*models.Scan, error) {

@@ -21,6 +21,7 @@ import (
 	"github.com/aegis-platform/api/internal/auth"
 	"github.com/aegis-platform/api/internal/config"
 	"github.com/aegis-platform/api/internal/database"
+	"github.com/aegis-platform/api/internal/githubapp"
 	"github.com/aegis-platform/api/internal/handlers"
 	"github.com/aegis-platform/api/internal/logger"
 	mw "github.com/aegis-platform/api/internal/middleware"
@@ -86,6 +87,7 @@ func run() error {
 	aiAuditRepo := repository.NewAIAuditRepository(db)
 	orgRepo := repository.NewOrganizationRepository(db)
 	policyRepo := repository.NewPolicyRepository(db)
+	githubAppRepo := repository.NewGitHubAppRepository(db)
 
 	// ── Services ─────────────────────────────────────────────────────────────
 	authSvc := services.NewAuthService(userRepo, orgRepo, tokens, sessions)
@@ -94,6 +96,20 @@ func run() error {
 	policySvc := services.NewPolicyService(policyRepo, projectRepo, scanRepo, findingRepo)
 	scanSvc := services.NewScanService(projectRepo, scanRepo, findingRepo, projectRuleRepo, publisher)
 	integrationSvc := services.NewIntegrationService(projectRepo, integrationRepo, encryptor)
+
+	githubApp, err := githubapp.New(githubapp.Config{
+		AppID: cfg.GitHubAppID, PrivateKeyPEM: cfg.GitHubAppPrivateKey, WebhookSecret: cfg.GitHubAppWebhookKey,
+		ClientID: cfg.GitHubAppClientID, ClientSecret: cfg.GitHubAppClientSecret, Slug: cfg.GitHubAppSlug,
+	}, nil)
+	if err != nil {
+		return fmt.Errorf("init github app: %w", err)
+	}
+	dashURL := cfg.DashboardURL
+	if dashURL == "" {
+		dashURL = "http://localhost"
+	}
+	githubAppSvc := services.NewGitHubAppService(githubApp, githubAppRepo, projectRepo, scanSvc, scanRepo, findingRepo, policySvc, dashURL, log)
+	log.Info().Bool("github_app_enabled", githubApp.Enabled()).Msg("github app")
 	ruleSvc := services.NewRuleService(projectRepo, projectRuleRepo, cfg.ScannerBaseURL)
 	aiBackend := ai.New(ai.Config{Provider: cfg.AIProvider, Model: cfg.AIModel, APIKey: cfg.AIAPIKey, BaseURL: cfg.AIBaseURL})
 	aiSvc := services.NewAIService(aiBackend, findingRepo, aiAuditRepo)
@@ -112,6 +128,7 @@ func run() error {
 	execReportH := handlers.NewExecReportHandler(reportSvc, log)
 	orgH := handlers.NewOrganizationHandler(orgSvc, log)
 	policyH := handlers.NewPolicyHandler(policySvc, log)
+	githubAppH := handlers.NewGitHubAppHandler(githubAppSvc, githubAppRepo, log)
 	webhookH := handlers.NewWebhookHandler(integrationRepo, scanSvc, log)
 	progressH := handlers.NewProgressHandler(rdb, tokens, scanRepo, log)
 	healthH := handlers.NewHealthHandler(db, rdb)
@@ -144,6 +161,7 @@ func run() error {
 			r.Post("/logout", authH.Logout)
 		})
 		r.Post("/webhooks/github", webhookH.GitHub)
+		r.Post("/webhooks/github/app", githubAppH.Webhook)
 		// SSE live scan progress — auth via ?token= (EventSource can't set headers).
 		r.Get("/scans/{scanId}/progress", progressH.Stream)
 
@@ -183,6 +201,12 @@ func run() error {
 				r.Put("/{id}/policy", policyH.Set)
 			})
 			r.Get("/policies/templates", policyH.Templates)
+
+			r.Route("/integrations/github", func(r chi.Router) {
+				r.Get("/install-url", githubAppH.InstallURL)
+				r.Get("/installations", githubAppH.Installations)
+				r.Patch("/repos/{id}", githubAppH.ToggleRepo)
+			})
 
 			r.Route("/scans", func(r chi.Router) {
 				r.Get("/{scanId}", scanH.Get)
@@ -224,6 +248,22 @@ func run() error {
 			serverErr <- err
 		}
 	}()
+
+	// GitHub App reconciler: finalize PR checks + comments once scans complete.
+	if githubApp.Enabled() {
+		go func() {
+			ticker := time.NewTicker(10 * time.Second)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-rootCtx.Done():
+					return
+				case <-ticker.C:
+					githubAppSvc.Reconcile(rootCtx)
+				}
+			}
+		}()
+	}
 
 	select {
 	case err := <-serverErr:

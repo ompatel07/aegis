@@ -14,6 +14,7 @@ import type {
   GithubIntegration,
   IntelligenceStatus,
   Notification,
+  GHAppInstallation,
   Organization,
   OrgInvitation,
   OrgMember,
@@ -109,6 +110,16 @@ export function createApi(token?: string) {
 
     acceptInvitation: (token: string) =>
       http.post<ApiSuccess<Organization>>("/invitations/accept", { token }).then((r) => r.data.data).catch(normalizeError),
+
+    // ── GitHub App (Phase 2C) ────────────────────────────────────────────────
+    getGithubAppInstallUrl: () =>
+      http.get<ApiSuccess<{ enabled: boolean; install_url: string }>>("/integrations/github/install-url").then((r) => r.data.data).catch(normalizeError),
+
+    listGithubAppInstallations: () =>
+      http.get<ApiSuccess<GHAppInstallation[]>>("/integrations/github/installations").then((r) => r.data.data).catch(normalizeError),
+
+    toggleGithubAppRepo: (repoId: string, enabled: boolean) =>
+      http.patch(`/integrations/github/repos/${repoId}`, { enabled }).then(() => undefined).catch(normalizeError),
 
     // ── Policies (Phase 2C) ──────────────────────────────────────────────────
     getPolicyTemplates: () =>
