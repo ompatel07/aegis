@@ -23,6 +23,7 @@ import (
 	"github.com/aegis-platform/api/internal/database"
 	"github.com/aegis-platform/api/internal/githubapp"
 	"github.com/aegis-platform/api/internal/handlers"
+	"github.com/aegis-platform/api/internal/vcs"
 	"github.com/aegis-platform/api/internal/logger"
 	mw "github.com/aegis-platform/api/internal/middleware"
 	"github.com/aegis-platform/api/internal/queue"
@@ -110,6 +111,15 @@ func run() error {
 	}
 	githubAppSvc := services.NewGitHubAppService(githubApp, githubAppRepo, projectRepo, scanSvc, scanRepo, findingRepo, policySvc, dashURL, log)
 	log.Info().Bool("github_app_enabled", githubApp.Enabled()).Msg("github app")
+
+	// GitLab + Bitbucket providers (opt-in, disabled without a token).
+	gitlabProvider := vcs.NewGitLab(vcs.GitLabConfig{BaseURL: cfg.GitLabBaseURL, Token: cfg.GitLabToken, WebhookSecret: cfg.GitLabWebhookSecret}, nil)
+	bitbucketProvider := vcs.NewBitbucket(vcs.BitbucketConfig{Token: cfg.BitbucketToken, WebhookSecret: cfg.BitbucketWebhookSecret}, nil)
+	vcsRepo := repository.NewVCSRepository(db)
+	vcsSvc := services.NewVCSService(
+		map[string]vcs.VCSProvider{"gitlab": gitlabProvider, "bitbucket": bitbucketProvider},
+		vcsRepo, projectRepo, scanSvc, scanRepo, findingRepo, policySvc, dashURL, log)
+	log.Info().Bool("gitlab_enabled", gitlabProvider.Enabled()).Bool("bitbucket_enabled", bitbucketProvider.Enabled()).Msg("vcs providers")
 	ruleSvc := services.NewRuleService(projectRepo, projectRuleRepo, cfg.ScannerBaseURL)
 	aiBackend := ai.New(ai.Config{Provider: cfg.AIProvider, Model: cfg.AIModel, APIKey: cfg.AIAPIKey, BaseURL: cfg.AIBaseURL})
 	aiSvc := services.NewAIService(aiBackend, findingRepo, aiAuditRepo)
@@ -129,6 +139,7 @@ func run() error {
 	orgH := handlers.NewOrganizationHandler(orgSvc, log)
 	policyH := handlers.NewPolicyHandler(policySvc, log)
 	githubAppH := handlers.NewGitHubAppHandler(githubAppSvc, githubAppRepo, log)
+	vcsH := handlers.NewVCSHandler(vcsSvc, log)
 	webhookH := handlers.NewWebhookHandler(integrationRepo, scanSvc, log)
 	progressH := handlers.NewProgressHandler(rdb, tokens, scanRepo, log)
 	healthH := handlers.NewHealthHandler(db, rdb)
@@ -162,6 +173,8 @@ func run() error {
 		})
 		r.Post("/webhooks/github", webhookH.GitHub)
 		r.Post("/webhooks/github/app", githubAppH.Webhook)
+		r.Post("/webhooks/gitlab", vcsH.GitLab)
+		r.Post("/webhooks/bitbucket", vcsH.Bitbucket)
 		// SSE live scan progress — auth via ?token= (EventSource can't set headers).
 		r.Get("/scans/{scanId}/progress", progressH.Stream)
 
@@ -249,8 +262,9 @@ func run() error {
 		}
 	}()
 
-	// GitHub App reconciler: finalize PR checks + comments once scans complete.
-	if githubApp.Enabled() {
+	// Reconciler: finalize PR/MR checks + comments once scans complete, across
+	// every configured provider.
+	if githubApp.Enabled() || gitlabProvider.Enabled() || bitbucketProvider.Enabled() {
 		go func() {
 			ticker := time.NewTicker(10 * time.Second)
 			defer ticker.Stop()
@@ -260,6 +274,7 @@ func run() error {
 					return
 				case <-ticker.C:
 					githubAppSvc.Reconcile(rootCtx)
+					vcsSvc.Reconcile(rootCtx)
 				}
 			}
 		}()

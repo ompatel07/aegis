@@ -57,6 +57,14 @@ type Config struct {
 	GitHubAppClientSecret string
 	GitHubAppSlug        string
 	DashboardURL         string // public web URL for PR comment/report links
+
+	// GitLab + Bitbucket (opt-in; empty token → provider disabled). GitLab base
+	// URL supports gitlab.com and self-hosted.
+	GitLabBaseURL          string
+	GitLabToken            string
+	GitLabWebhookSecret    string
+	BitbucketToken         string
+	BitbucketWebhookSecret string
 }
 
 // Load reads configuration from environment variables (and an optional .env via
@@ -105,6 +113,11 @@ func Load() (*Config, error) {
 		GitHubAppClientSecret: v.GetString("GITHUB_APP_CLIENT_SECRET"),
 		GitHubAppSlug:         v.GetString("GITHUB_APP_SLUG"),
 		DashboardURL:          v.GetString("DASHBOARD_URL"),
+		GitLabBaseURL:          v.GetString("GITLAB_BASE_URL"),
+		GitLabToken:            v.GetString("GITLAB_TOKEN"),
+		GitLabWebhookSecret:    v.GetString("GITLAB_WEBHOOK_SECRET"),
+		BitbucketToken:         v.GetString("BITBUCKET_TOKEN"),
+		BitbucketWebhookSecret: v.GetString("BITBUCKET_WEBHOOK_SECRET"),
 		CORSOrigins:        splitAndTrim(v.GetString("CORS_ALLOWED_ORIGINS")),
 		ShutdownTimeout:    time.Duration(v.GetInt("SHUTDOWN_TIMEOUT_SECONDS")) * time.Second,
 		DatabaseURL:        v.GetString("DATABASE_URL"),
