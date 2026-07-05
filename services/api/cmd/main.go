@@ -113,6 +113,7 @@ func run() error {
 	orgH := handlers.NewOrganizationHandler(orgSvc, log)
 	policyH := handlers.NewPolicyHandler(policySvc, log)
 	webhookH := handlers.NewWebhookHandler(integrationRepo, scanSvc, log)
+	progressH := handlers.NewProgressHandler(rdb, tokens, scanRepo, log)
 	healthH := handlers.NewHealthHandler(db, rdb)
 
 	rateLimiter := mw.NewRateLimiter(rdb, cfg.RateLimitRPM, log)
@@ -143,6 +144,8 @@ func run() error {
 			r.Post("/logout", authH.Logout)
 		})
 		r.Post("/webhooks/github", webhookH.GitHub)
+		// SSE live scan progress — auth via ?token= (EventSource can't set headers).
+		r.Get("/scans/{scanId}/progress", progressH.Stream)
 
 		// Authenticated routes.
 		r.Group(func(r chi.Router) {

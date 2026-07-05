@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScanStatusBadge } from "@/components/dashboard/ScanStatusBadge";
 import { AICodeCard } from "@/components/dashboard/AICodeCard";
 import { PolicyResultCard } from "@/components/dashboard/PolicyResultCard";
+import { ScanProgress } from "@/components/dashboard/ScanProgress";
 import { FindingsList } from "@/components/findings/FindingsList";
 import { Button } from "@/components/ui/button";
 import { cn, formatDate, formatDuration, gradeColor, scoreColor } from "@/lib/utils";
@@ -76,8 +77,9 @@ export default function ScanDetailPage() {
 
       {!isDone && scan.status !== "failed" ? (
         <Card>
-          <CardContent className="py-6 text-sm text-muted-foreground">
-            This scan is {scan.status}. Results will appear here automatically when it finishes.
+          <CardContent className="space-y-3 py-6 text-sm text-muted-foreground">
+            <p>This scan is {scan.status}. Live progress:</p>
+            <ScanProgress scanId={scanId} active={!isDone} />
           </CardContent>
         </Card>
       ) : null}

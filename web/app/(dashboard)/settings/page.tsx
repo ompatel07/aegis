@@ -1,11 +1,13 @@
 "use client";
 
 import { useSession } from "next-auth/react";
+import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Github } from "lucide-react";
+import { Github, Rocket } from "lucide-react";
 
 export default function SettingsPage() {
   const { data: session } = useSession();
@@ -66,6 +68,20 @@ export default function SettingsPage() {
             Only <span className="font-medium">push</span> events are processed; all other events
             are acknowledged and ignored.
           </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Rocket className="h-5 w-5" /> Product tour
+          </CardTitle>
+          <CardDescription>Re-run the guided onboarding flow.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Link href="/onboarding">
+            <Button variant="outline" size="sm">Restart tour</Button>
+          </Link>
         </CardContent>
       </Card>
     </div>

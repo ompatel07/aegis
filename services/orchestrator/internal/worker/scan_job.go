@@ -11,6 +11,7 @@ import (
 
 	"github.com/aegis-platform/orchestrator/internal/adapters"
 	"github.com/aegis-platform/orchestrator/internal/pipeline"
+	"github.com/aegis-platform/orchestrator/internal/progress"
 	"github.com/aegis-platform/orchestrator/internal/queue"
 	"github.com/aegis-platform/orchestrator/internal/store"
 )
@@ -20,14 +21,22 @@ type ScanProcessor struct {
 	store         *store.Store
 	git           *adapters.GitClient
 	pipe          *pipeline.Pipeline
+	progress      *progress.Publisher
 	maxRepoSizeMB int
 	log           zerolog.Logger
 }
 
 func NewScanProcessor(
-	st *store.Store, git *adapters.GitClient, pipe *pipeline.Pipeline, maxRepoSizeMB int, log zerolog.Logger,
+	st *store.Store, git *adapters.GitClient, pipe *pipeline.Pipeline, prog *progress.Publisher,
+	maxRepoSizeMB int, log zerolog.Logger,
 ) *ScanProcessor {
-	return &ScanProcessor{store: st, git: git, pipe: pipe, maxRepoSizeMB: maxRepoSizeMB, log: log}
+	return &ScanProcessor{store: st, git: git, pipe: pipe, progress: prog, maxRepoSizeMB: maxRepoSizeMB, log: log}
+}
+
+// stage records + broadcasts the scan's current pipeline stage.
+func (p *ScanProcessor) stage(ctx context.Context, scanID, stage string) {
+	_ = p.store.SetStage(ctx, scanID, stage)
+	p.progress.Publish(ctx, scanID, stage)
 }
 
 // ProcessTask is the Asynq handler for TypeScanRun.
@@ -52,6 +61,7 @@ func (p *ScanProcessor) ProcessTask(ctx context.Context, task *asynq.Task) error
 	}
 
 	// ── Clone ────────────────────────────────────────────────────────────────
+	p.stage(ctx, payload.ScanID, progress.StageCloning)
 	checkout, err := p.git.Clone(ctx, payload.ScanID, payload.RepoURL, payload.Branch)
 	if err != nil {
 		return p.fail(ctx, payload.ScanID, task, fmt.Sprintf("clone failed: %v", err), log)
@@ -68,6 +78,7 @@ func (p *ScanProcessor) ProcessTask(ctx context.Context, task *asynq.Task) error
 	}
 
 	// ── Detect ───────────────────────────────────────────────────────────────
+	p.stage(ctx, payload.ScanID, progress.StageDetecting)
 	det := pipeline.Detect(checkout.Dir)
 	if payload.Language != "" && det.PrimaryLanguage == "" {
 		det.PrimaryLanguage = payload.Language
@@ -80,12 +91,14 @@ func (p *ScanProcessor) ProcessTask(ctx context.Context, task *asynq.Task) error
 		Msg("project detected")
 
 	// ── Scan (parallel fan-out) ──────────────────────────────────────────────
+	p.stage(ctx, payload.ScanID, progress.StageScanning)
 	results := p.pipe.Run(ctx, checkout.Dir, payload.ScanID, det, payload.CustomRules)
 
 	// ── Deep scan (opt-in) ───────────────────────────────────────────────────
 	// Runs after the fast fan-out; merged + deduped so the same vuln is not
 	// double-reported. A skipped/failed deep scan never fails the overall scan.
 	if payload.DeepScanEnabled {
+		p.stage(ctx, payload.ScanID, progress.StageDeepScan)
 		deep := p.pipe.Deep(ctx, checkout.Dir, payload.ScanID, payload.DeepScanEngine)
 		results = pipeline.MergeDeep(results, deep)
 	}
@@ -96,6 +109,7 @@ func (p *ScanProcessor) ProcessTask(ctx context.Context, task *asynq.Task) error
 	// ── AI-generated-code analysis (Phase 2C) ────────────────────────────────
 	// Score files for AI-generation, tag findings that sit in AI code, and build
 	// the scan's AI-code report. A degraded pass leaves findings untagged.
+	p.stage(ctx, payload.ScanID, progress.StageAIAnalysis)
 	aiRes := p.pipe.AICode(ctx, checkout.Dir, payload.ScanID)
 	aiReport := pipeline.TagAICode(agg.Findings, aiRes)
 	if aiRes != nil {
@@ -111,9 +125,11 @@ func (p *ScanProcessor) ProcessTask(ctx context.Context, task *asynq.Task) error
 	}
 
 	// ── Persist ──────────────────────────────────────────────────────────────
+	p.stage(ctx, payload.ScanID, progress.StageFinalizing)
 	if err := p.store.SaveResults(ctx, payload.ScanID, payload.ProjectID, agg); err != nil {
 		return p.fail(ctx, payload.ScanID, task, fmt.Sprintf("persist results: %v", err), log)
 	}
+	p.stage(ctx, payload.ScanID, progress.StageCompleted)
 
 	log.Info().
 		Int("overall", agg.OverallScore).
@@ -136,6 +152,7 @@ func (p *ScanProcessor) fail(ctx context.Context, scanID string, task *asynq.Tas
 		if err := p.store.MarkFailed(ctx, scanID, msg); err != nil {
 			log.Error().Err(err).Msg("failed to mark scan failed")
 		}
+		p.stage(ctx, scanID, progress.StageFailed)
 		log.Error().Str("reason", msg).Msg("scan failed (final attempt)")
 	} else {
 		log.Warn().Str("reason", msg).Int("retry", retried).Msg("scan attempt failed, will retry")

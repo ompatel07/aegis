@@ -42,6 +42,9 @@ type Scan struct {
 
 	ErrorMessage *string `db:"error_message" json:"error_message,omitempty"`
 
+	// Live pipeline stage (Phase 2C TASK 6): cloning|detecting|scanning|…|completed.
+	Stage *string `db:"stage" json:"stage,omitempty"`
+
 	// Phase 2B: rule reproducibility + retroactive re-evaluation.
 	RulePackVersion *string `db:"rule_pack_version" json:"rule_pack_version,omitempty"`
 	NeedsReeval     bool    `db:"needs_reeval" json:"needs_reeval"`

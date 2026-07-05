@@ -55,6 +55,13 @@ func (s *Store) MarkRunning(ctx context.Context, scanID string) error {
 	return err
 }
 
+// SetStage records the scan's current pipeline stage (for reload/late joiners).
+func (s *Store) SetStage(ctx context.Context, scanID, stage string) error {
+	const q = `UPDATE scans SET stage = $2 WHERE id = $1`
+	_, err := s.db.ExecContext(ctx, q, scanID, stage)
+	return err
+}
+
 // MarkFailed transitions a scan to failed with an error message and timing.
 func (s *Store) MarkFailed(ctx context.Context, scanID, msg string) error {
 	const q = `

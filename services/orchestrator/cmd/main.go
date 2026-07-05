@@ -7,11 +7,14 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/redis/go-redis/v9"
+
 	"github.com/aegis-platform/orchestrator/internal/adapters"
 	"github.com/aegis-platform/orchestrator/internal/config"
 	"github.com/aegis-platform/orchestrator/internal/intelligence"
 	"github.com/aegis-platform/orchestrator/internal/logger"
 	"github.com/aegis-platform/orchestrator/internal/pipeline"
+	"github.com/aegis-platform/orchestrator/internal/progress"
 	"github.com/aegis-platform/orchestrator/internal/store"
 	"github.com/aegis-platform/orchestrator/internal/worker"
 )
@@ -47,7 +50,13 @@ func run() error {
 	scannerClient := adapters.NewScannerClient(cfg.ScannerBaseURL, cfg.ScannerTimeout)
 	deepClient := adapters.NewScannerClient(cfg.ScannerDeepURL, cfg.ScannerTimeout)
 	pipe := pipeline.New(scannerClient, deepClient, log)
-	processor := worker.NewScanProcessor(st, gitClient, pipe, cfg.MaxRepoSizeMB, log)
+
+	// Redis pub/sub publisher for live scan-stage updates (streamed by the API).
+	progressRDB := redis.NewClient(&redis.Options{Addr: cfg.RedisAddr, Password: cfg.RedisPassword, DB: cfg.RedisDB})
+	defer progressRDB.Close()
+	progressPub := progress.NewPublisher(progressRDB)
+
+	processor := worker.NewScanProcessor(st, gitClient, pipe, progressPub, cfg.MaxRepoSizeMB, log)
 
 	// ── Live vulnerability intelligence (background sync + retroactive rescore) ─
 	if cfg.IntelligenceEnabled {
