@@ -21,16 +21,25 @@ var (
 	ErrLastOwner = errors.New("cannot remove the last owner of an organization")
 )
 
+// Inviter emails an org invitation (implemented by NotificationService).
+type Inviter interface {
+	SendInvitation(ctx context.Context, email, orgName, inviter, token string)
+}
+
 // OrganizationService implements org + membership + invitation logic with
 // role-based authorization.
 type OrganizationService struct {
-	orgs  *repository.OrganizationRepository
-	users *repository.UserRepository
+	orgs    *repository.OrganizationRepository
+	users   *repository.UserRepository
+	inviter Inviter
 }
 
 func NewOrganizationService(orgs *repository.OrganizationRepository, users *repository.UserRepository) *OrganizationService {
 	return &OrganizationService{orgs: orgs, users: users}
 }
+
+// SetInviter wires the email notifier used to deliver invitations.
+func (s *OrganizationService) SetInviter(i Inviter) { s.inviter = i }
 
 // requireRole loads the actor's role and enforces a minimum privilege level.
 func (s *OrganizationService) requireRole(ctx context.Context, orgID, userID, minRole string) (string, error) {
@@ -115,6 +124,18 @@ func (s *OrganizationService) Invite(ctx context.Context, orgID, actorID, email,
 	}
 	if err := s.orgs.CreateInvitation(ctx, inv, actorID); err != nil {
 		return nil, false, err
+	}
+	// Deliver the invitation by email (best-effort; the token is also returned).
+	if s.inviter != nil {
+		orgName := ""
+		if o, oerr := s.orgs.GetForUser(ctx, orgID, actorID); oerr == nil {
+			orgName = o.Name
+		}
+		inviterEmail := ""
+		if u, uerr := s.users.GetByID(ctx, actorID); uerr == nil {
+			inviterEmail = u.Email
+		}
+		s.inviter.SendInvitation(ctx, inv.Email, orgName, inviterEmail, inv.Token)
 	}
 	return inv, false, nil
 }

@@ -65,6 +65,15 @@ type Config struct {
 	GitLabWebhookSecret    string
 	BitbucketToken         string
 	BitbucketWebhookSecret string
+
+	// Notifications (email). Provider: disabled|log|resend|sendgrid|smtp (default log).
+	EmailProvider string
+	EmailAPIKey   string
+	EmailFrom     string
+	SMTPHost      string
+	SMTPPort      string
+	SMTPUser      string
+	SMTPPass      string
 }
 
 // Load reads configuration from environment variables (and an optional .env via
@@ -118,6 +127,13 @@ func Load() (*Config, error) {
 		GitLabWebhookSecret:    v.GetString("GITLAB_WEBHOOK_SECRET"),
 		BitbucketToken:         v.GetString("BITBUCKET_TOKEN"),
 		BitbucketWebhookSecret: v.GetString("BITBUCKET_WEBHOOK_SECRET"),
+		EmailProvider:          v.GetString("EMAIL_PROVIDER"),
+		EmailAPIKey:            v.GetString("EMAIL_API_KEY"),
+		EmailFrom:              v.GetString("EMAIL_FROM"),
+		SMTPHost:               v.GetString("SMTP_HOST"),
+		SMTPPort:               v.GetString("SMTP_PORT"),
+		SMTPUser:               v.GetString("SMTP_USER"),
+		SMTPPass:               v.GetString("SMTP_PASS"),
 		CORSOrigins:        splitAndTrim(v.GetString("CORS_ALLOWED_ORIGINS")),
 		ShutdownTimeout:    time.Duration(v.GetInt("SHUTDOWN_TIMEOUT_SECONDS")) * time.Second,
 		DatabaseURL:        v.GetString("DATABASE_URL"),

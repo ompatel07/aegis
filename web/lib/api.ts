@@ -15,6 +15,7 @@ import type {
   IntelligenceStatus,
   Notification,
   GHAppInstallation,
+  NotificationSettings,
   Organization,
   OrgInvitation,
   OrgMember,
@@ -110,6 +111,13 @@ export function createApi(token?: string) {
 
     acceptInvitation: (token: string) =>
       http.post<ApiSuccess<Organization>>("/invitations/accept", { token }).then((r) => r.data.data).catch(normalizeError),
+
+    // ── Notifications (Phase 2C) ─────────────────────────────────────────────
+    getNotificationSettings: () =>
+      http.get<ApiSuccess<NotificationSettings>>("/notifications/settings").then((r) => r.data.data).catch(normalizeError),
+
+    updateNotificationSettings: (body: NotificationSettings) =>
+      http.put<ApiSuccess<NotificationSettings>>("/notifications/settings", body).then((r) => r.data.data).catch(normalizeError),
 
     // ── GitHub App (Phase 2C) ────────────────────────────────────────────────
     getGithubAppInstallUrl: () =>

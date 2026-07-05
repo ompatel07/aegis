@@ -143,6 +143,15 @@ services:
       GITLAB_WEBHOOK_SECRET: ${GITLAB_WEBHOOK_SECRET:-}
       BITBUCKET_TOKEN: ${BITBUCKET_TOKEN:-}
       BITBUCKET_WEBHOOK_SECRET: ${BITBUCKET_WEBHOOK_SECRET:-}
+      # Notifications: email provider disabled|log|resend|sendgrid|smtp. Defaults
+      # to log (writes emails to the API log) so it works with no credentials.
+      EMAIL_PROVIDER: ${EMAIL_PROVIDER:-log}
+      EMAIL_API_KEY: ${EMAIL_API_KEY:-}
+      EMAIL_FROM: ${EMAIL_FROM:-Aegis <notifications@aegis.local>}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
     depends_on:
       postgres:
         condition: service_healthy

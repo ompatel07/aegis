@@ -44,6 +44,15 @@ export interface AuthResponse {
   tokens: TokenPair;
 }
 
+// ── Notifications (Phase 2C TASK 7) ──────────────────────────────────────────
+export interface NotificationSettings {
+  email_enabled: boolean;
+  email_scan_complete: boolean;
+  email_new_critical: boolean;
+  digest_frequency: "daily" | "weekly" | "never";
+  severity_threshold: "critical" | "high" | "medium" | "all";
+}
+
 // ── GitHub App (Phase 2C TASK 1) ─────────────────────────────────────────────
 export interface GHAppRepo {
   id: string;

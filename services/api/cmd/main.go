@@ -23,6 +23,7 @@ import (
 	"github.com/aegis-platform/api/internal/database"
 	"github.com/aegis-platform/api/internal/githubapp"
 	"github.com/aegis-platform/api/internal/handlers"
+	"github.com/aegis-platform/api/internal/notify"
 	"github.com/aegis-platform/api/internal/vcs"
 	"github.com/aegis-platform/api/internal/logger"
 	mw "github.com/aegis-platform/api/internal/middleware"
@@ -120,6 +121,16 @@ func run() error {
 		map[string]vcs.VCSProvider{"gitlab": gitlabProvider, "bitbucket": bitbucketProvider},
 		vcsRepo, projectRepo, scanSvc, scanRepo, findingRepo, policySvc, dashURL, log)
 	log.Info().Bool("gitlab_enabled", gitlabProvider.Enabled()).Bool("bitbucket_enabled", bitbucketProvider.Enabled()).Msg("vcs providers")
+
+	// Notifications: email (log provider by default) + Slack incoming webhooks.
+	emailSender := notify.NewSender(notify.Config{
+		Provider: cfg.EmailProvider, APIKey: cfg.EmailAPIKey, From: cfg.EmailFrom,
+		SMTPHost: cfg.SMTPHost, SMTPPort: cfg.SMTPPort, SMTPUser: cfg.SMTPUser, SMTPPass: cfg.SMTPPass,
+	}, nil, log)
+	notifyRepo := repository.NewNotifyRepository(db)
+	notifySvc := services.NewNotificationService(emailSender, notify.NewSlack(nil), notifyRepo, scanRepo, findingRepo, projectRepo, dashURL, log)
+	orgSvc.SetInviter(notifySvc) // deliver org invitations by email
+	log.Info().Str("email_provider", emailSender.Name()).Msg("notifications")
 	ruleSvc := services.NewRuleService(projectRepo, projectRuleRepo, cfg.ScannerBaseURL)
 	aiBackend := ai.New(ai.Config{Provider: cfg.AIProvider, Model: cfg.AIModel, APIKey: cfg.AIAPIKey, BaseURL: cfg.AIBaseURL})
 	aiSvc := services.NewAIService(aiBackend, findingRepo, aiAuditRepo)
@@ -140,6 +151,7 @@ func run() error {
 	policyH := handlers.NewPolicyHandler(policySvc, log)
 	githubAppH := handlers.NewGitHubAppHandler(githubAppSvc, githubAppRepo, log)
 	vcsH := handlers.NewVCSHandler(vcsSvc, log)
+	notifyH := handlers.NewNotifyHandler(notifySvc, log)
 	webhookH := handlers.NewWebhookHandler(integrationRepo, scanSvc, log)
 	progressH := handlers.NewProgressHandler(rdb, tokens, scanRepo, log)
 	healthH := handlers.NewHealthHandler(db, rdb)
@@ -212,8 +224,12 @@ func run() error {
 				r.Get("/{id}/ai-code-memory", projectH.AICodeMemory)
 				r.Get("/{id}/policy", policyH.Get)
 				r.Put("/{id}/policy", policyH.Set)
+				r.Get("/{id}/slack", notifyH.GetProjectSlack)
+				r.Put("/{id}/slack", notifyH.SetProjectSlack)
 			})
 			r.Get("/policies/templates", policyH.Templates)
+			r.Get("/notifications/settings", notifyH.GetSettings)
+			r.Put("/notifications/settings", notifyH.UpdateSettings)
 
 			r.Route("/integrations/github", func(r chi.Router) {
 				r.Get("/install-url", githubAppH.InstallURL)
@@ -279,6 +295,20 @@ func run() error {
 			}
 		}()
 	}
+
+	// Notification dispatcher: email/Slack for completed scans (every 15s).
+	go func() {
+		ticker := time.NewTicker(15 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-rootCtx.Done():
+				return
+			case <-ticker.C:
+				notifySvc.Dispatch(rootCtx)
+			}
+		}
+	}()
 
 	select {
 	case err := <-serverErr:
