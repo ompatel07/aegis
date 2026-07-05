@@ -19,6 +19,9 @@ import type {
   OrgMember,
   OrgMembership,
   Paginated,
+  Policy,
+  PolicyConfig,
+  PolicyResult,
   ProjectRule,
   Project,
   Scan,
@@ -106,6 +109,19 @@ export function createApi(token?: string) {
 
     acceptInvitation: (token: string) =>
       http.post<ApiSuccess<Organization>>("/invitations/accept", { token }).then((r) => r.data.data).catch(normalizeError),
+
+    // ── Policies (Phase 2C) ──────────────────────────────────────────────────
+    getPolicyTemplates: () =>
+      http.get<ApiSuccess<Record<string, PolicyConfig>>>("/policies/templates").then((r) => r.data.data).catch(normalizeError),
+
+    getPolicy: (projectId: string) =>
+      http.get<ApiSuccess<Policy | null>>(`/projects/${projectId}/policy`).then((r) => r.data.data).catch(normalizeError),
+
+    setPolicy: (projectId: string, body: { name?: string; template?: string; config?: PolicyConfig }) =>
+      http.put<ApiSuccess<Policy>>(`/projects/${projectId}/policy`, body).then((r) => r.data.data).catch(normalizeError),
+
+    evaluatePolicy: (scanId: string) =>
+      http.get<ApiSuccess<PolicyResult>>(`/scans/${scanId}/policy`).then((r) => r.data.data).catch(normalizeError),
 
     // ── Project memory (Phase 2C) ────────────────────────────────────────────
     getBaseline: (projectId: string) =>

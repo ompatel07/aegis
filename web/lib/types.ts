@@ -44,6 +44,39 @@ export interface AuthResponse {
   tokens: TokenPair;
 }
 
+// ── Policies (Phase 2C TASK 8) ───────────────────────────────────────────────
+export interface PolicyConfig {
+  max_severity?: Severity;
+  block_new_findings?: boolean;
+  block_new_severity?: Severity;
+  min_security_score?: number;
+  min_quality_score?: number;
+  min_ai_safety_score?: number;
+  max_ai_generated_pct?: number;
+}
+
+export interface Policy {
+  id: string;
+  project_id: string;
+  name: string;
+  template?: string;
+  config: PolicyConfig;
+  is_active: boolean;
+}
+
+export interface PolicyCheck {
+  rule: string;
+  passed: boolean;
+  detail: string;
+}
+
+export interface PolicyResult {
+  passed: boolean;
+  has_policy: boolean;
+  policy_name?: string;
+  checks: PolicyCheck[];
+}
+
 export type OrgRole = "owner" | "admin" | "member" | "viewer";
 
 export interface Organization {

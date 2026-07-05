@@ -85,11 +85,13 @@ func run() error {
 	projectRuleRepo := repository.NewProjectRuleRepository(db)
 	aiAuditRepo := repository.NewAIAuditRepository(db)
 	orgRepo := repository.NewOrganizationRepository(db)
+	policyRepo := repository.NewPolicyRepository(db)
 
 	// ── Services ─────────────────────────────────────────────────────────────
 	authSvc := services.NewAuthService(userRepo, orgRepo, tokens, sessions)
 	projectSvc := services.NewProjectService(projectRepo, orgRepo)
 	orgSvc := services.NewOrganizationService(orgRepo, userRepo)
+	policySvc := services.NewPolicyService(policyRepo, projectRepo, scanRepo, findingRepo)
 	scanSvc := services.NewScanService(projectRepo, scanRepo, findingRepo, projectRuleRepo, publisher)
 	integrationSvc := services.NewIntegrationService(projectRepo, integrationRepo, encryptor)
 	ruleSvc := services.NewRuleService(projectRepo, projectRuleRepo, cfg.ScannerBaseURL)
@@ -109,6 +111,7 @@ func run() error {
 	aiH := handlers.NewAIHandler(aiSvc, log)
 	execReportH := handlers.NewExecReportHandler(reportSvc, log)
 	orgH := handlers.NewOrganizationHandler(orgSvc, log)
+	policyH := handlers.NewPolicyHandler(policySvc, log)
 	webhookH := handlers.NewWebhookHandler(integrationRepo, scanSvc, log)
 	healthH := handlers.NewHealthHandler(db, rdb)
 
@@ -173,13 +176,17 @@ func run() error {
 				r.Post("/{id}/rules", ruleH.Create)
 				r.Get("/{id}/baseline", projectH.Baseline)
 				r.Get("/{id}/ai-code-memory", projectH.AICodeMemory)
+				r.Get("/{id}/policy", policyH.Get)
+				r.Put("/{id}/policy", policyH.Set)
 			})
+			r.Get("/policies/templates", policyH.Templates)
 
 			r.Route("/scans", func(r chi.Router) {
 				r.Get("/{scanId}", scanH.Get)
 				r.Get("/{scanId}/findings", scanH.ListFindings)
 				r.Get("/{scanId}/report", reportH.Get)
 				r.Get("/{scanId}/report/executive", execReportH.Executive)
+				r.Get("/{scanId}/policy", policyH.Evaluate)
 				r.Get("/{scanId}/export/sarif", scanH.ExportSARIF)
 			})
 
