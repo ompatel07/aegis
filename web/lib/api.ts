@@ -14,6 +14,10 @@ import type {
   GithubIntegration,
   IntelligenceStatus,
   Notification,
+  Organization,
+  OrgInvitation,
+  OrgMember,
+  OrgMembership,
   Paginated,
   ProjectRule,
   Project,
@@ -68,6 +72,40 @@ export function createApi(token?: string) {
 
     deleteProject: (id: string) =>
       http.delete(`/projects/${id}`).then(() => undefined).catch(normalizeError),
+
+    // ── Organizations (Phase 2C) ─────────────────────────────────────────────
+    listOrgs: () =>
+      http.get<ApiSuccess<OrgMembership[]>>("/organizations").then((r) => r.data.data).catch(normalizeError),
+
+    createOrg: (body: { name: string; billing_email?: string }) =>
+      http.post<ApiSuccess<Organization>>("/organizations", body).then((r) => r.data.data).catch(normalizeError),
+
+    getOrg: (orgId: string) =>
+      http.get<ApiSuccess<Organization>>(`/organizations/${orgId}`).then((r) => r.data.data).catch(normalizeError),
+
+    updateOrg: (orgId: string, body: { name: string; billing_email?: string }) =>
+      http.put<ApiSuccess<Organization>>(`/organizations/${orgId}`, body).then((r) => r.data.data).catch(normalizeError),
+
+    listMembers: (orgId: string) =>
+      http.get<ApiSuccess<OrgMember[]>>(`/organizations/${orgId}/members`).then((r) => r.data.data).catch(normalizeError),
+
+    setMemberRole: (orgId: string, userId: string, role: string) =>
+      http.put(`/organizations/${orgId}/members/${userId}`, { role }).then(() => undefined).catch(normalizeError),
+
+    removeMember: (orgId: string, userId: string) =>
+      http.delete(`/organizations/${orgId}/members/${userId}`).then(() => undefined).catch(normalizeError),
+
+    listInvitations: (orgId: string) =>
+      http.get<ApiSuccess<OrgInvitation[]>>(`/organizations/${orgId}/invitations`).then((r) => r.data.data).catch(normalizeError),
+
+    inviteMember: (orgId: string, body: { email: string; role: string }) =>
+      http.post<ApiSuccess<OrgInvitation | { added: boolean }>>(`/organizations/${orgId}/invitations`, body).then((r) => r.data.data).catch(normalizeError),
+
+    revokeInvitation: (orgId: string, invId: string) =>
+      http.delete(`/organizations/${orgId}/invitations/${invId}`).then(() => undefined).catch(normalizeError),
+
+    acceptInvitation: (token: string) =>
+      http.post<ApiSuccess<Organization>>("/invitations/accept", { token }).then((r) => r.data.data).catch(normalizeError),
 
     // ── Project memory (Phase 2C) ────────────────────────────────────────────
     getBaseline: (projectId: string) =>

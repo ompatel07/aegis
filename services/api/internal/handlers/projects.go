@@ -30,6 +30,7 @@ type projectRequest struct {
 	Language        *string `json:"language" validate:"omitempty,max=64"`
 	AIFixEnabled    *bool   `json:"ai_fix_enabled"`
 	GrandfatherMode *bool   `json:"grandfather_mode"`
+	OrganizationID  *string `json:"organization_id" validate:"omitempty,uuid"`
 }
 
 func (r projectRequest) toInput() services.ProjectInput {
@@ -37,6 +38,7 @@ func (r projectRequest) toInput() services.ProjectInput {
 		Name: r.Name, Description: r.Description, RepoURL: r.RepoURL,
 		RepoType: r.RepoType, DefaultBranch: r.DefaultBranch, Language: r.Language,
 		AIFixEnabled: r.AIFixEnabled, GrandfatherMode: r.GrandfatherMode,
+		OrganizationID: r.OrganizationID,
 	}
 }
 

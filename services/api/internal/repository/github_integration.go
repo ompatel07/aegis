@@ -45,7 +45,7 @@ func (r *GithubIntegrationRepository) GetByProjectForUser(ctx context.Context, p
 		SELECT gi.*
 		FROM github_integrations gi
 		JOIN projects p ON p.id = gi.project_id
-		WHERE gi.project_id = $1 AND p.user_id = $2`
+		WHERE gi.project_id = $1 AND p.organization_id IN (SELECT org_id FROM organization_members WHERE user_id = $2)`
 	var gi models.GithubIntegration
 	if err := r.db.GetContext(ctx, &gi, q, projectID, userID); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -61,7 +61,7 @@ func (r *GithubIntegrationRepository) DeleteByIDForUser(ctx context.Context, id,
 	const q = `
 		DELETE FROM github_integrations gi
 		USING projects p
-		WHERE gi.id = $1 AND p.id = gi.project_id AND p.user_id = $2`
+		WHERE gi.id = $1 AND p.id = gi.project_id AND p.organization_id IN (SELECT org_id FROM organization_members WHERE user_id = $2)`
 	res, err := r.db.ExecContext(ctx, q, id, userID)
 	if err != nil {
 		return err

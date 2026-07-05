@@ -5,12 +5,14 @@ import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { FolderGit2, LayoutDashboard, LogOut, Radar, Settings, ShieldCheck } from "lucide-react";
+import { OrgSwitcher } from "@/components/dashboard/OrgSwitcher";
+import { FolderGit2, LayoutDashboard, LogOut, Radar, Settings, ShieldCheck, Users } from "lucide-react";
 
 const navItems = [
   { href: "/", label: "Overview", icon: LayoutDashboard },
   { href: "/projects", label: "Projects", icon: FolderGit2 },
   { href: "/intelligence", label: "Intelligence", icon: Radar },
+  { href: "/organizations", label: "Teams", icon: Users },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
@@ -50,6 +52,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </nav>
           </div>
           <div className="flex items-center gap-3">
+            <OrgSwitcher />
             <span className="hidden text-sm text-muted-foreground sm:inline">
               {session?.user?.email}
             </span>

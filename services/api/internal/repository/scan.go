@@ -60,7 +60,7 @@ func (r *ScanRepository) GetByIDForUser(ctx context.Context, id, userID string) 
 		SELECT ` + scanColumns + `
 		FROM scans s
 		JOIN projects p ON p.id = s.project_id
-		WHERE s.id = $1 AND p.user_id = $2`
+		WHERE s.id = $1 AND p.organization_id IN (SELECT org_id FROM organization_members WHERE user_id = $2)`
 	var s models.Scan
 	if err := r.db.GetContext(ctx, &s, q, id, userID); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {

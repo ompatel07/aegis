@@ -103,7 +103,7 @@ func (r *FindingRepository) ProjectContextForFinding(ctx context.Context, findin
 		   FROM findings f
 		   JOIN scans s    ON s.id = f.scan_id
 		   JOIN projects p ON p.id = s.project_id
-		  WHERE f.id = $1 AND p.user_id = $2`,
+		  WHERE f.id = $1 AND p.organization_id IN (SELECT org_id FROM organization_members WHERE user_id = $2)`,
 		findingID, userID).Scan(&projectID, &aiEnabled, &language)
 	if errors.Is(err, sql.ErrNoRows) {
 		err = ErrNotFound
@@ -120,7 +120,7 @@ func (r *FindingRepository) InsertFeedback(ctx context.Context, findingID, userI
 		   FROM findings f
 		   JOIN scans s    ON s.id = f.scan_id
 		   JOIN projects p ON p.id = s.project_id
-		  WHERE f.id = $1 AND p.user_id = $2`,
+		  WHERE f.id = $1 AND p.organization_id IN (SELECT org_id FROM organization_members WHERE user_id = $2)`,
 		findingID, userID, action, reason)
 	if err != nil {
 		return err
@@ -152,7 +152,7 @@ func (r *FindingRepository) UpsertRuleStats(ctx context.Context, findingID, user
 		  FROM findings f
 		  JOIN scans s    ON s.id = f.scan_id
 		  JOIN projects p ON p.id = s.project_id
-		 WHERE f.id = $1 AND p.user_id = $4
+		 WHERE f.id = $1 AND p.organization_id IN (SELECT org_id FROM organization_members WHERE user_id = $4)
 		ON CONFLICT (project_id, rule_id) DO UPDATE SET
 			total_feedback  = project_rule_stats.total_feedback + 1,
 			fp_count        = project_rule_stats.fp_count + $2::int,
@@ -180,7 +180,7 @@ func (r *FindingRepository) GetByIDForUser(ctx context.Context, id, userID strin
 		SELECT f.* FROM findings f
 		JOIN scans s    ON s.id = f.scan_id
 		JOIN projects p ON p.id = s.project_id
-		WHERE f.id = $1 AND p.user_id = $2`
+		WHERE f.id = $1 AND p.organization_id IN (SELECT org_id FROM organization_members WHERE user_id = $2)`
 	var f models.Finding
 	if err := r.db.GetContext(ctx, &f, q, id, userID); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -204,7 +204,7 @@ func (r *FindingRepository) UpdateTriage(
 		WHERE f.id = $1
 		  AND s.id = f.scan_id
 		  AND p.id = s.project_id
-		  AND p.user_id = $2
+		  AND p.organization_id IN (SELECT org_id FROM organization_members WHERE user_id = $2)
 		RETURNING f.*`
 	var f models.Finding
 	if err := r.db.QueryRowxContext(ctx, q, id, userID, isFalsePositive, isSuppressed).StructScan(&f); err != nil {

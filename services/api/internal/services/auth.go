@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"errors"
+	"strings"
 
 	"github.com/aegis-platform/api/internal/auth"
 	"github.com/aegis-platform/api/internal/models"
@@ -12,12 +13,13 @@ import (
 // AuthService implements registration, login, refresh, and logout.
 type AuthService struct {
 	users    *repository.UserRepository
+	orgs     *repository.OrganizationRepository
 	tokens   *auth.TokenManager
 	sessions *auth.SessionStore
 }
 
-func NewAuthService(users *repository.UserRepository, tokens *auth.TokenManager, sessions *auth.SessionStore) *AuthService {
-	return &AuthService{users: users, tokens: tokens, sessions: sessions}
+func NewAuthService(users *repository.UserRepository, orgs *repository.OrganizationRepository, tokens *auth.TokenManager, sessions *auth.SessionStore) *AuthService {
+	return &AuthService{users: users, orgs: orgs, tokens: tokens, sessions: sessions}
 }
 
 // RegisterInput is the validated registration payload.
@@ -45,6 +47,25 @@ func (s *AuthService) Register(ctx context.Context, in RegisterInput) (*models.U
 		if errors.Is(err, repository.ErrConflict) {
 			return nil, nil, ErrEmailTaken
 		}
+		return nil, nil, err
+	}
+
+	// Every user gets a personal organization (they own it) so projects always
+	// have an org home (Phase 2C TASK 5).
+	orgName := user.Name
+	if orgName == "" {
+		orgName = "Personal"
+	}
+	personal := &models.Organization{
+		Name:       orgName + "'s workspace",
+		Slug:       "ws-" + strings.ReplaceAll(user.ID, "-", ""),
+		Plan:       models.PlanFree,
+		IsPersonal: true,
+	}
+	if user.Email != "" {
+		personal.BillingEmail = &user.Email
+	}
+	if err := s.orgs.Create(ctx, personal, user.ID); err != nil {
 		return nil, nil, err
 	}
 

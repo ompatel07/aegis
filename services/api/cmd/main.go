@@ -84,10 +84,12 @@ func run() error {
 	intelligenceRepo := repository.NewIntelligenceRepository(db)
 	projectRuleRepo := repository.NewProjectRuleRepository(db)
 	aiAuditRepo := repository.NewAIAuditRepository(db)
+	orgRepo := repository.NewOrganizationRepository(db)
 
 	// ── Services ─────────────────────────────────────────────────────────────
-	authSvc := services.NewAuthService(userRepo, tokens, sessions)
-	projectSvc := services.NewProjectService(projectRepo)
+	authSvc := services.NewAuthService(userRepo, orgRepo, tokens, sessions)
+	projectSvc := services.NewProjectService(projectRepo, orgRepo)
+	orgSvc := services.NewOrganizationService(orgRepo, userRepo)
 	scanSvc := services.NewScanService(projectRepo, scanRepo, findingRepo, projectRuleRepo, publisher)
 	integrationSvc := services.NewIntegrationService(projectRepo, integrationRepo, encryptor)
 	ruleSvc := services.NewRuleService(projectRepo, projectRuleRepo, cfg.ScannerBaseURL)
@@ -106,6 +108,7 @@ func run() error {
 	ruleH := handlers.NewRuleHandler(ruleSvc, log)
 	aiH := handlers.NewAIHandler(aiSvc, log)
 	execReportH := handlers.NewExecReportHandler(reportSvc, log)
+	orgH := handlers.NewOrganizationHandler(orgSvc, log)
 	webhookH := handlers.NewWebhookHandler(integrationRepo, scanSvc, log)
 	healthH := handlers.NewHealthHandler(db, rdb)
 
@@ -141,6 +144,20 @@ func run() error {
 		// Authenticated routes.
 		r.Group(func(r chi.Router) {
 			r.Use(mw.Authenticator(tokens))
+
+			r.Route("/organizations", func(r chi.Router) {
+				r.Get("/", orgH.List)
+				r.Post("/", orgH.Create)
+				r.Get("/{orgId}", orgH.Get)
+				r.Put("/{orgId}", orgH.Update)
+				r.Get("/{orgId}/members", orgH.Members)
+				r.Put("/{orgId}/members/{userId}", orgH.SetRole)
+				r.Delete("/{orgId}/members/{userId}", orgH.RemoveMember)
+				r.Get("/{orgId}/invitations", orgH.ListInvitations)
+				r.Post("/{orgId}/invitations", orgH.Invite)
+				r.Delete("/{orgId}/invitations/{invId}", orgH.RevokeInvitation)
+			})
+			r.Post("/invitations/accept", orgH.Accept)
 
 			r.Route("/projects", func(r chi.Router) {
 				r.Get("/", projectH.List)

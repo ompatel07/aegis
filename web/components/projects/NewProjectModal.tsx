@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useApi } from "@/lib/use-api";
+import { useCurrentOrg } from "@/lib/use-current-org";
 
 const schema = z.object({
   name: z.string().min(1, "Name is required").max(255),
@@ -24,6 +25,7 @@ type FormValues = z.infer<typeof schema>;
 export function NewProjectModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const api = useApi();
   const queryClient = useQueryClient();
+  const [currentOrg] = useCurrentOrg();
   const [serverError, setServerError] = useState<string | null>(null);
 
   const {
@@ -41,6 +43,7 @@ export function NewProjectModal({ open, onClose }: { open: boolean; onClose: () 
         repo_url: values.repo_url || undefined,
         repo_type: values.repo_type,
         default_branch: values.default_branch || undefined,
+        organization_id: currentOrg || undefined,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });

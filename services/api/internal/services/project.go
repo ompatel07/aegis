@@ -11,13 +11,14 @@ import (
 	"github.com/aegis-platform/api/internal/repository"
 )
 
-// ProjectService implements project CRUD with slug generation + ownership.
+// ProjectService implements project CRUD with slug generation + org ownership.
 type ProjectService struct {
 	projects *repository.ProjectRepository
+	orgs     *repository.OrganizationRepository
 }
 
-func NewProjectService(projects *repository.ProjectRepository) *ProjectService {
-	return &ProjectService{projects: projects}
+func NewProjectService(projects *repository.ProjectRepository, orgs *repository.OrganizationRepository) *ProjectService {
+	return &ProjectService{projects: projects, orgs: orgs}
 }
 
 // ProjectInput is the validated create/update payload.
@@ -30,6 +31,7 @@ type ProjectInput struct {
 	Language        *string
 	AIFixEnabled    *bool
 	GrandfatherMode *bool
+	OrganizationID  *string
 }
 
 func (s *ProjectService) Create(ctx context.Context, userID string, in ProjectInput) (*models.Project, error) {
@@ -37,13 +39,35 @@ func (s *ProjectService) Create(ctx context.Context, userID string, in ProjectIn
 	if branch == "" {
 		branch = "main"
 	}
+
+	// Resolve the owning org: the one requested (member+ required) or the user's
+	// personal org.
+	var orgID string
+	if in.OrganizationID != nil && *in.OrganizationID != "" {
+		role, err := s.orgs.RoleOf(ctx, *in.OrganizationID, userID)
+		if err != nil {
+			return nil, ErrForbidden
+		}
+		if !models.RoleAtLeast(role, models.OrgRoleMember) {
+			return nil, ErrForbidden
+		}
+		orgID = *in.OrganizationID
+	} else {
+		pid, err := s.orgs.PersonalOrgID(ctx, userID)
+		if err != nil {
+			return nil, err
+		}
+		orgID = pid
+	}
+
 	p := &models.Project{
-		UserID:        userID,
-		Name:          in.Name,
-		Slug:          slugify(in.Name),
-		Description:   in.Description,
-		RepoURL:       in.RepoURL,
-		RepoType:      in.RepoType,
+		UserID:          userID,
+		OrganizationID:  &orgID,
+		Name:            in.Name,
+		Slug:            slugify(in.Name),
+		Description:     in.Description,
+		RepoURL:         in.RepoURL,
+		RepoType:        in.RepoType,
 		DefaultBranch:   branch,
 		Language:        in.Language,
 		GrandfatherMode: true, // DB default; set here so the response matches

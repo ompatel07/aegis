@@ -33,7 +33,7 @@ func (r *ProjectRuleRepository) ListByProjectForUser(ctx context.Context, projec
 		`SELECT pr.id, pr.project_id, pr.name, pr.rule_yaml, pr.created_at
 		   FROM project_rules pr
 		   JOIN projects p ON p.id = pr.project_id
-		  WHERE pr.project_id = $1 AND p.user_id = $2
+		  WHERE pr.project_id = $1 AND p.organization_id IN (SELECT org_id FROM organization_members WHERE user_id = $2)
 		  ORDER BY pr.created_at DESC`,
 		projectID, userID)
 	return out, err
@@ -51,7 +51,7 @@ func (r *ProjectRuleRepository) YAMLForProject(ctx context.Context, projectID st
 func (r *ProjectRuleRepository) DeleteByIDForUser(ctx context.Context, id, userID string) error {
 	res, err := r.db.ExecContext(ctx,
 		`DELETE FROM project_rules pr USING projects p
-		  WHERE pr.id = $1 AND p.id = pr.project_id AND p.user_id = $2`,
+		  WHERE pr.id = $1 AND p.id = pr.project_id AND p.organization_id IN (SELECT org_id FROM organization_members WHERE user_id = $2)`,
 		id, userID)
 	if err != nil {
 		return err

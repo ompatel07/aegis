@@ -60,7 +60,7 @@ func (r *AIAuditRepository) RecentForUser(ctx context.Context, userID string, li
 		`SELECT a.id, a.project_id, a.finding_id, a.feature, a.provider, a.model, a.success, a.created_at
 		   FROM ai_audit_log a
 		   LEFT JOIN projects p ON p.id = a.project_id
-		  WHERE a.user_id = $1 OR p.user_id = $1
+		  WHERE a.user_id = $1 OR p.organization_id IN (SELECT org_id FROM organization_members WHERE user_id = $1)
 		  ORDER BY a.created_at DESC LIMIT $2`,
 		userID, limit)
 	return out, err

@@ -10,11 +10,12 @@ const (
 	RepoTypeUpload    = "upload"
 )
 
-// Project describes a codebase owned by a user.
+// Project describes a codebase owned by an organization (created by a user).
 type Project struct {
-	ID            string    `db:"id" json:"id"`
-	UserID        string    `db:"user_id" json:"user_id"`
-	Name          string    `db:"name" json:"name"`
+	ID             string  `db:"id" json:"id"`
+	UserID         string  `db:"user_id" json:"user_id"`
+	OrganizationID *string `db:"organization_id" json:"organization_id,omitempty"`
+	Name           string  `db:"name" json:"name"`
 	Slug          string    `db:"slug" json:"slug"`
 	Description   *string   `db:"description" json:"description,omitempty"`
 	RepoURL       *string   `db:"repo_url" json:"repo_url,omitempty"`

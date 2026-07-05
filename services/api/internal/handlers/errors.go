@@ -28,6 +28,12 @@ func writeServiceError(w http.ResponseWriter, log zerolog.Logger, err error) {
 		httpx.WriteError(w, httpx.ErrUnauthorized("invalid or expired refresh token"))
 	case errors.Is(err, services.ErrProjectHasNoRepo):
 		httpx.WriteError(w, httpx.ErrBadRequest("project has no repository configured to scan"))
+	case errors.Is(err, services.ErrForbidden):
+		httpx.WriteError(w, httpx.ErrForbidden("insufficient role for this action"))
+	case errors.Is(err, services.ErrInvitationInvalid):
+		httpx.WriteError(w, httpx.ErrBadRequest("invitation is invalid or expired"))
+	case errors.Is(err, services.ErrLastOwner):
+		httpx.WriteError(w, httpx.ErrConflict("cannot remove the last owner of an organization"))
 	default:
 		log.Error().Err(err).Msg("unhandled service error")
 		httpx.WriteError(w, httpx.ErrInternal())

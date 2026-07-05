@@ -44,9 +44,46 @@ export interface AuthResponse {
   tokens: TokenPair;
 }
 
+export type OrgRole = "owner" | "admin" | "member" | "viewer";
+
+export interface Organization {
+  id: string;
+  name: string;
+  slug: string;
+  billing_email?: string;
+  plan: string;
+  is_personal: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OrgMembership extends Organization {
+  role: OrgRole;
+}
+
+export interface OrgMember {
+  user_id: string;
+  email: string;
+  name?: string;
+  role: OrgRole;
+  joined_at: string;
+}
+
+export interface OrgInvitation {
+  id: string;
+  org_id: string;
+  email: string;
+  role: OrgRole;
+  token: string;
+  expires_at: string;
+  accepted_at?: string;
+  created_at: string;
+}
+
 export interface Project {
   id: string;
   user_id: string;
+  organization_id?: string;
   name: string;
   slug: string;
   description?: string;
@@ -212,6 +249,7 @@ export interface CreateProjectInput {
   language?: string;
   ai_fix_enabled?: boolean;
   grandfather_mode?: boolean;
+  organization_id?: string;
 }
 
 export interface AISuggestion {
