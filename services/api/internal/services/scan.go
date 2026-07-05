@@ -223,6 +223,8 @@ func (s *ScanService) RecordFeedback(ctx context.Context, findingID, userID, act
 	if err := s.findings.InsertFeedback(ctx, findingID, userID, action, reason); err != nil {
 		return err
 	}
+	// Team pattern learning: fold this action into the project's per-rule stats.
+	_ = s.findings.UpsertRuleStats(ctx, findingID, userID, action)
 	yes, no := true, false
 	switch action {
 	case "marked_fp":

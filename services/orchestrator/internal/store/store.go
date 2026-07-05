@@ -70,13 +70,23 @@ func (s *Store) MarkFailed(ctx context.Context, scanID, msg string) error {
 
 // SaveResults persists findings and the completed scan in a single transaction:
 // either all findings + the score update land, or nothing does.
-func (s *Store) SaveResults(ctx context.Context, scanID string, agg pipeline.Aggregated) error {
+func (s *Store) SaveResults(ctx context.Context, scanID, projectID string, agg pipeline.Aggregated) error {
 	tx, err := s.db.BeginTxx(ctx, nil)
 	if err != nil {
 		return fmt.Errorf("begin tx: %w", err)
 	}
 	// Roll back on any path that doesn't reach Commit.
 	defer func() { _ = tx.Rollback() }()
+
+	// Project memory (Phase 2C): personalize FP scores from team feedback, then
+	// tag findings new/existing against the baseline — both mutate agg.Findings
+	// before they are inserted.
+	if err := applyTeamPriors(ctx, tx, projectID, agg.Findings); err != nil {
+		return fmt.Errorf("apply team priors: %w", err)
+	}
+	if err := applyBaseline(ctx, tx, projectID, scanID, agg.Findings); err != nil {
+		return fmt.Errorf("apply baseline: %w", err)
+	}
 
 	if err := insertFindings(ctx, tx, scanID, agg.Findings); err != nil {
 		return fmt.Errorf("insert findings: %w", err)
@@ -126,7 +136,7 @@ func (s *Store) SaveResults(ctx context.Context, scanID string, agg pipeline.Agg
 	return nil
 }
 
-const findingColumnCount = 28
+const findingColumnCount = 29
 
 // insertFindings bulk-inserts findings in chunks (bounded by Postgres' param limit).
 func insertFindings(ctx context.Context, tx *sqlx.Tx, scanID string, findings []types.Finding) error {
@@ -153,7 +163,7 @@ func buildInsert(scanID string, chunk []types.Finding) (string, []any) {
 		 cwe_id, cve_id, owasp_category, fix_suggestion, metadata,
 		 title_human, impact, risk_level, remediation_action, remediation_details,
 		 estimated_effort, context_metadata, false_positive_probability,
-		 in_ai_generated_code, ai_generated_probability) VALUES `)
+		 in_ai_generated_code, ai_generated_probability, is_new) VALUES `)
 
 	args := make([]any, 0, len(chunk)*findingColumnCount)
 	for i, f := range chunk {
@@ -179,7 +189,7 @@ func buildInsert(scanID string, chunk []types.Finding) (string, []any) {
 			nullStr(f.RemediationAction), nullStr(f.RemediationDetails),
 			nullStr(f.EstimatedEffort), metadataJSON(f.ContextMetadata),
 			f.FalsePositiveProbability,
-			f.InAIGeneratedCode, f.AIGeneratedProbability,
+			f.InAIGeneratedCode, f.AIGeneratedProbability, f.IsNew,
 		)
 	}
 	return b.String(), args

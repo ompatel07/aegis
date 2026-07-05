@@ -30,6 +30,7 @@ type AICodeReport struct {
 	SafetyScore         int            `json:"safety_score"`
 	TopAIIssues         []AIIssueCount `json:"top_ai_issues"`
 	TopSignals          []string       `json:"top_signals"`
+	AIFiles             []string       `json:"ai_files"` // files flagged AI (for cross-scan memory)
 }
 
 var _sevWeight = map[string]float64{
@@ -69,6 +70,12 @@ func TagAICode(findings []types.Finding, res *types.AICodeResult) *AICodeReport 
 		if res.Threshold > 0 {
 			report.Threshold = res.Threshold
 		}
+		for file, score := range res.FileScores {
+			if score > report.Threshold {
+				report.AIFiles = append(report.AIFiles, file)
+			}
+		}
+		sort.Strings(report.AIFiles)
 	}
 
 	tally := map[string]*AIIssueCount{}

@@ -26,9 +26,10 @@ type ProjectInput struct {
 	Description   *string
 	RepoURL       *string
 	RepoType      *string
-	DefaultBranch string
-	Language      *string
-	AIFixEnabled  *bool
+	DefaultBranch   string
+	Language        *string
+	AIFixEnabled    *bool
+	GrandfatherMode *bool
 }
 
 func (s *ProjectService) Create(ctx context.Context, userID string, in ProjectInput) (*models.Project, error) {
@@ -43,8 +44,9 @@ func (s *ProjectService) Create(ctx context.Context, userID string, in ProjectIn
 		Description:   in.Description,
 		RepoURL:       in.RepoURL,
 		RepoType:      in.RepoType,
-		DefaultBranch: branch,
-		Language:      in.Language,
+		DefaultBranch:   branch,
+		Language:        in.Language,
+		GrandfatherMode: true, // DB default; set here so the response matches
 	}
 	if err := s.projects.Create(ctx, p); err != nil {
 		return nil, err
@@ -77,6 +79,9 @@ func (s *ProjectService) Update(ctx context.Context, id, userID string, in Proje
 	if in.AIFixEnabled != nil {
 		existing.AIFixEnabled = *in.AIFixEnabled
 	}
+	if in.GrandfatherMode != nil {
+		existing.GrandfatherMode = *in.GrandfatherMode
+	}
 
 	if err := s.projects.Update(ctx, existing); err != nil {
 		return nil, err
@@ -86,6 +91,25 @@ func (s *ProjectService) Update(ctx context.Context, id, userID string, in Proje
 
 func (s *ProjectService) Delete(ctx context.Context, id, userID string) error {
 	return s.projects.Delete(ctx, id, userID)
+}
+
+// Baseline returns the project's memory: baseline profile, per-rule baseline, and
+// team-learning feedback stats. Ownership is enforced via GetByIDForUser.
+func (s *ProjectService) Baseline(ctx context.Context, id, userID string) (*repository.BaselineData, error) {
+	p, err := s.projects.GetByIDForUser(ctx, id, userID)
+	if err != nil {
+		return nil, err
+	}
+	return s.projects.Baseline(ctx, p.ID, p.GrandfatherMode)
+}
+
+// AICodeMemory returns how the project's AI-generated-code footprint evolved.
+func (s *ProjectService) AICodeMemory(ctx context.Context, id, userID string) (*repository.AICodeMemory, error) {
+	p, err := s.projects.GetByIDForUser(ctx, id, userID)
+	if err != nil {
+		return nil, err
+	}
+	return s.projects.AICodeMemory(ctx, p.ID)
 }
 
 var slugInvalid = regexp.MustCompile(`[^a-z0-9]+`)

@@ -55,6 +55,7 @@ export interface Project {
   default_branch: string;
   language?: string;
   ai_fix_enabled: boolean;
+  grandfather_mode: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -141,7 +142,53 @@ export interface Finding {
   // Phase 2C: AI-generated-code tagging.
   in_ai_generated_code?: boolean;
   ai_generated_probability?: number;
+  // Phase 2C: deviates from the project baseline.
+  is_new?: boolean;
   created_at: string;
+}
+
+// ── Project memory (Phase 2C TASK 4) ─────────────────────────────────────────
+export interface BaselineRule {
+  rule_id: string;
+  engine?: string;
+  avg_count_per_scan: number;
+  typical_severity?: Severity;
+  times_seen: number;
+  is_grandfathered: boolean;
+}
+
+export interface RuleStat {
+  rule_id: string;
+  total_feedback: number;
+  fp_count: number;
+  confirmed_count: number;
+  fp_rate: number;
+}
+
+export interface BaselineData {
+  established: boolean;
+  scan_count: number;
+  grandfather_mode: boolean;
+  profile?: { total_findings?: number; distinct_rules?: number; severity_breakdown?: Record<string, number> };
+  rules: BaselineRule[];
+  team_learning: RuleStat[];
+}
+
+export interface AICodePoint {
+  date: string;
+  pct: number;
+  safety: number;
+}
+
+export interface AICodeMemory {
+  scans_analyzed: number;
+  first_seen?: string;
+  current_pct: number;
+  trend: "growing" | "shrinking" | "stable" | "none";
+  avg_safety: number;
+  series: AICodePoint[];
+  persistent_files: string[];
+  note: string;
 }
 
 export interface SeverityCount {
@@ -164,6 +211,7 @@ export interface CreateProjectInput {
   default_branch?: string;
   language?: string;
   ai_fix_enabled?: boolean;
+  grandfather_mode?: boolean;
 }
 
 export interface AISuggestion {

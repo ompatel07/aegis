@@ -11,6 +11,7 @@ import { ScanStatusBadge } from "@/components/dashboard/ScanStatusBadge";
 import { TrendChart } from "@/components/dashboard/TrendChart";
 import { GitHubIntegrationCard } from "@/components/dashboard/GitHubIntegrationCard";
 import { CustomRulesCard } from "@/components/dashboard/CustomRulesCard";
+import { ProjectMemoryCard } from "@/components/dashboard/ProjectMemoryCard";
 import { cn, formatDate, formatDuration, gradeColor, scoreColor } from "@/lib/utils";
 import { Play, Sparkles } from "lucide-react";
 import type { Project } from "@/lib/types";
@@ -78,6 +79,7 @@ export default function ProjectDetailPage() {
       {canScan ? <GitHubIntegrationCard projectId={id} /> : null}
       <CustomRulesCard projectId={id} />
       <AISettingsCard project={project} onChanged={() => projectQ.refetch()} />
+      <ProjectMemoryCard project={project} onChanged={() => projectQ.refetch()} />
 
       <TrendChart scans={scans} />
 

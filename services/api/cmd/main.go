@@ -154,6 +154,8 @@ func run() error {
 				r.Post("/{id}/integrations/github", integrationH.Connect)
 				r.Get("/{id}/rules", ruleH.List)
 				r.Post("/{id}/rules", ruleH.Create)
+				r.Get("/{id}/baseline", projectH.Baseline)
+				r.Get("/{id}/ai-code-memory", projectH.AICodeMemory)
 			})
 
 			r.Route("/scans", func(r chi.Router) {

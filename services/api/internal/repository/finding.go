@@ -131,6 +131,39 @@ func (r *FindingRepository) InsertFeedback(ctx context.Context, findingID, userI
 	return nil
 }
 
+// UpsertRuleStats updates the project's per-rule feedback stats (team pattern
+// learning, Phase 2C TASK 4). Dismissals (marked_fp/ignored/suppressed) count as
+// false positives; confirmed/fixed count as confirmed. The blended fp_rate feeds
+// a per-team personalization of the FP classifier at the next scan. Metadata only.
+func (r *FindingRepository) UpsertRuleStats(ctx context.Context, findingID, userID, action string) error {
+	fp, confirmed := 0, 0
+	switch action {
+	case "marked_fp", "ignored", "suppressed":
+		fp = 1
+	case "confirmed", "fixed":
+		confirmed = 1
+	default:
+		return nil
+	}
+	_, err := r.db.ExecContext(ctx, `
+		INSERT INTO project_rule_stats
+			(project_id, rule_id, engine, total_feedback, fp_count, confirmed_count, fp_rate, updated_at)
+		SELECT p.id, f.rule_id, f.engine, 1, $2::int, $3::int, $2::numeric, now()
+		  FROM findings f
+		  JOIN scans s    ON s.id = f.scan_id
+		  JOIN projects p ON p.id = s.project_id
+		 WHERE f.id = $1 AND p.user_id = $4
+		ON CONFLICT (project_id, rule_id) DO UPDATE SET
+			total_feedback  = project_rule_stats.total_feedback + 1,
+			fp_count        = project_rule_stats.fp_count + $2::int,
+			confirmed_count = project_rule_stats.confirmed_count + $3::int,
+			fp_rate         = ROUND((project_rule_stats.fp_count + $2::int)::numeric
+			                        / (project_rule_stats.total_feedback + 1), 3),
+			updated_at      = now()`,
+		findingID, fp, confirmed, userID)
+	return err
+}
+
 // severityRankSQL maps severities to an orderable rank (critical = 0).
 const severityRankSQL = `
 	CASE severity

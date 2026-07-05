@@ -60,6 +60,10 @@ type Finding struct {
 	// AI-code pass's per-file scores.
 	InAIGeneratedCode      bool     `json:"in_ai_generated_code"`
 	AIGeneratedProbability *float64 `json:"ai_generated_probability"`
+
+	// IsNew: this finding deviates from the project baseline (its rule was not
+	// seen before). Set by the orchestrator's baseline pass (Phase 2C TASK 4).
+	IsNew bool `json:"is_new"`
 }
 
 // AICodeResult mirrors the scanner's AI-generated-code analysis for a repo.

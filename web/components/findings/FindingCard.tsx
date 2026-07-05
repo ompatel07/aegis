@@ -43,6 +43,18 @@ function LikelyFPBadge({ p }: { p?: number }) {
   );
 }
 
+function NewBadge({ finding }: { finding: Finding }) {
+  if (!finding.is_new) return null;
+  return (
+    <Badge
+      className="border-amber-400/40 bg-amber-400/15 text-amber-600"
+      title="New — deviates from this project's baseline"
+    >
+      new
+    </Badge>
+  );
+}
+
 function AICodeBadge({ finding }: { finding: Finding }) {
   if (!finding.in_ai_generated_code) return null;
   const pct = finding.ai_generated_probability != null
@@ -103,6 +115,7 @@ export function FindingCard({ finding, onUpdated }: { finding: Finding; onUpdate
               <RiskBadge risk={finding.risk_level} />
               <SeverityBadge severity={finding.severity} />
               <Badge className="border-border bg-secondary text-secondary-foreground">{finding.engine}</Badge>
+              <NewBadge finding={finding} />
               <ReachabilityBadge metadata={finding.metadata} />
               <LikelyFPBadge p={finding.false_positive_probability} />
               <AICodeBadge finding={finding} />

@@ -3,7 +3,9 @@
 import axios, { AxiosError, type AxiosInstance } from "axios";
 import type {
   AISuggestion,
+  AICodeMemory,
   ApiSuccess,
+  BaselineData,
   ConnectGitHubResult,
   ExecReport,
   CreateProjectInput,
@@ -66,6 +68,19 @@ export function createApi(token?: string) {
 
     deleteProject: (id: string) =>
       http.delete(`/projects/${id}`).then(() => undefined).catch(normalizeError),
+
+    // ── Project memory (Phase 2C) ────────────────────────────────────────────
+    getBaseline: (projectId: string) =>
+      http
+        .get<ApiSuccess<BaselineData>>(`/projects/${projectId}/baseline`)
+        .then((r) => r.data.data)
+        .catch(normalizeError),
+
+    getAICodeMemory: (projectId: string) =>
+      http
+        .get<ApiSuccess<AICodeMemory>>(`/projects/${projectId}/ai-code-memory`)
+        .then((r) => r.data.data)
+        .catch(normalizeError),
 
     // ── Scans ────────────────────────────────────────────────────────────────
     listScans: (projectId: string, page = 1, perPage = 20) =>

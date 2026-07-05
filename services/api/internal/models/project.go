@@ -22,6 +22,9 @@ type Project struct {
 	DefaultBranch string    `db:"default_branch" json:"default_branch"`
 	Language      *string   `db:"language" json:"language,omitempty"`
 	AIFixEnabled  bool      `db:"ai_fix_enabled" json:"ai_fix_enabled"`
-	CreatedAt     time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt     time.Time `db:"updated_at" json:"updated_at"`
+	// Grandfathering (Phase 2C TASK 4): when on, only findings that deviate from
+	// the baseline (is_new) gate PRs; pre-existing findings are informational.
+	GrandfatherMode bool      `db:"grandfather_mode" json:"grandfather_mode"`
+	CreatedAt       time.Time `db:"created_at" json:"created_at"`
+	UpdatedAt       time.Time `db:"updated_at" json:"updated_at"`
 }

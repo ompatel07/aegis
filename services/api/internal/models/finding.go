@@ -61,5 +61,9 @@ type Finding struct {
 	InAIGeneratedCode      bool     `db:"in_ai_generated_code" json:"in_ai_generated_code"`
 	AIGeneratedProbability *float64 `db:"ai_generated_probability" json:"ai_generated_probability,omitempty"`
 
+	// IsNew: deviates from the project baseline (Phase 2C TASK 4). "New" findings
+	// display first and can gate PRs under grandfathering mode.
+	IsNew bool `db:"is_new" json:"is_new"`
+
 	CreatedAt time.Time `db:"created_at" json:"created_at"`
 }

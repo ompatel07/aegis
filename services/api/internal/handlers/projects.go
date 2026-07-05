@@ -27,15 +27,16 @@ type projectRequest struct {
 	RepoURL       *string `json:"repo_url" validate:"omitempty,url,max=1024"`
 	RepoType      *string `json:"repo_type" validate:"omitempty,oneof=github gitlab bitbucket upload"`
 	DefaultBranch string  `json:"default_branch" validate:"omitempty,max=255"`
-	Language      *string `json:"language" validate:"omitempty,max=64"`
-	AIFixEnabled  *bool   `json:"ai_fix_enabled"`
+	Language        *string `json:"language" validate:"omitempty,max=64"`
+	AIFixEnabled    *bool   `json:"ai_fix_enabled"`
+	GrandfatherMode *bool   `json:"grandfather_mode"`
 }
 
 func (r projectRequest) toInput() services.ProjectInput {
 	return services.ProjectInput{
 		Name: r.Name, Description: r.Description, RepoURL: r.RepoURL,
 		RepoType: r.RepoType, DefaultBranch: r.DefaultBranch, Language: r.Language,
-		AIFixEnabled: r.AIFixEnabled,
+		AIFixEnabled: r.AIFixEnabled, GrandfatherMode: r.GrandfatherMode,
 	}
 }
 
@@ -99,6 +100,30 @@ func (h *ProjectHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	httpx.WriteSuccess(w, http.StatusOK, project)
+}
+
+// Baseline handles GET /api/v1/projects/{id}/baseline — the project's memory
+// (baseline profile, per-rule baseline, team-learning feedback stats).
+func (h *ProjectHandler) Baseline(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.UserID(r.Context())
+	data, err := h.projects.Baseline(r.Context(), chi.URLParam(r, "id"), userID)
+	if err != nil {
+		writeServiceError(w, h.log, err)
+		return
+	}
+	httpx.WriteSuccess(w, http.StatusOK, data)
+}
+
+// AICodeMemory handles GET /api/v1/projects/{id}/ai-code-memory — the project's
+// AI-generated-code footprint over time.
+func (h *ProjectHandler) AICodeMemory(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.UserID(r.Context())
+	data, err := h.projects.AICodeMemory(r.Context(), chi.URLParam(r, "id"), userID)
+	if err != nil {
+		writeServiceError(w, h.log, err)
+		return
+	}
+	httpx.WriteSuccess(w, http.StatusOK, data)
 }
 
 // Delete handles DELETE /api/v1/projects/{id}.

@@ -111,7 +111,7 @@ func (p *ScanProcessor) ProcessTask(ctx context.Context, task *asynq.Task) error
 	}
 
 	// ── Persist ──────────────────────────────────────────────────────────────
-	if err := p.store.SaveResults(ctx, payload.ScanID, agg); err != nil {
+	if err := p.store.SaveResults(ctx, payload.ScanID, payload.ProjectID, agg); err != nil {
 		return p.fail(ctx, payload.ScanID, task, fmt.Sprintf("persist results: %v", err), log)
 	}
 
