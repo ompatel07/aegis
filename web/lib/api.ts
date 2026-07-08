@@ -2,10 +2,18 @@
 // typed methods; the access token is injected as a Bearer header.
 import axios, { AxiosError, type AxiosInstance } from "axios";
 import type {
+  AdminAuditEntry,
+  AdminOrgRow,
+  AdminOverview,
+  AdminScanRow,
+  AdminUserRow,
   AISuggestion,
   AICodeMemory,
   ApiSuccess,
   BaselineData,
+  BetaInvitation,
+  FeatureFlag,
+  SupportTicket,
   ConnectGitHubResult,
   ExecReport,
   CreateProjectInput,
@@ -161,6 +169,30 @@ export function createApi(token?: string) {
 
     submitScanFeedback: (scanId: string, body: { rating: "up" | "down"; comment?: string }) =>
       http.post(`/scans/${scanId}/feedback-rating`, body).then(() => undefined).catch(normalizeError),
+
+    // ── Super-admin panel ────────────────────────────────────────────────────
+    admin: {
+      overview: () => http.get<ApiSuccess<AdminOverview>>("/admin/overview").then((r) => r.data.data).catch(normalizeError),
+      health: () => http.get<ApiSuccess<Record<string, unknown>>>("/admin/health").then((r) => r.data.data).catch(normalizeError),
+      orgs: (search = "") => http.get<ApiSuccess<AdminOrgRow[]>>("/admin/organizations", { params: { search } }).then((r) => r.data.data).catch(normalizeError),
+      suspendOrg: (orgId: string, suspend: boolean) => http.post(`/admin/organizations/${orgId}/suspend`, { suspend }).then(() => undefined).catch(normalizeError),
+      setOrgPlan: (orgId: string, plan: string) => http.put(`/admin/organizations/${orgId}/plan`, { plan }).then(() => undefined).catch(normalizeError),
+      users: (search = "") => http.get<ApiSuccess<AdminUserRow[]>>("/admin/users", { params: { search } }).then((r) => r.data.data).catch(normalizeError),
+      setSuperAdmin: (userId: string, grant: boolean) => http.post(`/admin/users/${userId}/super-admin`, { grant }).then(() => undefined).catch(normalizeError),
+      suspendUser: (userId: string, suspend: boolean) => http.post(`/admin/users/${userId}/suspend`, { suspend }).then(() => undefined).catch(normalizeError),
+      impersonate: (userId: string) => http.post<ApiSuccess<{ access_token: string; expires_in: number; user: { id: string; email: string } }>>(`/admin/users/${userId}/impersonate`).then((r) => r.data.data).catch(normalizeError),
+      scans: (status = "") => http.get<ApiSuccess<AdminScanRow[]>>("/admin/scans", { params: { status } }).then((r) => r.data.data).catch(normalizeError),
+      audit: (action = "") => http.get<ApiSuccess<AdminAuditEntry[]>>("/admin/audit", { params: { action } }).then((r) => r.data.data).catch(normalizeError),
+      flags: () => http.get<ApiSuccess<FeatureFlag[]>>("/admin/features").then((r) => r.data.data).catch(normalizeError),
+      createFlag: (body: { key: string; description?: string }) => http.post<ApiSuccess<FeatureFlag>>("/admin/features", body).then((r) => r.data.data).catch(normalizeError),
+      updateFlag: (id: string, body: { enabled: boolean; rollout_pct: number; enabled_orgs: string[] }) => http.put(`/admin/features/${id}`, body).then(() => undefined).catch(normalizeError),
+      deleteFlag: (id: string) => http.delete(`/admin/features/${id}`).then(() => undefined).catch(normalizeError),
+      beta: () => http.get<ApiSuccess<{ invitations: BetaInvitation[]; sent: number; accepted: number }>>("/admin/beta").then((r) => r.data.data).catch(normalizeError),
+      createBeta: (body: { emails: string[]; welcome_message?: string }) => http.post<ApiSuccess<{ created: number }>>("/admin/beta", body).then((r) => r.data.data).catch(normalizeError),
+      revokeBeta: (id: string) => http.post(`/admin/beta/${id}/revoke`).then(() => undefined).catch(normalizeError),
+      tickets: (status = "") => http.get<ApiSuccess<SupportTicket[]>>("/admin/support", { params: { status } }).then((r) => r.data.data).catch(normalizeError),
+      replyTicket: (id: string, body: { reply: string; status: string }) => http.post(`/admin/support/${id}/reply`, body).then(() => undefined).catch(normalizeError),
+    },
 
     // ── Scans ────────────────────────────────────────────────────────────────
     listScans: (projectId: string, page = 1, perPage = 20) =>

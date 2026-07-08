@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"context"
 	"net/http"
 	"strings"
 
@@ -38,6 +39,22 @@ func RequireAdmin(next http.Handler) http.Handler {
 		}
 		next.ServeHTTP(w, r)
 	})
+}
+
+// RequireSuperAdmin gates a route to platform super-admins. Must run after
+// Authenticator. The check is a DB lookup so a revoked super-admin loses access
+// immediately (not tied to token issuance).
+func RequireSuperAdmin(isSuperAdmin func(ctx context.Context, userID string) (bool, error)) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ok, err := isSuperAdmin(r.Context(), UserID(r.Context()))
+			if err != nil || !ok {
+				httpx.WriteError(w, httpx.ErrForbidden("super-admin access required"))
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
 }
 
 func bearerToken(r *http.Request) string {

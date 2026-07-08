@@ -27,10 +27,11 @@ type Organization struct {
 	Name         string    `db:"name" json:"name"`
 	Slug         string    `db:"slug" json:"slug"`
 	BillingEmail *string   `db:"billing_email" json:"billing_email,omitempty"`
-	Plan         string    `db:"plan" json:"plan"`
-	IsPersonal   bool      `db:"is_personal" json:"is_personal"`
-	CreatedAt    time.Time `db:"created_at" json:"created_at"`
-	UpdatedAt    time.Time `db:"updated_at" json:"updated_at"`
+	Plan         string     `db:"plan" json:"plan"`
+	IsPersonal   bool       `db:"is_personal" json:"is_personal"`
+	SuspendedAt  *time.Time `db:"suspended_at" json:"suspended_at,omitempty"`
+	CreatedAt    time.Time  `db:"created_at" json:"created_at"`
+	UpdatedAt    time.Time  `db:"updated_at" json:"updated_at"`
 }
 
 // OrgMembership is an organization plus the requesting user's role in it (for

@@ -10,6 +10,7 @@ import { ScanStatusBadge } from "@/components/dashboard/ScanStatusBadge";
 import { AICodeCard } from "@/components/dashboard/AICodeCard";
 import { PolicyResultCard } from "@/components/dashboard/PolicyResultCard";
 import { ScanProgress } from "@/components/dashboard/ScanProgress";
+import { ScanFeedback } from "@/components/dashboard/ScanFeedback";
 import { FindingsList } from "@/components/findings/FindingsList";
 import { Button } from "@/components/ui/button";
 import { cn, formatDate, formatDuration, gradeColor, scoreColor } from "@/lib/utils";
@@ -112,6 +113,12 @@ export default function ScanDetailPage() {
               <FindingsList scanId={scanId} pillar="deployment" />
             </TabsContent>
           </Tabs>
+
+          <Card>
+            <CardContent className="py-4">
+              <ScanFeedback scanId={scanId} />
+            </CardContent>
+          </Card>
         </>
       ) : null}
     </div>

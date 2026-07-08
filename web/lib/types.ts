@@ -102,6 +102,56 @@ export interface PolicyResult {
   checks: PolicyCheck[];
 }
 
+// ── Super-admin panel (Interim Polish) ───────────────────────────────────────
+export interface AdminOverview {
+  organizations: number;
+  users: number;
+  projects: number;
+  scans_total: number;
+  scans_7d: number;
+  scans_30d: number;
+  active_scans: number;
+  signups_7d: number;
+  open_tickets: number;
+  findings_by_severity: Record<string, number>;
+}
+
+export interface AdminOrgRow {
+  id: string; name: string; slug: string; plan: string; is_personal: boolean;
+  suspended_at?: string; members: number; projects: number; scans: number;
+  created_at: string; last_activity?: string;
+}
+
+export interface AdminUserRow {
+  id: string; email: string; name: string; is_super_admin: boolean;
+  suspended_at?: string; orgs: number; created_at: string;
+}
+
+export interface AdminScanRow {
+  id: string; project_id: string; project_name: string; status: ScanStatus;
+  overall_grade?: string; duration_seconds?: number; error_message?: string; created_at: string;
+}
+
+export interface AdminAuditEntry {
+  id: string; admin_email?: string; action: string; target_type?: string;
+  target_id?: string; details?: Record<string, unknown>; ip?: string; created_at: string;
+}
+
+export interface FeatureFlag {
+  id: string; key: string; description?: string; enabled: boolean;
+  rollout_pct: number; enabled_orgs: string[]; created_at: string; updated_at: string;
+}
+
+export interface BetaInvitation {
+  id: string; email: string; welcome_message?: string; token: string;
+  status: "sent" | "accepted" | "expired" | "revoked"; created_at: string; expires_at: string;
+}
+
+export interface SupportTicket {
+  id: string; user_id?: string; email?: string; subject: string; message: string;
+  status: "new" | "in_progress" | "resolved"; admin_reply?: string; created_at: string;
+}
+
 export type OrgRole = "owner" | "admin" | "member" | "viewer";
 
 export interface Organization {

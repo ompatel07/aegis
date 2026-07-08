@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { OrgSwitcher } from "@/components/dashboard/OrgSwitcher";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { OfflineBanner } from "@/components/ui/offline-banner";
+import { ImpersonationBanner } from "@/components/dashboard/ImpersonationBanner";
 import { CommandPalette } from "@/components/dashboard/CommandPalette";
 import { SupportWidget } from "@/components/dashboard/SupportWidget";
 import { ShortcutHelp } from "@/components/dashboard/ShortcutHelp";
@@ -32,6 +33,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-screen">
+      <ImpersonationBanner />
       <OfflineBanner />
       <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
         <div className="container flex h-16 items-center justify-between">

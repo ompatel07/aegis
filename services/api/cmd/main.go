@@ -88,6 +88,7 @@ func run() error {
 	projectRuleRepo := repository.NewProjectRuleRepository(db)
 	aiAuditRepo := repository.NewAIAuditRepository(db)
 	orgRepo := repository.NewOrganizationRepository(db)
+	adminRepo := repository.NewAdminRepository(db)
 	policyRepo := repository.NewPolicyRepository(db)
 	githubAppRepo := repository.NewGitHubAppRepository(db)
 
@@ -148,6 +149,7 @@ func run() error {
 	aiH := handlers.NewAIHandler(aiSvc, log)
 	execReportH := handlers.NewExecReportHandler(reportSvc, log)
 	orgH := handlers.NewOrganizationHandler(orgSvc, log)
+	adminH := handlers.NewAdminHandler(adminRepo, userRepo, tokens, log)
 	policyH := handlers.NewPolicyHandler(policySvc, log)
 	githubAppH := handlers.NewGitHubAppHandler(githubAppSvc, githubAppRepo, log)
 	vcsH := handlers.NewVCSHandler(vcsSvc, log)
@@ -257,6 +259,35 @@ func run() error {
 			r.Get("/intelligence/status", intelligenceH.Status)
 			r.Get("/notifications", intelligenceH.ListNotifications)
 			r.Patch("/notifications/{id}/read", intelligenceH.MarkNotificationRead)
+
+			// In-app widgets (any signed-in user).
+			r.Post("/support/tickets", adminH.SubmitTicket)
+			r.Post("/scans/{scanId}/feedback-rating", adminH.SubmitScanRating)
+
+			// ── Platform super-admin panel ───────────────────────────────────
+			r.Route("/admin", func(r chi.Router) {
+				r.Use(mw.RequireSuperAdmin(adminRepo.IsSuperAdmin))
+				r.Get("/overview", adminH.Overview)
+				r.Get("/health", adminH.Health)
+				r.Get("/organizations", adminH.ListOrgs)
+				r.Post("/organizations/{orgId}/suspend", adminH.SuspendOrg)
+				r.Put("/organizations/{orgId}/plan", adminH.SetOrgPlan)
+				r.Get("/users", adminH.ListUsers)
+				r.Post("/users/{userId}/super-admin", adminH.SetSuperAdmin)
+				r.Post("/users/{userId}/suspend", adminH.SuspendUser)
+				r.Post("/users/{userId}/impersonate", adminH.Impersonate)
+				r.Get("/scans", adminH.ListScans)
+				r.Get("/audit", adminH.ListAudit)
+				r.Get("/features", adminH.ListFlags)
+				r.Post("/features", adminH.CreateFlag)
+				r.Put("/features/{flagId}", adminH.UpdateFlag)
+				r.Delete("/features/{flagId}", adminH.DeleteFlag)
+				r.Get("/beta", adminH.ListBeta)
+				r.Post("/beta", adminH.CreateBeta)
+				r.Post("/beta/{betaId}/revoke", adminH.RevokeBeta)
+				r.Get("/support", adminH.ListTickets)
+				r.Post("/support/{ticketId}/reply", adminH.ReplyTicket)
+			})
 		})
 	})
 

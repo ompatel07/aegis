@@ -1,12 +1,22 @@
 package auth
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
+
+// RandomToken returns a 48-hex-char cryptographically-random token (for beta
+// invitations and similar opaque secrets).
+func RandomToken() string {
+	b := make([]byte, 24)
+	_, _ = rand.Read(b)
+	return hex.EncodeToString(b)
+}
 
 // Token types embedded in the JWT "typ" claim to prevent cross-use.
 const (
@@ -91,6 +101,30 @@ func (m *TokenManager) GeneratePair(userID, email, role string) (*TokenPair, err
 		TokenType:    "Bearer",
 		RefreshID:    jti,
 	}, nil
+}
+
+// GenerateAccessToken issues a standalone access token for a user with an
+// explicit TTL (capped by the manager's default). Used for admin impersonation,
+// which must be short-lived. Returns the token + its lifetime in seconds.
+func (m *TokenManager) GenerateAccessToken(userID, email, role string, ttl time.Duration) (string, int, error) {
+	if ttl <= 0 || ttl > time.Hour {
+		ttl = time.Hour
+	}
+	now := time.Now()
+	tok, err := m.sign(m.accessSecret, &Claims{
+		Email:     email,
+		Role:      role,
+		TokenType: tokenTypeAccess,
+		RegisteredClaims: jwt.RegisteredClaims{
+			Subject:   userID,
+			IssuedAt:  jwt.NewNumericDate(now),
+			ExpiresAt: jwt.NewNumericDate(now.Add(ttl)),
+		},
+	})
+	if err != nil {
+		return "", 0, err
+	}
+	return tok, int(ttl.Seconds()), nil
 }
 
 // ParseAccess validates an access token and returns its claims.
