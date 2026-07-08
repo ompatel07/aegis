@@ -155,6 +155,13 @@ export function createApi(token?: string) {
         .then((r) => r.data.data)
         .catch(normalizeError),
 
+    // ── Support + feedback widgets (Interim Polish) ──────────────────────────
+    submitSupportTicket: (body: { subject: string; message: string }) =>
+      http.post("/support/tickets", body).then(() => undefined).catch(normalizeError),
+
+    submitScanFeedback: (scanId: string, body: { rating: "up" | "down"; comment?: string }) =>
+      http.post(`/scans/${scanId}/feedback-rating`, body).then(() => undefined).catch(normalizeError),
+
     // ── Scans ────────────────────────────────────────────────────────────────
     listScans: (projectId: string, page = 1, perPage = 20) =>
       http

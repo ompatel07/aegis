@@ -1,12 +1,18 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { OrgSwitcher } from "@/components/dashboard/OrgSwitcher";
-import { FolderGit2, LayoutDashboard, LogOut, Plug, Radar, Settings, ShieldCheck, Users } from "lucide-react";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { OfflineBanner } from "@/components/ui/offline-banner";
+import { CommandPalette } from "@/components/dashboard/CommandPalette";
+import { SupportWidget } from "@/components/dashboard/SupportWidget";
+import { ShortcutHelp } from "@/components/dashboard/ShortcutHelp";
+import { FolderGit2, LayoutDashboard, LogOut, Menu, Plug, Radar, Settings, ShieldCheck, Users, X } from "lucide-react";
 
 const navItems = [
   { href: "/", label: "Overview", icon: LayoutDashboard },
@@ -20,12 +26,23 @@ const navItems = [
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { data: session } = useSession();
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
 
   return (
     <div className="min-h-screen">
+      <OfflineBanner />
       <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
         <div className="container flex h-16 items-center justify-between">
           <div className="flex items-center gap-8">
+            <Button
+              variant="ghost" size="icon" className="md:hidden"
+              onClick={() => setMobileOpen((o) => !o)}
+              aria-label="Toggle navigation" aria-expanded={mobileOpen}
+            >
+              {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </Button>
             <Link href="/" className="flex items-center gap-2 font-semibold">
               <span className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
                 <ShieldCheck className="h-5 w-5" />
@@ -34,7 +51,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </Link>
             <nav className="hidden items-center gap-1 md:flex">
               {navItems.map((item) => {
-                const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
                 const Icon = item.icon;
                 return (
                   <Link
@@ -42,7 +58,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     href={item.href}
                     className={cn(
                       "flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                      active ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground",
+                      isActive(item.href) ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground",
                     )}
                   >
                     <Icon className="h-4 w-4" />
@@ -52,18 +68,48 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               })}
             </nav>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <OrgSwitcher />
-            <span className="hidden text-sm text-muted-foreground sm:inline">
-              {session?.user?.email}
-            </span>
+            <ThemeToggle />
+            <span className="hidden text-sm text-muted-foreground lg:inline">{session?.user?.email}</span>
             <Button variant="ghost" size="icon" onClick={() => signOut({ callbackUrl: "/login" })} aria-label="Sign out">
               <LogOut className="h-4 w-4" />
             </Button>
           </div>
         </div>
+
+        {/* Mobile nav drawer */}
+        {mobileOpen ? (
+          <nav className="border-t bg-background md:hidden">
+            <div className="container flex flex-col py-2">
+              {navItems.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setMobileOpen(false)}
+                    className={cn(
+                      "flex items-center gap-2 rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
+                      isActive(item.href) ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </div>
+          </nav>
+        ) : null}
       </header>
+
       <main className="container py-8">{children}</main>
+
+      {/* Global helpers */}
+      <CommandPalette />
+      <SupportWidget />
+      <ShortcutHelp />
     </div>
   );
 }

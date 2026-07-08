@@ -10,6 +10,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { useConfirm } from "@/lib/use-confirm";
+import { useToast } from "@/lib/use-toast";
 import type { OrgRole } from "@/lib/types";
 
 const ROLES: OrgRole[] = ["owner", "admin", "member", "viewer"];
@@ -18,6 +20,8 @@ export default function OrgDetailPage() {
   const { orgId } = useParams<{ orgId: string }>();
   const api = useApi();
   const qc = useQueryClient();
+  const confirm = useConfirm();
+  const toast = useToast();
 
   const orgQ = useQuery({ queryKey: ["org", orgId], queryFn: () => api.getOrg(orgId) });
   const membersQ = useQuery({ queryKey: ["members", orgId], queryFn: () => api.listMembers(orgId) });
@@ -62,9 +66,22 @@ export default function OrgDetailPage() {
 
   const remove = useMutation({
     mutationFn: (userId: string) => api.removeMember(orgId, userId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["members", orgId] }),
-    onError: (e: Error) => setErr(e.message),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["members", orgId] });
+      toast.success("Member removed");
+    },
+    onError: (e: Error) => toast.error("Couldn't remove member", e.message),
   });
+
+  async function confirmRemove(userId: string, label: string) {
+    const ok = await confirm({
+      title: "Remove member?",
+      description: `${label} will lose access to this team and all its projects.`,
+      confirmLabel: "Remove",
+      destructive: true,
+    });
+    if (ok) remove.mutate(userId);
+  }
 
   const revoke = useMutation({
     mutationFn: (invId: string) => api.revokeInvitation(orgId, invId),
@@ -137,7 +154,7 @@ export default function OrgDetailPage() {
                     </select>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="sm" onClick={() => remove.mutate(m.user_id)}>Remove</Button>
+                    <Button variant="ghost" size="sm" onClick={() => confirmRemove(m.user_id, m.name || m.email)}>Remove</Button>
                   </TableCell>
                 </TableRow>
               ))}
