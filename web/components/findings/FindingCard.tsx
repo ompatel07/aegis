@@ -8,8 +8,30 @@ import { Dialog, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { SeverityBadge } from "./SeverityBadge";
 import { ReachabilityBadge, ReachabilityDetail } from "./ReachabilityBadge";
 import { useApi } from "@/lib/use-api";
+import { useToast } from "@/lib/use-toast";
 import type { Finding } from "@/lib/types";
-import { Clock, FileCode2, ShieldAlert, Sparkles, Wrench } from "lucide-react";
+import { Check, Clock, Copy, FileCode2, ShieldAlert, Sparkles, Wrench } from "lucide-react";
+
+/** Small inline copy-to-clipboard button. */
+function CopyButton({ value, label }: { value: string; label: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      type="button"
+      aria-label={`Copy ${label}`}
+      title={`Copy ${label}`}
+      onClick={(e) => {
+        e.stopPropagation();
+        navigator.clipboard?.writeText(value);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1200);
+      }}
+      className="text-muted-foreground transition-colors hover:text-foreground"
+    >
+      {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+    </button>
+  );
+}
 
 const RISK_CLASS: Record<string, string> = {
   critical: "border-red-500/40 bg-red-500/15 text-red-600 dark:text-red-400",
@@ -72,6 +94,7 @@ function AICodeBadge({ finding }: { finding: Finding }) {
 
 export function FindingCard({ finding, onUpdated }: { finding: Finding; onUpdated?: () => void }) {
   const api = useApi();
+  const toast = useToast();
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -80,23 +103,29 @@ export function FindingCard({ finding, onUpdated }: { finding: Finding; onUpdate
     ? `${finding.file_path}:${finding.line_start}`
     : finding.file_path;
 
-  async function triage(body: { is_false_positive?: boolean; is_suppressed?: boolean }) {
+  async function triage(body: { is_false_positive?: boolean; is_suppressed?: boolean }, msg: string) {
     setBusy(true);
     try {
       await api.patchFinding(finding.id, body);
       onUpdated?.();
+      toast.success(msg);
       setOpen(false);
+    } catch (e) {
+      toast.error("Action failed", (e as Error).message);
     } finally {
       setBusy(false);
     }
   }
 
-  async function feedback(action: "marked_fp" | "confirmed") {
+  async function feedback(action: "marked_fp" | "confirmed" | "ignored", msg: string) {
     setBusy(true);
     try {
       await api.sendFeedback(finding.id, action);
       onUpdated?.();
+      toast.success(msg);
       setOpen(false);
+    } catch (e) {
+      toast.error("Action failed", (e as Error).message);
     } finally {
       setBusy(false);
     }
@@ -154,8 +183,8 @@ export function FindingCard({ finding, onUpdated }: { finding: Finding; onUpdate
             </div>
           ) : null}
 
-          <DetailRow label="Location" value={location} mono />
-          <DetailRow label="Rule" value={finding.rule_id} mono />
+          <DetailRow label="Location" value={location} mono copyLabel="file path" />
+          <DetailRow label="Rule" value={finding.rule_id} mono copyLabel="rule id" />
           {finding.cwe_id ? <DetailRow label="CWE" value={finding.cwe_id} /> : null}
           {finding.cve_id ? <DetailRow label="CVE" value={finding.cve_id} /> : null}
           {finding.owasp_category ? <DetailRow label="OWASP" value={finding.owasp_category} /> : null}
@@ -187,21 +216,31 @@ export function FindingCard({ finding, onUpdated }: { finding: Finding; onUpdate
           <AIFixSection findingId={finding.id} />
         </div>
 
-        <div className="mt-4 flex justify-end gap-2">
-          <Button variant="secondary" size="sm" disabled={busy} onClick={() => feedback("confirmed")}>
-            Confirm
-          </Button>
-          <Button variant="outline" size="sm" disabled={busy} onClick={() => feedback("marked_fp")}>
-            Mark false positive
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={busy}
-            onClick={() => triage({ is_suppressed: !finding.is_suppressed })}
-          >
-            {finding.is_suppressed ? "Unsuppress" : "Suppress"}
-          </Button>
+        <div className="mt-4 space-y-2 border-t pt-3">
+          <p className="text-xs text-muted-foreground">
+            <strong className="text-foreground">Mark false positive</strong> = not a real issue (trains the
+            local filter). <strong className="text-foreground">Ignore</strong> = a real issue you&apos;re
+            accepting for now (hides it, doesn&apos;t train the filter).
+          </p>
+          <div className="flex flex-wrap justify-end gap-2">
+            <Button variant="secondary" size="sm" disabled={busy} onClick={() => feedback("confirmed", "Marked as confirmed")}>
+              Confirm
+            </Button>
+            <Button variant="outline" size="sm" disabled={busy} onClick={() => feedback("marked_fp", "Marked false positive")}>
+              Mark false positive
+            </Button>
+            <Button variant="outline" size="sm" disabled={busy} onClick={() => feedback("ignored", "Finding ignored")}>
+              Ignore
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={busy}
+              onClick={() => triage({ is_suppressed: !finding.is_suppressed }, finding.is_suppressed ? "Unsuppressed" : "Suppressed")}
+            >
+              {finding.is_suppressed ? "Unsuppress" : "Suppress"}
+            </Button>
+          </div>
         </div>
       </Dialog>
     </>
@@ -293,11 +332,12 @@ function AIFixSection({ findingId }: { findingId: string }) {
   );
 }
 
-function DetailRow({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+function DetailRow({ label, value, mono, copyLabel }: { label: string; value: string; mono?: boolean; copyLabel?: string }) {
   return (
-    <div className="flex gap-3">
+    <div className="flex items-center gap-3">
       <span className="w-32 shrink-0 font-medium">{label}</span>
       <span className={mono ? "break-all font-mono text-xs" : "break-all text-muted-foreground"}>{value}</span>
+      {copyLabel ? <CopyButton value={value} label={copyLabel} /> : null}
     </div>
   );
 }
