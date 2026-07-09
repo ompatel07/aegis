@@ -196,3 +196,70 @@ hardware to hit the 20k/100k-file targets. Both are scoped in this doc +
 
 ✅ **Phase 2C complete** — all nine tasks delivered, tested, committed, and
 verified, at the quality bar of SonarQube Cloud / Snyk / GitHub Advanced Security.
+
+---
+
+# Interim Polish — Launch-Ready Dashboard + Super-Admin Panel
+
+Between Phase 2C and 2D: a polish pass on the customer dashboard plus the
+platform operator console. This is what beta users (and we, running the platform)
+will see day one.
+
+## Dashboard polish
+
+**Reusable foundation** (built once, available everywhere): `Skeleton`/
+`SkeletonText/Card/Table` (shimmer), `EmptyState` (icon + message + action),
+`ErrorState` (inline + retry), a Zustand **toast** system, a global **confirm
+dialog** (`useConfirm` → promise) for destructive actions, `Breadcrumbs`, an
+**offline banner**, proper **404 + 500** pages, and a visible `:focus-visible`
+ring with `prefers-reduced-motion` honored.
+
+**Theme**: dark-mode-default with a no-FOUC init script and a header light/dark
+toggle, on the existing CSS-variable system.
+
+**Navigation**: ⌘K/Ctrl+K **command palette** (pages + projects), a "?"
+**shortcut-help** modal, a **mobile nav drawer**, and an **impersonation banner**.
+
+**Findings page overhaul** (where users spend the most time): pill filters
+(severity / engine / AI-code / new / show-suppressed), sort (severity / file /
+rule / FP-likelihood), **bulk actions** (multi-select → mark N false-positive or
+suppress N), copy buttons (rule id, file path), and **Ignore vs. Mark-false-
+positive clarity** (distinct actions with an inline explanation), all with toasts.
+
+Applied across projects, findings, org management, and scan detail; the
+foundation is available to every page.
+
+## Super-admin panel (`/admin`, super-admins only)
+
+**Access + audit**: a platform `is_super_admin` role (migration 000020, bootstraps
+the first-registered user), a `RequireSuperAdmin` middleware (DB-checked so a
+revoked admin loses access immediately — not tied to token issuance), and an
+**append-only `admin_audit_log`** written by every admin mutation.
+
+**Pages**: Overview (live platform metrics + findings-by-severity + health),
+Organizations (search, suspend, change plan), Users (search, grant/revoke
+super-admin, suspend, **impersonate**), Scans (all scans, failed highlighted,
+long-running flagged), Feature flags (global + rollout-% + per-org overrides),
+Beta invitations (bulk invite, conversion tracking, revoke), Support inbox (reply
++ status), Audit log, System health, Intelligence feed status, ML model
+monitoring.
+
+**Impersonation**: issues a **1-hour-capped** access token for the target user,
+**audit-logged**, surfaced by a persistent banner with a one-click "Stop
+impersonating". The token TTL is enforced server-side (`GenerateAccessToken`
+caps > 1h to 1h) and unit-tested.
+
+## In-app widgets
+
+A floating **support** button (`?`) → ticket into the admin inbox; a per-scan
+**thumbs up/down feedback** widget (`scan_ratings`); the **shortcut-help** modal.
+
+## Tests + verification
+
+Go unit tests: `RequireSuperAdmin` blocks non-admins (403) and fails closed on
+error; `GenerateAccessToken` round-trips, caps impersonation TTL to 1h, and
+rejects an expired token; `RandomToken` uniqueness. Web `tsc --noEmit` clean.
+Migrations 000012–000020 apply cleanly.
+
+_Live verification (super-admin 403 for non-admins, audit-log write on an admin
+action, impersonation issue+expiry) recorded below._
