@@ -261,5 +261,16 @@ error; `GenerateAccessToken` round-trips, caps impersonation TTL to 1h, and
 rejects an expired token; `RandomToken` uniqueness. Web `tsc --noEmit` clean.
 Migrations 000012–000020 apply cleanly.
 
-_Live verification (super-admin 403 for non-admins, audit-log write on an admin
-action, impersonation issue+expiry) recorded below._
+**Live verification** (full stack up, migration 000020 applied, run end-to-end):
+
+| Check | Result |
+| --- | --- |
+| Authenticated **non-admin** → `GET /admin/overview` | **403** ✅ |
+| Same token after DB-flip to super-admin → `GET /admin/overview` | **200** ✅ — proves the gate is **DB-checked per request**, not bound to token issuance (a revoked admin loses access instantly) |
+| `POST /admin/users/{id}/impersonate` | **200**, `expires_in=3600` (1h cap), JWT `sub`=target, `jwt-life=3600s`, token accepted by the API as that user ✅ |
+| Admin mutation (`grant super-admin`) | **200** ✅ |
+| `admin_audit_log` after two admin actions | **0 → 2** rows: `user.impersonate`, `user.set_super_admin` ✅ |
+
+`go build ./...` clean; Go unit tests pass (`internal/auth` + `internal/middleware`).
+Web `tsc --noEmit` clean. _(Docker Desktop crashed repeatedly mid-session; once
+recovered, all of the above ran green.)_
