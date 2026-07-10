@@ -3,7 +3,8 @@ fastapi==0.115.6
 uvicorn[standard]==0.34.0
 pydantic==2.10.4
 pydantic-settings==2.7.1
-python-multipart==0.0.20
+python-multipart==0.0.31
+defusedxml==0.7.1  # safe XML parsing for untrusted pom.xml (reachability)
 
 # ─── Structured logging ──────────────────────────────────────────────────────
 structlog==24.4.0
@@ -20,7 +21,7 @@ radon==6.0.1
 lizard==1.17.13
 # Pygments lexers drive token-normalized duplicate-code detection (rename- and
 # whitespace-insensitive). Pure Python — no C toolchain needed in the slim image.
-pygments==2.18.0
+pygments==2.20.0
 
 # ─── Enrichment ──────────────────────────────────────────────────────────────
 # PyYAML loads the context-rich finding templates (enrichment/rule_templates.yaml).
@@ -29,7 +30,7 @@ pyyaml==6.0.2
 # ─── Local ML (privacy-safe false-positive filter) ───────────────────────────
 # Trains/scores on finding METADATA only — never source code. lightgbm needs
 # libgomp1 (added in the Dockerfile); scikit-learn provides CV metrics + joblib.
-lightgbm==4.5.0
+lightgbm==4.6.0
 scikit-learn==1.5.2
 
 # NOTE: trivy and gitleaks are installed as binaries in the Dockerfile, not pip.

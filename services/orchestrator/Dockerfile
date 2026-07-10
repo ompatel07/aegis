@@ -2,7 +2,7 @@
 # Aegis orchestrator image (multi-stage). Pure-Go (CGO disabled); go-git means
 # no system git binary is required at runtime.
 # ─────────────────────────────────────────────────────────────────────────────
-FROM golang:1.22-alpine AS builder
+FROM golang:1.25-alpine AS builder
 
 RUN apk add --no-cache git ca-certificates
 WORKDIR /src
