@@ -1,0 +1,91 @@
+name: aegis-self-scan
+
+# Task 3a — "Aegis scans Aegis on every commit". We dogfood the exact tools the
+# scanner runs (Semgrep with our own taint rules, Gitleaks, Trivy, govulncheck,
+# npm audit, pip-audit) and gate the build on critical/high findings so the
+# platform's own repo can never regress below its grade-A bar.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  go-vuln:
+    name: Go vulnerabilities (govulncheck)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: { go-version: "1.25" }
+      - run: go install golang.org/x/vuln/cmd/govulncheck@latest
+      - name: api
+        working-directory: services/api
+        run: govulncheck ./...
+      - name: orchestrator
+        working-directory: services/orchestrator
+        run: govulncheck ./...
+
+  npm-audit:
+    name: Web dependencies (npm audit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
+      - name: audit (fail on high+)
+        working-directory: web
+        run: npm audit --omit=dev --audit-level=high
+
+  pip-audit:
+    name: Scanner dependencies (pip-audit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install pip-audit
+      - working-directory: services/scanner
+        run: pip-audit -r requirements.txt
+
+  semgrep:
+    name: SAST (Semgrep + Aegis taint rules)
+    runs-on: ubuntu-latest
+    container: semgrep/semgrep
+    steps:
+      - uses: actions/checkout@v4
+      # Aegis's own taint rules + the community security ruleset. --error makes
+      # any finding fail the job (our bar is zero).
+      - run: |
+          semgrep scan --error --severity ERROR \
+            --config services/scanner/rules \
+            --config "p/security-audit" \
+            --exclude services/scanner/rules \
+            --exclude "**/.venv/**" --exclude "**/node_modules/**"
+
+  secrets:
+    name: Secret scan (Gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "false"
+
+  trivy:
+    name: Filesystem + config (Trivy)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scanners: vuln,secret,misconfig
+          severity: CRITICAL,HIGH
+          exit-code: "1"
+          skip-dirs: "**/.venv,**/node_modules"
