@@ -9,6 +9,7 @@ import (
 	"github.com/aegis-platform/api/internal/httpx"
 	"github.com/aegis-platform/api/internal/middleware"
 	"github.com/aegis-platform/api/internal/models"
+	"github.com/aegis-platform/api/internal/notify"
 	"github.com/aegis-platform/api/internal/services"
 )
 
@@ -87,6 +88,13 @@ func (h *NotifyHandler) SetProjectSlack(w http.ResponseWriter, r *http.Request) 
 	if apiErr := httpx.DecodeAndValidate(w, r, &req); apiErr != nil {
 		httpx.WriteError(w, apiErr)
 		return
+	}
+	// SSRF guard: a webhook URL must be a real Slack incoming webhook.
+	if req.WebhookURL != "" {
+		if err := notify.ValidateSlackWebhookURL(req.WebhookURL); err != nil {
+			httpx.WriteError(w, httpx.ErrBadRequest(err.Error()))
+			return
+		}
 	}
 	err := h.svc.SetProjectSlack(r.Context(), chi.URLParam(r, "id"), middleware.UserID(r.Context()),
 		req.WebhookURL, req.Enabled, req.MinSeverity)

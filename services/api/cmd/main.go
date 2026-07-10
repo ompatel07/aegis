@@ -165,6 +165,7 @@ func run() error {
 	r.Use(chimw.RequestID)
 	r.Use(mw.Recoverer(log))
 	r.Use(mw.RequestLogger(log))
+	r.Use(mw.SecureHeaders)
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   cfg.CORSOrigins,
 		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
@@ -177,9 +178,14 @@ func run() error {
 
 	r.Get("/health", healthH.Get)
 
+	// Strict per-IP limiter for credential endpoints (brute-force defense),
+	// on its own counter namespace so it doesn't share the global budget.
+	authLimiter := mw.NewNamedRateLimiter(rdb, cfg.AuthRateLimitRPM, "auth", log)
+
 	r.Route("/api/v1", func(r chi.Router) {
 		// Public auth + webhook routes.
 		r.Route("/auth", func(r chi.Router) {
+			r.Use(authLimiter.Handler)
 			r.Post("/register", authH.Register)
 			r.Post("/login", authH.Login)
 			r.Post("/refresh", authH.Refresh)

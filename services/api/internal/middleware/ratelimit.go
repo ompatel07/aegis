@@ -17,11 +17,19 @@ type RateLimiter struct {
 	rdb    *redis.Client
 	rpm    int
 	window time.Duration
+	prefix string
 	log    zerolog.Logger
 }
 
+// NewRateLimiter builds the global per-IP limiter.
 func NewRateLimiter(rdb *redis.Client, rpm int, log zerolog.Logger) *RateLimiter {
-	return &RateLimiter{rdb: rdb, rpm: rpm, window: time.Minute, log: log}
+	return NewNamedRateLimiter(rdb, rpm, "global", log)
+}
+
+// NewNamedRateLimiter builds a limiter with its own counter namespace, so a
+// strict limiter (e.g. on /auth) doesn't share a budget with the global one.
+func NewNamedRateLimiter(rdb *redis.Client, rpm int, name string, log zerolog.Logger) *RateLimiter {
+	return &RateLimiter{rdb: rdb, rpm: rpm, window: time.Minute, prefix: name, log: log}
 }
 
 // Handler is the middleware entrypoint.
@@ -30,7 +38,7 @@ func (rl *RateLimiter) Handler(next http.Handler) http.Handler {
 		ip := clientIP(r)
 		// Bucket key changes each window, so counters expire naturally.
 		bucket := time.Now().Unix() / int64(rl.window.Seconds())
-		key := "aegis:ratelimit:" + ip + ":" + strconv.FormatInt(bucket, 10)
+		key := "aegis:ratelimit:" + rl.prefix + ":" + ip + ":" + strconv.FormatInt(bucket, 10)
 
 		count, err := rl.rdb.Incr(r.Context(), key).Result()
 		if err != nil {

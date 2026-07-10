@@ -42,7 +42,10 @@ _GENERATED_PAT = re.compile(
 def _hash(value: str | None, buckets: int) -> float:
     if not value:
         return 0.0
-    h = int(hashlib.md5(value.encode("utf-8")).hexdigest(), 16)
+    # Non-cryptographic: md5 is used only to bucket a string into a stable
+    # feature index. usedforsecurity=False declares that intent (and clears the
+    # weak-crypto rule) — collision resistance is irrelevant here.
+    h = int(hashlib.md5(value.encode("utf-8"), usedforsecurity=False).hexdigest(), 16)
     return float(h % buckets)
 
 

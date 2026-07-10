@@ -322,11 +322,14 @@ def _parse_go_mod(idx: ReachabilityIndex, text: str | None) -> None:
 def _parse_pom(idx: ReachabilityIndex, text: str | None) -> None:
     if text is None:
         return
-    import xml.etree.ElementTree as ET
+    # pom.xml comes from the *scanned* (untrusted) repo, so parse with defusedxml
+    # to neutralize XML entity-expansion (billion-laughs) and external-entity
+    # (XXE) attacks against the scanner.
+    import defusedxml.ElementTree as ET
 
     try:
         root = ET.fromstring(text)
-    except ET.ParseError:
+    except Exception:  # malformed XML or a blocked entity attack → degrade safely
         return
     idx.has_manifest[JAVA] = True
 

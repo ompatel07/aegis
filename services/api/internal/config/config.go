@@ -35,7 +35,8 @@ type Config struct {
 
 	TokenEncryptionKey string
 
-	RateLimitRPM int
+	RateLimitRPM     int
+	AuthRateLimitRPM int
 
 	// Scanner service — used to validate uploaded custom rules with semgrep.
 	ScannerBaseURL string
@@ -99,6 +100,7 @@ func Load() (*Config, error) {
 	v.SetDefault("JWT_ACCESS_TTL_MINUTES", 15)
 	v.SetDefault("JWT_REFRESH_TTL_HOURS", 168)
 	v.SetDefault("RATE_LIMIT_RPM", 120)
+	v.SetDefault("AUTH_RATE_LIMIT_RPM", 10) // strict: brute-force defense on /auth
 	v.SetDefault("SCANNER_BASE_URL", "http://scanner:8000")
 	v.SetDefault("AI_PROVIDER", "disabled")
 	v.SetDefault("AI_MODEL", "")
@@ -149,6 +151,7 @@ func Load() (*Config, error) {
 		JWTRefreshTTL:      time.Duration(v.GetInt("JWT_REFRESH_TTL_HOURS")) * time.Hour,
 		TokenEncryptionKey: v.GetString("TOKEN_ENCRYPTION_KEY"),
 		RateLimitRPM:       v.GetInt("RATE_LIMIT_RPM"),
+		AuthRateLimitRPM:   v.GetInt("AUTH_RATE_LIMIT_RPM"),
 	}
 
 	if err := cfg.validate(); err != nil {
