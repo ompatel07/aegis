@@ -37,6 +37,7 @@ were tuned to any repo — this is Aegis's stock configuration.
 | Spring-PetClinic | Java | 1.6 | 16 | 16 | 0 | 0 (agree — clean sample) |
 | NextAuth.js | TS | 42.9 | 62 | **63** | **62** | +1; Trivy +62 CVEs |
 | FastAPI | Py | 29.1 | 22 | 22 | 0 | 0 (agree) |
+| Flask | Py | 8.0 | 16 | **21** | 13 | +5 unique; Trivy +13 |
 
 ## Per-repo detail
 
@@ -122,3 +123,30 @@ framework — low density (0.8/KLOC). Aegis adds nothing beyond the shared rules
 here, and importantly adds **no noise**. (The 18 "high" are shared registry
 findings, several in `docs_src/` example code — an artifact of the examples, not
 framework bugs; it affects both tools identically so the comparison holds.)
+
+### Flask (Python, pallets/flask)
+
+| Tool | Total | High | Medium | Low | /KLOC |
+| --- | --- | --- | --- | --- | --- |
+| Semgrep-CE | 16 | 0 | 15 | 1 | 2.0 |
+| **Aegis SAST** | **21** | 0 | 20 | 1 | 2.6 |
+| **Trivy (fs)** | **13** | **1** | 11 | 1 | 1.6 |
+
+Aegis SAST superset (+5 unique over CE) **and** Trivy adds 13 dependency findings
+(1 high). Full-platform coverage (21 SAST + 13 SCA) vs Semgrep-CE's 16 SAST-only —
+Aegis surfaces materially more on this real web framework.
+
+## Findings so far (7 repos)
+
+- **Aegis SAST is a superset of Semgrep-CE in every repo** — it never finds fewer,
+  and adds unique findings on the web-facing codebases (Express +4 high, Gin +2,
+  NextAuth +1, Flask +5) while adding **zero noise** on clean libraries (Cobra,
+  Spring, FastAPI agree exactly). This is the correct behavior: value where there's
+  attack surface, silence where there isn't.
+- **Multi-engine is the decisive edge.** Trivy (bundled in Aegis's platform)
+  surfaced dependency CVEs that a stock SAST tool misses entirely — **62 (21 high)
+  in NextAuth.js**, 13 in Flask, 1 in Gin. Teams on Semgrep-CE alone ship those
+  unseen.
+- **Density is honest**, tracking attack surface: 0.8–2.6/KLOC on frameworks,
+  ~0.9 on a clean CLI lib — no evidence of the FP flooding that inflates some
+  tools' counts.
