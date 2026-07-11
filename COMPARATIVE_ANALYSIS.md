@@ -42,6 +42,7 @@ were tuned to any repo — this is Aegis's stock configuration.
 | Jackson-databind | Java | 130.3 | 4 | 4 | 0 | 0 (agree — audited) |
 | React | JS | 682.2 | 548 | **550** | 1917* | +2; Trivy *(see note) |
 | NestJS | TS | 68.6 | 54 | 54 | 3 | 0 (agree); Trivy +3 |
+| Prisma | TS | 142.3 | 235 | **238** | 714 | +3; Trivy +714 |
 
 ## Per-repo detail
 
@@ -226,3 +227,17 @@ configures.
 Aegis and Semgrep-CE **agree** (54 each, 0 unique) on this clean TS framework;
 Trivy adds 3 dependency findings (2 high). No noise, and the SCA layer still
 contributes coverage a SAST-only tool lacks.
+
+### Prisma (TypeScript, prisma/prisma)
+
+| Tool | Total | Critical | High | Medium | Low | /KLOC |
+| --- | --- | --- | --- | --- | --- | --- |
+| Semgrep-CE | 235 | — | 13 | 205 | 17 | 1.65 |
+| **Aegis SAST** | **238** | — | 16 | 205 | 17 | 1.67 |
+| Trivy (fs) | 714 | 3 | 249 | 401 | 61 | 5.02 |
+
+Aegis SAST superset (+3 unique, incl. +3 high) over Semgrep-CE. Trivy surfaced
+714 dependency findings (3 critical / 249 high) across this large TS monorepo.
+As with React, a share of Trivy's count comes from the monorepo's many package
+dirs + dev dependencies; production-scoped SCA reports fewer. Still, the coverage
+gap vs SAST-only tools is real and large.
