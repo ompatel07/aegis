@@ -91,6 +91,7 @@ func run() error {
 	adminRepo := repository.NewAdminRepository(db)
 	policyRepo := repository.NewPolicyRepository(db)
 	githubAppRepo := repository.NewGitHubAppRepository(db)
+	ssoRepo := repository.NewSSORepository(db)
 
 	// ── Services ─────────────────────────────────────────────────────────────
 	authSvc := services.NewAuthService(userRepo, orgRepo, tokens, sessions)
@@ -154,6 +155,9 @@ func run() error {
 	githubAppH := handlers.NewGitHubAppHandler(githubAppSvc, githubAppRepo, log)
 	vcsH := handlers.NewVCSHandler(vcsSvc, log)
 	notifyH := handlers.NewNotifyHandler(notifySvc, log)
+	ssoSvc := services.NewSSOService(ssoRepo, userRepo, orgRepo, authSvc, encryptor, rdb, dashURL)
+	ssoH := handlers.NewSSOHandler(ssoSvc, ssoRepo, orgRepo, encryptor, dashURL, log)
+	scimH := handlers.NewSCIMHandler(ssoRepo, userRepo, orgRepo, authSvc, log)
 	webhookH := handlers.NewWebhookHandler(integrationRepo, scanSvc, log)
 	progressH := handlers.NewProgressHandler(rdb, tokens, scanRepo, log)
 	healthH := handlers.NewHealthHandler(db, rdb)
@@ -190,6 +194,14 @@ func run() error {
 			r.Post("/login", authH.Login)
 			r.Post("/refresh", authH.Refresh)
 			r.Post("/logout", authH.Logout)
+			// Enterprise SSO login flow (public — the IdP redirects the browser here).
+			r.Route("/sso", func(r chi.Router) {
+				r.Get("/discover", ssoH.Discover)
+				r.Get("/oidc/callback", ssoH.OIDCCallback)
+				r.Post("/saml/acs", ssoH.SAMLACS)
+				r.Get("/{connID}/login", ssoH.Login)
+				r.Get("/{connID}/saml/metadata", ssoH.SAMLMetadata)
+			})
 		})
 		r.Post("/webhooks/github", webhookH.GitHub)
 		r.Post("/webhooks/github/app", githubAppH.Webhook)
@@ -294,7 +306,27 @@ func run() error {
 				r.Get("/support", adminH.ListTickets)
 				r.Post("/support/{ticketId}/reply", adminH.ReplyTicket)
 			})
+
+			// Org-scoped SSO/IdP administration (owner-gated in the handler).
+			r.Route("/sso", func(r chi.Router) {
+				r.Post("/connections", ssoH.CreateConnection)
+				r.Get("/connections", ssoH.ListConnections)
+				r.Delete("/connections/{id}", ssoH.DeleteConnection)
+				r.Post("/scim-tokens", ssoH.CreateSCIMToken)
+				r.Get("/scim-tokens", ssoH.ListSCIMTokens)
+			})
 		})
+	})
+
+	// SCIM 2.0 provisioning — its own bearer-token auth (not the user JWT).
+	r.Route("/scim/v2", func(r chi.Router) {
+		r.Use(scimH.Authenticate)
+		r.Post("/Users", scimH.CreateUser)
+		r.Get("/Users", scimH.ListUsers)
+		r.Get("/Users/{id}", scimH.GetUser)
+		r.Patch("/Users/{id}", scimH.PatchUser)
+		r.Put("/Users/{id}", scimH.PatchUser)
+		r.Delete("/Users/{id}", scimH.DeleteUser)
 	})
 
 	// ── HTTP server with graceful shutdown ───────────────────────────────────

@@ -135,6 +135,41 @@ func (s *AuthService) Logout(ctx context.Context, refreshToken string) error {
 	return s.sessions.Revoke(ctx, claims.ID)
 }
 
+// IssueTokens issues a token pair for an already-authenticated user. SSO uses
+// this after the IdP assertion has been verified (there is no local password).
+func (s *AuthService) IssueTokens(ctx context.Context, user *models.User) (*auth.TokenPair, error) {
+	return s.issue(ctx, user)
+}
+
+// ProvisionUser finds a user by email or, when JIT is allowed, creates a
+// password-less SSO user with a personal org. It never returns tokens.
+func (s *AuthService) ProvisionUser(ctx context.Context, email, name string, jit bool) (*models.User, error) {
+	email = strings.ToLower(strings.TrimSpace(email))
+	if u, err := s.users.GetByEmail(ctx, email); err == nil {
+		return u, nil
+	} else if !errors.Is(err, repository.ErrNotFound) {
+		return nil, err
+	}
+	if !jit {
+		return nil, ErrInvalidCredentials
+	}
+	if name == "" {
+		name = email
+	}
+	user := &models.User{Email: email, PasswordHash: "", Name: name, Role: models.RoleUser, Plan: models.PlanFree}
+	if err := s.users.Create(ctx, user); err != nil {
+		return nil, err
+	}
+	personal := &models.Organization{
+		Name: name + "'s workspace", Slug: "ws-" + strings.ReplaceAll(user.ID, "-", ""),
+		Plan: models.PlanFree, IsPersonal: true, BillingEmail: &user.Email,
+	}
+	if err := s.orgs.Create(ctx, personal, user.ID); err != nil {
+		return nil, err
+	}
+	return user, nil
+}
+
 // issue creates a token pair and records the refresh session in Redis.
 func (s *AuthService) issue(ctx context.Context, user *models.User) (*auth.TokenPair, error) {
 	pair, err := s.tokens.GeneratePair(user.ID, user.Email, user.Role)
