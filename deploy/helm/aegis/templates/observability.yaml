@@ -1,0 +1,43 @@
+{{- if .Values.observability.serviceMonitor.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "aegis.fullname" . }}
+  labels: {{- include "aegis.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels: { app.kubernetes.io/part-of: aegis }
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: {{ .Values.observability.serviceMonitor.interval }}
+  namespaceSelector:
+    matchNames: [{{ .Release.Namespace }}]
+{{- end }}
+{{- if .Values.observability.prometheusRule.enabled }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "aegis.fullname" . }}
+  labels: {{- include "aegis.labels" . | nindent 4 }}
+spec:
+  groups:
+    - name: aegis.rules
+      rules:
+        - alert: AegisAPIDown
+          expr: up{job=~".*aegis-api.*"} == 0
+          for: 5m
+          labels: { severity: critical }
+          annotations: { summary: "Aegis API is down" }
+        - alert: AegisScanFailureRateHigh
+          expr: rate(aegis_scan_failures_total[15m]) > 0.2
+          for: 15m
+          labels: { severity: warning }
+          annotations: { summary: "Aegis scan failure rate > 20%" }
+        - alert: AegisScanQueueBacklog
+          expr: aegis_scan_queue_depth > 100
+          for: 10m
+          labels: { severity: warning }
+          annotations: { summary: "Aegis scan queue backlog > 100" }
+{{- end }}

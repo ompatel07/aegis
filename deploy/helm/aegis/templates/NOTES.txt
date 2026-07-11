@@ -1,0 +1,17 @@
+Aegis {{ .Chart.AppVersion }} deployed as release "{{ .Release.Name }}".
+
+1. Migrations run automatically as a pre-install/upgrade hook.
+2. Reach the app:
+{{- if .Values.ingress.enabled }}
+   https://{{ .Values.ingress.host }}   (ingress: {{ .Values.ingress.provider }})
+{{- else }}
+   kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "aegis.fullname" . }}-web {{ .Values.web.port }}:{{ .Values.web.port }}
+{{- end }}
+3. Autoscaling: {{ if .Values.api.autoscaling.enabled }}enabled{{ else }}off{{ end }} (api/orchestrator/scanner HPAs).
+{{- if .Values.secrets.create }}
+
+WARNING: secrets.create=true renders secrets into the release — dev only.
+Use externalSecrets.enabled or secrets.existingSecret in production.
+{{- end }}
+
+Verify:   helm test {{ .Release.Name }}   |   kubectl get pods -n {{ .Release.Namespace }}

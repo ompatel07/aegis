@@ -1,0 +1,37 @@
+{
+  "title": "Aegis — Overview",
+  "uid": "aegis-overview",
+  "schemaVersion": 39,
+  "tags": ["aegis"],
+  "timezone": "browser",
+  "refresh": "30s",
+  "time": { "from": "now-6h", "to": "now" },
+  "templating": { "list": [] },
+  "panels": [
+    {
+      "id": 1, "type": "stat", "title": "API up",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "targets": [{ "expr": "sum(up{job=~\".*aegis-api.*\"})" }]
+    },
+    {
+      "id": 2, "type": "timeseries", "title": "Scan queue depth",
+      "gridPos": { "h": 8, "w": 12, "x": 6, "y": 0 },
+      "targets": [{ "expr": "aegis_scan_queue_depth" }]
+    },
+    {
+      "id": 3, "type": "timeseries", "title": "Scan failure rate (15m)",
+      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 0 },
+      "targets": [{ "expr": "rate(aegis_scan_failures_total[15m])" }]
+    },
+    {
+      "id": 4, "type": "timeseries", "title": "API request rate by status",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "targets": [{ "expr": "sum by (status) (rate(aegis_http_requests_total[5m]))" }]
+    },
+    {
+      "id": 5, "type": "timeseries", "title": "API p95 latency",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "targets": [{ "expr": "histogram_quantile(0.95, sum by (le) (rate(aegis_http_request_duration_seconds_bucket[5m])))" }]
+    }
+  ]
+}

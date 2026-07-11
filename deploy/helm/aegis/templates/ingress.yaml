@@ -1,0 +1,62 @@
+{{- if .Values.ingress.enabled }}
+{{- $fullName := include "aegis.fullname" . -}}
+{{- $provider := .Values.ingress.provider -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ $fullName }}
+  labels: {{- include "aegis.labels" . | nindent 4 }}
+  annotations:
+    {{- if eq $provider "nginx" }}
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    {{- else if eq $provider "traefik" }}
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    {{- else if eq $provider "alb" }}
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80},{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: "443"
+    {{- else if eq $provider "gce" }}
+    kubernetes.io/ingress.class: gce
+    kubernetes.io/ingress.allow-http: "false"
+    {{- end }}
+    {{- with .Values.ingress.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  {{- if eq $provider "nginx" }}
+  ingressClassName: nginx
+  {{- else if eq $provider "traefik" }}
+  ingressClassName: traefik
+  {{- else if eq $provider "alb" }}
+  ingressClassName: alb
+  {{- end }}
+  {{- if .Values.ingress.tls.enabled }}
+  tls:
+    - hosts: [{{ .Values.ingress.host | quote }}]
+      secretName: {{ .Values.ingress.tls.secretName }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.ingress.host | quote }}
+      http:
+        paths:
+          - path: /api/v1
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ $fullName }}-api
+                port: { number: {{ .Values.api.port }} }
+          - path: /scim/v2
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ $fullName }}-api
+                port: { number: {{ .Values.api.port }} }
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ $fullName }}-web
+                port: { number: {{ .Values.web.port }} }
+{{- end }}
