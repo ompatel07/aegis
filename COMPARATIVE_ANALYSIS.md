@@ -33,6 +33,7 @@ were tuned to any repo — this is Aegis's stock configuration.
 | --- | --- | --- | --- | --- | --- | --- |
 | Express | JS | 4.1 | 45 | **49** | 0 | +4 high (superset) |
 | Cobra | Go | 14.4 | 13 | 13 | 0 | 0 (agree — clean lib) |
+| Gin | Go | 20.2 | 39 | **43** | 1 | +2 unique (superset) |
 
 ## Per-repo detail
 
@@ -62,3 +63,16 @@ Aegis and Semgrep-CE **agree exactly** (13 findings, 0 unique). Cobra is a matur
 CLI library with no web/injection attack surface, so the OWASP/CWE/taint packs
 correctly add nothing — Aegis introduces **no extra noise** where there's nothing
 to add. Low density (0.9/KLOC) reflects clean, well-reviewed code.
+
+### Gin (Go, gin-gonic/gin)
+
+| Tool | Total | High | Medium | Low | /KLOC |
+| --- | --- | --- | --- | --- | --- |
+| Semgrep-CE | 39 | 0 | 37 | 2 | 1.9 |
+| **Aegis SAST** | **43** | 0 | 41 | 2 | 2.1 |
+| Trivy (fs) | 1 | — | — | — | 0.05 |
+
+Aegis superset again: 39 shared + 2 additional unique findings (deduplicated by
+rule+location) on this Go web framework, and Trivy surfaced 1 dependency finding
+in `go.mod`. Higher density than Cobra (2.1 vs 0.9/KLOC) as expected — a web
+framework has real HTTP/routing attack surface.
