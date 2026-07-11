@@ -43,6 +43,7 @@ were tuned to any repo — this is Aegis's stock configuration.
 | React | JS | 682.2 | 548 | **550** | 1917* | +2; Trivy *(see note) |
 | NestJS | TS | 68.6 | 54 | 54 | 3 | 0 (agree); Trivy +3 |
 | Prisma | TS | 142.3 | 235 | **238** | 714 | +3; Trivy +714 |
+| Guava | Java | 427.4 | 19 | 19 | 0 | 0 (agree — core lib) |
 
 ## Per-repo detail
 
@@ -241,3 +242,17 @@ Aegis SAST superset (+3 unique, incl. +3 high) over Semgrep-CE. Trivy surfaced
 As with React, a share of Trivy's count comes from the monorepo's many package
 dirs + dev dependencies; production-scoped SCA reports fewer. Still, the coverage
 gap vs SAST-only tools is real and large.
+
+### Guava (Java, google/guava)
+
+| Tool | Total | High | Medium | Low | /KLOC |
+| --- | --- | --- | --- | --- | --- |
+| Semgrep-CE | 19 | 0 | 17 | 2 | 0.04 |
+| **Aegis SAST** | 19 | 0 | 17 | 2 | 0.04 |
+| Trivy (fs) | 0 | — | — | — | 0 |
+
+Guava (427 KLOC) is a Google-maintained core utility library — exhaustively
+reviewed, with essentially no security-relevant surface (collections, primitives,
+caching). Both tools find 19 (0.04/KLOC, the lowest density in the set), and
+Aegis adds **nothing** — the correct outcome. A tool that "found more" here would
+be inventing noise.
