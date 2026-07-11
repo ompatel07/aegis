@@ -35,6 +35,7 @@ were tuned to any repo — this is Aegis's stock configuration.
 | Cobra | Go | 14.4 | 13 | 13 | 0 | 0 (agree — clean lib) |
 | Gin | Go | 20.2 | 39 | **43** | 1 | +2 unique (superset) |
 | Spring-PetClinic | Java | 1.6 | 16 | 16 | 0 | 0 (agree — clean sample) |
+| NextAuth.js | TS | 42.9 | 62 | **63** | **62** | +1; Trivy +62 CVEs |
 
 ## Per-repo detail
 
@@ -90,3 +91,19 @@ The canonical Spring Boot sample. Aegis and Semgrep-CE **agree** (16 each, 0
 unique) — a small, curated reference app where the extra packs find nothing new
 and add no noise. Density looks high only because the codebase is tiny (1.6 KLOC).
 Trivy: 0 (maintained Spring Boot dependencies).
+
+### NextAuth.js (TypeScript, nextauthjs/next-auth)
+
+| Tool | Total | High | Medium | Low | /KLOC |
+| --- | --- | --- | --- | --- | --- |
+| Semgrep-CE | 62 | 5 | 49 | 8 | 1.4 |
+| **Aegis SAST** | **63** | 6 | 49 | 8 | 1.5 |
+| **Trivy (fs)** | **62** | **21** | 28 | 13 | 1.4 |
+
+The clearest **multi-engine** win so far. Aegis SAST is a superset of Semgrep-CE
+(+1, incl. an extra high). But the headline is **Trivy: 62 dependency CVEs
+(21 high)** in this dependency-heavy monorepo — findings that Semgrep-CE (SAST
+only) **completely misses**. Aegis's platform runs SCA + secrets alongside SAST,
+so it surfaces all 62; a team on stock Semgrep would ship those 21 high-severity
+dependency vulnerabilities unseen. This is the concrete case for Aegis's
+multi-engine coverage over a single SAST tool.
