@@ -48,6 +48,7 @@ were tuned to any repo — this is Aegis's stock configuration.
 | Consul | Go | 682.7 | 151 | 248† | 58 | †see noise note |
 | Kafka | Java | 608.3 | 80 | **96** | 0 | +16 unique (all high) |
 | Vault | Go | 703.2 | 290 | 314† | 175 | †Ember flood (see note) |
+| Terraform | Go | 604.5 | 99 | **171** | 1174 | +42 (clean, no flood) |
 
 ## Per-repo detail
 
@@ -348,3 +349,23 @@ below) inflates the raw count. **Action:** gate `generic.html-templates` behind 
 Track-2d high-precision profile / a language-scoped default. Trivy separately found
 175 real dependency findings (5 critical / 55 high) — strong genuine SCA value on
 a security-critical product.
+
+### Terraform (Go, hashicorp/terraform)
+
+| Tool | Total | High | Medium | Low | /KLOC |
+| --- | --- | --- | --- | --- | --- |
+| Semgrep-CE | 99 | 27 | 70 | 2 | 0.16 |
+| **Aegis SAST** | **171** | 29 | 140 | 2 | 0.28 |
+| Trivy (fs) | 1174 | 1144 high | 8 | 11 | 1.94 |
+
+Notably **clean** — unlike Consul/Vault, Terraform's raw count has **zero**
+generic-HTML-template noise (`generic: 0`; its web UI lives in a separate repo).
+So this is a straightforward, honest **superset: Aegis 171 (170 code-relevant) vs
+Semgrep-CE 99** (+42 unique, +2 high). The harness now auto-reports `code_relevant`
+after the Consul/Vault finding, and here it essentially equals the raw count —
+confirming Terraform isn't affected.
+
+Trivy reported **1,174 findings (1,144 high)** — Terraform has an unusually large
+Go dependency tree (historically many embedded provider/cloud SDKs). This is real
+but density-inflated by transitive dependencies; a production build with pruned
+modules would report fewer. Reported raw for transparency.

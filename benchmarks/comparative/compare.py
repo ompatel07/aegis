@@ -54,11 +54,22 @@ def semgrep(configs):
         return {"total": 0, "by_sev": {}, "rules": set(), "keys": set()}
     by_sev = {}
     keys = set()
+    ns = {"generic": 0, "yaml": 0, "code": 0}
     for r in results:
         b = sev_bucket_semgrep(r)
         by_sev[b] = by_sev.get(b, 0) + 1
         keys.add((r.get("check_id"), r.get("path"), (r.get("start") or {}).get("line")))
-    return {"total": len(results), "by_sev": by_sev, "keys": keys}
+        cid = r.get("check_id", "")
+        if cid.startswith("generic."):
+            ns["generic"] += 1
+        elif cid.startswith("yaml."):
+            ns["yaml"] += 1
+        else:
+            ns["code"] += 1
+    # code_relevant strips low-signal generic-HTML-template + CI-config noise that
+    # floods polyglot repos (see COMPARATIVE_ANALYSIS.md — Consul/Vault finding).
+    return {"total": len(results), "by_sev": by_sev, "keys": keys,
+            "ns": ns, "code_relevant": ns["code"]}
 
 def trivy():
     out = run(["trivy", "fs", "--quiet", "--format", "json", "--scanners", "vuln,secret,misconfig",
@@ -90,7 +101,8 @@ shared = len(aegis["keys"] & sg_ce["keys"])
 out = {
     "repo": name, "lang": lang, "kloc": round(kloc, 1),
     "semgrep_ce": {"total": sg_ce["total"], "by_sev": sg_ce["by_sev"], "per_kloc": round(sg_ce["total"] / kloc, 2)},
-    "aegis_sast": {"total": aegis["total"], "by_sev": aegis["by_sev"], "per_kloc": round(aegis["total"] / kloc, 2)},
+    "aegis_sast": {"total": aegis["total"], "by_sev": aegis["by_sev"], "per_kloc": round(aegis["total"] / kloc, 2),
+                   "code_relevant": aegis["code_relevant"], "ns": aegis["ns"]},
     "trivy": {"total": tv["total"], "by_sev": tv["by_sev"], "per_kloc": round(tv["total"] / kloc, 2)},
     "aegis_vs_ce": {"aegis_unique": aegis_unique, "shared": shared},
 }
