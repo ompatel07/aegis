@@ -29,6 +29,14 @@ rules:
           - pattern: $REQ.getHeaders(...)
           - pattern: $REQ.getQueryString()
           - pattern: $REQ.getCookies()
+    pattern-sanitizers:
+      - pattern-either:
+          # Real-world SQL defenses: ESAPI SQL codec encoding + numeric coercion
+          # of untrusted values (an int/long can't carry SQL syntax).
+          - pattern: ESAPI.encoder().encodeForSQL(...)
+          - pattern: org.owasp.esapi.ESAPI.encoder().encodeForSQL(...)
+          - pattern: Integer.parseInt(...)
+          - pattern: Long.parseLong(...)
     pattern-sinks:
       - patterns:
           - pattern-either:
@@ -65,8 +73,14 @@ rules:
       - pattern-either:
           - pattern: org.owasp.encoder.Encode.forHtml(...)
           - pattern: Encode.forHtml(...)
+          - pattern: Encode.forHtmlContent(...)
+          - pattern: Encode.forHtmlAttribute(...)
+          - pattern: Encode.forJavaScript(...)
           - pattern: ESAPI.encoder().encodeForHTML(...)
+          - pattern: ESAPI.encoder().encodeForHTMLAttribute(...)
+          - pattern: org.owasp.esapi.ESAPI.encoder().encodeForHTML(...)
           - pattern: StringEscapeUtils.escapeHtml4(...)
+          - pattern: StringEscapeUtils.escapeHtml3(...)
     pattern-sinks:
       - patterns:
           - pattern-either:
@@ -102,6 +116,12 @@ rules:
       references:
         - https://owasp.org/www-community/attacks/Command_Injection
     pattern-sources: *request_sources
+    pattern-sanitizers:
+      - pattern-either:
+          # ESAPI OS codec + strict allow-list validation before shelling out.
+          - pattern: ESAPI.encoder().encodeForOS(...)
+          - pattern: org.owasp.esapi.ESAPI.encoder().encodeForOS(...)
+          - pattern: ESAPI.validator().getValidInput(...)
     pattern-sinks:
       - patterns:
           - pattern-either:
@@ -172,6 +192,9 @@ rules:
       - pattern-either:
           - pattern: org.apache.commons.io.FilenameUtils.getName(...)
           - pattern: FilenameUtils.getName(...)
+          - pattern: ESAPI.validator().getValidFileName(...)
+          - pattern: $F.getCanonicalPath()
+          - pattern: $P.normalize()
     pattern-sinks:
       - patterns:
           - pattern-either:

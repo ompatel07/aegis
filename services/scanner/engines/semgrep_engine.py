@@ -148,6 +148,9 @@ def _build_args(settings: Settings, configs: list[str], path: str) -> list[str]:
             "--jobs", str(_semgrep_jobs(settings))]
     for cfg in configs:
         args += ["--config", cfg]
+    # High-precision profile: drop named low-confidence rules (Track 2d).
+    for rule in settings.semgrep_exclude_rule_list:
+        args += ["--exclude-rule", rule]
     args.append(path)
     return args
 

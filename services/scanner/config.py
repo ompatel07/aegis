@@ -44,7 +44,15 @@ class Settings(BaseSettings):
     semgrep_base_configs: str = Field(
         default="p/owasp-top-ten,p/r2c-security-audit,p/default,p/secrets,p/supply-chain,p/cwe-top-25"
     )
+    # High-precision profile (Track 2d): comma-separated Semgrep rule IDs to drop.
+    # Empty by default (max recall). Set SEMGREP_EXCLUDE_RULES to silence the
+    # low-confidence "security.audit.*" injection rules for a precision-first scan.
+    semgrep_exclude_rules: str = ""
     semgrep_rules_cache: str = "/opt/aegis/cache/semgrep"
+
+    @property
+    def semgrep_exclude_rule_list(self) -> list[str]:
+        return [r.strip() for r in self.semgrep_exclude_rules.split(",") if r.strip()]
     trivy_cache_dir: str = "/opt/aegis/cache/trivy"
 
     # ── Subprocess timeouts (seconds) ────────────────────────────────────────

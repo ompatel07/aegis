@@ -32,6 +32,12 @@ rules:
           - pattern: $C.Param(...)
           - pattern: $C.PostForm(...)
           - pattern: mux.Vars($R)[...]
+    pattern-sanitizers:
+      - pattern-either:
+          # Numeric coercion — an int/float can't carry SQL syntax.
+          - pattern: strconv.Atoi(...)
+          - pattern: strconv.ParseInt(...)
+          - pattern: strconv.ParseFloat(...)
     pattern-sinks:
       - patterns:
           - pattern-either:

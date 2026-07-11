@@ -34,6 +34,14 @@ rules:
           - pattern: request.params
           - pattern: request.cookies
           - pattern: request.headers
+    pattern-sanitizers:
+      - pattern-either:
+          # Driver-level escaping / numeric coercion neutralize SQL metacharacters.
+          - pattern: mysql.escape(...)
+          - pattern: $CONN.escape(...)
+          - pattern: sqlstring.escape(...)
+          - pattern: Number(...)
+          - pattern: parseInt(...)
     pattern-sinks:
       - patterns:
           - pattern-either:
