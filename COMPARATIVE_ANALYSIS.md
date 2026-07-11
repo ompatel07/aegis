@@ -34,6 +34,7 @@ were tuned to any repo — this is Aegis's stock configuration.
 | Express | JS | 4.1 | 45 | **49** | 0 | +4 high (superset) |
 | Cobra | Go | 14.4 | 13 | 13 | 0 | 0 (agree — clean lib) |
 | Gin | Go | 20.2 | 39 | **43** | 1 | +2 unique (superset) |
+| Spring-PetClinic | Java | 1.6 | 16 | 16 | 0 | 0 (agree — clean sample) |
 
 ## Per-repo detail
 
@@ -76,3 +77,16 @@ Aegis superset again: 39 shared + 2 additional unique findings (deduplicated by
 rule+location) on this Go web framework, and Trivy surfaced 1 dependency finding
 in `go.mod`. Higher density than Cobra (2.1 vs 0.9/KLOC) as expected — a web
 framework has real HTTP/routing attack surface.
+
+### Spring-PetClinic (Java, spring-projects/spring-petclinic)
+
+| Tool | Total | High | Medium | Low | /KLOC |
+| --- | --- | --- | --- | --- | --- |
+| Semgrep-CE | 16 | 1 | 13 | 2 | 10.1 |
+| **Aegis SAST** | 16 | 1 | 13 | 2 | 10.1 |
+| Trivy (fs) | 0 | — | — | — | 0 |
+
+The canonical Spring Boot sample. Aegis and Semgrep-CE **agree** (16 each, 0
+unique) — a small, curated reference app where the extra packs find nothing new
+and add no noise. Density looks high only because the codebase is tiny (1.6 KLOC).
+Trivy: 0 (maintained Spring Boot dependencies).
