@@ -39,6 +39,7 @@ were tuned to any repo — this is Aegis's stock configuration.
 | FastAPI | Py | 29.1 | 22 | 22 | 0 | 0 (agree) |
 | Flask | Py | 8.0 | 16 | **21** | 13 | +5 unique; Trivy +13 |
 | Django | Py | 144.6 | 693 | **776** | 0 | +79 unique (superset) |
+| Jackson-databind | Java | 130.3 | 4 | 4 | 0 | 0 (agree — audited) |
 
 ## Per-repo detail
 
@@ -166,3 +167,28 @@ mature framework the extra OWASP/CWE/taint coverage compounds. (Django implement
 its own ORM/template internals that trigger security patterns both tools see
 equally — the +79 is Aegis's net gain on top.) Trivy: 0 (framework pins no
 vulnerable deps).
+
+### Jackson-databind (Java, FasterXML/jackson-databind)
+
+| Tool | Total | High | Medium | Low | /KLOC |
+| --- | --- | --- | --- | --- | --- |
+| Semgrep-CE | 4 | 0 | 3 | 1 | 0.03 |
+| **Aegis SAST** | 4 | 0 | 3 | 1 | 0.03 |
+| Trivy (fs) | 0 | — | — | — | 0 |
+
+A deliberate stress test: Jackson is famous for deserialization CVEs, yet both
+tools find only 4 findings (0.03/KLOC). That's **honest** — Jackson's real
+vulnerabilities are *architectural* polymorphic-deserialization gadget chains, not
+local code patterns any pattern/taint SAST tool detects. Aegis neither invents
+findings nor floods this heavily-audited library with noise. (Aegis's AI-assisted
+deep-scan / Joern interprocedural mode — Track 2f — is where such cross-file flows
+are pursued.)
+
+## Coverage summary (9 repos)
+
+Languages: JS ×2, TS ×1, Go ×2, Java ×2, Python ×3 · sizes 1.6–144.6 KLOC.
+**In all 9, Aegis SAST ≥ Semgrep-CE** (superset with unique adds on web-facing
+code: Express/Gin/NextAuth/Flask/Django; exact agreement, zero noise, on clean or
+audited libraries: Cobra/Spring/FastAPI/Jackson). Aegis's bundled **Trivy SCA**
+adds dependency-CVE coverage a stock SAST tool lacks entirely (62 in NextAuth,
+13 in Flask, 1 in Gin). No rule was tuned to any repo.
