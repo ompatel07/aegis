@@ -44,6 +44,7 @@ were tuned to any repo — this is Aegis's stock configuration.
 | NestJS | TS | 68.6 | 54 | 54 | 3 | 0 (agree); Trivy +3 |
 | Prisma | TS | 142.3 | 235 | **238** | 714 | +3; Trivy +714 |
 | Guava | Java | 427.4 | 19 | 19 | 0 | 0 (agree — core lib) |
+| Netty | Java | 380.8 | 411 | **413** | 0 | +2 unique (superset) |
 
 ## Per-repo detail
 
@@ -256,3 +257,15 @@ reviewed, with essentially no security-relevant surface (collections, primitives
 caching). Both tools find 19 (0.04/KLOC, the lowest density in the set), and
 Aegis adds **nothing** — the correct outcome. A tool that "found more" here would
 be inventing noise.
+
+### Netty (Java, netty/netty)
+
+| Tool | Total | High | Medium | Low | /KLOC |
+| --- | --- | --- | --- | --- | --- |
+| Semgrep-CE | 411 | 60 | 351 | 0 | 1.08 |
+| **Aegis SAST** | **413** | 60 | 353 | 0 | 1.08 |
+| Trivy (fs) | 0 | — | — | — | 0 |
+
+Netty (381 KLOC) is a low-level network framework with genuine protocol/buffer
+attack surface — hence 60 high findings from both tools. Aegis is a superset
+(+2 unique). Trivy: 0 (Netty deliberately minimizes dependencies).
