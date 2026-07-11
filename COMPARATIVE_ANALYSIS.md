@@ -45,6 +45,7 @@ were tuned to any repo — this is Aegis's stock configuration.
 | Prisma | TS | 142.3 | 235 | **238** | 714 | +3; Trivy +714 |
 | Guava | Java | 427.4 | 19 | 19 | 0 | 0 (agree — core lib) |
 | Netty | Java | 380.8 | 411 | **413** | 0 | +2 unique (superset) |
+| Consul | Go | 682.7 | 151 | 248† | 58 | †see noise note |
 
 ## Per-repo detail
 
@@ -269,3 +270,37 @@ be inventing noise.
 Netty (381 KLOC) is a low-level network framework with genuine protocol/buffer
 attack surface — hence 60 high findings from both tools. Aegis is a superset
 (+2 unique). Trivy: 0 (Netty deliberately minimizes dependencies).
+
+### Consul (Go, hashicorp/consul) — ⚠️ methodology finding
+
+| Tool | Total (raw) | Code-relevant | Critical | High | /KLOC |
+| --- | --- | --- | --- | --- | --- |
+| Semgrep-CE | 151 | 151 | — | 37 | 0.22 |
+| Aegis SAST | **2,788 (raw)** | **248†** | — | 51 | (see below) |
+| Trivy (fs) | 58 | 58 | 2 | 25 | 0.08 |
+
+**† The raw 2,788 is a mirage — reported honestly rather than as a "+2,440 win."**
+Consul is a **polyglot** repo: a Go backend plus a large Ember.js / Handlebars
+frontend. A breakdown of Aegis's findings by rule namespace:
+
+| Source | Count | |
+| --- | --- | --- |
+| `generic.html-templates.*` (Ember UI templates) | **2,495** | low-signal, non-Go |
+| `go.*` (real Go SAST) | 197 | genuine |
+| `yaml.*` (GitHub Actions / config) | 40 | genuine, non-code |
+| other + `aegis` taint | 51 | genuine |
+
+**90% of the raw count is a single generic rule** (`unquoted-attribute-var`)
+firing on the frontend's HTML templates — a mostly-stylistic pattern, not a Go
+vulnerability. The honest, comparable **code-relevant** figure is **248 vs
+Semgrep-CE's 151** — still a genuine superset (Aegis's Go rules catch ~97 more,
+incl. more high-severity), but nowhere near the raw delta.
+
+**Methodology note / real config finding.** Aegis's stock config runs semgrep's
+generic frontend + CI rule packs across the *whole* repo, so on a polyglot codebase
+they inflate the raw count with low-signal frontend noise. This is exactly the
+case the **high-precision profile** (Track 2d, `SEMGREP_EXCLUDE_RULES`) addresses,
+and it argues for gating the `generic.html-templates` pack behind an opt-in or
+language-scoped profile. Flagged here as a genuine improvement to make — **not**
+tuned away mid-benchmark to flatter the number. Trivy separately found 58 real
+dependency findings (2 critical / 25 high).
