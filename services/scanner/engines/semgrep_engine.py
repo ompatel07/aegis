@@ -128,10 +128,24 @@ def _custom_rules_dir() -> str | None:
     return _bundled_rules_dir(_CUSTOM_RULES_DIR)
 
 
+def _semgrep_jobs(settings: Settings) -> int:
+    """Worker count for Semgrep's per-file parallelism (Track 1e). Honors an
+    explicit SEMGREP_JOBS override, else uses all CPUs the container is allotted
+    (cgroup-aware via os.sched_getaffinity where available)."""
+    configured = getattr(settings, "semgrep_jobs", 0) or 0
+    if configured > 0:
+        return configured
+    try:
+        return max(1, len(os.sched_getaffinity(0)))  # respects cgroup CPU limits
+    except AttributeError:
+        return max(1, os.cpu_count() or 1)
+
+
 def _build_args(settings: Settings, configs: list[str], path: str) -> list[str]:
     """Assemble the semgrep CLI invocation for the given config list."""
     args = [settings.semgrep_bin, "scan", "--json", "--quiet", "--metrics", "off",
-            "--disable-version-check", "--timeout", "60", "--max-target-bytes", "2000000"]
+            "--disable-version-check", "--timeout", "60", "--max-target-bytes", "2000000",
+            "--jobs", str(_semgrep_jobs(settings))]
     for cfg in configs:
         args += ["--config", cfg]
     args.append(path)

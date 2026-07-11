@@ -30,6 +30,8 @@ class Settings(BaseSettings):
 
     # ── Tool binaries ────────────────────────────────────────────────────────
     semgrep_bin: str = "semgrep"
+    # Semgrep per-file parallelism (Track 1e). 0 = auto (all cgroup-allotted CPUs).
+    semgrep_jobs: int = 0
     trivy_bin: str = "trivy"
     gitleaks_bin: str = "gitleaks"
     # Deep-scan backends. Joern (Apache-2.0) is bundled; codeql is opt-in and

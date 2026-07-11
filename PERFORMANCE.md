@@ -119,3 +119,35 @@ appropriately-sized infrastructure:
 # and the findings breakdown from GET /api/v1/scans/{id}. Peak memory via
 # `docker stats scanner`.
 ```
+
+---
+
+## Phase 2D — Track 1 efficiency (status)
+
+**Implemented + verified:**
+
+- **Semgrep `--jobs` parallelism (1e)** — `semgrep_engine._build_args` now passes
+  `--jobs N`, where N is auto-detected from the container's **cgroup CPU
+  allotment** (`os.sched_getaffinity`), overridable via `SEMGREP_JOBS`. Verified:
+  on an 8-CPU box it renders `--jobs 8` (was the Semgrep default of 1), and an
+  explicit `semgrep_jobs=4` is honored. This parallelizes per-file rule matching
+  across cores — the single biggest lever for large-repo wall-clock time.
+- **Horizontal scanner scaling (1f)** — the scanner is stateless over the shared
+  workspace, so the Track-6 Helm chart runs it as an HPA-backed Deployment
+  (3→20 replicas on CPU) with the orchestrator fanning scan work across
+  instances. `--scale scanner=N` does the same under Compose.
+
+**Designed, not yet implemented (tracked):**
+
+- **File-level content-hash cache (1a)** + **dependency-aware incremental (1b)**
+  — skip re-analyzing unchanged files across scans, keyed by content hash; the
+  baseline store already exists to diff against.
+- **PR-diff scan mode (1c)** — Semgrep `--baseline-commit` to scan only changed
+  files on a PR (the VCS layer already computes changed lines for annotations).
+- **Full-scan scheduling (1d)** and **streaming findings persistence (1g)** —
+  cron-driven full scans; incremental DB writes so memory is flat in finding
+  count.
+
+These remaining items are a coherent incremental-scanning subsystem best built
+and benchmarked together (Track 2), not piecemeal. The parallelism + horizontal
+scaling above are the wins that needed no new subsystem and are live now.
