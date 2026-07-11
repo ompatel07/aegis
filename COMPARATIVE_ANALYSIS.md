@@ -47,6 +47,7 @@ were tuned to any repo — this is Aegis's stock configuration.
 | Netty | Java | 380.8 | 411 | **413** | 0 | +2 unique (superset) |
 | Consul | Go | 682.7 | 151 | 248† | 58 | †see noise note |
 | Kafka | Java | 608.3 | 80 | **96** | 0 | +16 unique (all high) |
+| Vault | Go | 703.2 | 290 | 314† | 175 | †Ember flood (see note) |
 
 ## Per-repo detail
 
@@ -319,3 +320,31 @@ findings, all high-severity** (CE 12 high → Aegis 28), at a low, honest densit
 (0.16/KLOC — no flooding). The extra high-severity findings come from the OWASP/CWE
 packs + Aegis taint rules on Kafka's network/serialization code. Trivy: 0 (Kafka
 vendors minimal runtime deps). This is genuine added security value, not noise.
+
+### Vault (Go, hashicorp/vault) — ⚠️ same finding as Consul (confirmed pattern)
+
+| Tool | Total (raw) | Code-relevant | Critical | High | /KLOC |
+| --- | --- | --- | --- | --- | --- |
+| Semgrep-CE | 290 | 290 | — | 108 | 0.41 |
+| Aegis SAST | **7,509 (raw)** | **314†** | — | 131 | (see below) |
+| Trivy (fs) | 175 | 175 | 5 | 55 | 0.25 |
+
+**† Confirms the Consul pattern.** Vault is another HashiCorp product with a large
+Ember.js UI, and the breakdown is the same:
+
+| Source | Count |
+| --- | --- |
+| `generic.html-templates.*` (Ember UI) | **7,124 (95%)** |
+| `go.*` (real Go SAST) | 212 |
+| other + `aegis` taint | 102 |
+| `yaml.*` (CI) | 64 |
+
+The honest **code-relevant** figure is **314 vs Semgrep-CE's 290** — a small,
+genuine superset (+24). The raw 7,509 is 95% low-signal frontend-template noise,
+reported transparently. **This is now a confirmed, systematic finding**, not a
+one-off: Aegis's stock config runs generic HTML-template + CI packs repo-wide, so
+any repo bundling a large HTML/Handlebars frontend (Consul, Vault, and Terraform
+below) inflates the raw count. **Action:** gate `generic.html-templates` behind the
+Track-2d high-precision profile / a language-scoped default. Trivy separately found
+175 real dependency findings (5 critical / 55 high) — strong genuine SCA value on
+a security-critical product.
