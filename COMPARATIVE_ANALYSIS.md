@@ -38,6 +38,7 @@ were tuned to any repo — this is Aegis's stock configuration.
 | NextAuth.js | TS | 42.9 | 62 | **63** | **62** | +1; Trivy +62 CVEs |
 | FastAPI | Py | 29.1 | 22 | 22 | 0 | 0 (agree) |
 | Flask | Py | 8.0 | 16 | **21** | 13 | +5 unique; Trivy +13 |
+| Django | Py | 144.6 | 693 | **776** | 0 | +79 unique (superset) |
 
 ## Per-repo detail
 
@@ -150,3 +151,18 @@ Aegis surfaces materially more on this real web framework.
 - **Density is honest**, tracking attack surface: 0.8–2.6/KLOC on frameworks,
   ~0.9 on a clean CLI lib — no evidence of the FP flooding that inflates some
   tools' counts.
+
+### Django (Python, django/django)
+
+| Tool | Total | High | Medium | Low | /KLOC |
+| --- | --- | --- | --- | --- | --- |
+| Semgrep-CE | 693 | 77 | 522 | 94 | 4.8 |
+| **Aegis SAST** | **776** | 81 | 601 | 94 | 5.4 |
+| Trivy (fs) | 0 | — | — | — | 0 |
+
+The largest repo so far (144.6 KLOC). Aegis is again a **superset** — 689 shared +
+**79 additional unique** findings (incl. +4 high) that Semgrep-CE misses. On a big
+mature framework the extra OWASP/CWE/taint coverage compounds. (Django implements
+its own ORM/template internals that trigger security patterns both tools see
+equally — the +79 is Aegis's net gain on top.) Trivy: 0 (framework pins no
+vulnerable deps).
