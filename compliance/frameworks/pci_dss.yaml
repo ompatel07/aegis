@@ -1,0 +1,66 @@
+framework: PCI-DSS
+version: "4.0"
+authority: PCI Security Standards Council
+description: >
+  Evidence toward the technical PCI-DSS 4.0 requirements reachable by static
+  code, dependency, secret, and configuration analysis.
+controls:
+  - id: "2.2"
+    name: Secure configuration standards for system components
+    evidence:
+      owasp: ["A05:2021"]
+      cwe: ["CWE-16", "CWE-1188", "CWE-732"]
+      pillars: ["deployment", "security"]
+  - id: "3.5"
+    name: Protection of stored account data (strong cryptography)
+    evidence:
+      owasp: ["A02:2021"]
+      cwe: ["CWE-311", "CWE-312", "CWE-327", "CWE-326"]
+      pillars: ["security"]
+  - id: "4.2"
+    name: Strong cryptography for cardholder data in transit
+    evidence:
+      owasp: ["A02:2021"]
+      cwe: ["CWE-319", "CWE-295", "CWE-326"]
+      pillars: ["security"]
+  - id: "6.2.4"
+    name: Secure coding — injection, XSS, and common software attacks
+    evidence:
+      owasp: ["A03:2021"]
+      cwe: ["CWE-89", "CWE-79", "CWE-78", "CWE-90", "CWE-943", "CWE-611"]
+      pillars: ["security"]
+  - id: "6.3.1"
+    name: Identify & rank vulnerabilities in bespoke and 3rd-party software
+    evidence:
+      owasp: ["A06:2021"]
+      cwe: ["CWE-937", "CWE-1035", "CWE-1104"]
+      pillars: ["security"]
+  - id: "6.3.3"
+    name: Security vulnerabilities remediated (severity-ranked)
+    evidence:
+      owasp: ["A06:2021", "A03:2021"]
+      cwe: ["CWE-937"]
+      pillars: ["security"]
+  - id: "6.4.1"
+    name: Address common web vulnerabilities (SSRF, deserialization, access)
+    evidence:
+      owasp: ["A01:2021", "A08:2021", "A10:2021"]
+      cwe: ["CWE-918", "CWE-502", "CWE-639"]
+      pillars: ["security"]
+  - id: "8.3.1"
+    name: Strong authentication; no hard-coded/default credentials
+    evidence:
+      owasp: ["A07:2021"]
+      cwe: ["CWE-798", "CWE-259", "CWE-287", "CWE-306"]
+      pillars: ["security"]
+  - id: "8.6.1"
+    name: Credentials for accounts/apps not hard-coded
+    evidence:
+      cwe: ["CWE-798", "CWE-321", "CWE-259"]
+      pillars: ["security"]
+  - id: "9.x"
+    name: Physical access to cardholder data
+    aegis_scope: out-of-scope
+  - id: "12.x"
+    name: Information security policy & program management
+    aegis_scope: out-of-scope

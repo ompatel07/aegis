@@ -1,0 +1,98 @@
+framework: OWASP ASVS
+version: "4.0.3"
+authority: OWASP
+description: >
+  Application Security Verification Standard. ASVS chapters map almost directly
+  to Aegis findings; `level` is the lowest ASVS level at which the requirement
+  applies (1 = all apps, 2 = most apps, 3 = high-assurance).
+controls:
+  - id: "V2.1"
+    name: Authentication — no default/hard-coded credentials
+    level: 1
+    evidence:
+      owasp: ["A07:2021"]
+      cwe: ["CWE-798", "CWE-259", "CWE-287", "CWE-306"]
+      pillars: ["security"]
+  - id: "V3.x"
+    name: Session management — secure tokens, no fixation
+    level: 1
+    evidence:
+      owasp: ["A07:2021"]
+      cwe: ["CWE-384", "CWE-613", "CWE-522"]
+      pillars: ["security"]
+  - id: "V4.1"
+    name: Access control — enforce least privilege, deny by default
+    level: 1
+    evidence:
+      owasp: ["A01:2021"]
+      cwe: ["CWE-284", "CWE-285", "CWE-862", "CWE-863", "CWE-639"]
+      pillars: ["security"]
+  - id: "V5.1"
+    name: Input validation
+    level: 1
+    evidence:
+      owasp: ["A03:2021"]
+      cwe: ["CWE-20", "CWE-1284"]
+      pillars: ["security"]
+  - id: "V5.2"
+    name: Sanitization & sandboxing (XSS, SSRF, template injection)
+    level: 1
+    evidence:
+      owasp: ["A03:2021", "A10:2021"]
+      cwe: ["CWE-79", "CWE-918", "CWE-1336", "CWE-116"]
+      pillars: ["security"]
+  - id: "V5.3"
+    name: Output encoding & injection prevention (SQLi, cmd, LDAP, XPath)
+    level: 1
+    evidence:
+      owasp: ["A03:2021"]
+      cwe: ["CWE-89", "CWE-78", "CWE-90", "CWE-643", "CWE-943"]
+      pillars: ["security"]
+  - id: "V5.5"
+    name: Deserialization prevention
+    level: 1
+    evidence:
+      owasp: ["A08:2021"]
+      cwe: ["CWE-502", "CWE-611"]
+      pillars: ["security"]
+  - id: "V6.2"
+    name: Cryptographic algorithms — strong, non-deprecated
+    level: 1
+    evidence:
+      owasp: ["A02:2021"]
+      cwe: ["CWE-327", "CWE-326", "CWE-328", "CWE-916"]
+      pillars: ["security"]
+  - id: "V7.x"
+    name: Error handling & logging (no sensitive data leakage)
+    level: 2
+    evidence:
+      owasp: ["A09:2021"]
+      cwe: ["CWE-209", "CWE-532", "CWE-778"]
+      pillars: ["security"]
+  - id: "V9.1"
+    name: Communications — TLS everywhere, valid certs
+    level: 1
+    evidence:
+      owasp: ["A02:2021"]
+      cwe: ["CWE-319", "CWE-295"]
+      pillars: ["security"]
+  - id: "V10.3"
+    name: Deployed application integrity (no known-vulnerable dependencies)
+    level: 1
+    evidence:
+      owasp: ["A06:2021"]
+      cwe: ["CWE-1104", "CWE-937"]
+      pillars: ["security"]
+  - id: "V12.x"
+    name: File & resources — path traversal, unrestricted upload
+    level: 1
+    evidence:
+      cwe: ["CWE-22", "CWE-434", "CWE-73"]
+      pillars: ["security"]
+  - id: "V14.1"
+    name: Build & deploy — secure configuration, no debug in prod
+    level: 1
+    evidence:
+      owasp: ["A05:2021"]
+      cwe: ["CWE-16", "CWE-489", "CWE-1188"]
+      pillars: ["deployment", "security"]

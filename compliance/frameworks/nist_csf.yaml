@@ -1,0 +1,71 @@
+framework: NIST Cybersecurity Framework
+version: "2.0"
+authority: NIST
+description: >
+  Evidence toward CSF 2.0 subcategories, addressed by static application,
+  dependency, secret, and configuration analysis. Format: Function.Category-nn.
+controls:
+  - id: "PR.AA-01"
+    name: Identities and credentials are managed (no hard-coded secrets)
+    function: PROTECT
+    evidence:
+      owasp: ["A07:2021"]
+      cwe: ["CWE-798", "CWE-259", "CWE-321", "CWE-522"]
+      pillars: ["security"]
+  - id: "PR.AA-05"
+    name: Access permissions enforced with least privilege
+    function: PROTECT
+    evidence:
+      owasp: ["A01:2021"]
+      cwe: ["CWE-284", "CWE-862", "CWE-863", "CWE-732"]
+      pillars: ["security"]
+  - id: "PR.DS-01"
+    name: Data-at-rest is protected (encryption)
+    function: PROTECT
+    evidence:
+      owasp: ["A02:2021"]
+      cwe: ["CWE-311", "CWE-312", "CWE-327"]
+      pillars: ["security"]
+  - id: "PR.DS-02"
+    name: Data-in-transit is protected
+    function: PROTECT
+    evidence:
+      owasp: ["A02:2021"]
+      cwe: ["CWE-319", "CWE-295", "CWE-326"]
+      pillars: ["security"]
+  - id: "PR.PS-01"
+    name: Configuration management (secure baselines)
+    function: PROTECT
+    evidence:
+      owasp: ["A05:2021"]
+      cwe: ["CWE-16", "CWE-1188", "CWE-732"]
+      pillars: ["deployment", "security"]
+  - id: "PR.PS-06"
+    name: Secure software development practices (injection, XSS, SSRF)
+    function: PROTECT
+    evidence:
+      owasp: ["A03:2021", "A10:2021", "A08:2021"]
+      cwe: ["CWE-89", "CWE-79", "CWE-78", "CWE-918", "CWE-502"]
+      pillars: ["security"]
+  - id: "ID.RA-01"
+    name: Vulnerabilities in assets are identified and recorded
+    function: IDENTIFY
+    evidence:
+      owasp: ["A06:2021"]
+      cwe: ["CWE-937", "CWE-1035", "CWE-1104"]
+      pillars: ["security"]
+  - id: "DE.CM-09"
+    name: Computing hardware/software & runtime environments are monitored
+    function: DETECT
+    evidence:
+      owasp: ["A05:2021", "A09:2021"]
+      cwe: ["CWE-778", "CWE-532"]
+      pillars: ["security", "deployment"]
+  - id: "GV.x"
+    name: Govern — organizational policy, roles, risk strategy
+    function: GOVERN
+    aegis_scope: out-of-scope
+  - id: "RS.x / RC.x"
+    name: Respond & Recover (IR, backups, restoration)
+    function: RESPOND
+    aegis_scope: out-of-scope
