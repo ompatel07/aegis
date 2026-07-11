@@ -41,6 +41,7 @@ were tuned to any repo — this is Aegis's stock configuration.
 | Django | Py | 144.6 | 693 | **776** | 0 | +79 unique (superset) |
 | Jackson-databind | Java | 130.3 | 4 | 4 | 0 | 0 (agree — audited) |
 | React | JS | 682.2 | 548 | **550** | 1917* | +2; Trivy *(see note) |
+| NestJS | TS | 68.6 | 54 | 54 | 3 | 0 (agree); Trivy +3 |
 
 ## Per-repo detail
 
@@ -213,3 +214,15 @@ dependencies) would report a small fraction of this. Reported raw here for
 transparency; the takeaway is coverage (SAST-only tools see **none** of these),
 not the headline number. This is exactly the kind of scoping a real deployment
 configures.
+
+### NestJS (TypeScript, nestjs/nest)
+
+| Tool | Total | High | Medium | Low | /KLOC |
+| --- | --- | --- | --- | --- | --- |
+| Semgrep-CE | 54 | 5 | 46 | 3 | 0.8 |
+| **Aegis SAST** | 54 | 5 | 46 | 3 | 0.8 |
+| Trivy (fs) | 3 | 2 | 1 | 0 | 0.04 |
+
+Aegis and Semgrep-CE **agree** (54 each, 0 unique) on this clean TS framework;
+Trivy adds 3 dependency findings (2 high). No noise, and the SCA layer still
+contributes coverage a SAST-only tool lacks.
