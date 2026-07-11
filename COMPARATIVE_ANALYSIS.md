@@ -40,6 +40,7 @@ were tuned to any repo — this is Aegis's stock configuration.
 | Flask | Py | 8.0 | 16 | **21** | 13 | +5 unique; Trivy +13 |
 | Django | Py | 144.6 | 693 | **776** | 0 | +79 unique (superset) |
 | Jackson-databind | Java | 130.3 | 4 | 4 | 0 | 0 (agree — audited) |
+| React | JS | 682.2 | 548 | **550** | 1917* | +2; Trivy *(see note) |
 
 ## Per-repo detail
 
@@ -192,3 +193,23 @@ code: Express/Gin/NextAuth/Flask/Django; exact agreement, zero noise, on clean o
 audited libraries: Cobra/Spring/FastAPI/Jackson). Aegis's bundled **Trivy SCA**
 adds dependency-CVE coverage a stock SAST tool lacks entirely (62 in NextAuth,
 13 in Flask, 1 in Gin). No rule was tuned to any repo.
+
+### React (JS, facebook/react)
+
+| Tool | Total | Critical | High | Medium | Low | /KLOC |
+| --- | --- | --- | --- | --- | --- | --- |
+| Semgrep-CE | 548 | — | 27 | 481 | 40 | 0.80 |
+| **Aegis SAST** | **550** | — | 29 | 481 | 40 | 0.81 |
+| Trivy (fs) | 1917 | 198 | 818 | 632 | 269+ | 2.81 |
+
+Huge monorepo (682 KLOC). Aegis SAST ≈ Semgrep-CE (+2 unique) at a very low
+0.8/KLOC — React's product code is exceptionally clean.
+
+**Honest caveat on Trivy's 1917 (198 critical).** This count is real but
+**inflated by non-production dependencies**: React's monorepo bundles many
+`fixtures/`, benchmarks, and dev-tooling `package.json` files that intentionally
+pin old packages. A production scan (Aegis lets you scope SCA to prod
+dependencies) would report a small fraction of this. Reported raw here for
+transparency; the takeaway is coverage (SAST-only tools see **none** of these),
+not the headline number. This is exactly the kind of scoping a real deployment
+configures.
