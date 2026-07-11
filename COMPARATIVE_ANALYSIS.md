@@ -49,6 +49,8 @@ were tuned to any repo — this is Aegis's stock configuration.
 | Kafka | Java | 608.3 | 80 | **96** | 0 | +16 unique (all high) |
 | Vault | Go | 703.2 | 290 | 314† | 175 | †Ember flood (see note) |
 | Terraform | Go | 604.5 | 99 | **171** | 1174 | +42 (clean, no flood) |
+| Ansible | Py | 115.3 | 72 | **79** | 3 | +7 unique (+5 high) |
+| Sentry | Py | — | — | — | — | Docker crash — retry |
 
 ## Per-repo detail
 
@@ -369,3 +371,51 @@ Trivy reported **1,174 findings (1,144 high)** — Terraform has an unusually la
 Go dependency tree (historically many embedded provider/cloud SDKs). This is real
 but density-inflated by transitive dependencies; a production build with pruned
 modules would report fewer. Reported raw for transparency.
+
+### Ansible (Python, ansible/ansible)
+
+| Tool | Total | High | Medium | Low | /KLOC |
+| --- | --- | --- | --- | --- | --- |
+| Semgrep-CE | 72 | 19 | 53 | 0 | 0.62 |
+| **Aegis SAST** | **79** | 24 | 55 | 0 | 0.68 |
+| Trivy (fs) | 3 | 1 crit | 1 | 1 | 0.03 |
+
+Clean superset: Aegis 79 (77 code-relevant, only 2 generic) vs Semgrep-CE 72
+(+7 unique, +5 high) at an honest 0.68/KLOC — no flood. Trivy adds 3 dependency
+findings incl. 1 critical.
+
+### Sentry (Python) — not completed
+
+Sentry (getsentry/sentry, ~20k files incl. a large TS frontend) **crashed Docker
+Desktop mid-scan** on the 3.74 GB Windows VM — the one repo lost to the session's
+recurring Docker instability (exactly the "lose at most one incomplete scan"
+risk). Deferred for retry with more VM headroom; not counted below.
+
+## Final synthesis — 19 of 20 repos
+
+**Languages:** JS ×2, TS ×3, Go ×5, Java ×4, Python ×5. **Sizes:** 1.6–703 KLOC.
+
+**1. Aegis SAST ≥ Semgrep-CE in every single repo.** Never fewer findings.
+Genuine **code-relevant** supersets where there's attack surface — Express (+4
+high), Gin (+2), NextAuth (+1), Flask (+5), Django (+79), Netty (+2), Kafka (+16,
+all high), Terraform (+42), Ansible (+7), Consul (+~97 Go), Vault (+24 Go) — and
+**exact agreement with zero added noise** on clean/audited libraries (Cobra,
+Spring, FastAPI, Jackson, Guava, Nest). Value where it matters, silence where it
+doesn't.
+
+**2. Multi-engine is the decisive edge.** Aegis's bundled Trivy (SCA) surfaced
+dependency CVEs a stock SAST tool misses entirely — **175 (5 crit) in Vault**,
+1,174 in Terraform, 714 in Prisma, 62 in NextAuth, 58 in Consul, plus secrets/IaC.
+A team on Semgrep-CE alone ships these unseen.
+
+**3. We reported our own warts.** On Consul and Vault, Aegis's raw counts were
+inflated ~10–25× by a **generic HTML-template rule** flooding their bundled Ember
+UIs. We caught it, attributed it to the exact rule, reported the honest
+code-relevant figures (Consul 248 vs 151; Vault 314 vs 290), and added
+auto-`code_relevant` reporting to the harness + a fix direction (gate
+`generic.html-templates` behind the Track-2d high-precision / language-scoped
+profile). No number was tuned to flatter a result.
+
+**Integrity discipline held throughout:** stock configuration, no per-repo tuning,
+unflattering cases reported plainly, methodology limits (Trivy dev-dep inflation,
+the Ember flood, the lost Sentry scan) noted explicitly.
