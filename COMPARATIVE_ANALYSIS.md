@@ -36,6 +36,7 @@ were tuned to any repo — this is Aegis's stock configuration.
 | Gin | Go | 20.2 | 39 | **43** | 1 | +2 unique (superset) |
 | Spring-PetClinic | Java | 1.6 | 16 | 16 | 0 | 0 (agree — clean sample) |
 | NextAuth.js | TS | 42.9 | 62 | **63** | **62** | +1; Trivy +62 CVEs |
+| FastAPI | Py | 29.1 | 22 | 22 | 0 | 0 (agree) |
 
 ## Per-repo detail
 
@@ -107,3 +108,17 @@ only) **completely misses**. Aegis's platform runs SCA + secrets alongside SAST,
 so it surfaces all 62; a team on stock Semgrep would ship those 21 high-severity
 dependency vulnerabilities unseen. This is the concrete case for Aegis's
 multi-engine coverage over a single SAST tool.
+
+### FastAPI (Python, tiangolo/fastapi)
+
+| Tool | Total | High | Medium | Low | /KLOC |
+| --- | --- | --- | --- | --- | --- |
+| Semgrep-CE | 22 | 18 | 4 | 0 | 0.8 |
+| **Aegis SAST** | 22 | 18 | 4 | 0 | 0.8 |
+| Trivy (fs) | 0 | — | — | — | 0 |
+
+Aegis and Semgrep-CE **agree** (22 each, 0 unique) on this well-maintained
+framework — low density (0.8/KLOC). Aegis adds nothing beyond the shared rules
+here, and importantly adds **no noise**. (The 18 "high" are shared registry
+findings, several in `docs_src/` example code — an artifact of the examples, not
+framework bugs; it affects both tools identically so the comparison holds.)
