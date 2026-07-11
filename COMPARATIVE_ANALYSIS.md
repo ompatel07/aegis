@@ -46,6 +46,7 @@ were tuned to any repo — this is Aegis's stock configuration.
 | Guava | Java | 427.4 | 19 | 19 | 0 | 0 (agree — core lib) |
 | Netty | Java | 380.8 | 411 | **413** | 0 | +2 unique (superset) |
 | Consul | Go | 682.7 | 151 | 248† | 58 | †see noise note |
+| Kafka | Java | 608.3 | 80 | **96** | 0 | +16 unique (all high) |
 
 ## Per-repo detail
 
@@ -304,3 +305,17 @@ and it argues for gating the `generic.html-templates` pack behind an opt-in or
 language-scoped profile. Flagged here as a genuine improvement to make — **not**
 tuned away mid-benchmark to flatter the number. Trivy separately found 58 real
 dependency findings (2 critical / 25 high).
+
+### Kafka (Java, apache/kafka)
+
+| Tool | Total | High | Medium | Low | /KLOC |
+| --- | --- | --- | --- | --- | --- |
+| Semgrep-CE | 80 | 12 | 68 | 0 | 0.13 |
+| **Aegis SAST** | **96** | **28** | 68 | 0 | 0.16 |
+| Trivy (fs) | 0 | — | — | — | 0 |
+
+One of the strongest clean results. Aegis is a superset with **+16 unique
+findings, all high-severity** (CE 12 high → Aegis 28), at a low, honest density
+(0.16/KLOC — no flooding). The extra high-severity findings come from the OWASP/CWE
+packs + Aegis taint rules on Kafka's network/serialization code. Trivy: 0 (Kafka
+vendors minimal runtime deps). This is genuine added security value, not noise.
