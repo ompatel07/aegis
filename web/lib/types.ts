@@ -186,6 +186,60 @@ export interface OrgInvitation {
   created_at: string;
 }
 
+// ── Enterprise SSO / IdP (SAML · OIDC · SCIM) ────────────────────────────────
+export type SSOProtocol = "oidc" | "saml";
+
+export interface SSOConnection {
+  id: string;
+  organization_id: string;
+  protocol: SSOProtocol;
+  display_name: string;
+  enabled: boolean;
+  email_domain: string | null;
+  oidc_issuer: string | null;
+  oidc_client_id: string | null;
+  oidc_scopes: string;
+  saml_idp_entity_id: string | null;
+  saml_idp_sso_url: string | null;
+  saml_idp_certificate: string | null;
+  attr_email: string;
+  attr_name: string;
+  default_role: string;
+  jit_provisioning: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// The client secret is write-only (accepted on create/update, never returned).
+export interface SSOConnectionInput {
+  organization_id: string;
+  protocol: SSOProtocol;
+  display_name: string;
+  enabled: boolean;
+  email_domain?: string | null;
+  oidc_issuer?: string | null;
+  oidc_client_id?: string | null;
+  oidc_client_secret?: string | null;
+  oidc_scopes?: string;
+  saml_idp_entity_id?: string | null;
+  saml_idp_sso_url?: string | null;
+  saml_idp_certificate?: string | null;
+  attr_email?: string;
+  attr_name?: string;
+  default_role?: string;
+  jit_provisioning?: boolean;
+}
+
+export interface SCIMToken {
+  id: string;
+  organization_id: string;
+  token_prefix: string;
+  display_name: string;
+  enabled: boolean;
+  created_at: string;
+  last_used_at: string | null;
+}
+
 export interface Project {
   id: string;
   user_id: string;

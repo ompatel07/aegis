@@ -19,6 +19,15 @@ per-organization; users are routed to their IdP by email domain.
 Secrets (OIDC client secret) are stored **AES-256-GCM encrypted** at rest; SCIM
 tokens are stored only as SHA-256 hashes and shown once at creation.
 
+## Administering connections (admin UI)
+
+Organization owners can manage everything below from the app —
+**Settings → Single Sign-On** (`/settings/sso`) — without hand-rolling API calls:
+create/edit/enable/delete OIDC & SAML connections, copy the SP metadata/ACS URLs
+for a SAML connection, and mint or **revoke** SCIM tokens (the secret is shown
+once). The page is owner-gated and org-scoped; the raw API below is equivalent for
+scripting. (Frontend: `web/app/(dashboard)/settings/sso/page.tsx`.)
+
 ## OIDC (Okta, Auth0, Azure AD, Google Workspace)
 
 The flow is standard Authorization Code + **PKCE** with a server-side `state` and
@@ -97,6 +106,9 @@ Verified **live** end-to-end against the running stack (migration 000021 applied
 | Check | Result |
 | --- | --- |
 | Create OIDC connection; client secret encrypted at rest (never echoed) | ✅ |
+| **Edit connection** (`PUT`) — rename + enable, secret omitted → preserved | ✅ |
+| **Revoke SCIM token** (`DELETE`) — token flips to disabled | ✅ |
+| Owner-gating — revoke against a non-owned org → **403** | ✅ |
 | Domain routing — `discover?email=…@domain` → the right connection | ✅ |
 | Unknown domain → 404 | ✅ |
 | Mint SCIM token (shown once) | ✅ |

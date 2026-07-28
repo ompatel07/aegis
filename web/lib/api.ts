@@ -35,6 +35,9 @@ import type {
   Project,
   Scan,
   ScanReport,
+  SSOConnection,
+  SSOConnectionInput,
+  SCIMToken,
 } from "./types";
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost/api/v1";
@@ -162,6 +165,24 @@ export function createApi(token?: string) {
 
     submitScanFeedback: (scanId: string, body: { rating: "up" | "down"; comment?: string }) =>
       http.post(`/scans/${scanId}/feedback-rating`, body).then(() => undefined).catch(normalizeError),
+
+    // ── Enterprise SSO / IdP administration (org owner-scoped) ───────────────
+    sso: {
+      listConnections: (orgId: string) =>
+        http.get<ApiSuccess<SSOConnection[]>>("/sso/connections", { params: { organization_id: orgId } }).then((r) => r.data.data).catch(normalizeError),
+      createConnection: (body: SSOConnectionInput) =>
+        http.post<ApiSuccess<SSOConnection>>("/sso/connections", body).then((r) => r.data.data).catch(normalizeError),
+      updateConnection: (id: string, body: SSOConnectionInput) =>
+        http.put<ApiSuccess<SSOConnection>>(`/sso/connections/${id}`, body).then((r) => r.data.data).catch(normalizeError),
+      deleteConnection: (id: string) =>
+        http.delete(`/sso/connections/${id}`).then(() => undefined).catch(normalizeError),
+      listScimTokens: (orgId: string) =>
+        http.get<ApiSuccess<SCIMToken[]>>("/sso/scim-tokens", { params: { organization_id: orgId } }).then((r) => r.data.data).catch(normalizeError),
+      createScimToken: (body: { organization_id: string; display_name: string }) =>
+        http.post<ApiSuccess<{ id: string; token: string; scim_base_url: string }>>("/sso/scim-tokens", body).then((r) => r.data.data).catch(normalizeError),
+      revokeScimToken: (id: string, orgId: string) =>
+        http.delete(`/sso/scim-tokens/${id}`, { params: { organization_id: orgId } }).then(() => undefined).catch(normalizeError),
+    },
 
     // ── Super-admin panel ────────────────────────────────────────────────────
     admin: {

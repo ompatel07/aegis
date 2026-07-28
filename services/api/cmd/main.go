@@ -310,9 +310,11 @@ func run() error {
 			r.Route("/sso", func(r chi.Router) {
 				r.Post("/connections", ssoH.CreateConnection)
 				r.Get("/connections", ssoH.ListConnections)
+				r.Put("/connections/{id}", ssoH.UpdateConnection)
 				r.Delete("/connections/{id}", ssoH.DeleteConnection)
 				r.Post("/scim-tokens", ssoH.CreateSCIMToken)
 				r.Get("/scim-tokens", ssoH.ListSCIMTokens)
+				r.Delete("/scim-tokens/{id}", ssoH.RevokeSCIMToken)
 			})
 		})
 	})

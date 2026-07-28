@@ -212,6 +212,41 @@ func (h *SSOHandler) DeleteConnection(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteSuccess(w, http.StatusOK, map[string]bool{"deleted": true})
 }
 
+// UpdateConnection edits an existing connection. The OIDC client secret is only
+// re-encrypted when a new one is supplied; otherwise the stored secret is kept.
+func (h *SSOHandler) UpdateConnection(w http.ResponseWriter, r *http.Request) {
+	existing, err := h.repo.GetConnection(r.Context(), chi.URLParam(r, "id"))
+	if err != nil {
+		httpx.WriteError(w, httpx.ErrNotFound("connection not found"))
+		return
+	}
+	if !h.requireOwner(r, existing.OrganizationID) {
+		httpx.WriteError(w, httpx.ErrForbidden("must be an organization owner"))
+		return
+	}
+	var req connectionRequest
+	if apiErr := httpx.DecodeAndValidate(w, r, &req); apiErr != nil {
+		httpx.WriteError(w, apiErr)
+		return
+	}
+	conn := h.fromRequest(&req)
+	conn.ID = existing.ID
+	conn.OrganizationID = existing.OrganizationID // an org's connection cannot be reassigned
+	if req.OIDCClientSecret != nil && *req.OIDCClientSecret != "" {
+		enc, err := h.enc.Encrypt(*req.OIDCClientSecret)
+		if err != nil {
+			httpx.WriteError(w, httpx.ErrInternal())
+			return
+		}
+		conn.OIDCClientSecretEnc = &enc // nil otherwise → repo COALESCE keeps existing
+	}
+	if err := h.repo.UpdateConnection(r.Context(), conn); err != nil {
+		writeServiceError(w, h.log, err)
+		return
+	}
+	httpx.WriteSuccess(w, http.StatusOK, conn)
+}
+
 // CreateSCIMToken mints a SCIM bearer token, returning the secret exactly once.
 func (h *SSOHandler) CreateSCIMToken(w http.ResponseWriter, r *http.Request) {
 	var req struct {
@@ -251,4 +286,18 @@ func (h *SSOHandler) ListSCIMTokens(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	httpx.WriteSuccess(w, http.StatusOK, toks)
+}
+
+// RevokeSCIMToken disables a SCIM token (owner-scoped by organization_id).
+func (h *SSOHandler) RevokeSCIMToken(w http.ResponseWriter, r *http.Request) {
+	orgID := r.URL.Query().Get("organization_id")
+	if !h.requireOwner(r, orgID) {
+		httpx.WriteError(w, httpx.ErrForbidden("must be an organization owner"))
+		return
+	}
+	if err := h.repo.RevokeSCIMToken(r.Context(), chi.URLParam(r, "id"), orgID); err != nil {
+		writeServiceError(w, h.log, err)
+		return
+	}
+	httpx.WriteSuccess(w, http.StatusOK, map[string]bool{"revoked": true})
 }

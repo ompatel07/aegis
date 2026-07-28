@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Bell, Github, Rocket } from "lucide-react";
+import { Bell, Github, Rocket, ShieldCheck } from "lucide-react";
 import type { NotificationSettings } from "@/lib/types";
 
 export default function SettingsPage() {
@@ -75,6 +75,20 @@ export default function SettingsPage() {
       </Card>
 
       <NotificationsCard />
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ShieldCheck className="h-5 w-5" /> Single Sign-On
+          </CardTitle>
+          <CardDescription>Configure SAML / OIDC identity providers and SCIM provisioning for your organization.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Link href="/settings/sso">
+            <Button variant="outline" size="sm">Manage SSO</Button>
+          </Link>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
