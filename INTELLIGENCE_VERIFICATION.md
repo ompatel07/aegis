@@ -52,4 +52,58 @@ API key + timeout fix and a GitHub token, the claim would hold. Until then, the
 honest statement is: *"continuous OSV + Trivy updates; NVD/GHSA require
 credentials to stay current."*
 
-<!-- FP_LOOP -->
+---
+
+## Track 2e.6 — ML false-positive learning loop
+
+**Implementation.** `services/scanner/ml/`: a LightGBM classifier scoring each
+finding with `P(false positive)` (advisory — sorts + badges, never hides).
+Training = `generate_seed()` + optional feedback rows (`ml/train.py`); actions
+`marked_fp`/`suppressed`/`ignored` → FP=1, `confirmed`/`fixed` → 0.
+
+### Does it learn? — YES, proven live
+
+Fed 80 simulated FP-feedback events for rule `quality.duplicated-block` (plus 80
+`confirmed` events for other rules) and retrained on the real `ml.train` path:
+
+| Rule | P(false-positive) before | after |
+| --- | --- | --- |
+| **`quality.duplicated-block`** (marked FP ×80) | **0.035** | **0.995** |
+| control rule (marked confirmed) | 0.020 | 0.000 |
+
+The target rule's FP probability jumped **0.035 → 0.995** — the model learned the
+rule is FP-prone — while the control rule stayed low, so the shift is
+**rule-specific, not global drift** (mirrors and exceeds the Phase 2C 0.03→0.51
+result).
+
+### Privacy invariant — HOLDS
+
+All 13 features are **metadata only**: `severity_ord, file_path_depth,
+lines_of_code, is_in_test_file, is_in_generated_file, is_direct_dependency`, and
+md5-**bucketed** hashes of `engine/rule_id/extension/language/cwe/owasp`. The
+feedback rows carry the same fields — **no source code, snippets, or code
+identifiers** enter the pipeline (see `ml/features.py`, and the confirmed field
+list in the harness output). Verified.
+
+### Honest gap — the loop is not automated end-to-end
+
+The learning *mechanism* works, but in production it is **not wired as a
+continuous loop**:
+
+- **No feedback → training-data export + no scheduled retrain job.** The API
+  records feedback into `project_rule_stats` (live `fp_rate` per project+rule) and
+  `feedback_events`, but nothing exports those to the JSONL `ml.train` consumes,
+  and there is no cron/worker that retrains the global model. So the global FP
+  model ships trained on the **seed only** and does not self-improve from real
+  feedback without a manual `python -m ml.train --data …` run.
+- **The ML model is global, not per-team.** The feature vector has no project/team
+  id. Per-team learning exists **separately** as `project_rule_stats.fp_rate`
+  (updated live on every dismissal, surfaced via project-memory for priority
+  sorting/display) — but it does not feed the ML `P(fp)` score.
+
+**Verdict.** The FP classifier **genuinely learns from feedback and respects the
+metadata-only privacy invariant** — both proven live. To make "learns from your
+feedback" true *automatically*, wire: (1) a feedback→JSONL exporter, (2) a
+scheduled retrain job, and optionally (3) fold `project_rule_stats.fp_rate` into
+scoring for true per-team personalization. Until then it is an accurate *manual*
+capability, not an automated loop.
