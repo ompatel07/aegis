@@ -191,9 +191,10 @@ A deliberate stress test: Jackson is famous for deserialization CVEs, yet both
 tools find only 4 findings (0.03/KLOC). That's **honest** — Jackson's real
 vulnerabilities are *architectural* polymorphic-deserialization gadget chains, not
 local code patterns any pattern/taint SAST tool detects. Aegis neither invents
-findings nor floods this heavily-audited library with noise. (Aegis's AI-assisted
-deep-scan / Joern interprocedural mode — Track 2f — is where such cross-file flows
-are pursued.)
+findings nor floods this heavily-audited library with noise. (Track 2f ran
+Joern's interprocedural deep scan on Jackson and confirmed this: **0 taint flows**
+— deserialization gadget chains are architectural, not taint-visible to any CPG
+tool. See [DEEP_SCAN_VALUE.md](DEEP_SCAN_VALUE.md).)
 
 ## Coverage summary (9 repos)
 

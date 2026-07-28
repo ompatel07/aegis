@@ -1,0 +1,1037 @@
+[
+  {
+    "cwe": "CWE-918",
+    "vuln_class": "ssrf",
+    "sink_file": "apps/dev/nextjs/pages/protected-ssr.tsx",
+    "sink_line": 21,
+    "steps": 21,
+    "files_spanned": 1,
+    "path": [
+      {
+        "file": "apps/dev/nextjs/pages/protected-ssr.tsx",
+        "line": 33,
+        "code": "context.req.headers.cookie ?? \"\""
+      },
+      {
+        "file": "apps/dev/nextjs/pages/protected-ssr.tsx",
+        "line": 33,
+        "code": "_tmp_1.cookie"
+      },
+      {
+        "file": "apps/dev/nextjs/pages/protected-ssr.tsx",
+        "line": 33,
+        "code": "{ cookie: context.req.headers.cookie ?? \"\" }"
+      },
+      {
+        "file": "apps/dev/nextjs/pages/protected-ssr.tsx",
+        "line": 33,
+        "code": "_tmp_0.headers"
+      },
+      {
+        "file": "apps/dev/nextjs/pages/protected-ssr.tsx",
+        "line": 32,
+        "code": "{\n      headers: { cookie: context.req.headers.cookie ?? \"\" },\n    }"
+      },
+      {
+        "file": "apps/dev/nextjs/pages/protected-ssr.tsx",
+        "line": 32,
+        "code": "<operator>.formatString(\"\", hostname, \"/api/examples/protected\")"
+      },
+      {
+        "file": "apps/dev/nextjs/pages/protected-ssr.tsx",
+        "line": 32,
+        "code": "fetch(`${hostname}/api/examples/protected`, {\n      headers: { cookie: context.req.headers.cookie ?? \"\" },\n    })"
+      },
+      {
+        "file": "apps/dev/nextjs/pages/protected-ssr.tsx",
+        "line": 32,
+        "code": "await fetch(`${hostname}/api/examples/protected`, {\n      headers: { cookie: context.req.headers.cookie ?? \"\" },\n    })"
+      },
+      {
+        "file": "apps/dev/nextjs/pages/protected-ssr.tsx",
+        "line": 32,
+        "code": "res"
+      },
+      {
+        "file": "apps/dev/nextjs/pages/protected-ssr.tsx",
+        "line": 35,
+        "code": "res"
+      },
+      {
+        "file": "apps/dev/nextjs/pages/protected-ssr.tsx",
+        "line": 35,
+        "code": "res.json()"
+      },
+      {
+        "file": "apps/dev/nextjs/pages/protected-ssr.tsx",
+        "line": 35,
+        "code": "await res.json()"
+      },
+      {
+        "file": "apps/dev/nextjs/pages/protected-ssr.tsx",
+        "line": 35,
+        "code": "_tmp_3.content"
+      },
+      {
+        "file": "apps/dev/nextjs/pages/protected-ssr.tsx",
+        "line": 35,
+        "code": "{ session, content: await res.json() }"
+      },
+      {
+        "file": "apps/dev/nextjs/pages/protected-ssr.tsx",
+        "line": 35,
+        "code": "_tmp_2.props"
+      },
+      {
+        "file": "apps/dev/nextjs/pages/protected-ssr.tsx",
+        "line": 35,
+        "code": "{ props: { session, content: await res.json() } }"
+      },
+      {
+        "file": "apps/dev/nextjs/pages/protected-ssr.tsx",
+        "line": 35,
+        "code": "return { props: { session, content: await res.json() } }"
+      },
+      {
+        "file": "apps/dev/nextjs/pages/protected-ssr.tsx",
+        "line": 21,
+        "code": "RET"
+      },
+      {
+        "file": "apps/dev/nextjs/pages/protected-ssr.tsx",
+        "line": 21,
+        "code": "<lambda>0"
+      },
+      {
+        "file": "apps/dev/nextjs/pages/protected-ssr.tsx",
+        "line": 21,
+        "code": "getServerSideProps"
+      },
+      {
+        "file": "apps/dev/nextjs/pages/protected-ssr.tsx",
+        "line": 21,
+        "code": "const getServerSideProps: GetServerSideProps = async (context) => {\n  const session = await auth(context)\n  if (session) {\n    // Note usually you don't need to"
+      }
+    ]
+  },
+  {
+    "cwe": "CWE-918",
+    "vuln_class": "ssrf",
+    "sink_file": "packages/next-auth/src/lib/index.ts",
+    "sink_line": 275,
+    "steps": 45,
+    "files_spanned": 1,
+    "path": [
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 255,
+        "code": "getSession(request.headers, config)"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 255,
+        "code": "await getSession(request.headers, config)"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 255,
+        "code": "sessionResponse"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 256,
+        "code": "sessionResponse"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 110,
+        "code": "response: Response"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 112,
+        "code": "response.ok"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 113,
+        "code": "response"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 113,
+        "code": "response.json()"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 113,
+        "code": "await response.json()"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 113,
+        "code": "return (await response.json()) satisfies Session | null"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 109,
+        "code": "RET"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 256,
+        "code": "parseSessionResponse(sessionResponse)"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 256,
+        "code": "await parseSessionResponse(sessionResponse)"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 256,
+        "code": "auth"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 261,
+        "code": "auth"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 261,
+        "code": "_tmp_8.auth"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 261,
+        "code": "{ request, auth }"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 261,
+        "code": "_tmp_7"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 261,
+        "code": "config.callbacks.authorized({ request, auth })"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 261,
+        "code": "await config.callbacks.authorized({ request, auth })"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 261,
+        "code": "authorized"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 266,
+        "code": "authorized"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 270,
+        "code": "authorized.headers"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 270,
+        "code": "_tmp_9"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 270,
+        "code": "_tmp_9"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 270,
+        "code": "authorized.headers.get(\"Location\")"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 270,
+        "code": "redirect"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 276,
+        "code": "redirect"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 276,
+        "code": "_tmp_11"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 276,
+        "code": "new URL(redirect)"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 276,
+        "code": "new URL(redirect).pathname"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 309,
+        "code": "redirectPath: string"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 312,
+        "code": "redirectPath"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 312,
+        "code": "redirectPath.replace(`${requestPath}/`, \"\") as AuthAction"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 312,
+        "code": "action"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 316,
+        "code": "action"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 316,
+        "code": "actions"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 316,
+        "code": "actions.has(action)"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 316,
+        "code": "actions.has(action) || pages.includes(redirectPath)"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 316,
+        "code": "(actions.has(action) || pages.includes(redirectPath)) &&\n    redirectPath === requestPath"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 315,
+        "code": "return (\n    (actions.has(action) || pages.includes(redirectPath)) &&\n    redirectPath === requestPath\n  )"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 307,
+        "code": "RET"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 276,
+        "code": "isSameAuthAction(pathname, new URL(redirect).pathname, config)"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 275,
+        "code": "redirect"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 275,
+        "code": "redirect &&\n      isSameAuthAction(pathname, new URL(redirect).pathname, config)"
+      }
+    ]
+  },
+  {
+    "cwe": "CWE-918",
+    "vuln_class": "ssrf",
+    "sink_file": "packages/next-auth/src/lib/index.ts",
+    "sink_line": 276,
+    "steps": 84,
+    "files_spanned": 1,
+    "path": [
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 235,
+        "code": "new Headers(request.headers)"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 235,
+        "code": "new Headers(request.headers)"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 62,
+        "code": "headers: Headers"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 66,
+        "code": "headers"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 67,
+        "code": "headers"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 66,
+        "code": "headers.get(\"x-forwarded-proto\")"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 63,
+        "code": "this"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 69,
+        "code": "config"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 76,
+        "code": "config"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 78,
+        "code": "config.callbacks"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 62,
+        "code": "config: NextAuthConfig"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 236,
+        "code": "config"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 223,
+        "code": "config"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 251,
+        "code": "config: NextAuthConfig"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 255,
+        "code": "config"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 62,
+        "code": "config: NextAuthConfig"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 86,
+        "code": "args"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 86,
+        "code": "...args"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 86,
+        "code": "this"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 89,
+        "code": "this"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 89,
+        "code": "args[0].session.expires?.toISOString?.()"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 89,
+        "code": "args[0].session.expires?.toISOString?.() ??\n              args[0].session.expires"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 88,
+        "code": "_tmp_5.expires"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 86,
+        "code": "{\n            ...args[0].session,\n            expires:\n              args[0].session.expires?.toISOString?.() ??\n              args[0].session.expires,\n        "
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 86,
+        "code": "await config.callbacks?.session?.(...args)"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 86,
+        "code": "(await config.callbacks?.session?.(...args)) ?? {\n            ...args[0].session,\n            expires:\n              args[0].session.expires?.toISOString?.() ??"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 84,
+        "code": "session"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 93,
+        "code": "session"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 93,
+        "code": "_tmp_6"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 93,
+        "code": "{ user, ...session }"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 93,
+        "code": "return { user, ...session } satisfies Session"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 83,
+        "code": "RET"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 83,
+        "code": "session"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 83,
+        "code": "_tmp_4.session"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 77,
+        "code": "{\n      ...config.callbacks,\n      // Since we are server-side, we don't need to filter out the session data\n      // See https://authjs.dev/getting-started/mig"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 77,
+        "code": "_tmp_3.callbacks"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 75,
+        "code": "{\n    ...config,\n    callbacks: {\n      ...config.callbacks,\n      // Since we are server-side, we don't need to filter out the session data\n      // See https:"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 75,
+        "code": "request"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 75,
+        "code": "this"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 62,
+        "code": "this"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 255,
+        "code": "this"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 255,
+        "code": "getSession(request.headers, config)"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 255,
+        "code": "await getSession(request.headers, config)"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 255,
+        "code": "sessionResponse"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 256,
+        "code": "sessionResponse"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 110,
+        "code": "response: Response"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 112,
+        "code": "response.ok"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 113,
+        "code": "response"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 113,
+        "code": "response.json()"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 113,
+        "code": "await response.json()"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 113,
+        "code": "return (await response.json()) satisfies Session | null"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 109,
+        "code": "RET"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 256,
+        "code": "parseSessionResponse(sessionResponse)"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 256,
+        "code": "await parseSessionResponse(sessionResponse)"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 256,
+        "code": "auth"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 261,
+        "code": "auth"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 261,
+        "code": "_tmp_8.auth"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 261,
+        "code": "{ request, auth }"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 261,
+        "code": "_tmp_7"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 261,
+        "code": "config.callbacks.authorized({ request, auth })"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 261,
+        "code": "await config.callbacks.authorized({ request, auth })"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 261,
+        "code": "authorized"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 266,
+        "code": "authorized"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 270,
+        "code": "authorized.headers"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 270,
+        "code": "_tmp_9"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 270,
+        "code": "_tmp_9"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 270,
+        "code": "authorized.headers.get(\"Location\")"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 270,
+        "code": "redirect"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 276,
+        "code": "redirect"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 276,
+        "code": "_tmp_11"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 276,
+        "code": "new URL(redirect)"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 276,
+        "code": "new URL(redirect).pathname"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 309,
+        "code": "redirectPath: string"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 312,
+        "code": "redirectPath"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 312,
+        "code": "redirectPath.replace(`${requestPath}/`, \"\") as AuthAction"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 312,
+        "code": "action"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 316,
+        "code": "action"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 316,
+        "code": "actions"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 316,
+        "code": "actions.has(action)"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 316,
+        "code": "actions.has(action) || pages.includes(redirectPath)"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 316,
+        "code": "(actions.has(action) || pages.includes(redirectPath)) &&\n    redirectPath === requestPath"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 315,
+        "code": "return (\n    (actions.has(action) || pages.includes(redirectPath)) &&\n    redirectPath === requestPath\n  )"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 307,
+        "code": "RET"
+      },
+      {
+        "file": "packages/next-auth/src/lib/index.ts",
+        "line": 276,
+        "code": "isSameAuthAction(pathname, new URL(redirect).pathname, config)"
+      }
+    ]
+  },
+  {
+    "cwe": "CWE-918",
+    "vuln_class": "ssrf",
+    "sink_file": "packages/core/src/lib/utils/web.ts",
+    "sink_line": 27,
+    "steps": 21,
+    "files_spanned": 1,
+    "path": [
+      {
+        "file": "packages/core/src/lib/utils/web.ts",
+        "line": 18,
+        "code": "req.headers"
+      },
+      {
+        "file": "packages/core/src/lib/utils/web.ts",
+        "line": 22,
+        "code": "req"
+      },
+      {
+        "file": "packages/core/src/lib/utils/web.ts",
+        "line": 22,
+        "code": "req.text()"
+      },
+      {
+        "file": "packages/core/src/lib/utils/web.ts",
+        "line": 22,
+        "code": "await req.text()"
+      },
+      {
+        "file": "packages/core/src/lib/utils/web.ts",
+        "line": 22,
+        "code": "_tmp_1"
+      },
+      {
+        "file": "packages/core/src/lib/utils/web.ts",
+        "line": 22,
+        "code": "new URLSearchParams(await req.text())"
+      },
+      {
+        "file": "packages/core/src/lib/utils/web.ts",
+        "line": 22,
+        "code": "new URLSearchParams(await req.text())"
+      },
+      {
+        "file": "packages/core/src/lib/utils/web.ts",
+        "line": 22,
+        "code": "params"
+      },
+      {
+        "file": "packages/core/src/lib/utils/web.ts",
+        "line": 23,
+        "code": "params"
+      },
+      {
+        "file": "packages/core/src/lib/utils/web.ts",
+        "line": 23,
+        "code": "Object.fromEntries(params)"
+      },
+      {
+        "file": "packages/core/src/lib/utils/web.ts",
+        "line": 23,
+        "code": "return Object.fromEntries(params)"
+      },
+      {
+        "file": "packages/core/src/lib/utils/web.ts",
+        "line": 15,
+        "code": "RET"
+      },
+      {
+        "file": "packages/core/src/lib/utils/web.ts",
+        "line": 51,
+        "code": "getBody(req)"
+      },
+      {
+        "file": "packages/core/src/lib/utils/web.ts",
+        "line": 51,
+        "code": "req.body ? await getBody(req) : undefined"
+      },
+      {
+        "file": "packages/core/src/lib/utils/web.ts",
+        "line": 51,
+        "code": "_tmp_6.body"
+      },
+      {
+        "file": "packages/core/src/lib/utils/web.ts",
+        "line": 45,
+        "code": "{\n      url,\n      action,\n      providerId,\n      method: req.method,\n      headers: Object.fromEntries(req.headers),\n      body: req.body ? await getBody(req)"
+      },
+      {
+        "file": "packages/core/src/lib/utils/web.ts",
+        "line": 45,
+        "code": "return {\n      url,\n      action,\n      providerId,\n      method: req.method,\n      headers: Object.fromEntries(req.headers),\n      body: req.body ? await getBo"
+      },
+      {
+        "file": "packages/core/src/lib/utils/web.ts",
+        "line": 27,
+        "code": "RET"
+      },
+      {
+        "file": "packages/core/src/lib/utils/web.ts",
+        "line": 27,
+        "code": "toInternalRequest"
+      },
+      {
+        "file": "packages/core/src/lib/utils/web.ts",
+        "line": 27,
+        "code": "toInternalRequest"
+      },
+      {
+        "file": "packages/core/src/lib/utils/web.ts",
+        "line": 27,
+        "code": "function toInternalRequest = async function toInternalRequest(\n  req: Request,\n  config: AuthConfig\n): Promise<RequestInternal | undefined> {\n  try {\n    if (re"
+      }
+    ]
+  },
+  {
+    "cwe": "CWE-918",
+    "vuln_class": "ssrf",
+    "sink_file": "packages/next-auth/src/lib/client.ts",
+    "sink_line": 159,
+    "steps": 6,
+    "files_spanned": 1,
+    "path": [
+      {
+        "file": "packages/next-auth/src/lib/client.ts",
+        "line": 155,
+        "code": "JSON.stringify(req.body)"
+      },
+      {
+        "file": "packages/next-auth/src/lib/client.ts",
+        "line": 155,
+        "code": "options.body"
+      },
+      {
+        "file": "packages/next-auth/src/lib/client.ts",
+        "line": 159,
+        "code": "options"
+      },
+      {
+        "file": "packages/next-auth/src/lib/client.ts",
+        "line": 159,
+        "code": "url"
+      },
+      {
+        "file": "packages/next-auth/src/lib/client.ts",
+        "line": 159,
+        "code": "fetch(url, options)"
+      },
+      {
+        "file": "packages/next-auth/src/lib/client.ts",
+        "line": 159,
+        "code": "await fetch(url, options)"
+      }
+    ]
+  },
+  {
+    "cwe": "CWE-918",
+    "vuln_class": "ssrf",
+    "sink_file": "packages/frameworks-qwik/src/index.ts",
+    "sink_line": 321,
+    "steps": 18,
+    "files_spanned": 1,
+    "path": [
+      {
+        "file": "packages/frameworks-qwik/src/index.ts",
+        "line": 329,
+        "code": "Auth(\n    new Request(url, { headers: req.headers }),\n    options\n  )"
+      },
+      {
+        "file": "packages/frameworks-qwik/src/index.ts",
+        "line": 329,
+        "code": "await Auth(\n    new Request(url, { headers: req.headers }),\n    options\n  )"
+      },
+      {
+        "file": "packages/frameworks-qwik/src/index.ts",
+        "line": 329,
+        "code": "(await Auth(\n    new Request(url, { headers: req.headers }),\n    options\n  )) as Response"
+      },
+      {
+        "file": "packages/frameworks-qwik/src/index.ts",
+        "line": 329,
+        "code": "response"
+      },
+      {
+        "file": "packages/frameworks-qwik/src/index.ts",
+        "line": 336,
+        "code": "response"
+      },
+      {
+        "file": "packages/frameworks-qwik/src/index.ts",
+        "line": 336,
+        "code": "response.json()"
+      },
+      {
+        "file": "packages/frameworks-qwik/src/index.ts",
+        "line": 336,
+        "code": "await response.json()"
+      },
+      {
+        "file": "packages/frameworks-qwik/src/index.ts",
+        "line": 336,
+        "code": "data"
+      },
+      {
+        "file": "packages/frameworks-qwik/src/index.ts",
+        "line": 338,
+        "code": "data"
+      },
+      {
+        "file": "packages/frameworks-qwik/src/index.ts",
+        "line": 338,
+        "code": "data"
+      },
+      {
+        "file": "packages/frameworks-qwik/src/index.ts",
+        "line": 342,
+        "code": "data"
+      },
+      {
+        "file": "packages/frameworks-qwik/src/index.ts",
+        "line": 342,
+        "code": "_tmp_14.data"
+      },
+      {
+        "file": "packages/frameworks-qwik/src/index.ts",
+        "line": 342,
+        "code": "{ data, cookie }"
+      },
+      {
+        "file": "packages/frameworks-qwik/src/index.ts",
+        "line": 342,
+        "code": "return { data, cookie }"
+      },
+      {
+        "file": "packages/frameworks-qwik/src/index.ts",
+        "line": 321,
+        "code": "RET"
+      },
+      {
+        "file": "packages/frameworks-qwik/src/index.ts",
+        "line": 321,
+        "code": "getSessionData"
+      },
+      {
+        "file": "packages/frameworks-qwik/src/index.ts",
+        "line": 321,
+        "code": "getSessionData"
+      },
+      {
+        "file": "packages/frameworks-qwik/src/index.ts",
+        "line": 321,
+        "code": "function getSessionData = async function getSessionData(\n  req: Request,\n  options: AuthConfig\n): GetSessionResult {\n  options.secret ??= process.env.AUTH_SECRE"
+      }
+    ]
+  }
+]

@@ -1,0 +1,522 @@
+[
+  {
+    "cwe": "CWE-79",
+    "vuln_class": "xss",
+    "sink_file": "example/src/main/java/io/netty/example/http/websocketx/benchmarkserver/WebSocketServerBenchmarkPage.java",
+    "sink_line": 31,
+    "steps": 8,
+    "files_spanned": 2,
+    "path": [
+      {
+        "file": "example/src/main/java/io/netty/example/http/websocketx/benchmarkserver/WebSocketServerHandler.java",
+        "line": 155,
+        "code": "req.headers().get(HttpHeaderNames.HOST) + WEBSOCKET_PATH"
+      },
+      {
+        "file": "example/src/main/java/io/netty/example/http/websocketx/benchmarkserver/WebSocketServerHandler.java",
+        "line": 155,
+        "code": "location"
+      },
+      {
+        "file": "example/src/main/java/io/netty/example/http/websocketx/benchmarkserver/WebSocketServerHandler.java",
+        "line": 157,
+        "code": "\"wss://\" + location"
+      },
+      {
+        "file": "example/src/main/java/io/netty/example/http/websocketx/benchmarkserver/WebSocketServerHandler.java",
+        "line": 157,
+        "code": "return \"wss://\" + location;"
+      },
+      {
+        "file": "example/src/main/java/io/netty/example/http/websocketx/benchmarkserver/WebSocketServerHandler.java",
+        "line": 154,
+        "code": "RET"
+      },
+      {
+        "file": "example/src/main/java/io/netty/example/http/websocketx/benchmarkserver/WebSocketServerHandler.java",
+        "line": 82,
+        "code": "getWebSocketLocation(req)"
+      },
+      {
+        "file": "example/src/main/java/io/netty/example/http/websocketx/benchmarkserver/WebSocketServerBenchmarkPage.java",
+        "line": 29,
+        "code": "String webSocketLocation"
+      },
+      {
+        "file": "example/src/main/java/io/netty/example/http/websocketx/benchmarkserver/WebSocketServerBenchmarkPage.java",
+        "line": 31,
+        "code": "\"<html><head><title>Web Socket Performance Test</title></head>\" + NEWLINE + \"<body>\" + NEWLINE + \"<h2>WebSocket Performance Test</h2>\" + NEWLINE + \"<label>Conne"
+      }
+    ]
+  },
+  {
+    "cwe": "CWE-22",
+    "vuln_class": "path-traversal",
+    "sink_file": "example/src/main/java/io/netty/example/http/file/HttpStaticFileServerHandler.java",
+    "sink_line": 208,
+    "steps": 31,
+    "files_spanned": 5,
+    "path": [
+      {
+        "file": "codec-http/src/main/java/io/netty/handler/codec/http/multipart/HttpPostRequestEncoder.java",
+        "line": 1229,
+        "code": "this.request.headers()"
+      },
+      {
+        "file": "codec-http/src/main/java/io/netty/handler/codec/http/multipart/HttpPostRequestEncoder.java",
+        "line": 1229,
+        "code": "return request.headers();"
+      },
+      {
+        "file": "codec-http/src/main/java/io/netty/handler/codec/http/multipart/HttpPostRequestEncoder.java",
+        "line": 1228,
+        "code": "RET"
+      },
+      {
+        "file": "codec-http/src/main/java/io/netty/handler/codec/http/HttpObjectAggregator.java",
+        "line": 325,
+        "code": "this.message.headers()"
+      },
+      {
+        "file": "codec-http/src/main/java/io/netty/handler/codec/http/HttpObjectAggregator.java",
+        "line": 325,
+        "code": "return message.headers();"
+      },
+      {
+        "file": "codec-http/src/main/java/io/netty/handler/codec/http/HttpObjectAggregator.java",
+        "line": 324,
+        "code": "RET"
+      },
+      {
+        "file": "codec-http/src/main/java/io/netty/handler/codec/http/HttpObjectAggregator.java",
+        "line": 325,
+        "code": "this.message.headers()"
+      },
+      {
+        "file": "codec-http/src/main/java/io/netty/handler/codec/http/HttpObjectAggregator.java",
+        "line": 325,
+        "code": "return message.headers();"
+      },
+      {
+        "file": "codec-http/src/main/java/io/netty/handler/codec/http/HttpObjectAggregator.java",
+        "line": 324,
+        "code": "RET"
+      },
+      {
+        "file": "codec-http/src/main/java/io/netty/handler/codec/http/HttpUtil.java",
+        "line": 292,
+        "code": "headers()"
+      },
+      {
+        "file": "codec-http/src/main/java/io/netty/handler/codec/http/HttpUtil.java",
+        "line": 292,
+        "code": "length"
+      },
+      {
+        "file": "codec-http/src/main/java/io/netty/handler/codec/http/HttpUtil.java",
+        "line": 291,
+        "code": "long length"
+      },
+      {
+        "file": "example/src/main/java/io/netty/example/http/file/HttpStaticFileServerHandler.java",
+        "line": 182,
+        "code": "fileLength"
+      },
+      {
+        "file": "example/src/main/java/io/netty/example/http/file/HttpStaticFileServerHandler.java",
+        "line": 205,
+        "code": "fileLength"
+      },
+      {
+        "file": "example/src/main/java/io/netty/example/http/file/HttpStaticFileServerHandler.java",
+        "line": 205,
+        "code": "$obj2"
+      },
+      {
+        "file": "example/src/main/java/io/netty/example/http/file/HttpStaticFileServerHandler.java",
+        "line": 205,
+        "code": "<empty>"
+      },
+      {
+        "file": "example/src/main/java/io/netty/example/http/file/HttpStaticFileServerHandler.java",
+        "line": 205,
+        "code": "$obj1"
+      },
+      {
+        "file": "example/src/main/java/io/netty/example/http/file/HttpStaticFileServerHandler.java",
+        "line": 205,
+        "code": "<empty>"
+      },
+      {
+        "file": "transport/src/main/java/io/netty/channel/ChannelOutboundInvoker.java",
+        "line": 225,
+        "code": "Object msg"
+      },
+      {
+        "file": "transport/src/main/java/io/netty/channel/ChannelOutboundInvoker.java",
+        "line": 225,
+        "code": "Object msg"
+      },
+      {
+        "file": "example/src/main/java/io/netty/example/http/file/HttpStaticFileServerHandler.java",
+        "line": 205,
+        "code": "<empty>"
+      },
+      {
+        "file": "example/src/main/java/io/netty/example/http/file/HttpStaticFileServerHandler.java",
+        "line": 206,
+        "code": "newProgressivePromise()"
+      },
+      {
+        "file": "transport/src/main/java/io/netty/channel/ChannelOutboundInvoker.java",
+        "line": 225,
+        "code": "ChannelPromise promise"
+      },
+      {
+        "file": "transport/src/main/java/io/netty/channel/ChannelOutboundInvoker.java",
+        "line": 225,
+        "code": "ChannelPromise promise"
+      },
+      {
+        "file": "example/src/main/java/io/netty/example/http/file/HttpStaticFileServerHandler.java",
+        "line": 206,
+        "code": "newProgressivePromise()"
+      },
+      {
+        "file": "example/src/main/java/io/netty/example/http/file/HttpStaticFileServerHandler.java",
+        "line": 205,
+        "code": "ctx"
+      },
+      {
+        "file": "example/src/main/java/io/netty/example/http/file/HttpStaticFileServerHandler.java",
+        "line": 205,
+        "code": "writeAndFlush(new HttpChunkedInput(new ChunkedFile(raf, 0, fileLength, 8192)), ctx.newProgressivePromise())"
+      },
+      {
+        "file": "example/src/main/java/io/netty/example/http/file/HttpStaticFileServerHandler.java",
+        "line": 204,
+        "code": "sendFileFuture"
+      },
+      {
+        "file": "example/src/main/java/io/netty/example/http/file/HttpStaticFileServerHandler.java",
+        "line": 208,
+        "code": "sendFileFuture"
+      },
+      {
+        "file": "example/src/main/java/io/netty/example/http/file/HttpStaticFileServerHandler.java",
+        "line": 208,
+        "code": "lastContentFuture"
+      },
+      {
+        "file": "example/src/main/java/io/netty/example/http/file/HttpStaticFileServerHandler.java",
+        "line": 208,
+        "code": "lastContentFuture = sendFileFuture"
+      }
+    ]
+  },
+  {
+    "cwe": "CWE-22",
+    "vuln_class": "path-traversal",
+    "sink_file": "example/src/main/java/io/netty/example/http/file/HttpStaticFileServerHandler.java",
+    "sink_line": 199,
+    "steps": 28,
+    "files_spanned": 5,
+    "path": [
+      {
+        "file": "codec-http/src/main/java/io/netty/handler/codec/http/multipart/HttpPostRequestEncoder.java",
+        "line": 1229,
+        "code": "this.request.headers()"
+      },
+      {
+        "file": "codec-http/src/main/java/io/netty/handler/codec/http/multipart/HttpPostRequestEncoder.java",
+        "line": 1229,
+        "code": "return request.headers();"
+      },
+      {
+        "file": "codec-http/src/main/java/io/netty/handler/codec/http/multipart/HttpPostRequestEncoder.java",
+        "line": 1228,
+        "code": "RET"
+      },
+      {
+        "file": "codec-http/src/main/java/io/netty/handler/codec/http/HttpObjectAggregator.java",
+        "line": 325,
+        "code": "this.message.headers()"
+      },
+      {
+        "file": "codec-http/src/main/java/io/netty/handler/codec/http/HttpObjectAggregator.java",
+        "line": 325,
+        "code": "return message.headers();"
+      },
+      {
+        "file": "codec-http/src/main/java/io/netty/handler/codec/http/HttpObjectAggregator.java",
+        "line": 324,
+        "code": "RET"
+      },
+      {
+        "file": "codec-http/src/main/java/io/netty/handler/codec/http/HttpObjectAggregator.java",
+        "line": 325,
+        "code": "this.message.headers()"
+      },
+      {
+        "file": "codec-http/src/main/java/io/netty/handler/codec/http/HttpObjectAggregator.java",
+        "line": 325,
+        "code": "return message.headers();"
+      },
+      {
+        "file": "codec-http/src/main/java/io/netty/handler/codec/http/HttpObjectAggregator.java",
+        "line": 324,
+        "code": "RET"
+      },
+      {
+        "file": "codec-http/src/main/java/io/netty/handler/codec/http/HttpUtil.java",
+        "line": 292,
+        "code": "headers()"
+      },
+      {
+        "file": "codec-http/src/main/java/io/netty/handler/codec/http/HttpUtil.java",
+        "line": 292,
+        "code": "length"
+      },
+      {
+        "file": "codec-http/src/main/java/io/netty/handler/codec/http/HttpUtil.java",
+        "line": 291,
+        "code": "long length"
+      },
+      {
+        "file": "example/src/main/java/io/netty/example/http/file/HttpStaticFileServerHandler.java",
+        "line": 182,
+        "code": "fileLength"
+      },
+      {
+        "file": "example/src/main/java/io/netty/example/http/file/HttpStaticFileServerHandler.java",
+        "line": 200,
+        "code": "fileLength"
+      },
+      {
+        "file": "example/src/main/java/io/netty/example/http/file/HttpStaticFileServerHandler.java",
+        "line": 200,
+        "code": "getChannel()"
+      },
+      {
+        "file": "example/src/main/java/io/netty/example/http/file/HttpStaticFileServerHandler.java",
+        "line": 200,
+        "code": "$obj0"
+      },
+      {
+        "file": "example/src/main/java/io/netty/example/http/file/HttpStaticFileServerHandler.java",
+        "line": 200,
+        "code": "<empty>"
+      },
+      {
+        "file": "transport/src/main/java/io/netty/channel/ChannelOutboundInvoker.java",
+        "line": 215,
+        "code": "Object msg"
+      },
+      {
+        "file": "transport/src/main/java/io/netty/channel/ChannelOutboundInvoker.java",
+        "line": 215,
+        "code": "Object msg"
+      },
+      {
+        "file": "example/src/main/java/io/netty/example/http/file/HttpStaticFileServerHandler.java",
+        "line": 200,
+        "code": "<empty>"
+      },
+      {
+        "file": "example/src/main/java/io/netty/example/http/file/HttpStaticFileServerHandler.java",
+        "line": 200,
+        "code": "ctx"
+      },
+      {
+        "file": "transport/src/main/java/io/netty/channel/ChannelOutboundInvoker.java",
+        "line": 215,
+        "code": "this"
+      },
+      {
+        "file": "transport/src/main/java/io/netty/channel/ChannelOutboundInvoker.java",
+        "line": 215,
+        "code": "this"
+      },
+      {
+        "file": "example/src/main/java/io/netty/example/http/file/HttpStaticFileServerHandler.java",
+        "line": 200,
+        "code": "ctx"
+      },
+      {
+        "file": "example/src/main/java/io/netty/example/http/file/HttpStaticFileServerHandler.java",
+        "line": 200,
+        "code": "newProgressivePromise()"
+      },
+      {
+        "file": "example/src/main/java/io/netty/example/http/file/HttpStaticFileServerHandler.java",
+        "line": 200,
+        "code": "write(new DefaultFileRegion(raf.getChannel(), 0, fileLength), ctx.newProgressivePromise())"
+      },
+      {
+        "file": "example/src/main/java/io/netty/example/http/file/HttpStaticFileServerHandler.java",
+        "line": 199,
+        "code": "sendFileFuture"
+      },
+      {
+        "file": "example/src/main/java/io/netty/example/http/file/HttpStaticFileServerHandler.java",
+        "line": 199,
+        "code": "sendFileFuture = ctx.write(new DefaultFileRegion(raf.getChannel(), 0, fileLength), ctx.newProgressivePromise())"
+      }
+    ]
+  },
+  {
+    "cwe": "CWE-22",
+    "vuln_class": "path-traversal",
+    "sink_file": "example/src/main/java/io/netty/example/http/file/HttpStaticFileServerHandler.java",
+    "sink_line": 204,
+    "steps": 29,
+    "files_spanned": 5,
+    "path": [
+      {
+        "file": "codec-http/src/main/java/io/netty/handler/codec/http/multipart/HttpPostRequestEncoder.java",
+        "line": 1229,
+        "code": "this.request.headers()"
+      },
+      {
+        "file": "codec-http/src/main/java/io/netty/handler/codec/http/multipart/HttpPostRequestEncoder.java",
+        "line": 1229,
+        "code": "return request.headers();"
+      },
+      {
+        "file": "codec-http/src/main/java/io/netty/handler/codec/http/multipart/HttpPostRequestEncoder.java",
+        "line": 1228,
+        "code": "RET"
+      },
+      {
+        "file": "codec-http/src/main/java/io/netty/handler/codec/http/HttpObjectAggregator.java",
+        "line": 325,
+        "code": "this.message.headers()"
+      },
+      {
+        "file": "codec-http/src/main/java/io/netty/handler/codec/http/HttpObjectAggregator.java",
+        "line": 325,
+        "code": "return message.headers();"
+      },
+      {
+        "file": "codec-http/src/main/java/io/netty/handler/codec/http/HttpObjectAggregator.java",
+        "line": 324,
+        "code": "RET"
+      },
+      {
+        "file": "codec-http/src/main/java/io/netty/handler/codec/http/HttpObjectAggregator.java",
+        "line": 325,
+        "code": "this.message.headers()"
+      },
+      {
+        "file": "codec-http/src/main/java/io/netty/handler/codec/http/HttpObjectAggregator.java",
+        "line": 325,
+        "code": "return message.headers();"
+      },
+      {
+        "file": "codec-http/src/main/java/io/netty/handler/codec/http/HttpObjectAggregator.java",
+        "line": 324,
+        "code": "RET"
+      },
+      {
+        "file": "codec-http/src/main/java/io/netty/handler/codec/http/HttpUtil.java",
+        "line": 292,
+        "code": "headers()"
+      },
+      {
+        "file": "codec-http/src/main/java/io/netty/handler/codec/http/HttpUtil.java",
+        "line": 292,
+        "code": "length"
+      },
+      {
+        "file": "codec-http/src/main/java/io/netty/handler/codec/http/HttpUtil.java",
+        "line": 291,
+        "code": "long length"
+      },
+      {
+        "file": "example/src/main/java/io/netty/example/http/file/HttpStaticFileServerHandler.java",
+        "line": 182,
+        "code": "fileLength"
+      },
+      {
+        "file": "example/src/main/java/io/netty/example/http/file/HttpStaticFileServerHandler.java",
+        "line": 205,
+        "code": "fileLength"
+      },
+      {
+        "file": "example/src/main/java/io/netty/example/http/file/HttpStaticFileServerHandler.java",
+        "line": 205,
+        "code": "$obj2"
+      },
+      {
+        "file": "example/src/main/java/io/netty/example/http/file/HttpStaticFileServerHandler.java",
+        "line": 205,
+        "code": "<empty>"
+      },
+      {
+        "file": "example/src/main/java/io/netty/example/http/file/HttpStaticFileServerHandler.java",
+        "line": 205,
+        "code": "$obj1"
+      },
+      {
+        "file": "example/src/main/java/io/netty/example/http/file/HttpStaticFileServerHandler.java",
+        "line": 205,
+        "code": "<empty>"
+      },
+      {
+        "file": "transport/src/main/java/io/netty/channel/ChannelOutboundInvoker.java",
+        "line": 225,
+        "code": "Object msg"
+      },
+      {
+        "file": "transport/src/main/java/io/netty/channel/ChannelOutboundInvoker.java",
+        "line": 225,
+        "code": "Object msg"
+      },
+      {
+        "file": "example/src/main/java/io/netty/example/http/file/HttpStaticFileServerHandler.java",
+        "line": 205,
+        "code": "<empty>"
+      },
+      {
+        "file": "example/src/main/java/io/netty/example/http/file/HttpStaticFileServerHandler.java",
+        "line": 206,
+        "code": "newProgressivePromise()"
+      },
+      {
+        "file": "transport/src/main/java/io/netty/channel/ChannelOutboundInvoker.java",
+        "line": 225,
+        "code": "ChannelPromise promise"
+      },
+      {
+        "file": "transport/src/main/java/io/netty/channel/ChannelOutboundInvoker.java",
+        "line": 225,
+        "code": "ChannelPromise promise"
+      },
+      {
+        "file": "example/src/main/java/io/netty/example/http/file/HttpStaticFileServerHandler.java",
+        "line": 206,
+        "code": "newProgressivePromise()"
+      },
+      {
+        "file": "example/src/main/java/io/netty/example/http/file/HttpStaticFileServerHandler.java",
+        "line": 205,
+        "code": "ctx"
+      },
+      {
+        "file": "example/src/main/java/io/netty/example/http/file/HttpStaticFileServerHandler.java",
+        "line": 205,
+        "code": "writeAndFlush(new HttpChunkedInput(new ChunkedFile(raf, 0, fileLength, 8192)), ctx.newProgressivePromise())"
+      },
+      {
+        "file": "example/src/main/java/io/netty/example/http/file/HttpStaticFileServerHandler.java",
+        "line": 204,
+        "code": "sendFileFuture"
+      },
+      {
+        "file": "example/src/main/java/io/netty/example/http/file/HttpStaticFileServerHandler.java",
+        "line": 204,
+        "code": "sendFileFuture = ctx.writeAndFlush(new HttpChunkedInput(new ChunkedFile(raf, 0, fileLength, 8192)), ctx.newProgressivePromise())"
+      }
+    ]
+  }
+]

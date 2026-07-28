@@ -61,7 +61,7 @@ ARG INCLUDE_JOERN=false
 RUN set -eux; \
     if [ "$INCLUDE_JOERN" = "true" ]; then \
         apt-get update; \
-        apt-get install -y --no-install-recommends openjdk-17-jre-headless unzip; \
+        apt-get install -y --no-install-recommends openjdk-21-jre-headless unzip; \
         curl -fsSL "https://github.com/joernio/joern/releases/download/v${JOERN_VERSION}/joern-cli.zip" \
             -o /tmp/joern-cli.zip; \
         unzip -q /tmp/joern-cli.zip -d /opt; \

@@ -1,0 +1,26 @@
+{
+  "track": "2f",
+  "description": "Joern interprocedural deep-scan vs Aegis fast Semgrep pass. raw_paths = every taint path Joern enumerates; unique_sinks = distinct (cwe,file,line) sink after dedup. corroborating = deep flow that matches a fast finding (same CWE+file within 2 lines). netnew = not matched by the fast pass.",
+  "env": "deep-scanner sidecar (Joern 4.0.570, JDK 21), 3.7 GiB VM, -Xmx3g",
+  "results": [
+    {"repo": "spring-petclinic", "lang": "java",       "kloc": 1.6,   "fast_sast": 16,  "fast_injection_class": 0,  "joern": "completed", "parse_s": 6.0,   "query_s": 10.2, "raw_paths": 0,   "corroborating": 0, "netnew_paths": 0,   "unique_sinks": 0, "unique_multifile": 0, "verdict": "no flows (clean curated sample)"},
+    {"repo": "express",          "lang": "javascript", "kloc": 4.1,   "fast_sast": 49,  "fast_injection_class": 12, "joern": "completed", "parse_s": 14.1,  "query_s": 16.3, "raw_paths": 0,   "corroborating": 0, "netnew_paths": 0,   "unique_sinks": 0, "unique_multifile": 0, "verdict": "no flows (framework internals, not app handlers)"},
+    {"repo": "flask",            "lang": "python",     "kloc": 8.0,   "fast_sast": 17,  "fast_injection_class": 1,  "joern": "completed", "parse_s": 12.5,  "query_s": 16.2, "raw_paths": 0,   "corroborating": 0, "netnew_paths": 0,   "unique_sinks": 0, "unique_multifile": 0, "verdict": "no flows"},
+    {"repo": "cobra",            "lang": "go",         "kloc": 14.4,  "fast_sast": 13,  "fast_injection_class": 1,  "joern": "completed", "parse_s": 19.4,  "query_s": 14.1, "raw_paths": 0,   "corroborating": 0, "netnew_paths": 0,   "unique_sinks": 0, "unique_multifile": 0, "verdict": "no flows (CLI lib, no web surface)"},
+    {"repo": "gin",              "lang": "go",         "kloc": 20.2,  "fast_sast": 43,  "fast_injection_class": 18, "joern": "completed", "parse_s": 23.3,  "query_s": 16.0, "raw_paths": 0,   "corroborating": 0, "netnew_paths": 0,   "unique_sinks": 0, "unique_multifile": 0, "verdict": "no flows (framework internals)"},
+    {"repo": "fastapi",          "lang": "python",     "kloc": 28.5,  "fast_sast": 23,  "fast_injection_class": 3,  "joern": "completed", "parse_s": 84.8,  "query_s": 47.9, "raw_paths": 0,   "corroborating": 0, "netnew_paths": 0,   "unique_sinks": 0, "unique_multifile": 0, "verdict": "no flows"},
+    {"repo": "next-auth",        "lang": "typescript", "kloc": 42.9,  "fast_sast": 63,  "fast_injection_class": 24, "joern": "completed", "parse_s": 28.0,  "query_s": 23.7, "raw_paths": 110, "corroborating": 0, "netnew_paths": 110, "unique_sinks": 16, "unique_multifile": 0, "verdict": "16 unique SSRF sinks — all FALSE POSITIVES (new URL() parsing + body-carrying fetch to trusted URLs; sink pattern over-fires)"},
+    {"repo": "jackson-databind", "lang": "java",       "kloc": 125.0, "fast_sast": 8,   "fast_injection_class": 0,  "joern": "completed", "parse_s": 74.0,  "query_s": 17.6, "raw_paths": 0,   "corroborating": 0, "netnew_paths": 0,   "unique_sinks": 0, "unique_multifile": 0, "verdict": "no flows (deserialization CVEs are architectural gadget chains, not taint-visible)"},
+    {"repo": "django",           "lang": "python",     "kloc": 144.6, "fast_sast": null, "fast_injection_class": null, "joern": "OOM_KILLED", "parse_s": null, "query_s": null, "raw_paths": null, "corroborating": null, "netnew_paths": null, "unique_sinks": null, "unique_multifile": null, "verdict": "Joern Python CPG build exceeded 3.7 GiB VM (docker OOM event 23:32:05); deep scan did not complete"},
+    {"repo": "netty",            "lang": "java",       "kloc": 322.6, "fast_sast": 325, "fast_injection_class": 0,  "joern": "completed", "parse_s": 159.0, "query_s": 55.3, "raw_paths": 150, "corroborating": 0, "netnew_paths": 150, "unique_sinks": 4, "unique_multifile": 4, "verdict": "4 unique sinks, ALL in example/ demo code: 1 XSS (Host header -> HTML benchmark page, 147 duplicate paths) + 3 path-traversal (example static-file server, has sanitizeUri() Joern doesn't model). 0 in the shipped library."}
+  ],
+  "summary": {
+    "repos_attempted": 10,
+    "completed": 9,
+    "oom": 1,
+    "repos_with_zero_netnew": 7,
+    "repos_with_flows": 2,
+    "genuine_new_vulnerabilities_found": 0,
+    "note": "The capability is real (a planted 2-file cross-function flow is detected end-to-end), but on this corpus of mature OSS frameworks/libraries Joern surfaced 0 genuine net-new vulnerabilities beyond the fast pass. Its two hits were raw-count mirages (path-duplication) that dedup to FP (next-auth SSRF) and non-production demo code (netty)."
+  }
+}

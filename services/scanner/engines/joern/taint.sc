@@ -14,7 +14,7 @@
 import io.shiftleft.semanticcpg.language._
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.queryengine.EngineContext
-import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode}
 import java.nio.file.{Files, Paths}
 import java.nio.charset.StandardCharsets
 
@@ -52,9 +52,13 @@ import java.nio.charset.StandardCharsets
           ".*(readfile|readfilesync|writefile|createreadstream|sendfile|\\bopen\\s*\\(|os\\.open|new\\s+file\\s*\\(|fileinputstream).*")
       )
 
-      def stepJson(n: CfgNode): String = {
-        val file = n.file.name.headOption.getOrElse("")
-        val line = n.lineNumber.map(_.toString).getOrElse("null")
+      // Path elements are AstNodes; `.location` is the version-stable way to get
+      // file + line (the older `.file.name` traversal no longer type-checks on
+      // the AstNode elements a flow yields).
+      def stepJson(n: AstNode): String = {
+        val loc = n.location
+        val file = Option(loc.filename).getOrElse("")
+        val line = loc.lineNumber.map(_.toString).getOrElse("null")
         s"""{"file":${quote(file)},"line":${line},"code":${quote(n.code)}}"""
       }
 
@@ -62,8 +66,8 @@ import java.nio.charset.StandardCharsets
         sinks(rx).reachableByFlows(sources).map { path =>
           val els = path.elements
           val sink = els.last
-          val file = sink.file.name.headOption.getOrElse("")
-          val line = sink.lineNumber.map(_.toString).getOrElse("null")
+          val file = Option(sink.location.filename).getOrElse("")
+          val line = sink.location.lineNumber.map(_.toString).getOrElse("null")
           val flow = els.map(stepJson).mkString("[", ",", "]")
           s"""{"vulnClass":${quote(vulnClass)},"cwe":${quote(cwe)},"severity":${quote(sev)},""" +
             s""""file":${quote(file)},"lineStart":${line},"lineEnd":${line},""" +
