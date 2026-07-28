@@ -29,10 +29,14 @@ export default function AdminMLPage() {
           <CardHeader className="pb-2"><CardTitle className="text-base">AI-code detector</CardTitle></CardHeader>
           <CardContent className="space-y-1 text-sm text-muted-foreground">
             <Metric label="Model" value="LightGBM (14 metadata features)" />
-            <Metric label="Cross-val precision" value="0.90" />
-            <Metric label="Cross-val recall" value="0.79" />
-            <Metric label="ROC-AUC" value="0.91" />
-            <Metric label="Dataset" value="real pre-2021 OSS vs. AI-refactored (metadata only)" />
+            <Metric label="Synthetic-CV ROC-AUC" value="0.91" />
+            <Metric label="Real-world ROC-AUC (shipped)" value="0.54 — near-random" />
+            <Metric label="Real-data retrain CV" value="0.92 (confounded — see 2e)" />
+            <Metric label="Status" value="advisory only; retrain-on-real pending" />
+            <p className="pt-1 text-xs text-amber-600">
+              Track 2e found the synthetic-trained model does not generalize to real
+              AI code. See AI_CODE_DETECTION_VALIDATION.md.
+            </p>
           </CardContent>
         </Card>
       </div>

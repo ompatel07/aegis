@@ -1,0 +1,9 @@
+{
+  "cv_precision": 0.8657,
+  "cv_recall": 0.884,
+  "cv_f1": 0.8739,
+  "cv_roc_auc": 0.919,
+  "n": 429,
+  "ai": 250,
+  "human": 179
+}
