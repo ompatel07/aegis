@@ -67,7 +67,7 @@ func run() error {
 			&intelligence.NVDSource{APIKey: cfg.NVDAPIKey},
 			&intelligence.OSVSource{Store: intelStore},
 			&intelligence.GHSASource{Token: cfg.GitHubToken},
-			&intelligence.SemgrepSource{},
+			&intelligence.SemgrepSource{Store: intelStore, ScannerURL: cfg.ScannerBaseURL},
 		).Start(intelCtx)
 	}
 

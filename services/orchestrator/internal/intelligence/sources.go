@@ -22,6 +22,11 @@ type Source interface {
 
 var httpClient = &http.Client{Timeout: 30 * time.Second}
 
+// nvdClient has a much longer timeout: the NVD API is slow and returns large
+// (2000-record) pages, which routinely exceeded the shared 30s client and caused
+// "context deadline exceeded while reading body" sync failures.
+var nvdClient = &http.Client{Timeout: 120 * time.Second}
+
 // osvEcosystem maps our detected ecosystem to OSV's ecosystem name.
 var osvEcosystem = map[string]string{
 	"python": "PyPI", "javascript": "npm", "go": "Go", "java": "Maven",
@@ -46,28 +51,38 @@ func (s *NVDSource) Fetch(ctx context.Context) ([]CVE, SyncResult, error) {
 	}
 	maxPages := s.MaxPages
 	if maxPages == 0 {
-		maxPages = 1
+		maxPages = 10
 	}
+	// Small pages are the key to reliability: NVD's keyless 2000-record page is
+	// ~4MB and takes ~123s (it timed out); a 200-record page returns in ~15s.
+	const pageSize = 200
 	start := time.Now().UTC().Add(-window)
+	header := map[string]string{}
+	if s.APIKey != "" {
+		header["apiKey"] = s.APIKey
+	}
 	var all []CVE
 	for page := 0; page < maxPages; page++ {
 		q := url.Values{}
 		q.Set("lastModStartDate", start.Format("2006-01-02T15:04:05.000"))
 		q.Set("lastModEndDate", time.Now().UTC().Format("2006-01-02T15:04:05.000"))
-		q.Set("resultsPerPage", "2000")
-		q.Set("startIndex", strconv.Itoa(page*2000))
-		req, _ := http.NewRequestWithContext(ctx, http.MethodGet,
-			"https://services.nvd.nist.gov/rest/json/cves/2.0?"+q.Encode(), nil)
-		if s.APIKey != "" {
-			req.Header.Set("apiKey", s.APIKey)
-		}
-		body, err := doGet(req)
+		q.Set("resultsPerPage", strconv.Itoa(pageSize))
+		q.Set("startIndex", strconv.Itoa(page*pageSize))
+		// Long-timeout client + retry/backoff: the NVD API is slow and flaky.
+		body, err := doGetRetry(ctx, nvdClient,
+			"https://services.nvd.nist.gov/rest/json/cves/2.0?"+q.Encode(), header, 3)
 		if err != nil {
+			// Partial success: keep pages already fetched rather than losing the
+			// whole sync to one flaky page. Only the very first page failing is fatal.
+			if len(all) > 0 {
+				return all, SyncResult{Source: s.Name(),
+					Note: fmt.Sprintf("partial: page %d failed (%v)", page, err)}, nil
+			}
 			return all, SyncResult{Source: s.Name()}, err
 		}
 		cves, total := parseNVD(body)
 		all = append(all, cves...)
-		if (page+1)*2000 >= total || len(cves) == 0 {
+		if (page+1)*pageSize >= total || len(cves) == 0 {
 			break
 		}
 		// NVD rate limit: 5 req / 30s without a key, 50/30s with one.
@@ -358,18 +373,61 @@ func parseGHSA(body []byte) []CVE {
 // SemgrepSource is a best-effort weekly placeholder — real rule-pack refresh is
 // handled by the scanner (Phase 2B TASK 3). It records a skipped sync so the
 // status page shows the source without making a flaky external call.
-type SemgrepSource struct{}
+// SemgrepSource populates rule_registry from the scanner's bundled-rule catalog.
+// It is not a CVE feed — it returns Skipped after cataloguing the rules Aegis ships.
+type SemgrepSource struct {
+	Store      *Store
+	ScannerURL string
+}
 
 func (s *SemgrepSource) Name() string            { return "semgrep" }
 func (s *SemgrepSource) Interval() time.Duration { return 7 * 24 * time.Hour }
 func (s *SemgrepSource) Fetch(ctx context.Context) ([]CVE, SyncResult, error) {
+	if s.Store == nil || s.ScannerURL == "" {
+		return nil, SyncResult{Source: s.Name(), Skipped: true, Note: "rule catalog not configured"}, nil
+	}
+	body, err := doGetRetry(ctx, httpClient,
+		strings.TrimRight(s.ScannerURL, "/")+"/rules/catalog", nil, 2)
+	if err != nil {
+		return nil, SyncResult{Source: s.Name()}, err
+	}
+	var rules []struct {
+		RuleID         string `json:"rule_id"`
+		Engine         string `json:"engine"`
+		Category       string `json:"category"`
+		Severity       string `json:"severity"`
+		SourceRegistry string `json:"source_registry"`
+	}
+	if err := json.Unmarshal(body, &rules); err != nil {
+		return nil, SyncResult{Source: s.Name()}, err
+	}
+	n := 0
+	for _, r := range rules {
+		if r.RuleID == "" {
+			continue
+		}
+		eng := r.Engine
+		if eng == "" {
+			eng = "semgrep"
+		}
+		if err := s.Store.UpsertRule(ctx, RegistryRule{
+			Engine: eng, RuleID: r.RuleID, SourceRegistry: r.SourceRegistry,
+			Category: r.Category, Severity: r.Severity,
+		}); err == nil {
+			n++
+		}
+	}
 	return nil, SyncResult{Source: s.Name(), Skipped: true,
-		Note: "rule-pack refresh handled by the scanner"}, nil
+		Note: fmt.Sprintf("catalogued %d rules into rule_registry", n)}, nil
 }
 
 // ── HTTP helper ───────────────────────────────────────────────────────────────
 func doGet(req *http.Request) ([]byte, error) {
-	resp, err := httpClient.Do(req)
+	return doGetWith(httpClient, req)
+}
+
+func doGetWith(client *http.Client, req *http.Request) ([]byte, error) {
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
@@ -382,6 +440,32 @@ func doGet(req *http.Request) ([]byte, error) {
 		return nil, fmt.Errorf("%s returned %d", req.URL.Host, resp.StatusCode)
 	}
 	return body, nil
+}
+
+// doGetRetry retries a GET with exponential backoff on transient failures
+// (timeouts, 5xx). The request is cloned per attempt so the body/context are fresh.
+func doGetRetry(ctx context.Context, client *http.Client, url string, header map[string]string, retries int) ([]byte, error) {
+	var lastErr error
+	for attempt := 0; attempt <= retries; attempt++ {
+		if attempt > 0 {
+			backoff := time.Duration(attempt*attempt) * 2 * time.Second
+			select {
+			case <-ctx.Done():
+				return nil, ctx.Err()
+			case <-time.After(backoff):
+			}
+		}
+		req, _ := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+		for k, v := range header {
+			req.Header.Set(k, v)
+		}
+		body, err := doGetWith(client, req)
+		if err == nil {
+			return body, nil
+		}
+		lastErr = err
+	}
+	return nil, lastErr
 }
 
 func parseTime(s string) *time.Time {

@@ -195,6 +195,11 @@ services:
       SCANNER_DEEP_URL: ${SCANNER_DEEP_URL:-http://scanner:8000}
       WORKER_CONCURRENCY: ${WORKER_CONCURRENCY:-5}
       WORKSPACE_DIR: /workspaces
+      # Vulnerability intelligence credentials (optional but recommended):
+      # NVD_API_KEY raises the NVD rate limit 5→50 req/30s; GITHUB_TOKEN enables
+      # the GHSA advisory feed. Empty → NVD runs keyless (slower) and GHSA is off.
+      NVD_API_KEY: ${NVD_API_KEY:-}
+      GITHUB_TOKEN: ${GITHUB_TOKEN:-}
     volumes:
       - workspaces:/workspaces
     depends_on:

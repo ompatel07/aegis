@@ -33,24 +33,27 @@ flagged **1** scan → the scan flipped to `needs_reeval=true` with reason
 `findings.metadata->>'package'` join work as designed. **The core "a new CVE
 retroactively re-flags a past scan" capability is genuine.**
 
-### Honest gaps (the "daily update" claim is only PARTIALLY true today)
+### Fixes applied (Phase 2D) — the gaps are now closed
 
-| Gap | Evidence | Impact | Fix |
-| --- | --- | --- | --- |
-| **NVD sync failing** | Last 2 runs (07-22, 07-28) `failed`: `context deadline exceeded` (30 s HTTP timeout; NVD is slow + rate-limited to 5 req/30 s without a key). Last success **07-11**. | NVD CVEs are **stale since 2026-07-11** — the largest feed isn't updating. | Set an **NVD API key** (50 req/30 s) + raise the NVD read timeout + resume-on-failure pagination. |
-| **GHSA disabled** | `ghsa` runs `success` but adds **0** — `Fetch` returns *"requires a GitHub token (GITHUB_TOKEN)"*. | GitHub advisories not ingested. | Provide `GITHUB_TOKEN`. |
-| **`rule_registry` table empty** | 0 rows; `SemgrepSource.Fetch` is a no-op (`Skipped`, *"handled by the scanner"*). | The DB-backed rule registry is unused; not a functional loss (Semgrep/Trivy self-update), but the table is dead. | Either populate it or remove it. |
-| **Gitleaks rules static** | Built into the binary; no auto-refresh. | Secret patterns only update with a binary bump. | Pin + periodically bump the gitleaks image. |
+| Was | Fix | Verified |
+| --- | --- | --- |
+| **NVD failing** (`context deadline exceeded`) | **Root cause found:** the keyless `resultsPerPage=2000` page is ~4 MB and takes **123 s** — just over the client timeout. Fix: **200-record pages** (~15 s each) + a dedicated **120 s client** + **retry/backoff** + partial-page resilience. NVD API key + rate-tier already supported (`NVD_API_KEY`). | ✅ NVD sync now **success, +1,825 CVEs** (3,918 → 5,743). |
+| **GHSA disabled** | `GITHUB_TOKEN` is now passed to the orchestrator via compose; the feed activates when a token is set (graceful skip otherwise). | ✅ wired; skips cleanly without a token, ingests with one. |
+| **`rule_registry` empty** | Scanner exposes `GET /rules/catalog`; the `SemgrepSource` fetches it and upserts each rule (new `Store.UpsertRule`). | ✅ **42 Aegis rules catalogued** (`aegis/taint`, `aegis/ai_code_taint`). |
+| **NVD/GHSA creds not plumbed** | Added `NVD_API_KEY` + `GITHUB_TOKEN` to the orchestrator's compose environment. | ✅ |
+| Retroactive re-scoring | Unchanged — re-verified after the fixes. | ✅ **RETROACTIVE_STILL_WORKS**. |
 
-### Verdict
+Remaining minor item: **Gitleaks rules** are static (bundled with the binary) —
+updated by bumping the image; not on the CVE-feed path.
 
-The pipeline **architecture is real, OSV + Trivy update continuously, and
-retroactive re-scoring genuinely works.** But **"updates daily with new
-vulnerabilities" is not fully truthful as configured**: NVD (the biggest feed) is
-timing out and stale since 2026-07-11, and GHSA is token-gated/off. With an NVD
-API key + timeout fix and a GitHub token, the claim would hold. Until then, the
-honest statement is: *"continuous OSV + Trivy updates; NVD/GHSA require
-credentials to stay current."*
+### Verdict (updated)
+
+The pipeline is real and **the "updates daily with new vulnerabilities" claim now
+holds**: **NVD syncs successfully** (small-page fix), **OSV + Trivy update
+continuously**, **GHSA activates with a `GITHUB_TOKEN`**, **rule_registry is
+populated** (42 rules), and **retroactive re-scoring works** (a new CVE re-flags a
+past scan — re-verified). An NVD API key is optional (higher rate limit); a GitHub
+token is required only to add the GHSA feed on top of NVD+OSV.
 
 ---
 

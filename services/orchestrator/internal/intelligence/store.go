@@ -233,3 +233,22 @@ func nullStr(s string) any {
 	}
 	return s
 }
+
+// RegistryRule is one catalogued scan rule for the rule_registry table.
+type RegistryRule struct {
+	Engine, RuleID, SourceRegistry, Category, Severity string
+}
+
+// UpsertRule records or refreshes one rule in rule_registry (keyed engine+rule_id).
+func (s *Store) UpsertRule(ctx context.Context, r RegistryRule) error {
+	_, err := s.db.ExecContext(ctx, `
+		INSERT INTO rule_registry (engine, rule_id, source_registry, category, severity, updated_date)
+		VALUES ($1,$2,$3,$4,$5, now())
+		ON CONFLICT (engine, rule_id) DO UPDATE SET
+			source_registry = EXCLUDED.source_registry,
+			category = EXCLUDED.category,
+			severity = EXCLUDED.severity,
+			updated_date = now()`,
+		r.Engine, r.RuleID, nullStr(r.SourceRegistry), nullStr(r.Category), nullStr(r.Severity))
+	return err
+}
