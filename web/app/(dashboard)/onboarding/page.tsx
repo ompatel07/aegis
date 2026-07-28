@@ -76,8 +76,8 @@ export default function OnboardingPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-muted-foreground">
-              Let&apos;s scan your first repository. Aegis checks quality, security, and deployment —
-              with special awareness of AI-generated code. This takes about 2 minutes.
+              Let&apos;s scan your first repository. Aegis checks quality, security, and
+              deployment. This takes about 2 minutes.
             </p>
             <Button onClick={() => setStep("connect")}>
               Get started <ArrowRight className="ml-1 h-4 w-4" />
@@ -141,9 +141,6 @@ export default function OnboardingPage() {
                       <div className="min-w-0">
                         <p className="font-medium">{f.title_human || f.title}</p>
                         {f.impact ? <p className="text-sm text-muted-foreground">{f.impact}</p> : null}
-                        {f.in_ai_generated_code ? (
-                          <Badge className="mt-1 border-violet-400/40 bg-violet-400/15 text-violet-500">in AI-generated code</Badge>
-                        ) : null}
                       </div>
                     </div>
                   ))}
@@ -166,7 +163,6 @@ export default function OnboardingPage() {
                 <ChecklistItem label="Invite your team" href="/organizations" />
                 <ChecklistItem label="Connect more repos" href="/projects" />
                 <ChecklistItem label="Configure quality gates" href={`/projects/${projectId}`} />
-                <ChecklistItem label="Try the AI code security features" href={`/projects/${projectId}`} />
               </ul>
             </CardContent>
           </Card>

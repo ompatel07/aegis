@@ -8,7 +8,6 @@ import type {
   AdminScanRow,
   AdminUserRow,
   AISuggestion,
-  AICodeMemory,
   ApiSuccess,
   BaselineData,
   BetaInvitation,
@@ -154,12 +153,6 @@ export function createApi(token?: string) {
     getBaseline: (projectId: string) =>
       http
         .get<ApiSuccess<BaselineData>>(`/projects/${projectId}/baseline`)
-        .then((r) => r.data.data)
-        .catch(normalizeError),
-
-    getAICodeMemory: (projectId: string) =>
-      http
-        .get<ApiSuccess<AICodeMemory>>(`/projects/${projectId}/ai-code-memory`)
         .then((r) => r.data.data)
         .catch(normalizeError),
 

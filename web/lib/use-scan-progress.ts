@@ -10,7 +10,6 @@ export const STAGE_STEPS: { stage: string; label: string }[] = [
   { stage: "cloning", label: "Cloning repository" },
   { stage: "detecting", label: "Detecting languages & project type" },
   { stage: "scanning", label: "Running SAST, SCA, secrets, quality & deployment" },
-  { stage: "ai_analysis", label: "Analyzing AI-generated code" },
   { stage: "finalizing", label: "Scoring & finalizing" },
   { stage: "completed", label: "Done" },
 ];

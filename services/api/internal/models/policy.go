@@ -17,9 +17,6 @@ type PolicyConfig struct {
 	// Score floors (fail if the scan scores below).
 	MinSecurityScore *int `json:"min_security_score,omitempty"`
 	MinQualityScore  *int `json:"min_quality_score,omitempty"`
-	MinAISafetyScore *int `json:"min_ai_safety_score,omitempty"`
-	// Fail if the estimated share of AI-generated (unreviewed) code exceeds this %.
-	MaxAIGeneratedPct *int `json:"max_ai_generated_pct,omitempty"`
 }
 
 // Policy is a stored, per-project gate configuration.
@@ -66,12 +63,11 @@ var PolicyTemplates = map[string]PolicyConfig{
 	"startup": {BlockNewSeverity: SeverityCritical},
 	// Moderate — block new high+ findings and a security floor.
 	"growing": {BlockNewSeverity: SeverityHigh, MinSecurityScore: intp(60)},
-	// Strict — no new findings, solid score + AI-safety floors.
-	"enterprise": {BlockNewFindings: true, MinSecurityScore: intp(80), MinAISafetyScore: intp(60)},
-	// Maximum — nothing outside the approved baseline; tight AI limits.
+	// Strict — no new findings, solid security floor.
+	"enterprise": {BlockNewFindings: true, MinSecurityScore: intp(80)},
+	// Maximum — nothing outside the approved baseline.
 	"compliance": {
 		BlockNewFindings: true, MinSecurityScore: intp(90), MinQualityScore: intp(80),
-		MinAISafetyScore: intp(70), MaxAIGeneratedPct: intp(10),
 	},
 }
 

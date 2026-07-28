@@ -154,21 +154,6 @@ func evaluatePolicy(cfg models.PolicyConfig, scan *models.Scan, findings []model
 		v := derefIntP(scan.QualityScore)
 		add("min_quality_score", v >= *cfg.MinQualityScore, fmt.Sprintf("quality score %d (min %d)", v, *cfg.MinQualityScore))
 	}
-	if cfg.MinAISafetyScore != nil {
-		v := 100
-		if scan.AICodeSafetyScore != nil {
-			v = *scan.AICodeSafetyScore
-		}
-		add("min_ai_safety_score", v >= *cfg.MinAISafetyScore, fmt.Sprintf("AI-code safety %d (min %d)", v, *cfg.MinAISafetyScore))
-	}
-	if cfg.MaxAIGeneratedPct != nil {
-		pct := 0.0
-		if scan.AIGeneratedPct != nil {
-			pct = *scan.AIGeneratedPct
-		}
-		add("max_ai_generated_pct", int(pct) <= *cfg.MaxAIGeneratedPct,
-			fmt.Sprintf("AI-generated code %.0f%% (max %d%%)", pct, *cfg.MaxAIGeneratedPct))
-	}
 
 	passed := true
 	for _, c := range checks {

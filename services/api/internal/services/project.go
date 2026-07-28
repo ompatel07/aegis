@@ -127,15 +127,6 @@ func (s *ProjectService) Baseline(ctx context.Context, id, userID string) (*repo
 	return s.projects.Baseline(ctx, p.ID, p.GrandfatherMode)
 }
 
-// AICodeMemory returns how the project's AI-generated-code footprint evolved.
-func (s *ProjectService) AICodeMemory(ctx context.Context, id, userID string) (*repository.AICodeMemory, error) {
-	p, err := s.projects.GetByIDForUser(ctx, id, userID)
-	if err != nil {
-		return nil, err
-	}
-	return s.projects.AICodeMemory(ctx, p.ID)
-}
-
 var slugInvalid = regexp.MustCompile(`[^a-z0-9]+`)
 
 // slugify produces a URL-safe, globally-unique slug from a project name.

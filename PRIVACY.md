@@ -63,21 +63,15 @@ When a user marks a finding false-positive / confirmed / fixed, we store the
 `ml_training_data`). We do not store code. Feedback trains the local model on
 your own instance; it is not shared across tenants.
 
-## 3a. AI-generated-code detection — local, metadata output
+## 3a. AI-generated-code detection — REMOVED (Phase 2D)
 
-The AI-code classifier (`services/scanner/ml/ai_detect/`) scores each file on
-likelihood of being AI-generated. Like the scanners, it **reads file text inside
-your own infrastructure** to compute features — and, exactly like the scanners,
-**that text never leaves the scanner**. What it emits is metadata only: a
-per-file probability, a repo-level AI-code report (percentages, counts), and a
-boolean tag on findings. The model artifact is numeric tree splits over 14
-metadata features (docstring/naming/exception/style ratios — see
-`ml/ai_detect/features.py`); it cannot reconstruct code.
-
-The training dataset (`ml/ai_detect/ai_detect_features.csv`) contains **only
-extracted feature vectors** — no source code — so even the committed dataset
-preserves the boundary. Human samples are real pre-2021 OSS; the AI-positive
-class is real code refactored with documented AI tells (`ml/ai_detect/transform.py`).
+The AI-generated-code **detection** classifier was **removed** from the product.
+Real-world validation (Track 2e) showed the synthetic-trained model was
+near-random on real code (ROC-AUC ~0.54); see `AI_CODE_DETECTION_VALIDATION.md`.
+It will be rebuilt with a repo-controlled dataset once beta usage supplies one.
+The deterministic AI-failure-mode **Semgrep rules** (`rules/ai_code_taint/`)
+remain — they are ordinary security SAST rules with no ML and no per-file
+scoring.
 
 ## 4. Vulnerability intelligence feed
 

@@ -116,18 +116,6 @@ func (h *ProjectHandler) Baseline(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteSuccess(w, http.StatusOK, data)
 }
 
-// AICodeMemory handles GET /api/v1/projects/{id}/ai-code-memory — the project's
-// AI-generated-code footprint over time.
-func (h *ProjectHandler) AICodeMemory(w http.ResponseWriter, r *http.Request) {
-	userID := middleware.UserID(r.Context())
-	data, err := h.projects.AICodeMemory(r.Context(), chi.URLParam(r, "id"), userID)
-	if err != nil {
-		writeServiceError(w, h.log, err)
-		return
-	}
-	httpx.WriteSuccess(w, http.StatusOK, data)
-}
-
 // Delete handles DELETE /api/v1/projects/{id}.
 func (h *ProjectHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.UserID(r.Context())

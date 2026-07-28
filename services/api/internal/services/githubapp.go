@@ -307,18 +307,6 @@ func buildComment(dashURL string, scan *models.Scan, findings []models.Finding, 
 		b.WriteString("\n")
 	}
 
-	// AI-generated-code section.
-	aiCount := 0
-	for _, f := range findings {
-		if f.InAIGeneratedCode {
-			aiCount++
-		}
-	}
-	if scan.AIGeneratedPct != nil {
-		fmt.Fprintf(&b, "**AI-generated code**: ~%.0f%% of the codebase; %d finding(s) sit in it (AI code carries ~2.7× the vuln density).\n\n",
-			*scan.AIGeneratedPct, aiCount)
-	}
-
 	fmt.Fprintf(&b, "[View the full report in Aegis](%s)\n", dashURL)
 	return b.String()
 }

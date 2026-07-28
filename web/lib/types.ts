@@ -76,8 +76,6 @@ export interface PolicyConfig {
   block_new_severity?: Severity;
   min_security_score?: number;
   min_quality_score?: number;
-  min_ai_safety_score?: number;
-  max_ai_generated_pct?: number;
 }
 
 export interface Policy {
@@ -226,31 +224,7 @@ export interface Scan {
   completed_at?: string;
   duration_seconds?: number;
   error_message?: string;
-  // Phase 2C: AI-generated-code analysis.
-  ai_generated_pct?: number;
-  ai_code_safety_score?: number;
-  ai_code_report?: AICodeReport;
   created_at: string;
-}
-
-export interface AICodeIssue {
-  rule_id: string;
-  title: string;
-  count: number;
-}
-
-export interface AICodeReport {
-  files_scored: number;
-  ai_file_count: number;
-  ai_generated_pct: number;
-  threshold: number;
-  model_available: boolean;
-  findings_in_ai_code: number;
-  findings_in_human_code: number;
-  ai_failure_mode_findings: number;
-  safety_score: number;
-  top_ai_issues: AICodeIssue[];
-  top_signals: string[];
 }
 
 export interface Finding {
@@ -284,9 +258,6 @@ export interface Finding {
   estimated_effort?: "trivial" | "quick" | "moderate" | "significant";
   context_metadata?: Record<string, unknown>;
   false_positive_probability?: number;
-  // Phase 2C: AI-generated-code tagging.
-  in_ai_generated_code?: boolean;
-  ai_generated_probability?: number;
   // Phase 2C: deviates from the project baseline.
   is_new?: boolean;
   created_at: string;
@@ -317,23 +288,6 @@ export interface BaselineData {
   profile?: { total_findings?: number; distinct_rules?: number; severity_breakdown?: Record<string, number> };
   rules: BaselineRule[];
   team_learning: RuleStat[];
-}
-
-export interface AICodePoint {
-  date: string;
-  pct: number;
-  safety: number;
-}
-
-export interface AICodeMemory {
-  scans_analyzed: number;
-  first_seen?: string;
-  current_pct: number;
-  trend: "growing" | "shrinking" | "stable" | "none";
-  avg_safety: number;
-  series: AICodePoint[];
-  persistent_files: string[];
-  note: string;
 }
 
 export interface SeverityCount {
@@ -381,14 +335,6 @@ export interface ExecTrend {
   note: string;
 }
 
-export interface ExecAICode {
-  ai_generated_pct: number;
-  safety_score: number;
-  findings_in_ai_code: number;
-  top_issue?: string;
-  note: string;
-}
-
 export interface ExecReport {
   project: string;
   scan: Scan;
@@ -396,7 +342,6 @@ export interface ExecReport {
   top_risks: ExecRiskItem[];
   trend?: ExecTrend;
   priorities: string[];
-  ai_code?: ExecAICode;
   generated_by: string;
 }
 

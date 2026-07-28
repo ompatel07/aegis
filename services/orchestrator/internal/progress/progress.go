@@ -19,7 +19,6 @@ const (
 	StageDetecting  = "detecting"
 	StageScanning   = "scanning"
 	StageDeepScan   = "deep_scan"
-	StageAIAnalysis = "ai_analysis"
 	StageFinalizing = "finalizing"
 	StageCompleted  = "completed"
 	StageFailed     = "failed"

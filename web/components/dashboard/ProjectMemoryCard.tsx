@@ -5,20 +5,19 @@ import { useApi } from "@/lib/use-api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { cn, scoreColor } from "@/lib/utils";
-import { Brain, TrendingDown, TrendingUp, Minus } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Brain } from "lucide-react";
 import type { Project } from "@/lib/types";
 
 /**
- * Project memory (Phase 2C TASK 4): the baseline ("what's normal here"), team
- * pattern learning (rules this team dismisses), and the AI-generated-code
- * footprint over time. Makes Aegis get better at each project the more it sees.
+ * Project memory (Phase 2C TASK 4): the baseline ("what's normal here") and team
+ * pattern learning (rules this team dismisses). Makes Aegis get better at each
+ * project the more it sees.
  */
 export function ProjectMemoryCard({ project, onChanged }: { project: Project; onChanged: () => void }) {
   const api = useApi();
   const projectId = project.id;
   const baseline = useQuery({ queryKey: ["baseline", projectId], queryFn: () => api.getBaseline(projectId) });
-  const memory = useQuery({ queryKey: ["ai-memory", projectId], queryFn: () => api.getAICodeMemory(projectId) });
   const toggleGrandfather = useMutation({
     mutationFn: (enabled: boolean) =>
       api.updateProject(projectId, {
@@ -37,7 +36,6 @@ export function ProjectMemoryCard({ project, onChanged }: { project: Project; on
   });
 
   const b = baseline.data;
-  const m = memory.data;
 
   return (
     <Card>
@@ -115,56 +113,7 @@ export function ProjectMemoryCard({ project, onChanged }: { project: Project; on
           </div>
         ) : null}
 
-        {/* AI-code memory */}
-        <div>
-          <p className="mb-1 text-sm font-medium">AI-generated code over time</p>
-          {!m || m.scans_analyzed === 0 ? (
-            <p className="text-sm text-muted-foreground">No AI-code analysis history yet.</p>
-          ) : (
-            <div className="space-y-2">
-              <div className="flex items-center gap-4 text-sm">
-                <TrendIcon trend={m.trend} />
-                <span className="text-muted-foreground">
-                  now <span className="font-medium text-foreground">{Math.round(m.current_pct)}%</span> AI ·
-                  avg safety <span className={cn("font-medium", scoreColor(m.avg_safety))}>{m.avg_safety}</span> ·{" "}
-                  {m.scans_analyzed} scan(s)
-                </span>
-              </div>
-              <Sparkline points={m.series.map((p) => p.pct)} />
-              <p className="text-sm text-muted-foreground">{m.note}</p>
-              {m.persistent_files.length > 0 ? (
-                <p className="text-xs text-muted-foreground">
-                  Persistent AI files (2+ scans): {m.persistent_files.slice(0, 4).join(", ")}
-                  {m.persistent_files.length > 4 ? ` +${m.persistent_files.length - 4} more` : ""}
-                </p>
-              ) : null}
-            </div>
-          )}
-        </div>
       </CardContent>
     </Card>
-  );
-}
-
-function TrendIcon({ trend }: { trend: string }) {
-  if (trend === "growing") return <span className="flex items-center gap-1 text-amber-600"><TrendingUp className="h-4 w-4" /> growing</span>;
-  if (trend === "shrinking") return <span className="flex items-center gap-1 text-emerald-600"><TrendingDown className="h-4 w-4" /> shrinking</span>;
-  return <span className="flex items-center gap-1 text-muted-foreground"><Minus className="h-4 w-4" /> stable</span>;
-}
-
-function Sparkline({ points }: { points: number[] }) {
-  if (points.length === 0) return null;
-  const max = Math.max(1, ...points);
-  return (
-    <div className="flex h-10 items-end gap-1">
-      {points.map((p, i) => (
-        <div
-          key={i}
-          className="w-2 rounded-sm bg-violet-400/50"
-          style={{ height: `${Math.max(6, (p / max) * 100)}%` }}
-          title={`${Math.round(p)}% AI`}
-        />
-      ))}
-    </div>
   );
 }

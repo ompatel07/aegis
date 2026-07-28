@@ -39,7 +39,6 @@ export function FindingsList({ scanId, pillar }: { scanId: string; pillar: Pilla
   const toast = useToast();
   const [severity, setSeverity] = useState<Severity | "all">("all");
   const [engine, setEngine] = useState<string>("all");
-  const [aiOnly, setAiOnly] = useState(false);
   const [newOnly, setNewOnly] = useState(false);
   const [hideSuppressed, setHideSuppressed] = useState(true);
   const [sort, setSort] = useState<SortKey>("severity");
@@ -58,7 +57,6 @@ export function FindingsList({ scanId, pillar }: { scanId: string; pillar: Pilla
     let list = all.filter((f) => {
       if (severity !== "all" && f.severity !== severity) return false;
       if (engine !== "all" && f.engine !== engine) return false;
-      if (aiOnly && !f.in_ai_generated_code) return false;
       if (newOnly && !f.is_new) return false;
       if (hideSuppressed && f.is_suppressed) return false;
       return true;
@@ -72,7 +70,7 @@ export function FindingsList({ scanId, pillar }: { scanId: string; pillar: Pilla
       }
     });
     return list;
-  }, [all, severity, engine, aiOnly, newOnly, hideSuppressed, sort]);
+  }, [all, severity, engine, newOnly, hideSuppressed, sort]);
 
   function toggleSelect(id: string) {
     setSelected((s) => {
@@ -123,7 +121,6 @@ export function FindingsList({ scanId, pillar }: { scanId: string; pillar: Pilla
             </>
           ) : null}
           <span className="mx-1 h-4 w-px bg-border" />
-          <Pill active={aiOnly} onClick={() => setAiOnly((v) => !v)} className="border-violet-400/40">AI code</Pill>
           <Pill active={newOnly} onClick={() => setNewOnly((v) => !v)} className="border-amber-400/40">new</Pill>
           <Pill active={!hideSuppressed} onClick={() => setHideSuppressed((v) => !v)}>show suppressed</Pill>
           <span className="mx-1 h-4 w-px bg-border" />

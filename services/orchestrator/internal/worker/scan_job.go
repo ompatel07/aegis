@@ -106,24 +106,6 @@ func (p *ScanProcessor) ProcessTask(ctx context.Context, task *asynq.Task) error
 	// ── Aggregate + score ────────────────────────────────────────────────────
 	agg := pipeline.Aggregate(results)
 
-	// ── AI-generated-code analysis (Phase 2C) ────────────────────────────────
-	// Score files for AI-generation, tag findings that sit in AI code, and build
-	// the scan's AI-code report. A degraded pass leaves findings untagged.
-	p.stage(ctx, payload.ScanID, progress.StageAIAnalysis)
-	aiRes := p.pipe.AICode(ctx, checkout.Dir, payload.ScanID)
-	aiReport := pipeline.TagAICode(agg.Findings, aiRes)
-	if aiRes != nil {
-		if b, err := json.Marshal(aiReport); err == nil {
-			agg.AICodeReport = b
-		}
-		pct, safety := aiReport.AIGeneratedPct, aiReport.SafetyScore
-		agg.AIGeneratedPct = &pct
-		agg.AICodeSafetyScore = &safety
-		log.Info().Float64("ai_pct", pct).Int("ai_safety", safety).
-			Int("findings_in_ai", aiReport.FindingsInAICode).
-			Msg("ai-code analysis complete")
-	}
-
 	// ── Persist ──────────────────────────────────────────────────────────────
 	p.stage(ctx, payload.ScanID, progress.StageFinalizing)
 	if err := p.store.SaveResults(ctx, payload.ScanID, payload.ProjectID, agg); err != nil {

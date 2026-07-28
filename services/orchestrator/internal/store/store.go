@@ -119,7 +119,6 @@ func (s *Store) SaveResults(ctx context.Context, scanID, projectID string, agg p
 			raw_gitleaks_output = $13, raw_quality_output = $14,
 			error_message = $15,
 			rule_pack_version = $16,
-			ai_generated_pct = $17, ai_code_safety_score = $18, ai_code_report = $19,
 			completed_at = now(),
 			duration_seconds = GREATEST(0, EXTRACT(EPOCH FROM (now() - COALESCE(started_at, queued_at)))::int)
 		WHERE id = $1`
@@ -132,7 +131,6 @@ func (s *Store) SaveResults(ctx context.Context, scanID, projectID string, agg p
 		[]byte(agg.RawSemgrep), []byte(agg.RawTrivy),
 		[]byte(agg.RawGitleaks), []byte(agg.RawQuality),
 		errMsg, nullStr(agg.RulePackVersion),
-		agg.AIGeneratedPct, agg.AICodeSafetyScore, rawJSON(agg.AICodeReport),
 	); err != nil {
 		return fmt.Errorf("update scan: %w", err)
 	}
@@ -143,7 +141,7 @@ func (s *Store) SaveResults(ctx context.Context, scanID, projectID string, agg p
 	return nil
 }
 
-const findingColumnCount = 29
+const findingColumnCount = 27
 
 // insertFindings bulk-inserts findings in chunks (bounded by Postgres' param limit).
 func insertFindings(ctx context.Context, tx *sqlx.Tx, scanID string, findings []types.Finding) error {
@@ -170,7 +168,7 @@ func buildInsert(scanID string, chunk []types.Finding) (string, []any) {
 		 cwe_id, cve_id, owasp_category, fix_suggestion, metadata,
 		 title_human, impact, risk_level, remediation_action, remediation_details,
 		 estimated_effort, context_metadata, false_positive_probability,
-		 in_ai_generated_code, ai_generated_probability, is_new) VALUES `)
+		 is_new) VALUES `)
 
 	args := make([]any, 0, len(chunk)*findingColumnCount)
 	for i, f := range chunk {
@@ -196,7 +194,7 @@ func buildInsert(scanID string, chunk []types.Finding) (string, []any) {
 			nullStr(f.RemediationAction), nullStr(f.RemediationDetails),
 			nullStr(f.EstimatedEffort), metadataJSON(f.ContextMetadata),
 			f.FalsePositiveProbability,
-			f.InAIGeneratedCode, f.AIGeneratedProbability, f.IsNew,
+			f.IsNew,
 		)
 	}
 	return b.String(), args

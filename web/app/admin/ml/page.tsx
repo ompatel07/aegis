@@ -4,9 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Activity } from "lucide-react";
 
 /**
- * ML model monitoring. The FP classifier + AI-code detector are trained inside
- * the scanner service (metadata only). Cross-validated metrics are recorded at
- * training time; feedback accrues per rule/org and drives nightly retraining.
+ * ML model monitoring. The false-positive classifier is trained inside the
+ * scanner service (metadata only). Cross-validated metrics are recorded at
+ * training time; feedback accrues per rule/org.
  */
 export default function AdminMLPage() {
   return (
@@ -21,32 +21,16 @@ export default function AdminMLPage() {
             <Metric label="Cross-val precision" value="0.87" />
             <Metric label="Cross-val recall" value="0.82" />
             <Metric label="ROC-AUC" value="0.90" />
-            <Metric label="Retrain" value="nightly when ≥100 new feedback rows" />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-base">AI-code detector</CardTitle></CardHeader>
-          <CardContent className="space-y-1 text-sm text-muted-foreground">
-            <Metric label="Model" value="LightGBM (14 metadata features)" />
-            <Metric label="Synthetic-CV ROC-AUC" value="0.91" />
-            <Metric label="Real-world ROC-AUC (shipped)" value="0.54 — near-random" />
-            <Metric label="Real-data retrain CV" value="0.92 (confounded — see 2e)" />
-            <Metric label="Status" value="advisory only; retrain-on-real pending" />
-            <p className="pt-1 text-xs text-amber-600">
-              Track 2e found the synthetic-trained model does not generalize to real
-              AI code. See AI_CODE_DETECTION_VALIDATION.md.
-            </p>
+            <Metric label="Retrain" value="from seed + feedback (metadata only)" />
           </CardContent>
         </Card>
       </div>
 
       <Card>
         <CardContent className="py-4 text-sm text-muted-foreground">
-          Both models run <span className="font-medium text-foreground">inside the scanner</span> — no source code
-          leaves the customer&apos;s infrastructure (see PRIVACY.md). Team pattern learning blends each project&apos;s
-          per-rule feedback into a personalized FP prior at scan time. Manual retrain + live experiment metrics land
-          here as the training pipeline is wired to the admin API.
+          The FP classifier runs <span className="font-medium text-foreground">inside the scanner</span> — no source
+          code leaves the customer&apos;s infrastructure (see PRIVACY.md). Team pattern learning blends each
+          project&apos;s per-rule feedback into a personalized FP prior at scan time.
         </CardContent>
       </Card>
     </div>

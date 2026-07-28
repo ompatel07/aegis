@@ -58,8 +58,6 @@ type Finding struct {
 
 	// AI-generated-code tagging (Phase 2C): whether this finding sits in a file
 	// the AI-code classifier flagged, and that file's AI-generated probability.
-	InAIGeneratedCode      bool     `db:"in_ai_generated_code" json:"in_ai_generated_code"`
-	AIGeneratedProbability *float64 `db:"ai_generated_probability" json:"ai_generated_probability,omitempty"`
 
 	// IsNew: deviates from the project baseline (Phase 2C TASK 4). "New" findings
 	// display first and can gate PRs under grandfathering mode.

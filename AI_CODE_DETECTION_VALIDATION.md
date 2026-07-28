@@ -1,5 +1,16 @@
 # AI-Code Detection — Real-World Validation (Track 2e)
 
+> **STATUS: FEATURE REMOVED (Phase 2D).** Based on the finding below (the shipped
+> classifier is near-random on real data), the AI-generated-code **detection**
+> feature was removed from the product — classifier, `ai_generated_probability`
+> scoring, the AI-code %/safety-score/report, and all UI/report surfaces. It will
+> be rebuilt properly later with a **repo-controlled** dataset once beta usage
+> supplies one. **Kept:** the deterministic AI-failure-mode **Semgrep rules**
+> (`rules/ai_code_taint/`) — they are ordinary security SAST rules and still fire
+> (12/12 `semgrep --test`). This document is retained as the evidence behind the
+> removal.
+
+
 The AI-generated-code classifier (`services/scanner/ml/ai_detect/`, LightGBM over
 14 **metadata-only** features — no source leaves the scanner) was trained in
 Phase 2C on a **synthetic** dataset (human code deliberately refactored with "AI

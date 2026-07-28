@@ -30,11 +30,6 @@ type Aggregated struct {
 	// RulePackVersion is the semgrep rule set used, recorded for reproducibility.
 	RulePackVersion string
 
-	// AI-generated-code analysis (Phase 2C). Set only when the AI-code pass ran.
-	AICodeReport      json.RawMessage
-	AIGeneratedPct    *float64
-	AICodeSafetyScore *int
-
 	// EngineErrors records engines that failed so the scan can note degradation.
 	EngineErrors map[string]string
 }

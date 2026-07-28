@@ -7,7 +7,6 @@ import { useApi } from "@/lib/use-api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScanStatusBadge } from "@/components/dashboard/ScanStatusBadge";
-import { AICodeCard } from "@/components/dashboard/AICodeCard";
 import { PolicyResultCard } from "@/components/dashboard/PolicyResultCard";
 import { ScanProgress } from "@/components/dashboard/ScanProgress";
 import { ScanFeedback } from "@/components/dashboard/ScanFeedback";
@@ -95,7 +94,6 @@ export default function ScanDetailPage() {
           </div>
 
           <PolicyResultCard scanId={scanId} />
-          <AICodeCard scan={scan} />
 
           <Tabs defaultValue="security">
             <TabsList>

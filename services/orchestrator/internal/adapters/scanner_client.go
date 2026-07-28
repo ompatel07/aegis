@@ -104,26 +104,6 @@ func (s *ScannerClient) Deployment(ctx context.Context, path, scanID string, lan
 	})
 }
 
-// AICode runs the AI-generated-code analysis pass over the checked-out repo.
-// Returns per-file AI probabilities + repo-level stats used to tag findings and
-// assemble the scan's AI-code report.
-func (s *ScannerClient) AICode(ctx context.Context, path, scanID string) (*types.AICodeResult, error) {
-	var result types.AICodeResult
-	resp, err := s.client.R().
-		SetContext(ctx).
-		SetHeader("Content-Type", "application/json").
-		SetBody(s.base(path, scanID, nil, nil)).
-		SetResult(&result).
-		Post("/scan/ai-code")
-	if err != nil {
-		return nil, fmt.Errorf("scanner /scan/ai-code: %w", err)
-	}
-	if resp.IsError() {
-		return nil, fmt.Errorf("scanner /scan/ai-code returned %d: %s", resp.StatusCode(), resp.String())
-	}
-	return &result, nil
-}
-
 // Deep runs the opt-in interprocedural taint scan (Joern or CodeQL). When the
 // selected backend's tool is absent the scanner returns status=skipped (200),
 // which surfaces here as a normal EngineResult, not an error.

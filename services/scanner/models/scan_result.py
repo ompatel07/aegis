@@ -146,27 +146,6 @@ class DeploymentReport(BaseModel):
     steps: list[DeploymentStep] = Field(default_factory=list)
 
 
-class AICodeResult(BaseModel):
-    """AI-generated-code analysis for a repository (Phase 2C TASK 3a).
-
-    Runs locally over file text — no code leaves the scanner. `file_scores` holds
-    only files scoring >= 0.3 (AI + borderline) to bound payload size on large
-    repos; findings in files absent from the map are treated as human-written.
-    """
-
-    status: EngineStatus = EngineStatus.COMPLETED
-    files_scored: int = 0
-    ai_file_count: int = 0            # files with probability > threshold
-    ai_generated_pct: float = 0.0    # ai_file_count / files_scored * 100
-    threshold: float = 0.7
-    model_available: bool = False    # trained model vs heuristic fallback
-    file_scores: dict[str, float] = Field(default_factory=dict)
-    top_signals: list[str] = Field(default_factory=list)  # why files were flagged
-    duration_seconds: float = 0.0
-    scan_id: str | None = None
-    error: str | None = None
-
-
 class EngineResult(BaseModel):
     """Uniform envelope returned by every scanner endpoint."""
 
