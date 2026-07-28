@@ -82,18 +82,93 @@ git clone --depth 1 https://github.com/OWASP-Benchmark/BenchmarkJava.git
 
 ---
 
-## Remaining Track 2 (subsequent sessions)
+## Track 2 status
 
-- **2c** 20-repo multi-language comparative vs SonarQube/Semgrep/Trivy
-  (`COMPARATIVE_ANALYSIS.md`, commit per repo).
-- **2b** real-world vuln corpus — the Bennett et al. 2024 paper uses the public
-  **SAP/Ponta MSR-2019** dataset (170 Java CVEs evaluated; best single tool
-  FindSecBugs = 26.5%). A bounded SAP sample is the plan (full run needs ~170
-  production-repo clones).
-- **2e** AI-code detection real-world validation (`AI_CODE_DETECTION_VALIDATION.md`).
-- **2f** Joern deep-scan value on 10 repos.
+- **2a** OWASP Benchmark v1.2 — **done** (above).
+- **2b** SAP/Ponta MSR-2019 real-CVE corpus — **done** (section below).
+- **2c** 20-repo multi-language comparative vs SonarQube/Semgrep/Trivy — **done**
+  (`COMPARATIVE_ANALYSIS.md`).
+- **2d** false-positive deep-dive — **done** (section below).
+- **2e** AI-code detection real-world validation — **done**; the detection feature
+  was proven near-random (ROC-AUC 0.541) and subsequently **removed**
+  (`AI_CODE_DETECTION_VALIDATION.md`, Phase 2D).
+- **2f** Joern deep-scan value on 10 repos — **done** (`DEEP_SCAN_VALUE.md`).
 
-_(Track 2d — false-positive deep-dive — is complete; see the section below.)_
+---
+
+## Track 2b — Real-world CVE corpus (SAP/Ponta MSR-2019)
+
+**Dataset.** SAP/Ponta MSR-2019 (`SAP/project-kb`) — 624 real CVEs mapped to their
+fix commits across 205 Java OSS projects. **Baseline:** in the reference study the
+best *single* tool, **FindSecBugs, detected 26.5%** of the evaluated Java CVEs —
+real-world CVE detection by any single SAST tool is low, because most CVEs are
+logic/auth/deserialization bugs no pattern engine can see. That is the bar.
+
+**Method (fix-commit-as-oracle).** A **deterministic bounded sample of 45 CVEs**
+(one fix-commit per CVE, strided across the corpus — no cherry-picking; 33 distinct
+repos incl. Tomcat, Struts, Jenkins, Keycloak, jackson-databind, Elasticsearch,
+CXF, Spring). For each CVE: fetch the fix commit + parent by SHA (depth 2, no full
+history; 9 truncated dataset SHAs recovered via the GitHub API), check out the
+**parent** (the *vulnerable* state), and run Aegis SAST on the Java files the fix
+touched. Ground truth = those files and their parent-side changed line ranges.
+Two detection definitions are reported (the difference is the honest part):
+
+- **file-level** — any Aegis finding in a fix-touched file (lenient upper bound).
+- **line-level** — a finding within ±10 lines of a parent-side changed hunk
+  (strict; every strict hit was checked to confirm the *fired rule matches the
+  CVE's actual vuln class*).
+
+Harness: [`benchmarks/comparative/sap_bench.py`](benchmarks/comparative/sap_bench.py);
+raw data + sample in [`benchmarks/comparative/sap_data/`](benchmarks/comparative/sap_data/).
+
+### Results (44 evaluable CVEs; 1 SHA unfetchable, 1 fix touched no Java)
+
+| Metric | Detected | Rate | vs FindSecBugs 26.5% |
+| --- | --- | --- | --- |
+| **Line-level (strict, rule-verified genuine)** | 8 / 44 | **18.2%** | below |
+| **Class-relevant** (strict + fix-offset, same vuln class) | 10 / 44 | **22.7%** | ≈ comparable |
+| **File-level** (lenient; incl. 6 coincidental hits) | 16 / 44 | **36.4%** | above |
+
+**Verdict: competitive with the best single tool.** On a like-for-like file/method
+basis Aegis (**36.4%**) exceeds FindSecBugs (26.5%); on the strict line-level basis
+it is **18.2%**; the honest **class-relevant** figure — strict hits plus the two
+file-level hits whose fired rule matches the CVE class but fell outside the ±10-line
+window (CVE-2018-1282 Hive JDBC-SQLi, CVE-2013-4590 Tomcat XXE) — is **22.7%**, just
+under FindSecBugs. Aegis is in the **same range** as the reference tool, not a clear
+winner: reported plainly, without inflating to the lenient number.
+
+**The 8 strict detections are genuine, not coincidental** — the rule that fired is
+the right vuln class in every case:
+
+| CVE | Project | Vuln class | Rule that fired |
+| --- | --- | --- | --- |
+| CVE-2017-4971 | spring-webflow | SpEL injection (RCE) | `spel-injection` |
+| CVE-2018-1273 | spring-data-commons | SpEL injection (RCE) | `spel-injection` |
+| AMQP-590 | spring-amqp | Java deserialization (RCE) | `object-deserialization` |
+| CVE-2013-4517 | santuario-java | XXE | `documentbuilderfactory-…-doctype` |
+| CVE-2018-1000129 | jolokia | XSS | `aegis-java-xss` (Aegis taint rule) |
+| CVE-2016-0714 | tomcat | unsafe reflection (session RCE) | `unsafe-reflection` |
+| CVE-2011-1184 | tomcat | weak DIGEST crypto | `use-of-md5` |
+| CVE-2018-12536 | jetty | session-id URL rewriting | `url-rewriting` |
+
+### Honest caveats
+
+- **File-level over-counts.** 6 of the 16 file-level "detections" are coincidental
+  — an unrelated finding in the touched file (e.g., `unencrypted-socket` in a
+  deserialization CVE's file). The strict/class-relevant metrics exclude these; the
+  lenient 36.4% deliberately does not, and is reported as an upper bound only.
+- **28/44 undetected — and that's expected.** They are vuln classes pattern SAST
+  structurally cannot catch: auth/access-control bypasses (Jenkins, Keycloak,
+  cxf-fediz), deserialization gadget chains (hbase, jackson-databind), DoS
+  (Tomcat chunked-transfer, `Double.parseDouble`), and sandbox escapes
+  (groovy-sandbox, Elasticsearch Groovy). This is exactly why the corpus's
+  best-tool ceiling is only ~26%.
+- **Fix-as-oracle limitation.** A fix can live in a different file/line than the
+  vulnerable sink, so the ±10-line window under-credits real detections (the two
+  class-relevant file-level hits are precisely this). This deflates line-level and
+  is why class-relevant (22.7%) is the fairest single figure.
+- **Bounded sample (45 of 624).** Deterministic stride, not curated; a full run is
+  future work. No rule was tuned to any CVE — stock Aegis config.
 
 ---
 
