@@ -1,0 +1,77 @@
+rules:
+  # Docker Compose misconfigurations (Phase 2E Task 2). Trivy's misconfig scanner
+  # covers Dockerfile / Terraform / Kubernetes but not docker-compose, so these
+  # focused rules close that gap. Scoped to compose files by path.
+  - id: aegis-compose-privileged
+    languages: [yaml]
+    severity: ERROR
+    message: >-
+      docker-compose service runs in privileged mode. A privileged container has
+      near-root access to the host kernel and devices — a container escape becomes
+      a host compromise. Drop `privileged: true` and grant only the specific
+      capabilities the service needs via `cap_add`.
+    metadata:
+      category: iac-misconfiguration
+      iac_type: docker-compose
+      cwe: ["CWE-250: Execution with Unnecessary Privileges"]
+      owasp: ["A05:2021 - Security Misconfiguration"]
+    paths:
+      include: ["*compose*.yml", "*compose*.yaml", "*docker-compose*"]
+    patterns:
+      - pattern: |
+          privileged: true
+
+  - id: aegis-compose-host-network
+    languages: [yaml]
+    severity: WARNING
+    message: >-
+      docker-compose service uses host networking (`network_mode: host`), removing
+      network isolation between the container and the host. The container can bind
+      to and sniff any host interface. Use a bridge/user-defined network instead.
+    metadata:
+      category: iac-misconfiguration
+      iac_type: docker-compose
+      cwe: ["CWE-668: Exposure of Resource to Wrong Sphere"]
+      owasp: ["A05:2021 - Security Misconfiguration"]
+    paths:
+      include: ["*compose*.yml", "*compose*.yaml", "*docker-compose*"]
+    patterns:
+      - pattern-either:
+          - pattern: 'network_mode: host'
+          - pattern: 'network_mode: "host"'
+          - pattern: "pid: host"
+          - pattern: 'pid: "host"'
+
+  - id: aegis-compose-dangerous-capability
+    languages: [yaml]
+    severity: ERROR
+    message: >-
+      docker-compose service adds a dangerous Linux capability (SYS_ADMIN /
+      NET_ADMIN / ALL). SYS_ADMIN in particular is close to full root on the host.
+      Add only the minimal capabilities required, and prefer `cap_drop: [ALL]`.
+    metadata:
+      category: iac-misconfiguration
+      iac_type: docker-compose
+      cwe: ["CWE-250: Execution with Unnecessary Privileges"]
+      owasp: ["A05:2021 - Security Misconfiguration"]
+    paths:
+      include: ["*compose*.yml", "*compose*.yaml", "*docker-compose*"]
+    patterns:
+      - pattern-regex: "-\\s*(SYS_ADMIN|NET_ADMIN|ALL)\\b"
+
+  - id: aegis-compose-port-all-interfaces
+    languages: [yaml]
+    severity: WARNING
+    message: >-
+      docker-compose publishes a port bound to all interfaces (0.0.0.0), exposing
+      the service beyond localhost. If the service is meant to be internal, bind to
+      127.0.0.1 (e.g. "127.0.0.1:8080:8080") or place it behind a reverse proxy.
+    metadata:
+      category: iac-misconfiguration
+      iac_type: docker-compose
+      cwe: ["CWE-668: Exposure of Resource to Wrong Sphere"]
+      owasp: ["A05:2021 - Security Misconfiguration"]
+    paths:
+      include: ["*compose*.yml", "*compose*.yaml", "*docker-compose*"]
+    patterns:
+      - pattern-regex: '"0\.0\.0\.0:\d+:\d+"'

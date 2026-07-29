@@ -28,6 +28,18 @@ from utils.sandbox import binary_available, run_with_retry
 log = get_logger("trivy")
 
 
+# Demo/sample/dependency dirs excluded from SCA + IaC scanning (glob patterns).
+_SKIP_DIRS = ["**/node_modules/**", "**/vendor/**", "**/examples/**", "**/example/**",
+              "**/samples/**", "**/sample/**", "**/docs/**", "**/docs_src/**"]
+
+# Human labels for the IaC config type Trivy reports.
+_IAC_TYPE_LABEL = {
+    "dockerfile": "Dockerfile", "terraform": "Terraform", "terraformplan": "Terraform",
+    "kubernetes": "Kubernetes", "helm": "Helm", "cloudformation": "CloudFormation",
+    "azure-arm": "Azure ARM", "rbac": "Kubernetes RBAC", "yaml": "config", "json": "config",
+}
+
+
 async def run(req: ScanRequest, settings: Settings) -> EngineResult:
     if not binary_available(settings.trivy_bin):
         return EngineResult.failed(
@@ -41,6 +53,9 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
         "--scanners", "vuln,misconfig",
         "--quiet",
         "--no-progress",
+        # Skip demo/sample/dependency trees so IaC + SCA respect the same
+        # production-scoping discipline as SAST (COMPARATIVE_ANALYSIS.md / Phase 2E).
+        "--skip-dirs", ",".join(_SKIP_DIRS),
         "--cache-dir", settings.trivy_cache_dir,
         req.path,
     ]
@@ -107,7 +122,7 @@ def _parse(raw: dict, root: str, index: "reachability.ReachabilityIndex | None")
         target = res.get("Target", "")
         ecosystem = reachability.ecosystem_for_type(res.get("Type"))
         findings.extend(_parse_vulnerabilities(res, target, ecosystem, index))
-        findings.extend(_parse_misconfigurations(res, target))
+        findings.extend(_parse_misconfigurations(res, target, res.get("Type", "")))
     findings.sort(key=lambda f: (_rank(f), f.file_path))
     return findings
 
@@ -175,13 +190,18 @@ def _parse_vulnerabilities(
     return out
 
 
-def _parse_misconfigurations(res: dict, target: str) -> list[Finding]:
+def _parse_misconfigurations(res: dict, target: str, result_type: str = "") -> list[Finding]:
     out: list[Finding] = []
     for mis in res.get("Misconfigurations", []) or []:
         # Only report actual failures, not passed/skipped checks.
         if mis.get("Status") and mis.get("Status") != "FAIL":
             continue
         cause = mis.get("CauseMetadata", {}) or {}
+        # Prefer the (clean) result Type — "dockerfile"/"terraform"/"kubernetes" —
+        # over the misconfiguration's verbose Type ("Dockerfile Security Check").
+        iac_type = (result_type or mis.get("Type") or "").lower()
+        iac_label = _IAC_TYPE_LABEL.get(iac_type, iac_type or "IaC")
+        base_title = normalizer.truncate(mis.get("Title") or mis.get("ID"), 1000) or "misconfiguration"
         out.append(
             Finding(
                 pillar=Pillar.SECURITY,
@@ -189,7 +209,8 @@ def _parse_misconfigurations(res: dict, target: str) -> list[Finding]:
                 rule_id=mis.get("ID", "UNKNOWN-MISCONF"),
                 rule_name=normalizer.truncate(mis.get("Title", ""), 500) or "misconfiguration",
                 severity=normalizer.label_to_severity(mis.get("Severity")),
-                title=normalizer.truncate(mis.get("Title") or mis.get("ID"), 1000) or "misconfiguration",
+                # Prefix with the IaC kind so it's unmistakably an IaC finding.
+                title=f"[IaC · {iac_label}] {base_title}"[:1000],
                 description=normalizer.truncate(
                     f"{mis.get('Description', '')}\n\nResolution: {mis.get('Resolution', '')}", 8000
                 ),
@@ -199,6 +220,9 @@ def _parse_misconfigurations(res: dict, target: str) -> list[Finding]:
                 owasp_category="A05:2021 - Security Misconfiguration",
                 fix_suggestion=normalizer.truncate(mis.get("Resolution"), 8000),
                 metadata={
+                    "category": "iac-misconfiguration",
+                    "iac_type": iac_type,
+                    "iac_kind": iac_label,
                     "type": mis.get("Type"),
                     "namespace": mis.get("Namespace"),
                     "primary_url": mis.get("PrimaryURL"),

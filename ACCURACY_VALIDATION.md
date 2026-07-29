@@ -19,6 +19,7 @@ tuned to a benchmark (the Track 2d / Consul-Vault discipline).
 | **Quality** (lizard/radon/dup) | metric correctness | **exact** | hand-computed | ✅ CC/params/dup all match |
 | **Deployment** test | pass good / fail broken | **4/4 correct** | Go + Node | ✅ real builds |
 | **CVE intelligence** | feed freshness + retro re-score | **live, synced today** | NVD/OSV/GHSA | ✅ current + retro works |
+| **IaC** (Trivy + Aegis compose) | misconfig recall / FP | **9/9 = 100% · 0 hi-FP** | Dockerfile/TF/K8s/Compose | ✅ tagged, scoped |
 
 ### Bottom line
 
@@ -355,3 +356,41 @@ finding detail UI and the executive report (`reproduction` field). Harness:
 Note: on the mature framework repos SoR appears rarely because their app-level
 request→sink flows live in `examples/` (excluded by the §2 scoping); it shines on
 real application code (juice-shop) — exactly where it matters.
+
+---
+
+## 9. IaC (Infrastructure-as-Code) misconfiguration accuracy (Phase 2E Task 2)
+
+**Coverage.** Dockerfile, Terraform, and Kubernetes via **Trivy's misconfig
+scanner** (curated AVD policies); **docker-compose** via a small **Aegis Semgrep
+rule pack** (`rules/iac/docker_compose.yaml`) — the one IaC surface Trivy's
+`fs --scanners misconfig` does not cover. All misconfig findings are tagged
+`metadata.category = "iac-misconfiguration"` with an `iac_type`
+(dockerfile/terraform/kubernetes/docker-compose) and an `[IaC · <kind>]` title,
+and they respect the same demo-dir scoping as SAST (Trivy `--skip-dirs`).
+
+**Method.** A known-bad + known-good corpus across all four IaC kinds, plus a
+bad `.tf` planted in an `examples/` dir to prove scoping. Harness:
+[`benchmarks/iac/`](benchmarks/iac/) (`iac_corpus.sh` + `iac_verify.py`).
+
+| Check | Result |
+| --- | --- |
+| **Recall on planted misconfigs** (Dockerfile latest/root, TF unencrypted/public/open-SG, K8s privileged/hostPath, Compose privileged/exposed-port/SYS_ADMIN) | **9 / 9 = 100%** |
+| Bad files flagged (Dockerfile 6, Terraform 16, K8s 20, Compose 3) | ✅ all |
+| **example-dir scoping** (bad `.tf` under `examples/`) | **skipped — 0 findings** ✅ |
+| **High/critical false positives on hardened good files** | **0** ✅ |
+| Clear IaC tagging (`category`, `iac_type`, `[IaC · …]` title) | ✅ |
+
+**Verdict: ✅ complete and accurate.** 100% recall on the planted misconfig set
+across all four IaC kinds, zero high/critical false positives on hardened files,
+correct demo-dir scoping, and clear tagging into the existing findings pipeline
+(same schema/severity/dashboard).
+
+**Honest note — IaC policies are prescriptive.** Trivy's AVD checks are
+comprehensive: a genuinely-hardened file still draws a few **low/medium**
+best-practice notes (e.g. "add resource tags", "enable access logging"). Those are
+*correct* defense-in-depth recommendations, not false positives — which is why the
+FP metric is scoped to **high/critical** (the actionable tier). The compose rules
+are deliberately narrow (privileged, host networking, dangerous capabilities,
+0.0.0.0 port binding) and path-scoped to compose files, so they never fire on
+ordinary YAML.

@@ -68,6 +68,13 @@ _AI_CODE_RULES_DIR = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "rules", "ai_code_taint"
 )
 
+# Aegis IaC rules (Phase 2E Task 2): docker-compose misconfigurations — the one
+# IaC surface Trivy's misconfig scanner doesn't cover. Always-on; path-scoped to
+# compose files so they never fire on ordinary YAML.
+_IAC_RULES_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "rules", "iac"
+)
+
 
 def _select_configs(settings: Settings, languages: list[str], project_types: list[str]) -> list[str]:
     """Build the ordered, de-duplicated `--config` list for this scan."""
@@ -226,7 +233,9 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
         registry_configs = registry_configs + [project_rules_dir]
 
     ai_code_dir = _bundled_rules_dir(_AI_CODE_RULES_DIR)
-    bundled = ([custom_dir] if custom_dir else []) + ([ai_code_dir] if ai_code_dir else [])
+    iac_dir = _bundled_rules_dir(_IAC_RULES_DIR)
+    bundled = (([custom_dir] if custom_dir else []) + ([ai_code_dir] if ai_code_dir else [])
+               + ([iac_dir] if iac_dir else []))
     configs = registry_configs + bundled
     rule_pack_version = _rule_pack_version(configs, req.custom_rules)
 
@@ -362,6 +371,7 @@ def _parse(raw: dict, root: str) -> list[Finding]:
                     "confidence": metadata.get("confidence"),
                     "references": metadata.get("references"),
                     "category": metadata.get("category"),
+                    "iac_type": metadata.get("iac_type"),  # e.g. docker-compose (Phase 2E)
                     "technology": metadata.get("technology"),
                     "lines": normalizer.truncate(extra.get("lines"), 2000),
                 },
