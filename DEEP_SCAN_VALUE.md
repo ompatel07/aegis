@@ -1,5 +1,15 @@
 # Deep-Scan Value Proposition — Joern Interprocedural Taint (Track 2f)
 
+> **STATUS: SHELVED FOR LAUNCH (Phase 2D close-out).** The Joern deep-scan engine
+> is gated **experimental, OFF by default** (`DEEP_SCAN_ENABLED=false` in the
+> orchestrator). It is **not deleted** — it works end-to-end after the openjdk-21 +
+> `taint.sc` fixes and stays in the codebase behind the flag — but on the evidence
+> below it finds **0 genuine net-new vulnerabilities** on real code, so it is
+> **removed from the marketed feature set** and no UI/pricing/onboarding copy claims
+> a "deeper" scan. The fast-scan pipeline (F1 0.775 > CodeQL 0.744; a superset of
+> Semgrep-CE on 19 repos) is unaffected. **Post-launch replacement path** at the end
+> of this document.
+
 Does Aegis's optional **deep-scan tier** (Joern's Code Property Graph +
 interprocedural taint analysis) find real vulnerabilities that the **fast pass**
 (Semgrep, largely intra-file) structurally cannot? This is the honest answer,
@@ -222,3 +232,45 @@ measured value on real mature codebases is ~0, and the docs should say so.**
 *Integrity note: fast-SAST totals here match Track 2c per repo; no rule was tuned
 to any repo; the two unflattering firings were dissected to the exact sink and
 attributed to specific pattern defects rather than reported as wins.*
+
+---
+
+## 7. Launch decision — shelved, and how it's gated
+
+**Decision:** ship without a marketed deep-scan tier.
+
+- **Gated OFF by default.** The orchestrator honours `DEEP_SCAN_ENABLED` (default
+  `false`). Even when a scan sets `deep_scan_enabled`, the worker skips Joern and
+  logs `deep scan requested but the engine is disabled` unless an operator has
+  explicitly opted in. Code: `services/orchestrator/internal/config/config.go`,
+  `internal/worker/scan_job.go`.
+- **Not deleted.** The engine, the openjdk-21 image, and the fixed `taint.sc`
+  remain in the tree — re-enabling is a one-line flag flip once a deep engine
+  clears the success criterion below.
+- **No marketing claims.** Deep-scan is absent from the README, pricing/tier copy,
+  onboarding, and the UI (there is no deep-scan toggle in the product). `PRIVACY.md`
+  now labels Joern *experimental — off by default*.
+- **Fast-scan unaffected.** The gate only wraps the deep block that runs *after*
+  the fast fan-out (`Pipeline.Run`); the fast SAST/SCA/secrets/quality pipeline is
+  structurally untouched, and its OWASP Benchmark result is re-confirmed unchanged
+  in `ACCURACY_VALIDATION.md`.
+
+## 8. Post-launch replacement path
+
+Deep, cross-file taint analysis remains a worthwhile capability — Joern was simply
+the wrong engine. After launch, evaluate a replacement:
+
+- **Opengrep** (open-source Semgrep fork) — cross-file / cross-function taint
+  analysis, benchmarked **7/9 multi-hop cases vs Semgrep CE's 4/9**, **same rule
+  syntax** so Aegis's existing taint rules carry over, **free to bundle
+  commercially**, and it **doesn't crash on Python** (the django OOM class). This is
+  the leading candidate to replace Joern as the deep-scan engine.
+- **OpenTaint** (Apache 2.0) — Java/Kotlin/Spring today, more languages on the
+  roadmap. Watch as a complementary/alternative option.
+
+**Success criterion before promoting deep-scan to a marketed feature:** the
+replacement engine must find **genuine net-new vulnerabilities on the same 10 real
+repos where Joern found zero** (§3), verified with the same discipline (unique
+sinks not raw paths, sampled source→sink confirmed real, no `example/`-dir or
+sanitizer-blind false positives). Until an engine clears that bar, deep-scan stays
+experimental and unmarketed.

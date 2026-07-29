@@ -9,10 +9,10 @@ the code paths referenced.
 
 | Subsystem | Touches source code? | Where it runs |
 |-----------|----------------------|---------------|
-| Scanners (Semgrep, Trivy, Gitleaks, quality, Joern) | Yes — reads the cloned repo to analyze it | Your infrastructure (self-hosted scanner) |
+| Scanners (Semgrep, Trivy, Gitleaks, quality) | Yes — reads the cloned repo to analyze it | Your infrastructure (self-hosted scanner) |
+| Joern deep-scan (**experimental — off by default**) | Yes, when enabled — reads the cloned repo | Your scanner (opt-in sidecar; see DEEP_SCAN_VALUE.md) |
 | Finding enrichment | No — operates on findings/metadata | Your scanner |
 | **Local ML false-positive filter** | **No — metadata only** | **Your scanner** |
-| **AI-generated-code detection** | **Reads file text locally to extract features; text never leaves** | **Your scanner** |
 | Vulnerability intelligence feed | No — package names + public CVE data | Your orchestrator |
 | **AI fix suggestions (opt-in)** | **Only the 10–30 flagged lines, if you enable it** | **Backend you choose** |
 | Executive AI reports (opt-in) | No — findings JSON only | Backend you choose |

@@ -18,19 +18,20 @@ import (
 
 // ScanProcessor executes the end-to-end scan pipeline for one job.
 type ScanProcessor struct {
-	store         *store.Store
-	git           *adapters.GitClient
-	pipe          *pipeline.Pipeline
-	progress      *progress.Publisher
-	maxRepoSizeMB int
-	log           zerolog.Logger
+	store           *store.Store
+	git             *adapters.GitClient
+	pipe            *pipeline.Pipeline
+	progress        *progress.Publisher
+	maxRepoSizeMB   int
+	deepScanEnabled bool // experimental Joern deep scan; OFF by default (Track 2f)
+	log             zerolog.Logger
 }
 
 func NewScanProcessor(
 	st *store.Store, git *adapters.GitClient, pipe *pipeline.Pipeline, prog *progress.Publisher,
-	maxRepoSizeMB int, log zerolog.Logger,
+	maxRepoSizeMB int, deepScanEnabled bool, log zerolog.Logger,
 ) *ScanProcessor {
-	return &ScanProcessor{store: st, git: git, pipe: pipe, progress: prog, maxRepoSizeMB: maxRepoSizeMB, log: log}
+	return &ScanProcessor{store: st, git: git, pipe: pipe, progress: prog, maxRepoSizeMB: maxRepoSizeMB, deepScanEnabled: deepScanEnabled, log: log}
 }
 
 // stage records + broadcasts the scan's current pipeline stage.
@@ -97,10 +98,16 @@ func (p *ScanProcessor) ProcessTask(ctx context.Context, task *asynq.Task) error
 	// ── Deep scan (opt-in) ───────────────────────────────────────────────────
 	// Runs after the fast fan-out; merged + deduped so the same vuln is not
 	// double-reported. A skipped/failed deep scan never fails the overall scan.
-	if payload.DeepScanEnabled {
+	// The experimental Joern deep scan is globally gated OFF by default (Track 2f:
+	// 0 net-new vulns on real repos). A per-scan request runs it only when the
+	// operator has explicitly enabled the engine via DEEP_SCAN_ENABLED.
+	if payload.DeepScanEnabled && p.deepScanEnabled {
 		p.stage(ctx, payload.ScanID, progress.StageDeepScan)
 		deep := p.pipe.Deep(ctx, checkout.Dir, payload.ScanID, payload.DeepScanEngine)
 		results = pipeline.MergeDeep(results, deep)
+	} else if payload.DeepScanEnabled {
+		p.log.Info().Str("scan_id", payload.ScanID).
+			Msg("deep scan requested but the engine is disabled (experimental, DEEP_SCAN_ENABLED=false); skipping")
 	}
 
 	// ── Aggregate + score ────────────────────────────────────────────────────

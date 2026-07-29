@@ -29,6 +29,12 @@ type Config struct {
 	ScannerDeepURL string // deep-scan sidecar (Joern); falls back to ScannerBaseURL
 	ScannerTimeout time.Duration
 
+	// DeepScanEnabled globally gates the experimental Joern interprocedural
+	// deep-scan engine. OFF by default: Track 2f measured 0 genuine net-new
+	// vulnerabilities on 10 real repos (see DEEP_SCAN_VALUE.md). Even when a scan
+	// requests deep_scan_enabled, it is skipped unless this operator flag is set.
+	DeepScanEnabled bool
+
 	WorkspaceDir  string
 	MaxRepoSizeMB int
 	GitCloneDepth int
@@ -57,6 +63,7 @@ func Load() (*Config, error) {
 	v.SetDefault("WORKER_CONCURRENCY", 5)
 	v.SetDefault("SCANNER_BASE_URL", "http://localhost:8000")
 	v.SetDefault("SCANNER_DEEP_URL", "")
+	v.SetDefault("DEEP_SCAN_ENABLED", false) // experimental; shelved for launch (Track 2f)
 	v.SetDefault("SCANNER_TIMEOUT_SECONDS", 900)
 	v.SetDefault("WORKSPACE_DIR", "/tmp/aegis-workspaces")
 	v.SetDefault("MAX_REPO_SIZE_MB", 512)
@@ -79,6 +86,7 @@ func Load() (*Config, error) {
 		WorkerConcurrency: v.GetInt("WORKER_CONCURRENCY"),
 		ScannerBaseURL:    v.GetString("SCANNER_BASE_URL"),
 		ScannerDeepURL:    v.GetString("SCANNER_DEEP_URL"),
+		DeepScanEnabled:   v.GetBool("DEEP_SCAN_ENABLED"),
 		ScannerTimeout:    time.Duration(v.GetInt("SCANNER_TIMEOUT_SECONDS")) * time.Second,
 		WorkspaceDir:      v.GetString("WORKSPACE_DIR"),
 		MaxRepoSizeMB:     v.GetInt("MAX_REPO_SIZE_MB"),

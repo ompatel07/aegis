@@ -56,7 +56,7 @@ func run() error {
 	defer progressRDB.Close()
 	progressPub := progress.NewPublisher(progressRDB)
 
-	processor := worker.NewScanProcessor(st, gitClient, pipe, progressPub, cfg.MaxRepoSizeMB, log)
+	processor := worker.NewScanProcessor(st, gitClient, pipe, progressPub, cfg.MaxRepoSizeMB, cfg.DeepScanEnabled, log)
 
 	// ── Live vulnerability intelligence (background sync + retroactive rescore) ─
 	if cfg.IntelligenceEnabled {
