@@ -20,7 +20,33 @@ tuned to a benchmark (the Track 2d / Consul-Vault discipline).
 | **Deployment** test | pass good / fail broken | **4/4 correct** | Go + Node | ✅ real builds |
 | **CVE intelligence** | feed freshness + retro re-score | **live, synced today** | NVD/OSV/GHSA | ✅ current + retro works |
 
-_(Rows fill in as each engine is validated; each is committed separately.)_
+### Bottom line
+
+Across **all seven engines** in the shipping (no-Joern) configuration, every
+accuracy claim is backed by a real run:
+
+- **SAST is best-in-class on the neutral benchmark** — F1 **0.775** beats CodeQL's
+  0.744 at **88.4% recall**, and its **real-world false-positive rate was measured,
+  found at ~22%, and tuned to ~0% without losing a single point of benchmark recall.**
+- **SCA, secrets, quality, and deployment are effectively exact** — 100%
+  OSV-verified dependency CVEs, perfect secret-scanning precision (0 FP on
+  adversarial decoys), integer-exact complexity/duplication metrics, and real
+  build pass/fail.
+- **The intelligence layer is live** — NVD/OSV/GHSA synced today, and a new CVE
+  retroactively re-flags past scans.
+
+This is the evidence base for the positioning: **the most accurate *and* private
+option** — top-tier detection with a false-positive rate driven down by
+recall-safe tuning, all self-hosted (source never leaves the customer's
+infrastructure — see [PRIVACY.md](PRIVACY.md)). Nothing here is tuned to a
+benchmark; where an engine has a real limitation (SAST recall-first FPR on the
+synthetic benchmark; the bare-AWS-secret miss) it is stated plainly.
+
+**Reproduce everything:** harnesses live in
+[`benchmarks/owasp/`](benchmarks/owasp/) (SAST) and
+[`benchmarks/comparative/`](benchmarks/comparative/) (`compare.py`,
+`sca_verify.py`, `secrets_bench.py`, `quality_bench.py`, `deploy_bench.py`); the
+intelligence checks are DB queries in §7.
 
 ---
 
@@ -81,8 +107,10 @@ scanner. Confirmed unchanged after shelving Joern.
 
 **The claim we set out to verify was wrong.** The "~12% FP" figure was the
 *OWASP-synthetic* high-precision-profile FPR (11.3%), not a real-world number. So
-we measured a real one: scanned express/flask/gin (shipping config) and **manually
-adjudicated a 51-finding SAST sample** by reading the flagged code.
+we measured a real one: scanned express/flask/gin (shipping config;
+harness [`fp_collect.py`](benchmarks/comparative/fp_collect.py) dumps each finding
+with its code snippet) and **manually adjudicated a 51-finding SAST sample** by
+reading the flagged code.
 
 **Baseline (before tuning):**
 
