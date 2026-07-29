@@ -17,7 +17,7 @@ tuned to a benchmark (the Track 2d / Consul-Vault discipline).
 | **SCA** (Trivy) | dependency-CVE true-positive rate | **40/40 = 100%** | OSV package-precise | ✅ zero FPs |
 | **Secrets** (Gitleaks) | precision / recall (planted corpus) | **1.00 / 0.92** | 0 FP incl. allowlist | ✅ perfect precision |
 | **Quality** (lizard/radon/dup) | metric correctness | **exact** | hand-computed | ✅ CC/params/dup all match |
-| **Deployment** test | pass good / fail broken | _B6_ | — | _pending_ |
+| **Deployment** test | pass good / fail broken | **4/4 correct** | Go + Node | ✅ real builds |
 | **CVE intelligence** | feed freshness + retro re-score | _B7_ | — | _pending_ |
 
 _(Rows fill in as each engine is validated; each is committed separately.)_
@@ -236,3 +236,29 @@ text-diff would miss. Severity for duplication is intentionally capped at **medi
 ("a maintainability, not a security, smell") — verified as by-design, not a
 mislabel. These are deterministic measurements, so "accuracy" here means the
 arithmetic is correct — and it is.
+
+---
+
+## 6. Deployment-test accuracy — passes good builds, fails broken builds
+
+**Method.** Built four minimal projects — known-good and known-broken, in Go and
+Node — and ran `/scan/deployment` (dependency resolution → build verification).
+The engine should pass the good builds and emit a `deployment/build-failed`
+CRITICAL for the broken ones. Harness:
+[`benchmarks/comparative/deploy_bench.py`](benchmarks/comparative/deploy_bench.py).
+
+| Project | Expected | `build_succeeded` | `build-failed` finding | Result |
+| --- | --- | --- | --- | --- |
+| good_go (`go build ./...`) | pass | **true** | no | ✅ |
+| broken_go (syntax error) | fail | **false** | **yes (CRITICAL)** | ✅ |
+| good_node (`npm run build`) | pass | **true** | no | ✅ |
+| broken_node (syntax error) | fail | **false** | **yes (CRITICAL)** | ✅ |
+
+**Verdict: ✅ 4/4 correct.** Crucially, the builds **actually execute** — this is
+not a heuristic. For `broken_go`, dependency resolution succeeded (`go mod
+download`), then the **build step genuinely ran** `go build ./...` and failed with
+the real compiler message (`./main.go:3:2: syntax error: unexpected = at end of
+statement`), which is captured in the finding. The good builds report
+`build_attempted=true, build_succeeded=true`. So the engine's pass/fail signal
+reflects a real compiler/build outcome, not a guess. (Build execution is gated by
+`DEPLOYMENT_BUILD_ENABLED`, on by default in the shipping scanner.)
