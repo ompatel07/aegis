@@ -15,7 +15,7 @@ tuned to a benchmark (the Track 2d / Consul-Vault discipline).
 | **SAST** (Semgrep + Aegis taint) | F1 / recall (OWASP Benchmark v1.2) | **0.775 / 88.4%** | CodeQL F1 0.744 | ✅ beats CodeQL |
 | **SAST** real-world precision | strict FP rate, 6 repos (manual) | **~0% (was ~22%)** | recall held 88.4% | ✅ tuned, recall-safe |
 | **SCA** (Trivy) | dependency-CVE true-positive rate | **40/40 = 100%** | OSV package-precise | ✅ zero FPs |
-| **Secrets** (Gitleaks) | precision / recall | _B4_ | — | _pending_ |
+| **Secrets** (Gitleaks) | precision / recall (planted corpus) | **1.00 / 0.92** | 0 FP incl. allowlist | ✅ perfect precision |
 | **Quality** (radon/lizard/dup) | metric correctness | _B5_ | hand-computed | _pending_ |
 | **Deployment** test | pass good / fail broken | _B6_ | — | _pending_ |
 | **CVE intelligence** | feed freshness + retro re-score | _B7_ | — | _pending_ |
@@ -172,3 +172,40 @@ inflation already documented for React/Prisma in `COMPARATIVE_ANALYSIS.md`). Tha
 is a *scoping* choice — production-scoped SCA reports fewer — not a false-positive
 problem. The engine's job (surface real CVEs in resolved dependencies) is done at
 100% precision on this sample.
+
+---
+
+## 4. Secrets accuracy — Gitleaks (planted-secret corpus)
+
+**Method.** Built a controlled corpus of **12 planted synthetic secrets**
+(fake-but-valid-format — not real credentials) spanning the major providers, plus
+**8 realistic decoys** designed to trip a naive scanner. Ran `/scan/secrets`
+(`gitleaks detect --no-git --redact`) and scored by file: a planted file flagged =
+TP, missed = FN; a decoy flagged = FP. Harness:
+[`benchmarks/comparative/secrets_bench.py`](benchmarks/comparative/secrets_bench.py).
+
+| Metric | Value |
+| --- | --- |
+| TP / FN (of 12 planted) | 11 / 1 |
+| FP / TN (of 8 decoys) | **0 / 8** |
+| **Precision** | **1.000** |
+| **Recall** | **0.917** |
+
+**Detected (correct rule):** aws-access-token, github-pat, gitlab-pat,
+slack-bot-token, stripe-access-token, gcp-api-key, npm-access-token, private-key
+(RSA **and** OpenSSH), jwt, generic-api-key.
+
+**Precision = perfect (0 FP).** The decoys — the **AWS docs example key**
+`AKIAIOSFODNN7EXAMPLE` (correctly allowlisted), `your-api-key-here` placeholders,
+a UUID, a 40-char git SHA, an MD5 hash, base64 text, and env-var lookups
+(`os.environ.get`) — were **all correctly ignored**. This is the property that
+matters most for a secrets scanner: it doesn't cry wolf on hashes/UUIDs/placeholders.
+
+**Honest limitation — the one miss.** The bare **AWS secret access key** (a 40-char
+base64 blob) was not detected. This is a well-known hard case for *every* secret
+scanner: without the paired `AKIA…` access-key ID, the secret is
+information-theoretically indistinguishable from any other base64 string, and
+flagging all such strings would destroy precision. Gitleaks reliably catches the
+access-key ID (which is what actually identifies the account); the recall gap is
+inherent, not a config defect. Corpus size (12+8) is modest — a larger corpus is
+future work — but the precision result (0/8 FP on adversarial decoys) is strong.
