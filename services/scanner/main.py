@@ -17,7 +17,7 @@ from fastapi.responses import JSONResponse
 from config import get_settings
 from engines import gitleaks_engine, quality_engine, semgrep_engine, trivy_engine
 from logging_config import configure_logging, get_logger
-from routers import deep, deployment, quality, rules, sast, sca, secrets
+from routers import deep, deployment, quality, rules, sast, sbom, sca, secrets
 from utils.sandbox import binary_available
 
 settings = get_settings()
@@ -97,6 +97,7 @@ app.include_router(quality.router)
 app.include_router(deployment.router)
 app.include_router(deep.router)
 app.include_router(rules.router)
+app.include_router(sbom.router)
 
 
 def _tool_status() -> dict[str, bool]:

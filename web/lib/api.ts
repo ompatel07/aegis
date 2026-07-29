@@ -316,6 +316,21 @@ export function createApi(token?: string) {
       URL.revokeObjectURL(url);
     },
 
+    // Downloads the scan's SBOM (CycloneDX or SPDX) as a JSON file.
+    exportSbom: async (scanId: string, format: "cyclonedx" | "spdx") => {
+      const r = await http
+        .get(`/scans/${scanId}/export/sbom`, { params: { format }, responseType: "blob" })
+        .catch(normalizeError);
+      const url = URL.createObjectURL(r.data as Blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `aegis-${scanId}.${format === "spdx" ? "spdx.json" : "cdx.json"}`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    },
+
     getScan: (scanId: string) =>
       http
         .get<ApiSuccess<ScanReport>>(`/scans/${scanId}`)

@@ -123,3 +123,21 @@ func (r *ScanRepository) ListByProject(ctx context.Context, projectID string, li
 	}
 	return scans, total, nil
 }
+
+// GetSBOM returns the stored SBOM document for a scan in the given format
+// (cyclonedx | spdx), or ErrNotFound if none was generated (e.g. no lockfile).
+func (r *ScanRepository) GetSBOM(ctx context.Context, scanID, format string) (string, error) {
+	col := map[string]string{"cyclonedx": "cyclonedx", "spdx": "spdx"}[format]
+	if col == "" {
+		return "", ErrNotFound
+	}
+	var content sql.NullString
+	err := r.db.GetContext(ctx, &content, `SELECT `+col+` FROM scan_sboms WHERE scan_id = $1`, scanID)
+	if errors.Is(err, sql.ErrNoRows) || (err == nil && (!content.Valid || content.String == "")) {
+		return "", ErrNotFound
+	}
+	if err != nil {
+		return "", err
+	}
+	return content.String, nil
+}

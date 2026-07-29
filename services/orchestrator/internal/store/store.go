@@ -63,6 +63,19 @@ func (s *Store) SetStage(ctx context.Context, scanID, stage string) error {
 }
 
 // MarkFailed transitions a scan to failed with an error message and timing.
+// SaveSBOMs upserts the per-scan CycloneDX + SPDX SBOM documents (Phase 2E). Empty
+// documents are stored as NULL. Best-effort — the caller ignores errors so an SBOM
+// hiccup never fails the scan.
+func (s *Store) SaveSBOMs(ctx context.Context, scanID, cyclonedx, spdx string) error {
+	_, err := s.db.ExecContext(ctx, `
+		INSERT INTO scan_sboms (scan_id, cyclonedx, spdx, generated_at)
+		VALUES ($1, $2, $3, now())
+		ON CONFLICT (scan_id) DO UPDATE SET
+			cyclonedx = EXCLUDED.cyclonedx, spdx = EXCLUDED.spdx, generated_at = now()`,
+		scanID, nullStr(cyclonedx), nullStr(spdx))
+	return err
+}
+
 func (s *Store) MarkFailed(ctx context.Context, scanID, msg string) error {
 	const q = `
 		UPDATE scans

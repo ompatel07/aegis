@@ -140,12 +140,30 @@ function ExportSarifButton({ scanId }: { scanId: string }) {
     }
   }
 
+  async function downloadSbom(format: "cyclonedx" | "spdx") {
+    setBusy(true);
+    setErr(null);
+    try {
+      await api.exportSbom(scanId, format);
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
-    <span className="ml-auto flex items-center gap-2">
+    <span className="ml-auto flex flex-wrap items-center gap-2">
       {err ? <span className="text-xs text-destructive">{err}</span> : null}
       <Button variant="outline" size="sm" onClick={download} disabled={busy} title="Download SARIF 2.1.0">
         <Download className="mr-1 h-4 w-4" />
         {busy ? "Exporting…" : "Export SARIF"}
+      </Button>
+      <Button variant="outline" size="sm" onClick={() => downloadSbom("cyclonedx")} disabled={busy} title="Download SBOM (CycloneDX)">
+        <Download className="mr-1 h-4 w-4" /> SBOM · CycloneDX
+      </Button>
+      <Button variant="outline" size="sm" onClick={() => downloadSbom("spdx")} disabled={busy} title="Download SBOM (SPDX)">
+        <Download className="mr-1 h-4 w-4" /> SBOM · SPDX
       </Button>
     </span>
   );

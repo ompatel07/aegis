@@ -263,6 +263,7 @@ func run() error {
 				r.Get("/{scanId}/report/executive", execReportH.Executive)
 				r.Get("/{scanId}/policy", policyH.Evaluate)
 				r.Get("/{scanId}/export/sarif", scanH.ExportSARIF)
+				r.Get("/{scanId}/export/sbom", scanH.ExportSBOM)
 			})
 
 			r.Patch("/findings/{findingId}", scanH.PatchFinding)

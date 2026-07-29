@@ -191,6 +191,15 @@ func (s *ScanService) BuildReport(ctx context.Context, scanID, userID string) (*
 
 // ExportSARIF builds a SARIF 2.1.0 log for a scan the user owns, for upload to
 // GitHub code scanning or any SARIF consumer.
+// ExportSBOM returns the stored SBOM document (format = cyclonedx | spdx) for a
+// scan the caller owns.
+func (s *ScanService) ExportSBOM(ctx context.Context, scanID, userID, format string) (string, error) {
+	if _, err := s.scans.GetByIDForUser(ctx, scanID, userID); err != nil {
+		return "", err
+	}
+	return s.scans.GetSBOM(ctx, scanID, format)
+}
+
 func (s *ScanService) ExportSARIF(ctx context.Context, scanID, userID string) (*sarif.Log, error) {
 	scan, err := s.scans.GetByIDForUser(ctx, scanID, userID)
 	if err != nil {

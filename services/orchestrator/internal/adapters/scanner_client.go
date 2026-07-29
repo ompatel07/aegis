@@ -104,6 +104,41 @@ func (s *ScannerClient) Deployment(ctx context.Context, path, scanID string, lan
 	})
 }
 
+type sbomRequest struct {
+	Path   string `json:"path"`
+	ScanID string `json:"scan_id"`
+	Format string `json:"format"`
+}
+
+type sbomResponse struct {
+	Format     string `json:"format"`
+	Content    string `json:"content"`
+	Components int    `json:"components"`
+	Error      string `json:"error"`
+}
+
+// SBOM generates a Software Bill of Materials (format = cyclonedx | spdx) from the
+// checked-out repo. Returns the document text + component count.
+func (s *ScannerClient) SBOM(ctx context.Context, path, scanID, format string) (string, int, error) {
+	var out sbomResponse
+	resp, err := s.client.R().
+		SetContext(ctx).
+		SetHeader("Content-Type", "application/json").
+		SetBody(sbomRequest{Path: path, ScanID: scanID, Format: format}).
+		SetResult(&out).
+		Post("/sbom")
+	if err != nil {
+		return "", 0, fmt.Errorf("scanner /sbom: %w", err)
+	}
+	if resp.IsError() {
+		return "", 0, fmt.Errorf("scanner /sbom returned %d: %s", resp.StatusCode(), resp.String())
+	}
+	if out.Error != "" {
+		return "", 0, fmt.Errorf("sbom: %s", out.Error)
+	}
+	return out.Content, out.Components, nil
+}
+
 // Deep runs the opt-in interprocedural taint scan (Joern or CodeQL). When the
 // selected backend's tool is absent the scanner returns status=skipped (200),
 // which surfaces here as a normal EngineResult, not an error.

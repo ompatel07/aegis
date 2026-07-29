@@ -118,6 +118,16 @@ func (p *ScanProcessor) ProcessTask(ctx context.Context, task *asynq.Task) error
 	if err := p.store.SaveResults(ctx, payload.ScanID, payload.ProjectID, agg); err != nil {
 		return p.fail(ctx, payload.ScanID, task, fmt.Sprintf("persist results: %v", err), log)
 	}
+
+	// SBOM (CycloneDX + SPDX) from the checkout — best-effort, never fails the scan.
+	cdx := p.pipe.GenerateSBOM(ctx, checkout.Dir, payload.ScanID, "cyclonedx")
+	spdx := p.pipe.GenerateSBOM(ctx, checkout.Dir, payload.ScanID, "spdx")
+	if cdx != "" || spdx != "" {
+		if err := p.store.SaveSBOMs(ctx, payload.ScanID, cdx, spdx); err != nil {
+			log.Warn().Err(err).Msg("persist sbom failed (non-fatal)")
+		}
+	}
+
 	p.stage(ctx, payload.ScanID, progress.StageCompleted)
 
 	log.Info().

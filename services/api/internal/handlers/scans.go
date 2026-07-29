@@ -99,6 +99,31 @@ func (h *ScanHandler) ExportSARIF(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// ExportSBOM handles GET /api/v1/scans/{scanId}/export/sbom?format=cyclonedx|spdx
+// — a downloadable Software Bill of Materials (components, versions, CVEs, and
+// licenses where the ecosystem provides them).
+func (h *ScanHandler) ExportSBOM(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.UserID(r.Context())
+	scanID := chi.URLParam(r, "scanId")
+	format := r.URL.Query().Get("format")
+	if format == "" {
+		format = "cyclonedx"
+	}
+	content, err := h.scans.ExportSBOM(r.Context(), scanID, userID, format)
+	if err != nil {
+		writeServiceError(w, h.log, err)
+		return
+	}
+	ext := map[string]string{"cyclonedx": "cdx.json", "spdx": "spdx.json"}[format]
+	if ext == "" {
+		ext = "json"
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="aegis-%s.%s"`, scanID, ext))
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(content))
+}
+
 // Feedback handles POST /api/v1/findings/{findingId}/feedback — records a user's
 // action on a finding (feeds the local false-positive classifier).
 func (h *ScanHandler) Feedback(w http.ResponseWriter, r *http.Request) {
