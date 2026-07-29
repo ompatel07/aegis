@@ -18,7 +18,7 @@ tuned to a benchmark (the Track 2d / Consul-Vault discipline).
 | **Secrets** (Gitleaks) | precision / recall (planted corpus) | **1.00 / 0.92** | 0 FP incl. allowlist | ✅ perfect precision |
 | **Quality** (lizard/radon/dup) | metric correctness | **exact** | hand-computed | ✅ CC/params/dup all match |
 | **Deployment** test | pass good / fail broken | **4/4 correct** | Go + Node | ✅ real builds |
-| **CVE intelligence** | feed freshness + retro re-score | _B7_ | — | _pending_ |
+| **CVE intelligence** | feed freshness + retro re-score | **live, synced today** | NVD/OSV/GHSA | ✅ current + retro works |
 
 _(Rows fill in as each engine is validated; each is committed separately.)_
 
@@ -262,3 +262,41 @@ statement`), which is captured in the finding. The good builds report
 `build_attempted=true, build_succeeded=true`. So the engine's pass/fail signal
 reflects a real compiler/build outcome, not a guess. (Build execution is gated by
 `DEPLOYMENT_BUILD_ENABLED`, on by default in the shipping scanner.)
+
+---
+
+## 7. CVE intelligence — feed freshness + retroactive re-scoring
+
+**Feeds are live and current** (queried from the running `cve_database` /
+`intelligence_sync_log`):
+
+| Source | Rows | Latest sync | Newest CVE (modified) |
+| --- | --- | --- | --- |
+| NVD | **5,773** | today, success (+29 new / ~1,971 updated) | **today** (2026-07-29) |
+| OSV | 107 | today, success | 2026-07-27 |
+| GHSA | 142 | today, success | 2026-07-28 |
+| Semgrep → `rule_registry` | 42 rules | today, success | — |
+
+All four sources synced on the current day with `status=success`; NVD carries a
+CVE **modified today**, so the feed is genuinely fresh (not a stale snapshot). The
+NVD API key + GitHub token (stored only in the gitignored `.env`) are active.
+
+**Retroactive re-scoring — proven end-to-end.** Exercised the exact
+`Store.FlagAffectedScans` logic against the live DB: planted a brand-new CVE
+(`CVE-RETRO-B7-0001`) affecting package `retro-b7-testpkg` plus a finding
+referencing that package on a real recent scan, then ran the
+CVE→affected-package→recent-scan flag query:
+
+```
+BEFORE: needs_reeval = false
+UPDATE 1                       ← the past scan was flagged
+AFTER:  needs_reeval = true    reason = "New vulnerability CVE-RETRO-B7-0001
+                                          affects a dependency in this scan."
+CLEANUP: needs_reeval = false  (planted rows removed)
+```
+
+**Verdict: ✅ current and working.** A newly-published CVE that affects a
+dependency in a *previously-completed* scan correctly re-flags that scan for
+re-evaluation with an accurate reason — the "updates daily and re-scores past
+scans" claim holds. Full pipeline detail in
+[INTELLIGENCE_VERIFICATION.md](INTELLIGENCE_VERIFICATION.md).
