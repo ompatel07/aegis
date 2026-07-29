@@ -9,8 +9,8 @@ import { SeverityBadge } from "./SeverityBadge";
 import { ReachabilityBadge, ReachabilityDetail } from "./ReachabilityBadge";
 import { useApi } from "@/lib/use-api";
 import { useToast } from "@/lib/use-toast";
-import type { Finding } from "@/lib/types";
-import { Check, Clock, Copy, FileCode2, ShieldAlert, Sparkles, Wrench } from "lucide-react";
+import type { Finding, StepsToReproduce, SoRNode } from "@/lib/types";
+import { ArrowDown, Check, Clock, Copy, FileCode2, ShieldAlert, Sparkles, Wrench, Route } from "lucide-react";
 
 /** Small inline copy-to-clipboard button. */
 function CopyButton({ value, label }: { value: string; label: string }) {
@@ -172,6 +172,7 @@ export function FindingCard({ finding, onUpdated }: { finding: Finding; onUpdate
           {finding.cve_id ? <DetailRow label="CVE" value={finding.cve_id} /> : null}
           {finding.owasp_category ? <DetailRow label="OWASP" value={finding.owasp_category} /> : null}
 
+          <StepsToReproduceSection data={finding.context_metadata} />
           <ReachabilityDetail metadata={finding.metadata} />
           <ContextMetadata data={finding.context_metadata} />
 
@@ -240,6 +241,65 @@ const CVSS_LABELS: Record<string, string> = {
   integrity_impact: "Integrity",
   availability_impact: "Availability",
 };
+
+/** Steps-of-Reproduction: source → flow → sink, extracted from the taint trace. */
+function SoRStep({ node, tag, tagClass }: { node: SoRNode; tag: string; tagClass: string }) {
+  return (
+    <div className="rounded-md border bg-muted/40 p-2.5">
+      <div className="flex items-center gap-2">
+        <Badge className={tagClass}>{tag}</Badge>
+        {node.line != null ? (
+          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+            <FileCode2 className="h-3 w-3" /> {node.file.split("/").pop()}:{node.line}
+          </span>
+        ) : null}
+      </div>
+      <pre className="mt-1.5 overflow-x-auto whitespace-pre-wrap break-all rounded bg-background/70 px-2 py-1 font-mono text-xs">
+        {node.code}
+      </pre>
+      {node.label ? <p className="mt-1 text-xs text-muted-foreground">{node.label}</p> : null}
+    </div>
+  );
+}
+
+function StepsToReproduceSection({ data }: { data?: Record<string, unknown> }) {
+  const sor = data?.steps_to_reproduce as StepsToReproduce | undefined;
+  if (!sor || !sor.source || !sor.sink) return null;
+  return (
+    <div>
+      <p className="mb-2 flex items-center gap-1.5 font-medium">
+        <Route className="h-4 w-4" /> Steps to reproduce
+        <span className="text-xs font-normal text-muted-foreground">(how the tainted data flows)</span>
+      </p>
+      <div className="space-y-1.5">
+        <SoRStep node={sor.source} tag="Source" tagClass="border-blue-500/40 bg-blue-500/15 text-blue-600 dark:text-blue-400" />
+        {sor.flow.map((step, i) => (
+          <div key={i} className="flex items-center gap-2 pl-2">
+            <ArrowDown className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="font-mono text-xs text-muted-foreground">
+              {step.code}
+              {step.line != null ? <span className="opacity-60"> · L{step.line}</span> : null}
+            </span>
+          </div>
+        ))}
+        <div className="flex justify-center">
+          <ArrowDown className="h-3.5 w-3.5 text-muted-foreground" />
+        </div>
+        <SoRStep node={sor.sink} tag="Sink" tagClass="border-red-500/40 bg-red-500/15 text-red-600 dark:text-red-400" />
+      </div>
+      <div className="mt-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-2.5 text-xs">
+        <p className="font-medium text-amber-700 dark:text-amber-400">Why this is exploitable</p>
+        <p className="mt-0.5 text-muted-foreground">{sor.why_exploitable}</p>
+        {sor.example_input ? (
+          <p className="mt-1.5 flex flex-wrap items-center gap-1.5">
+            <span className="font-medium">Example trigger:</span>
+            <code className="break-all rounded bg-background/70 px-1.5 py-0.5 font-mono">{sor.example_input}</code>
+          </p>
+        ) : null}
+      </div>
+    </div>
+  );
+}
 
 /** Renders engine-specific enrichment (CVSS breakdown, image-size, etc.). */
 function ContextMetadata({ data }: { data?: Record<string, unknown> }) {

@@ -328,3 +328,30 @@ dependency in a *previously-completed* scan correctly re-flags that scan for
 re-evaluation with an accurate reason — the "updates daily and re-scores past
 scans" claim holds. Full pipeline detail in
 [INTELLIGENCE_VERIFICATION.md](INTELLIGENCE_VERIFICATION.md).
+
+---
+
+## 8. Steps-of-Reproduction accuracy (Phase 2E)
+
+Taint findings now carry a structured **steps-to-reproduce** (source → flow →
+sink + a per-CWE "why exploitable" + example trigger), extracted from Semgrep's
+own `dataflow_trace` — never recomputed, and omitted entirely for non-dataflow
+findings (secrets/quality/CVEs) rather than fabricated.
+
+**Accuracy check.** For every finding that carried steps-to-reproduce, the
+reported source and sink `file:line + code` were compared against the actual line
+in the cloned repo:
+
+| Corpus | Taint findings w/ SoR | Source+sink nodes | Match actual code |
+| --- | --- | --- | --- |
+| OWASP juice-shop (real vuln app) | 72 | 144 | **144 / 144 = 100%** |
+| vulnerable_app fixture | 6 | 12 | 12 / 12 = 100% |
+
+Classes covered on juice-shop: SQLi, Sequelize injection, NoSQL injection, XSS,
+SSRF, path-traversal, code injection, open-redirect. The end-to-end path is
+verified too: the structured record survives scanner → DB → API and renders in the
+finding detail UI and the executive report (`reproduction` field). Harness:
+[`benchmarks/comparative/sor_verify.py`](benchmarks/comparative/sor_verify.py).
+Note: on the mature framework repos SoR appears rarely because their app-level
+request→sink flows live in `examples/` (excluded by the §2 scoping); it shines on
+real application code (juice-shop) — exactly where it matters.

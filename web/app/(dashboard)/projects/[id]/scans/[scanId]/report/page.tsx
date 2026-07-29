@@ -92,6 +92,17 @@ export default function ExecutiveReportPage() {
                   <p className="font-medium">{risk.title}</p>
                   {risk.impact ? <p className="text-sm text-muted-foreground">{risk.impact}</p> : null}
                   <p className="text-xs text-muted-foreground">{risk.file}</p>
+                  {risk.reproduction ? (
+                    <div className="mt-1.5 rounded-md border bg-muted/40 p-2 text-xs">
+                      <p className="font-medium">Steps to reproduce{risk.reproduction.cwe ? ` (${risk.reproduction.cwe})` : ""}</p>
+                      <p className="mt-0.5"><span className="text-blue-600 dark:text-blue-400">Source:</span> <code className="break-all">{risk.reproduction.source}</code></p>
+                      <p><span className="text-red-600 dark:text-red-400">Sink:</span> <code className="break-all">{risk.reproduction.sink}</code></p>
+                      <p className="mt-0.5 text-muted-foreground">{risk.reproduction.why}</p>
+                      {risk.reproduction.example ? (
+                        <p className="mt-0.5">Example trigger: <code className="break-all">{risk.reproduction.example}</code></p>
+                      ) : null}
+                    </div>
+                  ) : null}
                 </div>
               </div>
             ))

@@ -29,6 +29,7 @@ from models.scan_result import (
     Severity,
     SeveritySummary,
 )
+from enrichment import steps_to_reproduce
 from utils import language_detector, normalizer
 from utils.sandbox import binary_available, run_command
 
@@ -184,6 +185,9 @@ def _build_args(settings: Settings, configs: list[str], path: str) -> list[str]:
     """Assemble the semgrep CLI invocation for the given config list."""
     args = [settings.semgrep_bin, "scan", "--json", "--quiet", "--metrics", "off",
             "--disable-version-check", "--timeout", "60", "--max-target-bytes", "2000000",
+            # Emit taint source→sink dataflow traces so findings can carry
+            # steps-to-reproduce (Phase 2E Task 1). Only populated for taint rules.
+            "--dataflow-traces",
             "--jobs", str(_semgrep_jobs(settings))]
     for cfg in configs:
         args += ["--config", cfg]
@@ -330,6 +334,10 @@ def _parse(raw: dict, root: str) -> list[Finding]:
         )
 
         severity = normalizer.normalize_semgrep_severity(extra.get("severity", ""), metadata)
+        cwe_id = normalizer.extract_cwe(metadata)
+        # Steps-to-reproduce from Semgrep's taint dataflow trace (Phase 2E Task 1).
+        # Only present for taint-mode findings; None → the section is omitted.
+        sor = steps_to_reproduce.build(extra.get("dataflow_trace"), cwe_id, rule_id)
 
         findings.append(
             Finding(
@@ -345,9 +353,10 @@ def _parse(raw: dict, root: str) -> list[Finding]:
                 line_end=end.get("line"),
                 column_start=start.get("col"),
                 column_end=end.get("col"),
-                cwe_id=normalizer.extract_cwe(metadata),
+                cwe_id=cwe_id,
                 owasp_category=normalizer.extract_owasp(metadata),
                 fix_suggestion=normalizer.truncate(extra.get("fix"), 8000),
+                context_metadata={"steps_to_reproduce": sor} if sor else None,
                 metadata={
                     "ruleset": ruleset,
                     "confidence": metadata.get("confidence"),

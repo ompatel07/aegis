@@ -240,6 +240,25 @@ export interface SCIMToken {
   last_used_at: string | null;
 }
 
+// Steps-of-Reproduction for taint findings (Phase 2E). Positional data
+// (source/sink/flow) is extracted from Semgrep's dataflow trace; present only on
+// dataflow findings, stored under finding.context_metadata.steps_to_reproduce.
+export interface SoRNode {
+  file: string;
+  line: number | null;
+  code: string;
+  label?: string;
+}
+export interface StepsToReproduce {
+  kind: "dataflow";
+  source: SoRNode;
+  flow: SoRNode[];
+  sink: SoRNode;
+  cwe?: string | null;
+  why_exploitable: string;
+  example_input?: string;
+}
+
 export interface Project {
   id: string;
   user_id: string;
@@ -374,11 +393,19 @@ export interface AISuggestion {
   provider: string;
 }
 
+export interface ExecReproduction {
+  cwe?: string;
+  source: string;
+  sink: string;
+  why: string;
+  example?: string;
+}
 export interface ExecRiskItem {
   title: string;
   severity: Severity;
   impact?: string;
   file: string;
+  reproduction?: ExecReproduction;
 }
 
 export interface ExecTrend {

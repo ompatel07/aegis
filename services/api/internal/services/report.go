@@ -2,7 +2,9 @@ package services
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"path"
 	"strings"
 
 	"github.com/aegis-platform/api/internal/ai"
@@ -22,10 +24,55 @@ type ExecReport struct {
 }
 
 type RiskItem struct {
-	Title    string `json:"title"`
-	Severity string `json:"severity"`
-	Impact   string `json:"impact"`
-	File     string `json:"file"`
+	Title        string   `json:"title"`
+	Severity     string   `json:"severity"`
+	Impact       string   `json:"impact"`
+	File         string   `json:"file"`
+	Reproduction *ExecSoR `json:"reproduction,omitempty"` // taint findings only
+}
+
+// ExecSoR is a compact steps-to-reproduce for the executive report, extracted
+// from a finding's context_metadata.steps_to_reproduce (never recomputed).
+type ExecSoR struct {
+	CWE     string `json:"cwe,omitempty"`
+	Source  string `json:"source"`
+	Sink    string `json:"sink"`
+	Why     string `json:"why"`
+	Example string `json:"example,omitempty"`
+}
+
+func execSoR(cm models.JSONB) *ExecSoR {
+	if len(cm) == 0 {
+		return nil
+	}
+	var wrap struct {
+		SoR *struct {
+			CWE    string `json:"cwe"`
+			Source struct {
+				File string `json:"file"`
+				Line int    `json:"line"`
+				Code string `json:"code"`
+			} `json:"source"`
+			Sink struct {
+				File string `json:"file"`
+				Line int    `json:"line"`
+				Code string `json:"code"`
+			} `json:"sink"`
+			Why     string `json:"why_exploitable"`
+			Example string `json:"example_input"`
+		} `json:"steps_to_reproduce"`
+	}
+	if err := json.Unmarshal(cm, &wrap); err != nil || wrap.SoR == nil {
+		return nil
+	}
+	s := wrap.SoR
+	return &ExecSoR{
+		CWE:     s.CWE,
+		Source:  fmt.Sprintf("%s:%d — %s", path.Base(s.Source.File), s.Source.Line, s.Source.Code),
+		Sink:    fmt.Sprintf("%s:%d — %s", path.Base(s.Sink.File), s.Sink.Line, s.Sink.Code),
+		Why:     s.Why,
+		Example: s.Example,
+	}
 }
 
 type Trend struct {
@@ -136,7 +183,7 @@ func topRisks(findings []models.Finding, n int) []RiskItem {
 		}
 		out = append(out, RiskItem{
 			Title: firstNonEmpty(derefStr(f.TitleHuman), f.Title), Severity: f.Severity,
-			Impact: derefStr(f.Impact), File: f.FilePath,
+			Impact: derefStr(f.Impact), File: f.FilePath, Reproduction: execSoR(f.ContextMetadata),
 		})
 		if len(out) >= n {
 			break
