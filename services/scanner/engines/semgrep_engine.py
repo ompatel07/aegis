@@ -141,6 +141,45 @@ def _semgrep_jobs(settings: Settings) -> int:
         return max(1, os.cpu_count() or 1)
 
 
+# Demo / sample / documentation directories excluded by default so production
+# scans don't flag non-production example code (the code_relevant discipline from
+# COMPARATIVE_ANALYSIS.md — Consul/Vault). Matched by path component, so real
+# source (incl. the OWASP Benchmark's `testcode/`) is unaffected.
+_DEFAULT_EXCLUDE_DIRS = [
+    # dependencies / build
+    "node_modules", "vendor",
+    # demo / sample / documentation only (the scoping requested for Track 2f).
+    # `docs_src` covers fastapi-style tutorial trees. Test directories are
+    # deliberately NOT excluded: real code lives there and over-scoping would
+    # hide genuine findings (and mask the scanner's own test fixtures).
+    "examples", "example", "samples", "sample", "docs", "doc", "docs_src",
+]
+
+# Recall-safe default rule exclusions (Track 2f accuracy pass). Every entry either
+# flags a non-weakness or is an indiscriminate audit rule; NONE fires on the OWASP
+# Benchmark (all JS/Go), so recall there is provably unchanged — verified by
+# re-running the benchmark after adding these. The high-precision profile
+# (SEMGREP_EXCLUDE_RULES) still applies on top for teams wanting a deeper trade.
+_DEFAULT_EXCLUDE_RULES = [
+    # Cookie attributes whose ABSENCE is not a security weakness: path/domain
+    # default to safe (host-only) values and maxAge/expires absence just means a
+    # session cookie. The real ones — no-secure, no-httponly, sameSite,
+    # default-name, hardcoded-secret — are deliberately kept.
+    "javascript.express.security.audit.express-cookie-settings.express-cookie-session-no-domain",
+    "javascript.express.security.audit.express-cookie-settings.express-cookie-session-no-path",
+    "javascript.express.security.audit.express-cookie-settings.express-cookie-session-no-expires",
+    "ajinabraham.njsscan.headers.header_cookie.cookie_session_no_domain",
+    "ajinabraham.njsscan.headers.header_cookie.cookie_session_no_path",
+    "ajinabraham.njsscan.headers.header_cookie.cookie_session_no_maxage",
+    # Indiscriminate audit rules that flag EVERY framework write to an
+    # http.ResponseWriter regardless of content-type or taint (a JSON/protobuf
+    # serializer is not XSS). Real dataflow XSS in Go is covered by Aegis's own
+    # go taint rules (rules/taint/go.yaml); these add only noise.
+    "go.lang.security.audit.xss.no-direct-write-to-responsewriter.no-direct-write-to-responsewriter",
+    "go.lang.security.audit.xss.no-fprintf-to-responsewriter.no-fprintf-to-responsewriter",
+]
+
+
 def _build_args(settings: Settings, configs: list[str], path: str) -> list[str]:
     """Assemble the semgrep CLI invocation for the given config list."""
     args = [settings.semgrep_bin, "scan", "--json", "--quiet", "--metrics", "off",
@@ -148,8 +187,10 @@ def _build_args(settings: Settings, configs: list[str], path: str) -> list[str]:
             "--jobs", str(_semgrep_jobs(settings))]
     for cfg in configs:
         args += ["--config", cfg]
-    # High-precision profile: drop named low-confidence rules (Track 2d).
-    for rule in settings.semgrep_exclude_rule_list:
+    for d in _DEFAULT_EXCLUDE_DIRS:
+        args += ["--exclude", d]
+    # Recall-safe defaults, then the opt-in high-precision profile (Track 2d/2f).
+    for rule in _DEFAULT_EXCLUDE_RULES + settings.semgrep_exclude_rule_list:
         args += ["--exclude-rule", rule]
     args.append(path)
     return args
