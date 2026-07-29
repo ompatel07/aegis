@@ -16,7 +16,7 @@ tuned to a benchmark (the Track 2d / Consul-Vault discipline).
 | **SAST** real-world precision | strict FP rate, 6 repos (manual) | **~0% (was ~22%)** | recall held 88.4% | ✅ tuned, recall-safe |
 | **SCA** (Trivy) | dependency-CVE true-positive rate | **40/40 = 100%** | OSV package-precise | ✅ zero FPs |
 | **Secrets** (Gitleaks) | precision / recall (planted corpus) | **1.00 / 0.92** | 0 FP incl. allowlist | ✅ perfect precision |
-| **Quality** (radon/lizard/dup) | metric correctness | _B5_ | hand-computed | _pending_ |
+| **Quality** (lizard/radon/dup) | metric correctness | **exact** | hand-computed | ✅ CC/params/dup all match |
 | **Deployment** test | pass good / fail broken | _B6_ | — | _pending_ |
 | **CVE intelligence** | feed freshness + retro re-score | _B7_ | — | _pending_ |
 
@@ -209,3 +209,30 @@ flagging all such strings would destroy precision. Gitleaks reliably catches the
 access-key ID (which is what actually identifies the account); the recall gap is
 inherent, not a config defect. Corpus size (12+8) is modest — a larger corpus is
 future work — but the precision result (0/8 FP on adversarial decoys) is strong.
+
+---
+
+## 5. Quality-engine accuracy — metrics vs hand-computed ground truth
+
+**Method.** Generated code with **known** cyclomatic complexity (McCabe = decision
+points + 1), parameter counts, and a deliberately duplicated block, ran
+`/scan/quality` (lizard + radon + the token-normalized clone detector), and
+compared the engine's reported numbers to the ground truth. Harness:
+[`benchmarks/comparative/quality_bench.py`](benchmarks/comparative/quality_bench.py).
+
+| Metric | Ground truth | Reported | Result |
+| --- | --- | --- | --- |
+| CC — `simple` (0 branches) | 1 (below threshold) | not flagged | ✅ correct |
+| CC — `moderate` (12 ifs) | **13** | **13** | ✅ exact |
+| CC — `very_complex` (24 ifs) | **25** | **25** | ✅ exact |
+| Parameter count — `many_params` | **7** | **7** | ✅ exact |
+| Duplication — `alpha`/`beta` (renamed vars) | duplicate | **33 lines, 551 tokens, 2 copies** | ✅ detected (Type-2) |
+
+**Verdict: ✅ every number is exact.** lizard's cyclomatic complexity matches the
+hand-computed McCabe value to the integer; parameter counting is exact; the
+duplication detector is **Type-2** (token-normalized) — it caught the `alpha`/`beta`
+clone *despite the variable names differing* (`a_*` vs `b_*`), which a naive
+text-diff would miss. Severity for duplication is intentionally capped at **medium**
+("a maintainability, not a security, smell") — verified as by-design, not a
+mislabel. These are deterministic measurements, so "accuracy" here means the
+arithmetic is correct — and it is.
