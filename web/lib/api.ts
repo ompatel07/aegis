@@ -231,6 +231,20 @@ export function createApi(token?: string) {
         .then((r) => r.data.data)
         .catch(normalizeError),
 
+    // Method B: upload a .zip/.tar.gz code archive; scanned in an isolated
+    // per-scan sandbox (no git host or credential involved).
+    uploadScan: (projectId: string, file: File) => {
+      const form = new FormData();
+      form.append("file", file);
+      return http
+        .post<ApiSuccess<Scan>>(`/projects/${projectId}/scans/upload`, form, {
+          headers: { "Content-Type": "multipart/form-data" },
+          timeout: 120_000,
+        })
+        .then((r) => r.data.data)
+        .catch(normalizeError);
+    },
+
     // ── AI fix suggestions ─────────────────────────────────────────────────────
     getAiStatus: () =>
       http

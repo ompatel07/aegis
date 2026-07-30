@@ -7,9 +7,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	git "github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/transport"
+	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 )
 
 // GitClient clones repositories into per-scan workspace directories.
@@ -28,9 +31,30 @@ type Checkout struct {
 	Cleanup func()
 }
 
+// authFor returns HTTP Basic auth for a token, choosing the username the host
+// expects (GitHub: x-access-token, GitLab: oauth2, Bitbucket: x-token-auth).
+// The token is passed as the password so it is never part of the URL — it never
+// lands in a persisted repo_url, a log line, or a go-git error message.
+func authFor(repoURL, token string) transport.AuthMethod {
+	if token == "" {
+		return nil
+	}
+	user := "x-access-token" // GitHub (and a safe default for most hosts)
+	lc := strings.ToLower(repoURL)
+	switch {
+	case strings.Contains(lc, "gitlab"):
+		user = "oauth2"
+	case strings.Contains(lc, "bitbucket"):
+		user = "x-token-auth"
+	}
+	return &githttp.BasicAuth{Username: user, Password: token}
+}
+
 // Clone performs a shallow clone of repoURL@branch into a fresh directory named
-// after the scan id. The returned Cleanup removes the directory.
-func (g *GitClient) Clone(ctx context.Context, scanID, repoURL, branch string) (*Checkout, error) {
+// after the scan id. When token is non-empty the clone is authenticated (private
+// repos); the token is used as HTTP Basic auth, never embedded in the URL. The
+// returned Cleanup removes the directory.
+func (g *GitClient) Clone(ctx context.Context, scanID, repoURL, branch, token string) (*Checkout, error) {
 	if err := os.MkdirAll(g.workspaceDir, 0o750); err != nil {
 		return nil, fmt.Errorf("create workspace root: %w", err)
 	}
@@ -40,6 +64,7 @@ func (g *GitClient) Clone(ctx context.Context, scanID, repoURL, branch string) (
 
 	opts := &git.CloneOptions{
 		URL:          repoURL,
+		Auth:         authFor(repoURL, token),
 		Depth:        g.cloneDepth,
 		SingleBranch: true,
 		Tags:         git.NoTags,
@@ -53,6 +78,26 @@ func (g *GitClient) Clone(ctx context.Context, scanID, repoURL, branch string) (
 	if _, err := git.PlainCloneContext(ctx, dir, false, opts); err != nil {
 		cleanup()
 		return nil, fmt.Errorf("clone %s: %w", repoURL, err)
+	}
+	return &Checkout{Dir: dir, Cleanup: cleanup}, nil
+}
+
+// ExtractUpload extracts an uploaded code archive (Method B) into a per-scan
+// sandbox instead of cloning. The Cleanup removes both the sandbox and the
+// uploaded archive, so nothing persists past the scan.
+func (g *GitClient) ExtractUpload(scanID, archivePath string) (*Checkout, error) {
+	if err := os.MkdirAll(g.workspaceDir, 0o750); err != nil {
+		return nil, fmt.Errorf("create workspace root: %w", err)
+	}
+	dir := filepath.Join(g.workspaceDir, scanID)
+	_ = os.RemoveAll(dir)
+	cleanup := func() {
+		_ = os.RemoveAll(dir)
+		_ = os.Remove(archivePath) // uploaded archive never persists past the scan
+	}
+	if _, err := ExtractArchive(archivePath, dir); err != nil {
+		cleanup()
+		return nil, fmt.Errorf("extract upload: %w", err)
 	}
 	return &Checkout{Dir: dir, Cleanup: cleanup}, nil
 }

@@ -98,8 +98,6 @@ func run() error {
 	projectSvc := services.NewProjectService(projectRepo, orgRepo)
 	orgSvc := services.NewOrganizationService(orgRepo, userRepo)
 	policySvc := services.NewPolicyService(policyRepo, projectRepo, scanRepo, findingRepo)
-	scanSvc := services.NewScanService(projectRepo, scanRepo, findingRepo, projectRuleRepo, publisher)
-	integrationSvc := services.NewIntegrationService(projectRepo, integrationRepo, encryptor)
 
 	githubApp, err := githubapp.New(githubapp.Config{
 		AppID: cfg.GitHubAppID, PrivateKeyPEM: cfg.GitHubAppPrivateKey, WebhookSecret: cfg.GitHubAppWebhookKey,
@@ -108,6 +106,12 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("init github app: %w", err)
 	}
+
+	// ScanService resolves a private-repo clone credential at trigger time (GitHub
+	// App installation token, or a per-project encrypted PAT) and passes it in the
+	// job payload — never persisting it to the scan record.
+	scanSvc := services.NewScanService(projectRepo, scanRepo, findingRepo, projectRuleRepo, integrationRepo, encryptor, githubApp, publisher)
+	integrationSvc := services.NewIntegrationService(projectRepo, integrationRepo, encryptor)
 	dashURL := cfg.DashboardURL
 	if dashURL == "" {
 		dashURL = "http://localhost"
@@ -236,6 +240,7 @@ func run() error {
 				r.Delete("/{id}", projectH.Delete)
 				r.Get("/{id}/scans", scanH.ListForProject)
 				r.Post("/{id}/scans", scanH.Trigger)
+				r.Post("/{id}/scans/upload", scanH.UploadScan)
 				r.Get("/{id}/integrations", integrationH.ListForProject)
 				r.Post("/{id}/integrations/github", integrationH.Connect)
 				r.Get("/{id}/rules", ruleH.List)

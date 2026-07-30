@@ -2,7 +2,10 @@ package services
 
 import (
 	"context"
+	"strconv"
 
+	"github.com/aegis-platform/api/internal/auth"
+	"github.com/aegis-platform/api/internal/githubapp"
 	"github.com/aegis-platform/api/internal/models"
 	"github.com/aegis-platform/api/internal/queue"
 	"github.com/aegis-platform/api/internal/repository"
@@ -11,11 +14,14 @@ import (
 
 // ScanService triggers scans and reads scan/report data, enforcing ownership.
 type ScanService struct {
-	projects  *repository.ProjectRepository
-	scans     *repository.ScanRepository
-	findings  *repository.FindingRepository
-	rules     *repository.ProjectRuleRepository
-	publisher *queue.Publisher
+	projects     *repository.ProjectRepository
+	scans        *repository.ScanRepository
+	findings     *repository.FindingRepository
+	rules        *repository.ProjectRuleRepository
+	integrations *repository.GithubIntegrationRepository
+	enc          *auth.Encryptor
+	app          *githubapp.App // may be nil if the GitHub App isn't configured
+	publisher    *queue.Publisher
 }
 
 func NewScanService(
@@ -23,9 +29,45 @@ func NewScanService(
 	scans *repository.ScanRepository,
 	findings *repository.FindingRepository,
 	rules *repository.ProjectRuleRepository,
+	integrations *repository.GithubIntegrationRepository,
+	enc *auth.Encryptor,
+	app *githubapp.App,
 	publisher *queue.Publisher,
 ) *ScanService {
-	return &ScanService{projects: projects, scans: scans, findings: findings, rules: rules, publisher: publisher}
+	return &ScanService{
+		projects: projects, scans: scans, findings: findings, rules: rules,
+		integrations: integrations, enc: enc, app: app, publisher: publisher,
+	}
+}
+
+// cloneToken resolves the credential used to clone a project's repo, or "" for a
+// public/anonymous clone. Prefers a GitHub App installation token; falls back to
+// a per-project encrypted PAT (direct URL / GitLab / Bitbucket). The token is
+// returned only to be placed in the transient job payload — never persisted or
+// logged.
+func (s *ScanService) cloneToken(ctx context.Context, projectID string) string {
+	if s.integrations == nil {
+		return ""
+	}
+	gi, err := s.integrations.GetByProject(ctx, projectID)
+	if err != nil {
+		return "" // no integration → anonymous (fine for public repos)
+	}
+	// GitHub App installation → mint a short-lived (9-min) installation token.
+	if gi.InstallationID != nil && *gi.InstallationID != "" && s.app != nil {
+		if id, perr := strconv.ParseInt(*gi.InstallationID, 10, 64); perr == nil {
+			if tok, terr := s.app.InstallationToken(ctx, id); terr == nil {
+				return tok
+			}
+		}
+	}
+	// Stored personal access token (direct URL / GitLab / Bitbucket).
+	if gi.AccessTokenEncrypted != nil && *gi.AccessTokenEncrypted != "" && s.enc != nil {
+		if tok, derr := s.enc.Decrypt(*gi.AccessTokenEncrypted); derr == nil {
+			return tok
+		}
+	}
+	return ""
 }
 
 // TriggerInput carries optional overrides for a manual scan.
@@ -88,6 +130,7 @@ func (s *ScanService) Trigger(ctx context.Context, projectID, userID string, in 
 		Branch:          branch,
 		CommitSHA:       in.CommitSHA,
 		Trigger:         trigger,
+		CloneToken:      s.cloneToken(ctx, projectID),
 		DeepScanEnabled: in.DeepScan,
 		DeepScanEngine:  resolveDeepEngine(in.DeepScan, in.DeepScanEngine),
 	}
@@ -103,6 +146,40 @@ func (s *ScanService) Trigger(ctx context.Context, projectID, userID string, in 
 
 	if _, err := s.publisher.EnqueueScan(ctx, payload); err != nil {
 		// Roll the scan into a failed state rather than leaving it queued.
+		_ = s.scans.MarkFailed(ctx, scan.ID, "failed to enqueue scan job")
+		return nil, err
+	}
+	return scan, nil
+}
+
+// TriggerUpload creates and enqueues a scan of an uploaded code archive (Method
+// B). archivePath is a .zip/.tar.gz already saved to the shared workspace by the
+// handler; the orchestrator extracts it into a per-scan sandbox instead of
+// cloning. No repo_url or credential is involved.
+func (s *ScanService) TriggerUpload(ctx context.Context, projectID, userID, archivePath string) (*models.Scan, error) {
+	if _, err := s.projects.GetByIDForUser(ctx, projectID, userID); err != nil {
+		return nil, err
+	}
+	branch := "upload"
+	scan := &models.Scan{
+		ProjectID: projectID,
+		Trigger:   models.TriggerManual,
+		Status:    models.StatusQueued,
+		Branch:    &branch,
+	}
+	if err := s.scans.Create(ctx, scan); err != nil {
+		return nil, err
+	}
+	payload := queue.ScanPayload{
+		ScanID:     scan.ID,
+		ProjectID:  projectID,
+		Trigger:    models.TriggerManual,
+		UploadPath: archivePath,
+	}
+	if rules, rerr := s.rules.YAMLForProject(ctx, projectID); rerr == nil && len(rules) > 0 {
+		payload.CustomRules = rules
+	}
+	if _, err := s.publisher.EnqueueScan(ctx, payload); err != nil {
 		_ = s.scans.MarkFailed(ctx, scan.ID, "failed to enqueue scan job")
 		return nil, err
 	}
@@ -140,6 +217,7 @@ func (s *ScanService) TriggerWebhook(ctx context.Context, projectID, branch, com
 	payload := queue.ScanPayload{
 		ScanID: scan.ID, ProjectID: projectID, RepoURL: *project.RepoURL,
 		Branch: branch, CommitSHA: commitSHA, Trigger: models.TriggerWebhook,
+		CloneToken: s.cloneToken(ctx, projectID),
 	}
 	if project.RepoType != nil {
 		payload.RepoType = *project.RepoType

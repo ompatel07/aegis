@@ -16,6 +16,15 @@ type ScanPayload struct {
 	Trigger   string `json:"trigger"`
 	Language  string `json:"language"`
 
+	// CloneToken authenticates the git clone for private repos (GitHub App
+	// installation token, or a per-project encrypted PAT). Transient job data —
+	// never persisted to the scan record, never logged.
+	CloneToken string `json:"clone_token,omitempty"`
+
+	// UploadPath, when set, is a code archive (.zip/.tar.gz) to extract into a
+	// per-scan sandbox instead of cloning (Method B — direct upload).
+	UploadPath string `json:"upload_path,omitempty"`
+
 	// Deep scan (opt-in interprocedural taint analysis: joern | codeql).
 	DeepScanEnabled bool   `json:"deep_scan_enabled,omitempty"`
 	DeepScanEngine  string `json:"deep_scan_engine,omitempty"`

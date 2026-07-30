@@ -3,9 +3,14 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 	"github.com/rs/zerolog"
 
 	"github.com/aegis-platform/api/internal/httpx"
@@ -13,6 +18,15 @@ import (
 	"github.com/aegis-platform/api/internal/repository"
 	"github.com/aegis-platform/api/internal/services"
 )
+
+// maxUploadBytes caps the compressed archive size accepted by the upload endpoint.
+// Decompression-bomb protection (uncompressed caps) is enforced during extraction
+// in the orchestrator.
+const maxUploadBytes = 100 << 20 // 100 MiB
+
+// uploadDir is the shared workspace path where the API stages uploaded archives
+// for the orchestrator to extract. Both mount the `workspaces` volume.
+const uploadDir = "/workspaces/uploads"
 
 // ScanHandler serves the /scans and nested /projects/{id}/scans routes.
 type ScanHandler struct {
@@ -122,6 +136,72 @@ func (h *ScanHandler) ExportSBOM(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="aegis-%s.%s"`, scanID, ext))
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(content))
+}
+
+// UploadScan handles POST /api/v1/projects/{id}/scans/upload — a multipart
+// upload of a .zip/.tar.gz code archive (Method B). The archive is staged to the
+// shared workspace and scanned in an isolated per-scan sandbox; no git host or
+// credential is involved.
+func (h *ScanHandler) UploadScan(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.UserID(r.Context())
+	projectID := chi.URLParam(r, "id")
+
+	r.Body = http.MaxBytesReader(w, r.Body, maxUploadBytes+(1<<20))
+	if err := r.ParseMultipartForm(maxUploadBytes); err != nil {
+		httpx.WriteError(w, httpx.ErrBadRequest("upload too large or malformed (max 100 MiB)"))
+		return
+	}
+	file, hdr, err := r.FormFile("file")
+	if err != nil {
+		httpx.WriteError(w, httpx.ErrBadRequest("missing multipart field 'file'"))
+		return
+	}
+	defer file.Close()
+
+	name := strings.ToLower(hdr.Filename)
+	var ext string
+	switch {
+	case strings.HasSuffix(name, ".zip"):
+		ext = ".zip"
+	case strings.HasSuffix(name, ".tar.gz"):
+		ext = ".tar.gz"
+	case strings.HasSuffix(name, ".tgz"):
+		ext = ".tgz"
+	default:
+		httpx.WriteError(w, httpx.ErrBadRequest("only .zip or .tar.gz archives are accepted"))
+		return
+	}
+
+	if err := os.MkdirAll(uploadDir, 0o750); err != nil {
+		h.log.Error().Err(err).Msg("create upload dir")
+		httpx.WriteError(w, httpx.ErrInternal())
+		return
+	}
+	dest := filepath.Join(uploadDir, uuid.NewString()+ext)
+	// 0644 so the orchestrator (which may run as a different uid on the shared
+	// volume) can read the staged archive; it is deleted right after extraction.
+	out, err := os.OpenFile(dest, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o644)
+	if err != nil {
+		h.log.Error().Err(err).Msg("create upload file")
+		httpx.WriteError(w, httpx.ErrInternal())
+		return
+	}
+	// Cap the copy defensively even though MaxBytesReader already bounds the body.
+	if _, err := io.Copy(out, io.LimitReader(file, maxUploadBytes+1)); err != nil {
+		out.Close()
+		_ = os.Remove(dest)
+		httpx.WriteError(w, httpx.ErrBadRequest("failed to read upload"))
+		return
+	}
+	out.Close()
+
+	scan, err := h.scans.TriggerUpload(r.Context(), projectID, userID, dest)
+	if err != nil {
+		_ = os.Remove(dest) // don't leave an orphaned archive if the trigger failed
+		writeServiceError(w, h.log, err)
+		return
+	}
+	httpx.WriteSuccess(w, http.StatusCreated, scan)
 }
 
 // Feedback handles POST /api/v1/findings/{findingId}/feedback — records a user's

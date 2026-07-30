@@ -160,6 +160,10 @@ services:
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USER: ${SMTP_USER:-}
       SMTP_PASS: ${SMTP_PASS:-}
+    volumes:
+      # Shared with the orchestrator so uploaded code archives (Method B) can be
+      # staged by the API and extracted by the orchestrator.
+      - workspaces:/workspaces
     depends_on:
       postgres:
         condition: service_healthy

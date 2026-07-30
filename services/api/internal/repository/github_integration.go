@@ -56,6 +56,20 @@ func (r *GithubIntegrationRepository) GetByProjectForUser(ctx context.Context, p
 	return &gi, nil
 }
 
+// GetByProject returns the integration for a project WITHOUT a user filter — for
+// server-side use only (the scan worker resolving a clone credential). Access is
+// already gated by project ownership at scan-trigger time.
+func (r *GithubIntegrationRepository) GetByProject(ctx context.Context, projectID string) (*models.GithubIntegration, error) {
+	var gi models.GithubIntegration
+	if err := r.db.GetContext(ctx, &gi, `SELECT * FROM github_integrations WHERE project_id = $1`, projectID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrNotFound
+		}
+		return nil, err
+	}
+	return &gi, nil
+}
+
 // DeleteByIDForUser removes an integration the user owns (via project ownership).
 func (r *GithubIntegrationRepository) DeleteByIDForUser(ctx context.Context, id, userID string) error {
 	const q = `

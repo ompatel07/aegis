@@ -63,9 +63,23 @@ func (p *ScanProcessor) ProcessTask(ctx context.Context, task *asynq.Task) error
 
 	// ── Clone ────────────────────────────────────────────────────────────────
 	p.stage(ctx, payload.ScanID, progress.StageCloning)
-	checkout, err := p.git.Clone(ctx, payload.ScanID, payload.RepoURL, payload.Branch)
-	if err != nil {
-		return p.fail(ctx, payload.ScanID, task, fmt.Sprintf("clone failed: %v", err), log)
+	var checkout *adapters.Checkout
+	if payload.UploadPath != "" {
+		// Method B: extract the uploaded archive into a per-scan sandbox. A bad,
+		// oversized, or decompression-bomb archive is a PERMANENT failure — do not
+		// retry (the archive is consumed on the first attempt), and record the real
+		// extraction error rather than a misleading "file gone" on a retry.
+		c, err := p.git.ExtractUpload(payload.ScanID, payload.UploadPath)
+		if err != nil {
+			return p.failNoRetry(ctx, payload.ScanID, fmt.Sprintf("upload extraction failed: %v", err), log)
+		}
+		checkout = c
+	} else {
+		c, err := p.git.Clone(ctx, payload.ScanID, payload.RepoURL, payload.Branch, payload.CloneToken)
+		if err != nil {
+			return p.fail(ctx, payload.ScanID, task, fmt.Sprintf("clone failed: %v", err), log)
+		}
+		checkout = c
 	}
 	defer checkout.Cleanup()
 
@@ -144,6 +158,18 @@ func (p *ScanProcessor) ProcessTask(ctx context.Context, task *asynq.Task) error
 
 // fail records a failure, marking the scan failed only on the final attempt so
 // transient errors still get Asynq's retry budget.
+// failNoRetry marks a scan failed immediately with no Asynq retry — for permanent
+// failures (e.g. a malformed or decompression-bomb upload) where retrying cannot
+// succeed and would only record a misleading follow-up error.
+func (p *ScanProcessor) failNoRetry(ctx context.Context, scanID, msg string, log zerolog.Logger) error {
+	if err := p.store.MarkFailed(ctx, scanID, msg); err != nil {
+		log.Error().Err(err).Msg("failed to mark scan failed")
+	}
+	p.stage(ctx, scanID, progress.StageFailed)
+	log.Error().Str("reason", msg).Msg("scan failed (no retry)")
+	return fmt.Errorf("%s: %w", msg, asynq.SkipRetry)
+}
+
 func (p *ScanProcessor) fail(ctx context.Context, scanID string, task *asynq.Task, msg string, log zerolog.Logger) error {
 	retried, _ := asynq.GetRetryCount(ctx)
 	maxRetry, _ := asynq.GetMaxRetry(ctx)
