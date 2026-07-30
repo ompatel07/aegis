@@ -151,3 +151,16 @@ appropriately-sized infrastructure:
 These remaining items are a coherent incremental-scanning subsystem best built
 and benchmarked together (Track 2), not piecemeal. The parallelism + horizontal
 scaling above are the wins that needed no new subsystem and are live now.
+
+---
+
+## Deferred: large-monorepo performance pass
+
+Phase 2F Pass 2 measured `grafana/grafana` (22,164 files): the full scan ran
+**> 18 min without completing** and, on the 3.74 GiB dev VM, the memory pressure
+crashed the Docker daemon. The efficiency work (semgrep `--max-memory`, sharding,
+per-engine timeouts, a hard per-scan wall-clock cap) and a **graceful-failure**
+path for oversized repos (fail cleanly with a "scope to specific directories"
+message instead of crashing the host) are scoped in **`PERFORMANCE_TODO.md`**,
+deferred to launch prep on real hardware. See `CODE_CONNECTION_VERIFICATION.md`
+Part 3 for the measurement.
