@@ -1,0 +1,63 @@
+# Aegis custom Gitleaks rules — extends the built-in default ruleset.
+#
+# `useDefault = true` keeps every stock Gitleaks rule (AWS/GitHub/Stripe/…); the
+# rules below add coverage for two high-value leak classes the defaults miss
+# (verified in PER_ENGINE_ACCURACY.md, Pass 3):
+#   1. Database/broker connection strings with EMBEDDED credentials.
+#   2. Hard-coded JWT signing secrets.
+#
+# Precision-first: each rule fires only on a strong structural signal
+# (`scheme://user:password@host`, or a `jwt*secret = "literal"`), and allowlists
+# credential-less URIs, env-var references, and obvious placeholders so it does
+# not cry wolf. Gitleaks uses Go RE2 (no look-around); precision is enforced with
+# explicit allowlists instead.
+title = "Aegis custom secret rules"
+
+[extend]
+useDefault = true
+
+# ── 1. Database / message-broker connection strings with embedded credentials ──
+# Matches  scheme://[user]:password@host  for common data stores. The password
+# group requires ≥3 non-trivial chars before the '@', so credential-less URIs
+# (postgres://localhost:5432/db, postgres://user@host) never match.
+[[rules]]
+id = "aegis-db-connection-string"
+description = "Database connection string with embedded credentials"
+regex = '''(?i)\b(?:postgres(?:ql)?|mysql|mariadb|mongodb(?:\+srv)?|redis|rediss|amqps?|mssql|ftp)://[a-z0-9._%+-]*:([^@\s/'"`]{3,})@[a-z0-9.-]+'''
+keywords = [
+  "postgres", "postgresql", "mysql", "mariadb", "mongodb",
+  "redis", "rediss", "amqp", "amqps", "mssql", "ftp",
+]
+
+  [rules.allowlist]
+  # Applied to the whole match: skip env-var references and placeholder passwords.
+  regexTarget = "match"
+  regexes = [
+    '''\$\{''',                       # ${DB_PASSWORD}
+    '''\$[A-Za-z_][A-Za-z0-9_]*''',   # $DB_PASSWORD (unbraced)
+    '''%\([A-Za-z0-9_]+\)s''',        # %(password)s python interpolation
+    '''\{\{''',                       # {{ password }} templating
+    # Placeholder / example passwords in the user:PASS@ position.
+    '''(?i)://[^:@/\s]*:(?:password|passwd|pass|changeme|change[_-]?me|your[_-]?\w+|placeholder|examplepass|example|dummy|secret|test|testpass|xxx+|\*{3,}|<[^>]+>|\.{3,})@''',
+  ]
+  stopwords = ["changeme", "placeholder", "your_password", "your-password", "yourpassword"]
+
+# ── 2. Hard-coded JWT signing secret ──────────────────────────────────────────
+# Matches  jwt[_-]?(signing)?(secret|key) = "literal"  (quoted string ≥8 chars).
+# Requiring a quoted literal keeps code expressions (os.environ.get(...), process
+# .env.X) out — those are the correct way to load a secret and must not flag.
+[[rules]]
+id = "aegis-jwt-signing-secret"
+description = "Hard-coded JWT signing secret"
+regex = '''(?i)(?:jwt[_-]?(?:signing[_-]?)?(?:secret|key)|(?:signing|token|session)[_-]?secret)\s*[:=]\s*['"]([^'"\s$]{8,})['"]'''
+keywords = ["jwt", "signing", "secret"]
+
+  [rules.allowlist]
+  regexTarget = "match"
+  regexes = [
+    '''\$\{''',                                                          # "${JWT_SECRET}"
+    '''(?i)(?:process\.env|os\.environ|getenv|import\.meta\.env|config\.)''', # env/config lookups
+    # Placeholder secret values right after the opening quote.
+    '''(?i)['"](?:your[_-]?|change[_-]?me|changeme|placeholder|example|dummy|xxx+|<[^>]+>|test[_-]?secret|replace[_-]?me)''',
+  ]
+  stopwords = ["changeme", "placeholder", "your-secret", "your_secret", "replace-me"]

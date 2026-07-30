@@ -29,6 +29,13 @@ from utils.sandbox import binary_available, run_command
 
 log = get_logger("gitleaks")
 
+# Aegis custom Gitleaks config: extends the stock ruleset (useDefault = true) with
+# DB-connection-string + JWT-signing-secret rules. Shipped in the image at
+# /app/rules/gitleaks.toml (COPY . .); resolves the same way when run locally.
+_GITLEAKS_CONFIG = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "rules", "gitleaks.toml"
+)
+
 
 async def run(req: ScanRequest, settings: Settings) -> EngineResult:
     if not binary_available(settings.gitleaks_bin):
@@ -51,6 +58,10 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
             "--redact",            # redact secret values in the report
             "--exit-code", "0",    # findings are not an error for our purposes
         ]
+        # Layer Aegis's custom rules on top of the defaults when the config ships
+        # with the image; fall back to stock rules if it is somehow missing.
+        if os.path.exists(_GITLEAKS_CONFIG):
+            args += ["--config", _GITLEAKS_CONFIG]
 
         result = await run_command(
             args, cwd=req.path, timeout=settings.gitleaks_timeout_seconds,

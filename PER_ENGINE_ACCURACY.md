@@ -20,15 +20,16 @@ Scorecard cross-referenced: [ACCURACY_VALIDATION.md](ACCURACY_VALIDATION.md).
 |---|--------|-------|-----------------------|---------|
 | 1 | **SAST** (Semgrep + Aegis taint) | F1 0.775 / recall 88.4% | **10/10** canonical CWEs caught across Py/JS/Go/Java, 0 FN | ✅ **PASS** |
 | 2 | **SCA** (Trivy) | 100% precision | **6/6** pinned known-CVE packages flagged (40 CVEs); reachability correct | ✅ **PASS** |
-| 3 | **Secrets** (Gitleaks) | precision 1.00 / recall 0.92 | reproduced exactly; **new FN: DB connection strings + JWT signing secrets missed** | ⚠️ **CONCERN** |
+| 3 | **Secrets** (Gitleaks) | precision 1.00 / recall 0.92 | gap found (DB connection strings + JWT secrets) **→ FIXED**: recall 0.42→0.92 on the extended corpus, precision still 1.00 | ✅ **PASS** (fixed) |
 | 4 | **IaC** (Trivy + Aegis compose) | 9/9 recall, 0 hi-FP | 9/9 + S3 public buckets + K8s host/root all caught | ✅ **PASS** |
 | 5 | **Taint / dataflow + SoR** | 144/144 nodes | intra-fn taint + **SoR 6/6 nodes match real code**; cross-fn/file benign-sink missed | ✅ **PASS** (scope) |
 | 6 | **Deployment** | 4/4 builds | 4/4 + missing-dependency build correctly failed | ✅ **PASS** |
 | 7 | **Code Quality** | metrics exact | CC/params integer-exact; suggestions specific + actionable | ✅ **PASS** |
 | 8 | **CVE Intelligence** | live + retro re-score | 4 feeds synced today; retro re-score proven; no false flags | ✅ **PASS** |
 
-**One CONCERN (Engine 3)** — a real, common, fixable secret false-negative beyond
-the already-documented bare-AWS gap. Everything else passes on real-world code.
+All eight engines pass on real-world code. The one concern found (Engine 3 — DB
+connection-string + JWT secrets) was **fixed in this pass, precision-safe** (see
+below).
 
 ---
 
@@ -78,31 +79,56 @@ the already-documented bare-AWS gap. Everything else passes on real-world code.
 
 ---
 
-## Engine 3 — Secrets (Gitleaks) — ⚠️ CONCERN
+## Engine 3 — Secrets (Gitleaks) — ✅ PASS (gap found + fixed this pass)
 
 - **Precision 1.00 / recall 0.92 reproduced exactly** on the 12-planted + 8-decoy
   corpus (11/12 TP, 0/8 FP). All decoys (AWS docs example key, placeholders,
   UUID, git SHA, MD5, base64, env lookups) correctly ignored.
-- **The one documented miss reproduced:** the bare **AWS secret access key**
-  (40-char blob with no paired `AKIA…` id) — inherent, information-theoretically
-  indistinguishable from any base64 string.
-- **New false-negative found (the concern).** A supplemental probe of formats the
-  original corpus didn't cover:
+- **The one inherent miss reproduced:** the bare **AWS secret access key**
+  (40-char blob with no paired `AKIA…` id) — information-theoretically
+  indistinguishable from any base64 string; unfixable without destroying precision.
 
-  | Format | Detected? |
-  |--------|-----------|
-  | `postgres://user:pass@host/db` connection string | ❌ **missed** |
-  | `mysql://…`, `mongodb+srv://…`, `redis://…:pass@…` | ❌ **missed** |
-  | JWT **signing secret** (named var, secret value) | ❌ **missed** |
-  | Azure AccountKey, SendGrid, Twilio | ✅ detected (generic/provider rule) |
+### The false negative found — and the fix
 
-  **Database connection strings with embedded credentials are a common, high-value
-  real-world leak vector — and none of the four URI schemes were detected.** This
-  is *beyond* the known bare-AWS gap. It is **fixable now** with a targeted,
-  high-precision Gitleaks custom rule (`scheme://user:password@host` where the
-  password is not a placeholder) — the `://…:…@` shape is a strong signal that
-  won't hurt the 0-FP precision. **Reported, not fixed** (per the "report before
-  fixing" rule); recommended for a fast follow-up.
+A supplemental probe of formats the original corpus didn't cover surfaced a real,
+high-value gap: **database connection strings with embedded credentials** and
+**hard-coded JWT signing secrets** were **not detected** by the stock Gitleaks
+ruleset.
+
+**Fix (precision-first):** a bundled Gitleaks config that *extends* the defaults
+(`useDefault = true`) with two targeted rules —
+[`services/scanner/rules/gitleaks.toml`](services/scanner/rules/gitleaks.toml),
+wired via `--config` in `gitleaks_engine.py`:
+
+- `aegis-db-connection-string` — fires only on the strong `scheme://[user]:password@host`
+  shape (postgres/postgresql/mysql/mariadb/mongodb/mongodb+srv/redis/rediss/amqp(s)/mssql/ftp),
+  requiring a real ≥3-char password before the `@`.
+- `aegis-jwt-signing-secret` — fires on `jwt[_-]?(signing)?(secret|key) = "literal"`
+  (a quoted string, so code expressions like `os.environ.get(...)` never match).
+
+Both carry allowlists for **env-var references** (`${VAR}`, `$VAR`, `process.env`,
+`os.environ`), **credential-less URIs** (`postgres://localhost/db`,
+`postgres://user@host`), and **placeholder passwords/secrets** (`pass`, `changeme`,
+`your-secret`, …).
+
+**Verification — positive AND negative fixtures:**
+
+| Fixture set | Result |
+|-------------|--------|
+| **Positives** — postgres / mysql / mongodb+srv / redis / amqps conn strings + 2 JWT secrets | **7/7 detected** |
+| **Negatives** — localhost, no-creds, `user@host`, `${DB_PASSWORD}`, `$VAR`, placeholder passwords (`pass`/`changeme`/`password`), JWT env lookups, `your-secret-here` | **13/13 clean — 0 FP** |
+
+**Before / after on an extended corpus** (original secrets + the DB/JWT classes +
+credential-less/placeholder decoys):
+
+| | Precision | Recall | Notes |
+|--|:---------:|:------:|-------|
+| **Before** (stock rules) | 1.000 | **0.417** | all 5 conn strings + a JWT secret missed |
+| **After** (Aegis config) | **1.000** | **0.917** | only the inherent bare-AWS secret still missed |
+
+**Recall 0.42 → 0.92, precision held at 1.00, zero new false positives.** The
+original 12+8 corpus is **unchanged** (still 1.00 / 0.917 — no regression), and a
+smoke of SAST/SCA/Quality confirmed no cross-engine impact.
 
 ---
 
@@ -203,7 +229,7 @@ What classes of real issues does Aegis miss, and why?
 
 | Gap | Engine | Status | Notes |
 |-----|--------|--------|-------|
-| **DB connection strings + JWT signing secrets** | Secrets | 🔧 **FIXABLE NOW** | `scheme://user:pass@host` URIs + named JWT secrets not detected. Common, high-value. Targeted Gitleaks rule, precision-safe. **The one action item from this pass.** |
+| **DB connection strings + JWT signing secrets** | Secrets | ✅ **FIXED** | `scheme://user:pass@host` URIs + named JWT secrets now detected via a bundled Gitleaks config (extends defaults). Recall 0.42→0.92, precision still 1.00, 0 new FP. |
 | **Bare AWS secret key** (no `AKIA` id) | Secrets | ⛔ **INHERENT** | Indistinguishable from any base64 string; flagging all would destroy precision. The access-key id (which identifies the account) *is* caught. |
 | **Cross-function / cross-file taint into a benign-looking sink** | Taint | ⏸️ **DEFERRED** | Fast engine is intra-procedural (shelved-Joern deep scan). Vulns with independently-suspicious sinks still caught (no SoR). |
 | **Architectural / business-logic / broken-auth-logic bugs** | SAST | ⛔ **INHERENT** | No static analyzer catches logic bugs that require understanding intended behavior. Industry-wide SAST limitation. |
@@ -211,10 +237,12 @@ What classes of real issues does Aegis miss, and why?
 | ~~S3 public buckets~~ | IaC | ✅ **NOT A GAP** | Initial probe was my malformed HCL; well-formatted HCL is caught (8 findings). |
 
 **Bottom line:** across all eight engines on real-world code, detection matches the
-scorecard, with **one genuine, fixable false-negative to close (DB connection-string
-secrets)** and a small set of **inherent/known-deferred limitations** that are
-honestly disclosed rather than hidden. No engine was found to silently
-underperform its claimed accuracy on the vulnerabilities it claims to catch.
+scorecard. The **one genuine false-negative found (DB connection-string + JWT
+secrets) was fixed this pass, precision-safe** (recall 0.42→0.92, precision 1.00);
+the remaining gaps are **inherent** (bare-AWS, SAST logic bugs, unrecognized
+builds) or **known-deferred** (cross-file taint = shelved Joern), honestly
+disclosed rather than hidden. No engine silently underperforms its claimed
+accuracy on the vulnerabilities it claims to catch.
 
 **Reproduce:** planted-corpus probes were run in-container against `/scan/{sast,
 sca,secrets,quality,deployment}`; existing harnesses in
