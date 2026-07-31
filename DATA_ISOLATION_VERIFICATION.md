@@ -21,12 +21,13 @@ with separate users/projects/scans), plus a static audit of the SQL query layer.
 | Part | Verdict |
 |------|---------|
 | 1 — Cross-tenant data isolation | ✅ **PASS (CONFIRMED)** |
-| 2 — RBAC enforcement | ⚠️ **CONCERN** — org-level + super-admin solid; project/scan **write** actions don't enforce the read-only *viewer* boundary |
+| 2 — RBAC enforcement | ✅ **PASS** — viewer-write gap **found and fixed this pass** (backend-enforced) |
 | 3 — Per-project + per-user memory | ✅ **PASS** |
 | 4 — Concurrent scan safety | ✅ **PASS** |
 | 5 — ML learning-layer feeding | ✅ **PASS** (privacy invariant holds; retrain is manual) |
 
-**One concern to fix (Part 2), no cross-tenant leaks.**
+**All five parts pass. No cross-tenant leaks; the one RBAC concern found was fixed
+and re-verified (viewer is now read-only, isolation intact).**
 
 ---
 
@@ -81,7 +82,7 @@ response). Cosmetic 200-vs-404 inconsistency only.
 
 ---
 
-## Part 2 — RBAC enforcement ⚠️ CONCERN
+## Part 2 — RBAC enforcement ✅ PASS (gap found + fixed this pass)
 
 Roles: `owner > admin > member > viewer` (`RoleAtLeast`); non-members get 404 (no
 existence leak). Tested every role via **direct API** (not UI).
@@ -102,27 +103,61 @@ existence leak). Tested every role via **direct API** (not UI).
 403 on every `/admin/*` route (live-verified). Every admin mutation writes
 `admin_audit_log`; impersonation issues a **1-hour-capped** token and is audited.
 
-**The concern — project/scan write actions enforce membership, not role:**
+### The gap that was found (before)
 
-| Action | viewer | should be | Result |
-|--------|:------:|:---------:|--------|
-| **trigger scan** | ✅ 202 | denied | ❌ **VIOLATION** |
-| **update project** | ✅ 200 | denied | ❌ **VIOLATION** |
-| **create rule** | ✅ 201 | denied | ❌ **VIOLATION** |
-
-A **viewer** (deliberately read-only) can trigger scans, edit project settings,
+A **viewer** (deliberately read-only) could trigger scans, edit project settings,
 and create custom rules. Root cause: `Trigger`, project `Update`, rule `Create`,
-integration `Connect`, and upload gate on `projects.GetByIDForUser` (org
-*membership*, any role) but **not** a minimum role. The intended pattern **does**
-exist — project `Delete`'s query restricts to `role IN ('owner','admin','member')`
-(so viewers can't delete) — it just wasn't applied to the other write paths.
+integration `Connect`, upload, and the project-scoped policy/slack/finding-triage
+writes gated on `projects.GetByIDForUser` (org *membership*, any role) but **not**
+a minimum role. (Project `Delete` already restricted to
+`role IN ('owner','admin','member')` — the intended pattern, just not applied
+everywhere.)
 
-- **Severity:** medium. **Not** a cross-tenant leak (confined to the actor's own
-  org), but it breaks the least-privilege promise ("viewer = read-only").
-- **Fix (precision-safe):** require `≥ member` on the write paths — either add the
-  `role IN ('owner','admin','member')` filter to `GetByIDForUser`'s write callers
-  or a `requireRole(member)` guard in `Trigger`/`Update`/rule/integration/upload.
-- **Reported, not fixed** (per the "report before fixing" rule).
+| Action | viewer (before) | should be |
+|--------|:---------------:|:---------:|
+| trigger scan / update project / create rule | ✅ allowed | denied |
+
+### The fix
+
+Added a role lookup per resource — `RoleInProjectOrg` / `RoleInFindingOrg` /
+`RoleInRuleOrg` / `RoleInIntegrationOrg` (each returns the caller's role in the
+resource's org, or `ErrNotFound` for a non-member) — and a shared
+`ensureWriteRole(role, err)` guard (`services/authz.go`) applied to **every**
+state-changing project/scan path: scan **Trigger** + **upload**, project
+**Update** + **Delete**, rule **Create** + **Delete**, integration **Connect** +
+**Delete**, **policy Set**, **slack Set**, finding **triage** + **feedback**.
+`ensureWriteRole` returns `ErrForbidden` (403) for a member below `member` (a
+viewer) and passes `ErrNotFound` (404) through unchanged — so **cross-tenant
+isolation is untouched** (a non-member still can't tell a foreign resource from a
+missing one).
+
+### The fixed matrix (backend-enforced, verified via direct API per role)
+
+| Action | viewer | member | admin |
+|--------|:------:|:------:|:-----:|
+| read project | ✅ 200 | ✅ 200 | ✅ 200 |
+| trigger scan | ❌ **403** | ✅ 202 | ✅ 202 |
+| update project | ❌ **403** | ✅ 200 | ✅ 200 |
+| create rule / delete rule | ❌ **403** | ✅ | ✅ |
+| delete project | ❌ **403** | ✅ 200 | ✅ 200 |
+| connect integration | ❌ **403** | ✅ 201 | ✅ 201 |
+| set policy / set slack | ❌ **403** | ✅ 200 | ✅ 200 |
+| finding triage / feedback | ❌ **403** | ✅ | ✅ |
+| invite member / change org settings / set role | ❌ 403 | ❌ 403 | ✅ |
+
+**viewer = read-only (403 on every write); member = project/scan management, no
+org admin; admin = full within org; owner = full.** No violations, no gaps.
+
+### No isolation regression
+
+Re-ran the cross-tenant spot-check after the fix: **User B (non-member of Org A)
+on all of Org A's write endpoints — 7/7 returned 404** (not 403, not 2xx). The
+new guards deny non-members with `ErrNotFound`, so there is **no existence oracle
+and no weakening of org-scoping**. Build compiles clean; middleware tests pass.
+
+*(Pre-existing, out of scope: `githubapp_test.go` references a `models.Scan` field
+`AIGeneratedPct` that doesn't exist — a broken test unrelated to this change;
+noted, not touched.)*
 
 ---
 
@@ -195,11 +230,11 @@ uniquely-named marker file (`marker_A1`…`marker_B2`).
 | # | Part | Verdict | Note |
 |---|------|---------|------|
 | 1 | Cross-tenant isolation | ✅ CONFIRMED | 0 leaks / ~32 attempts; SQL org-scoping consistent |
-| 2 | RBAC | ⚠️ CONCERN | viewer can trigger scans / update projects / create rules (membership checked, not role) — reported, not fixed |
+| 2 | RBAC | ✅ PASS | viewer-write gap **found + fixed** this pass; viewer now read-only (403), isolation intact |
 | 3 | Memory | ✅ PASS | per-project baselines; deletion cascade clean |
 | 4 | Concurrency | ✅ PASS | 0 contamination; Asynq once-only |
 | 5 | ML feeding | ✅ PASS | metadata-only (no code); per-team isolated; retrain manual |
 
-**The most serious class of bug — cross-tenant data leakage — is CONFIRMED absent.**
-The one open item is a within-org least-privilege gap (viewer write access) that
-is fixable precision-safely and does not cross tenant boundaries.
+**The most serious class of bug — cross-tenant data leakage — is CONFIRMED absent**,
+and the one within-org least-privilege gap (viewer write access) has been **fixed
+and re-verified** without weakening isolation. Pass 4 is fully clean.

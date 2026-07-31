@@ -93,6 +93,10 @@ func resolveDeepEngine(enabled bool, engine string) string {
 // Trigger creates a queued scan and publishes the job. On publish failure the
 // scan is marked failed so it never lingers as "queued" forever.
 func (s *ScanService) Trigger(ctx context.Context, projectID, userID string, in TriggerInput) (*models.Scan, error) {
+	// Triggering a scan is a state-changing action: viewers are read-only.
+	if err := ensureWriteRole(s.projects.RoleInProjectOrg(ctx, projectID, userID)); err != nil {
+		return nil, err
+	}
 	project, err := s.projects.GetByIDForUser(ctx, projectID, userID)
 	if err != nil {
 		return nil, err
@@ -157,6 +161,10 @@ func (s *ScanService) Trigger(ctx context.Context, projectID, userID string, in 
 // handler; the orchestrator extracts it into a per-scan sandbox instead of
 // cloning. No repo_url or credential is involved.
 func (s *ScanService) TriggerUpload(ctx context.Context, projectID, userID, archivePath string) (*models.Scan, error) {
+	// Uploading code to scan is a state-changing action: viewers are read-only.
+	if err := ensureWriteRole(s.projects.RoleInProjectOrg(ctx, projectID, userID)); err != nil {
+		return nil, err
+	}
 	if _, err := s.projects.GetByIDForUser(ctx, projectID, userID); err != nil {
 		return nil, err
 	}
@@ -307,6 +315,11 @@ func (s *ScanService) ListFindings(
 // RecordFeedback stores a user's action on a finding (for the FP classifier) and
 // reflects it on the finding's triage flags.
 func (s *ScanService) RecordFeedback(ctx context.Context, findingID, userID, action, reason string) error {
+	// Feedback writes finding_feedback + team-learning stats and flips triage:
+	// viewers are read-only.
+	if err := ensureWriteRole(s.findings.RoleInFindingOrg(ctx, findingID, userID)); err != nil {
+		return err
+	}
 	if err := s.findings.InsertFeedback(ctx, findingID, userID, action, reason); err != nil {
 		return err
 	}
@@ -328,5 +341,9 @@ func (s *ScanService) RecordFeedback(ctx context.Context, findingID, userID, act
 func (s *ScanService) UpdateFindingTriage(
 	ctx context.Context, findingID, userID string, isFalsePositive, isSuppressed *bool,
 ) (*models.Finding, error) {
+	// Triage mutates shared finding state: viewers are read-only.
+	if err := ensureWriteRole(s.findings.RoleInFindingOrg(ctx, findingID, userID)); err != nil {
+		return nil, err
+	}
 	return s.findings.UpdateTriage(ctx, findingID, userID, isFalsePositive, isSuppressed)
 }

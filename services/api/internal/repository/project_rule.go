@@ -2,6 +2,8 @@ package repository
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 
 	"github.com/jmoiron/sqlx"
 
@@ -46,6 +48,24 @@ func (r *ProjectRuleRepository) YAMLForProject(ctx context.Context, projectID st
 	err := r.db.SelectContext(ctx, &out,
 		`SELECT rule_yaml FROM project_rules WHERE project_id = $1 ORDER BY created_at`, projectID)
 	return out, err
+}
+
+// RoleInRuleOrg returns the caller's role in the org that owns the rule's project
+// (rule → project → org), or ErrNotFound if the rule is not visible to the caller.
+func (r *ProjectRuleRepository) RoleInRuleOrg(ctx context.Context, ruleID, userID string) (string, error) {
+	const q = `SELECT om.role
+		FROM project_rules pr
+		JOIN projects p            ON p.id = pr.project_id
+		JOIN organization_members om ON om.org_id = p.organization_id
+		WHERE pr.id = $1 AND om.user_id = $2`
+	var role string
+	if err := r.db.GetContext(ctx, &role, q, ruleID, userID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return "", ErrNotFound
+		}
+		return "", err
+	}
+	return role, nil
 }
 
 func (r *ProjectRuleRepository) DeleteByIDForUser(ctx context.Context, id, userID string) error {

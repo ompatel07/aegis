@@ -47,6 +47,10 @@ type ConnectGitHubResult struct {
 func (s *IntegrationService) ConnectGitHub(
 	ctx context.Context, projectID, userID string, in ConnectGitHubInput,
 ) (*ConnectGitHubResult, error) {
+	// Connecting an integration is a state-changing action: viewers are read-only.
+	if err := ensureWriteRole(s.projects.RoleInProjectOrg(ctx, projectID, userID)); err != nil {
+		return nil, err
+	}
 	if _, err := s.projects.GetByIDForUser(ctx, projectID, userID); err != nil {
 		return nil, err
 	}
@@ -88,5 +92,9 @@ func (s *IntegrationService) ListForProject(
 
 // Delete removes an integration the user owns.
 func (s *IntegrationService) Delete(ctx context.Context, integrationID, userID string) error {
+	// Removing an integration is a state-changing action: viewers are read-only.
+	if err := ensureWriteRole(s.repo.RoleInIntegrationOrg(ctx, integrationID, userID)); err != nil {
+		return err
+	}
 	return s.repo.DeleteByIDForUser(ctx, integrationID, userID)
 }

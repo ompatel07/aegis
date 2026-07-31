@@ -37,6 +37,10 @@ func (s *PolicyService) Get(ctx context.Context, projectID, userID string) (*mod
 // Set upserts the project's active policy. A template name expands to its preset
 // unless an explicit config is supplied.
 func (s *PolicyService) Set(ctx context.Context, projectID, userID, name, template string, cfg *models.PolicyConfig) (*models.Policy, error) {
+	// Setting a project policy is a state-changing action: viewers are read-only.
+	if err := ensureWriteRole(s.projects.RoleInProjectOrg(ctx, projectID, userID)); err != nil {
+		return nil, err
+	}
 	if _, err := s.projects.GetByIDForUser(ctx, projectID, userID); err != nil {
 		return nil, err
 	}

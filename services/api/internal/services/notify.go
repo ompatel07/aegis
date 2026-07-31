@@ -104,6 +104,10 @@ func (s *NotificationService) GetProjectSlack(ctx context.Context, projectID, us
 }
 
 func (s *NotificationService) SetProjectSlack(ctx context.Context, projectID, userID, webhookURL string, enabled bool, minSeverity string) error {
+	// Changing Slack notification settings is state-changing: viewers are read-only.
+	if err := ensureWriteRole(s.projects.RoleInProjectOrg(ctx, projectID, userID)); err != nil {
+		return err
+	}
 	if _, err := s.projects.GetByIDForUser(ctx, projectID, userID); err != nil {
 		return err
 	}

@@ -175,6 +175,26 @@ const severityRankSQL = `
 	END`
 
 // GetByIDForUser loads a finding, enforcing ownership via scan → project → user.
+// RoleInFindingOrg returns the caller's role in the org that owns the finding
+// (finding → scan → project → org), or ErrNotFound if the finding is not visible
+// to the caller. Used to gate finding writes (triage/feedback) on a minimum role.
+func (r *FindingRepository) RoleInFindingOrg(ctx context.Context, findingID, userID string) (string, error) {
+	const q = `SELECT om.role
+		FROM findings f
+		JOIN scans s               ON s.id = f.scan_id
+		JOIN projects p            ON p.id = s.project_id
+		JOIN organization_members om ON om.org_id = p.organization_id
+		WHERE f.id = $1 AND om.user_id = $2`
+	var role string
+	if err := r.db.GetContext(ctx, &role, q, findingID, userID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return "", ErrNotFound
+		}
+		return "", err
+	}
+	return role, nil
+}
+
 func (r *FindingRepository) GetByIDForUser(ctx context.Context, id, userID string) (*models.Finding, error) {
 	const q = `
 		SELECT f.* FROM findings f

@@ -71,6 +71,25 @@ func (r *GithubIntegrationRepository) GetByProject(ctx context.Context, projectI
 }
 
 // DeleteByIDForUser removes an integration the user owns (via project ownership).
+// RoleInIntegrationOrg returns the caller's role in the org that owns the
+// integration's project (integration → project → org), or ErrNotFound if the
+// integration is not visible to the caller.
+func (r *GithubIntegrationRepository) RoleInIntegrationOrg(ctx context.Context, integrationID, userID string) (string, error) {
+	const q = `SELECT om.role
+		FROM github_integrations gi
+		JOIN projects p            ON p.id = gi.project_id
+		JOIN organization_members om ON om.org_id = p.organization_id
+		WHERE gi.id = $1 AND om.user_id = $2`
+	var role string
+	if err := r.db.GetContext(ctx, &role, q, integrationID, userID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return "", ErrNotFound
+		}
+		return "", err
+	}
+	return role, nil
+}
+
 func (r *GithubIntegrationRepository) DeleteByIDForUser(ctx context.Context, id, userID string) error {
 	const q = `
 		DELETE FROM github_integrations gi

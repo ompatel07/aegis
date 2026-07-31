@@ -52,6 +52,26 @@ func (r *ProjectRepository) GetByIDForUser(ctx context.Context, id, userID strin
 	return &p, nil
 }
 
+// RoleInProjectOrg returns the caller's role in the project's owning org, or
+// ErrNotFound if the project does not exist or the caller is not a member of its
+// org. Callers use this to gate write actions on a minimum role while keeping
+// cross-tenant isolation: a non-member is indistinguishable from a missing
+// project (both ErrNotFound → 404, no existence leak).
+func (r *ProjectRepository) RoleInProjectOrg(ctx context.Context, projectID, userID string) (string, error) {
+	const q = `SELECT om.role
+		FROM projects p
+		JOIN organization_members om ON om.org_id = p.organization_id
+		WHERE p.id = $1 AND om.user_id = $2`
+	var role string
+	if err := r.db.GetContext(ctx, &role, q, projectID, userID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return "", ErrNotFound
+		}
+		return "", err
+	}
+	return role, nil
+}
+
 // FindIDByRepo returns a project id whose repo_url contains the given repo
 // full name (owner/name) — used to route GitHub App webhooks to a project.
 func (r *ProjectRepository) FindIDByRepo(ctx context.Context, fullName string) (string, error) {

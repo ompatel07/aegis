@@ -87,6 +87,10 @@ func (s *ProjectService) List(ctx context.Context, userID string, limit, offset 
 }
 
 func (s *ProjectService) Update(ctx context.Context, id, userID string, in ProjectInput) (*models.Project, error) {
+	// Editing project settings is a state-changing action: viewers are read-only.
+	if err := ensureWriteRole(s.projects.RoleInProjectOrg(ctx, id, userID)); err != nil {
+		return nil, err
+	}
 	// Load to confirm ownership and to keep the immutable slug.
 	existing, err := s.projects.GetByIDForUser(ctx, id, userID)
 	if err != nil {
@@ -114,6 +118,11 @@ func (s *ProjectService) Update(ctx context.Context, id, userID string, in Proje
 }
 
 func (s *ProjectService) Delete(ctx context.Context, id, userID string) error {
+	// Deleting a project is a state-changing action: viewers are read-only. (The
+	// repo query also restricts to owner/admin/member as defense in depth.)
+	if err := ensureWriteRole(s.projects.RoleInProjectOrg(ctx, id, userID)); err != nil {
+		return err
+	}
 	return s.projects.Delete(ctx, id, userID)
 }
 

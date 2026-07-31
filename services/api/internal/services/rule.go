@@ -42,6 +42,10 @@ func NewRuleService(
 
 // Create validates the rule via the scanner, then stores it for the project.
 func (s *RuleService) Create(ctx context.Context, projectID, userID, name, ruleYAML string) (*models.ProjectRule, error) {
+	// Creating a custom rule is a state-changing action: viewers are read-only.
+	if err := ensureWriteRole(s.projects.RoleInProjectOrg(ctx, projectID, userID)); err != nil {
+		return nil, err
+	}
 	if _, err := s.projects.GetByIDForUser(ctx, projectID, userID); err != nil {
 		return nil, err
 	}
@@ -65,6 +69,10 @@ func (s *RuleService) List(ctx context.Context, projectID, userID string) ([]mod
 }
 
 func (s *RuleService) Delete(ctx context.Context, ruleID, userID string) error {
+	// Deleting a custom rule is a state-changing action: viewers are read-only.
+	if err := ensureWriteRole(s.rules.RoleInRuleOrg(ctx, ruleID, userID)); err != nil {
+		return err
+	}
 	return s.rules.DeleteByIDForUser(ctx, ruleID, userID)
 }
 
