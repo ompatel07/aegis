@@ -35,3 +35,31 @@ func (h *ExecReportHandler) Executive(w http.ResponseWriter, r *http.Request) {
 	}
 	httpx.WriteSuccess(w, http.StatusOK, report)
 }
+
+// Compliance handles GET /api/v1/scans/{scanId}/report/compliance?framework=soc2 —
+// an audit-evidence compliance report (findings mapped to a framework's controls).
+// Org-scoped via the scan; returns the rendered HTML + score summary so the UI can
+// preview and download it.
+func (h *ExecReportHandler) Compliance(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.UserID(r.Context())
+	scanID := chi.URLParam(r, "scanId")
+	framework := r.URL.Query().Get("framework")
+	if framework == "" {
+		framework = "soc2"
+	}
+
+	report, err := h.reports.Compliance(r.Context(), scanID, userID, framework)
+	if err != nil {
+		writeServiceError(w, h.log, err)
+		return
+	}
+	// download=1 → serve the raw HTML as an attachment (a real downloadable file).
+	if r.URL.Query().Get("download") == "1" {
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		w.Header().Set("Content-Disposition", "attachment; filename=\"aegis-"+framework+"-"+scanID+".html\"")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(report.HTML))
+		return
+	}
+	httpx.WriteSuccess(w, http.StatusOK, report)
+}

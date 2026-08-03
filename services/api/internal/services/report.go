@@ -1,11 +1,14 @@
 package services
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/aegis-platform/api/internal/ai"
 	"github.com/aegis-platform/api/internal/models"
@@ -85,18 +88,93 @@ type Trend struct {
 
 // ReportService builds executive reports from findings metadata (never code).
 type ReportService struct {
-	scans    *repository.ScanRepository
-	findings *repository.FindingRepository
-	projects *repository.ProjectRepository
-	backend  ai.Backend
-	audit    *repository.AIAuditRepository
+	scans      *repository.ScanRepository
+	findings   *repository.FindingRepository
+	projects   *repository.ProjectRepository
+	backend    ai.Backend
+	audit      *repository.AIAuditRepository
+	scannerURL string
+	http       *http.Client
 }
 
 func NewReportService(
 	scans *repository.ScanRepository, findings *repository.FindingRepository,
 	projects *repository.ProjectRepository, backend ai.Backend, audit *repository.AIAuditRepository,
+	scannerURL string,
 ) *ReportService {
-	return &ReportService{scans: scans, findings: findings, projects: projects, backend: backend, audit: audit}
+	return &ReportService{
+		scans: scans, findings: findings, projects: projects, backend: backend, audit: audit,
+		scannerURL: scannerURL, http: &http.Client{Timeout: 60 * time.Second},
+	}
+}
+
+// ComplianceReport is a generated audit-evidence report for one framework.
+type ComplianceReport struct {
+	Framework              string `json:"framework"`
+	ScorePct               int    `json:"score_pct"`
+	ControlsNeedsAttention int    `json:"controls_needs_attention"`
+	ControlsInScope        int    `json:"controls_in_scope"`
+	HTML                   string `json:"html"`
+	Error                  string `json:"error,omitempty"`
+}
+
+// Compliance generates a compliance report for a scan by mapping its findings to a
+// framework's controls (via the scanner's compliance engine). Org-scoped: the scan
+// must belong to the caller's org. findings metadata only — never source code.
+func (s *ReportService) Compliance(ctx context.Context, scanID, userID, framework string) (*ComplianceReport, error) {
+	scan, err := s.scans.GetByIDForUser(ctx, scanID, userID)
+	if err != nil {
+		return nil, err
+	}
+	project, err := s.projects.GetByIDForUser(ctx, scan.ProjectID, userID)
+	if err != nil {
+		return nil, err
+	}
+	findings, err := s.findings.AllByScan(ctx, scanID)
+	if err != nil {
+		return nil, err
+	}
+
+	fs := make([]map[string]any, 0, len(findings))
+	for i := range findings {
+		f := &findings[i]
+		fs = append(fs, map[string]any{
+			"rule_id": f.RuleID, "severity": f.Severity, "title": f.Title,
+			"cwe_id": derefStr(f.CWEID), "owasp_category": derefStr(f.OWASPCategory),
+			"file_path": f.FilePath, "engine": f.Engine, "pillar": f.Pillar,
+			"is_false_positive": f.IsFalsePositive, "is_suppressed": f.IsSuppressed,
+		})
+	}
+	payload, _ := json.Marshal(map[string]any{
+		"framework": framework,
+		"scan_meta": map[string]any{
+			"scan_id": scan.ID, "project": project.Name,
+			"grade": derefStr(scan.OverallGrade), "commit": derefStr(scan.CommitSHA),
+			"generated_at": scan.CreatedAt,
+		},
+		"findings": fs,
+	})
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.scannerURL+"/report/compliance", bytes.NewReader(payload))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := s.http.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("compliance report generation failed: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("compliance report generation failed (scanner %d)", resp.StatusCode)
+	}
+	var out ComplianceReport
+	if err := json.NewDecoder(resp.Body).Decode(&out); err != nil {
+		return nil, fmt.Errorf("compliance report parse failed: %w", err)
+	}
+	if out.Error != "" {
+		return nil, fmt.Errorf("compliance report: %s", out.Error)
+	}
+	return &out, nil
 }
 
 func (s *ReportService) Executive(ctx context.Context, scanID, userID string) (*ExecReport, error) {

@@ -1,11 +1,14 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
+	"strings"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/rs/zerolog"
 
+	"github.com/aegis-platform/api/internal/gitremote"
 	"github.com/aegis-platform/api/internal/httpx"
 	"github.com/aegis-platform/api/internal/middleware"
 	"github.com/aegis-platform/api/internal/services"
@@ -39,6 +42,53 @@ func (r projectRequest) toInput() services.ProjectInput {
 		RepoType: r.RepoType, DefaultBranch: r.DefaultBranch, Language: r.Language,
 		AIFixEnabled: r.AIFixEnabled, GrandfatherMode: r.GrandfatherMode,
 		OrganizationID: r.OrganizationID,
+	}
+}
+
+type detectBranchesRequest struct {
+	RepoURL     string `json:"repo_url" validate:"required,url,max=1024"`
+	AccessToken string `json:"access_token" validate:"omitempty,max=512"`
+}
+
+// DetectBranches handles POST /api/v1/projects/detect-branches — inspects a remote
+// repo (no clone) and returns its default branch + branch list so the connect-repo
+// UI can offer "use default (auto-detected)" or "choose a branch". Failures map to
+// a clear, user-facing message rather than a raw git error.
+func (h *ProjectHandler) DetectBranches(w http.ResponseWriter, r *http.Request) {
+	var req detectBranchesRequest
+	if apiErr := httpx.DecodeAndValidate(w, r, &req); apiErr != nil {
+		httpx.WriteError(w, apiErr)
+		return
+	}
+	def, branches, err := h.projects.DetectBranches(r.Context(), req.RepoURL, req.AccessToken)
+	if err != nil {
+		httpx.WriteError(w, httpx.ErrBadRequest(friendlyRepoError(err, req.AccessToken != "")))
+		return
+	}
+	httpx.WriteSuccess(w, http.StatusOK, map[string]any{
+		"default_branch": def,
+		"branches":       branches,
+	})
+}
+
+// friendlyRepoError turns a raw go-git/transport error into a clear message a real
+// user can act on (bad URL, missing auth, empty repo). Used by connect + scan flows.
+func friendlyRepoError(err error, hadToken bool) string {
+	msg := strings.ToLower(err.Error())
+	switch {
+	case errors.Is(err, gitremote.ErrNoBranches):
+		return "This repository has no branches yet (it looks empty). Push some code first, then connect it."
+	case strings.Contains(msg, "authentication required") || strings.Contains(msg, "authorization failed") || strings.Contains(msg, "403"):
+		if hadToken {
+			return "Couldn't access the repository — the access token was rejected. Check that the token is valid and has read access to this repo."
+		}
+		return "This repository looks private. Provide an access token (or connect the integration) so Aegis can read it."
+	case strings.Contains(msg, "repository not found") || strings.Contains(msg, "not found") || strings.Contains(msg, "could not resolve") || strings.Contains(msg, "no such host"):
+		return "Couldn't find the repository at that URL. Check the URL (and that the repo exists and is spelled correctly)."
+	case strings.Contains(msg, "timeout") || strings.Contains(msg, "deadline exceeded"):
+		return "Timed out reaching the repository. Check the URL and that the host is reachable, then try again."
+	default:
+		return "Couldn't access the repository. Check the URL and your access token/permissions."
 	}
 }
 

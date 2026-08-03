@@ -1,0 +1,49 @@
+framework: HIPAA Security Rule
+version: "45 CFR Part 164, Subpart C"
+authority: U.S. HHS
+description: >
+  Evidence toward the HIPAA Technical Safeguards (§164.312). Administrative
+  (§164.308) and Physical (§164.310) safeguards require external evidence.
+controls:
+  - id: "164.312(a)(1)"
+    name: Access control — unique user identification & least privilege
+    evidence:
+      owasp: ["A01:2021"]
+      cwe: ["CWE-284", "CWE-285", "CWE-862", "CWE-863", "CWE-639"]
+      pillars: ["security"]
+  - id: "164.312(a)(2)(iv)"
+    name: Encryption and decryption of ePHI at rest
+    evidence:
+      owasp: ["A02:2021"]
+      cwe: ["CWE-311", "CWE-312", "CWE-327", "CWE-326"]
+      pillars: ["security"]
+  - id: "164.312(c)(1)"
+    name: Integrity — protect ePHI from improper alteration
+    evidence:
+      owasp: ["A08:2021", "A03:2021"]
+      cwe: ["CWE-502", "CWE-345", "CWE-89"]
+      pillars: ["security"]
+  - id: "164.312(d)"
+    name: Person or entity authentication
+    evidence:
+      owasp: ["A07:2021"]
+      cwe: ["CWE-287", "CWE-306", "CWE-798", "CWE-522"]
+      pillars: ["security"]
+  - id: "164.312(e)(1)"
+    name: Transmission security — encrypt ePHI in transit
+    evidence:
+      owasp: ["A02:2021"]
+      cwe: ["CWE-319", "CWE-295", "CWE-326"]
+      pillars: ["security"]
+  - id: "164.312(e)(2)(ii)"
+    name: Guard against unauthorized access during transmission (SSRF/redirect)
+    evidence:
+      owasp: ["A10:2021", "A01:2021"]
+      cwe: ["CWE-918", "CWE-601"]
+      pillars: ["security"]
+  - id: "164.308"
+    name: Administrative safeguards (risk analysis, workforce, training)
+    aegis_scope: out-of-scope
+  - id: "164.310"
+    name: Physical safeguards (facility, workstation, device)
+    aegis_scope: out-of-scope

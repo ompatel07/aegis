@@ -1,0 +1,67 @@
+framework: ISO/IEC 27001
+version: "2022"
+authority: ISO/IEC
+description: >
+  Evidence toward the technical Annex A controls (2022 revision) reachable by
+  static application, dependency, secret, and configuration analysis.
+controls:
+  - id: "A.8.2"
+    name: Privileged access rights
+    evidence:
+      owasp: ["A01:2021"]
+      cwe: ["CWE-269", "CWE-266", "CWE-732"]
+      pillars: ["security"]
+  - id: "A.8.3"
+    name: Information access restriction
+    evidence:
+      owasp: ["A01:2021"]
+      cwe: ["CWE-284", "CWE-862", "CWE-863", "CWE-639"]
+      pillars: ["security"]
+  - id: "A.8.5"
+    name: Secure authentication
+    evidence:
+      owasp: ["A07:2021"]
+      cwe: ["CWE-287", "CWE-306", "CWE-522", "CWE-798"]
+      pillars: ["security"]
+  - id: "A.8.8"
+    name: Management of technical vulnerabilities
+    evidence:
+      owasp: ["A06:2021"]
+      cwe: ["CWE-937", "CWE-1035", "CWE-1104"]
+      pillars: ["security"]
+  - id: "A.8.9"
+    name: Configuration management / secure configuration
+    evidence:
+      owasp: ["A05:2021"]
+      cwe: ["CWE-16", "CWE-1188", "CWE-732"]
+      pillars: ["deployment", "security"]
+  - id: "A.8.24"
+    name: Use of cryptography
+    evidence:
+      owasp: ["A02:2021"]
+      cwe: ["CWE-311", "CWE-319", "CWE-326", "CWE-327", "CWE-328"]
+      pillars: ["security"]
+  - id: "A.8.25"
+    name: Secure development life cycle
+    evidence:
+      owasp: ["A04:2021"]
+      cwe: ["CWE-1173", "CWE-710"]
+      pillars: ["security"]
+  - id: "A.8.26"
+    name: Application security requirements (injection, XSS, SSRF, deserialization)
+    evidence:
+      owasp: ["A03:2021", "A08:2021", "A10:2021"]
+      cwe: ["CWE-89", "CWE-79", "CWE-78", "CWE-918", "CWE-502", "CWE-611"]
+      pillars: ["security"]
+  - id: "A.8.28"
+    name: Secure coding
+    evidence:
+      owasp: ["A03:2021", "A04:2021"]
+      cwe: ["CWE-20", "CWE-116", "CWE-798"]
+      pillars: ["security"]
+  - id: "A.5.x"
+    name: Organizational controls (policies, roles, supplier relationships)
+    aegis_scope: out-of-scope
+  - id: "A.7.x"
+    name: Physical controls
+    aegis_scope: out-of-scope

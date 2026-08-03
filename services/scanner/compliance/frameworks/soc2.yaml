@@ -1,0 +1,68 @@
+framework: SOC 2
+version: "2017 Trust Services Criteria"
+authority: AICPA
+description: >
+  Technical evidence Aegis can provide toward the Common Criteria (security)
+  and related TSC. Aegis evidences code/configuration controls; organizational
+  and physical controls require external evidence.
+controls:
+  - id: CC6.1
+    name: Logical access — least privilege & access controls
+    evidence:
+      owasp: ["A01:2021"]
+      cwe: ["CWE-284", "CWE-285", "CWE-639", "CWE-862", "CWE-863"]
+      pillars: ["security"]
+  - id: CC6.2
+    name: Authentication of users prior to access
+    evidence:
+      owasp: ["A07:2021"]
+      cwe: ["CWE-287", "CWE-306", "CWE-522", "CWE-798"]
+      pillars: ["security"]
+  - id: CC6.3
+    name: Role-based access enforcement
+    evidence:
+      owasp: ["A01:2021"]
+      cwe: ["CWE-269", "CWE-266", "CWE-732"]
+      pillars: ["security"]
+  - id: CC6.6
+    name: Protection against external threats (injection, SSRF, XSS)
+    evidence:
+      owasp: ["A03:2021", "A10:2021"]
+      cwe: ["CWE-89", "CWE-79", "CWE-78", "CWE-918", "CWE-611"]
+      pillars: ["security"]
+  - id: CC6.7
+    name: Encryption of data in transit and at rest
+    evidence:
+      owasp: ["A02:2021"]
+      cwe: ["CWE-311", "CWE-319", "CWE-326", "CWE-327", "CWE-328"]
+      pillars: ["security"]
+  - id: CC6.8
+    name: Prevention/detection of unauthorized or malicious software
+    evidence:
+      owasp: ["A06:2021", "A08:2021"]
+      cwe: ["CWE-1104", "CWE-937", "CWE-829"]
+      pillars: ["security"]
+  - id: CC7.1
+    name: Vulnerability detection & monitoring
+    evidence:
+      owasp: ["A06:2021"]
+      cwe: ["CWE-1035", "CWE-937"]
+      pillars: ["security"]
+  - id: CC7.2
+    name: Secure configuration / hardening of deployment
+    evidence:
+      owasp: ["A05:2021"]
+      cwe: ["CWE-16", "CWE-2", "CWE-732", "CWE-1188"]
+      pillars: ["deployment", "security"]
+  - id: CC8.1
+    name: Secrets and credentials not hard-coded (change management)
+    evidence:
+      cwe: ["CWE-798", "CWE-259", "CWE-321"]
+      pillars: ["security"]
+  # Out of scope for static analysis — need external evidence.
+  - id: CC1.x
+    name: Control environment (governance, HR, ethics)
+    aegis_scope: out-of-scope
+  - id: CC9.x
+    name: Risk mitigation & vendor management
+    aegis_scope: out-of-scope

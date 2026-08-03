@@ -10,7 +10,7 @@ import { ShieldCheck } from "lucide-react";
 const TEMPLATES: { id: string; label: string; blurb: string }[] = [
   { id: "startup", label: "Startup", blurb: "Permissive — block only new critical vulns" },
   { id: "growing", label: "Growing team", blurb: "Moderate — block new high+ findings, security floor 60" },
-  { id: "enterprise", label: "Enterprise", blurb: "Strict — no new findings, score + AI-safety floors" },
+  { id: "enterprise", label: "Enterprise", blurb: "Strict — no new findings, plus security + quality score floors" },
   { id: "compliance", label: "Compliance", blurb: "Maximum — nothing outside the approved baseline" },
 ];
 
@@ -41,8 +41,8 @@ export function PolicyCard({ projectId }: { projectId: string }) {
       </CardHeader>
       <CardContent>
         <p className="mb-3 text-sm text-muted-foreground">
-          Gate pull requests on this project&apos;s scans. New (non-baseline) findings, score floors, and the
-          AI-code safety score can each block a merge.
+          Gate pull requests on this project&apos;s scans. New (non-baseline) findings and the
+          security / quality score floors can each block a merge.
         </p>
         <div className="grid gap-2 sm:grid-cols-2">
           {TEMPLATES.map((t) => (

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useApi } from "@/lib/use-api";
@@ -120,7 +121,82 @@ export default function ExecutiveReportPage() {
           </ol>
         </CardContent>
       </Card>
+
+      <ComplianceReportCard scanId={scanId} />
     </div>
+  );
+}
+
+const FRAMEWORKS: { id: string; label: string }[] = [
+  { id: "soc2", label: "SOC 2" },
+  { id: "pci_dss", label: "PCI-DSS" },
+  { id: "hipaa", label: "HIPAA" },
+  { id: "iso27001", label: "ISO 27001" },
+  { id: "owasp_asvs", label: "OWASP ASVS" },
+  { id: "nist_csf", label: "NIST CSF" },
+];
+
+// Compliance report generator (Phase 2G) — maps this scan's findings to a
+// framework's controls and lets the user preview + download an audit-evidence HTML.
+function ComplianceReportCard({ scanId }: { scanId: string }) {
+  const api = useApi();
+  const [framework, setFramework] = useState("soc2");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [result, setResult] = useState<{ score_pct: number; controls_needs_attention: number; controls_in_scope: number; html: string } | null>(null);
+
+  async function generate() {
+    setBusy(true);
+    setErr(null);
+    try {
+      setResult(await api.getComplianceReport(scanId, framework));
+    } catch (e) {
+      setErr((e as Error).message);
+      setResult(null);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <Card className="print:hidden">
+      <CardHeader><CardTitle>Compliance report</CardTitle></CardHeader>
+      <CardContent className="space-y-3">
+        <p className="text-sm text-muted-foreground">
+          Map this scan&apos;s findings to a compliance framework&apos;s controls (audit-ready technical
+          evidence — not a certification).
+        </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+            value={framework}
+            onChange={(e) => { setFramework(e.target.value); setResult(null); }}
+          >
+            {FRAMEWORKS.map((f) => (
+              <option key={f.id} value={f.id}>{f.label}</option>
+            ))}
+          </select>
+          <Button size="sm" onClick={generate} disabled={busy}>
+            {busy ? "Generating…" : "Generate report"}
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => api.downloadComplianceReport(scanId, framework)} disabled={busy}>
+            <Download className="mr-1 h-4 w-4" /> Download HTML
+          </Button>
+        </div>
+        {err ? <p className="text-sm text-destructive">{err}</p> : null}
+        {result ? (
+          <div className="space-y-2">
+            <p className="text-sm">
+              <span className="font-medium">Compliance score: {result.score_pct}%</span>{" "}
+              <span className="text-muted-foreground">
+                ({result.controls_needs_attention} of {result.controls_in_scope} in-scope controls need attention)
+              </span>
+            </p>
+            <iframe title="compliance-report" className="h-[420px] w-full rounded-md border bg-white" srcDoc={result.html} />
+          </div>
+        ) : null}
+      </CardContent>
+    </Card>
   );
 }
 

@@ -345,6 +345,42 @@ export function createApi(token?: string) {
       URL.revokeObjectURL(url);
     },
 
+    // Inspects a remote repo (no clone) → its default branch + branch list, so the
+    // connect-repo form can auto-detect the default (never assume "main").
+    detectBranches: (repo_url: string, access_token?: string) =>
+      http
+        .post<ApiSuccess<{ default_branch: string; branches: string[] }>>(
+          "/projects/detect-branches",
+          { repo_url, access_token: access_token || undefined },
+        )
+        .then((r) => r.data.data)
+        .catch(normalizeError),
+
+    // Generates a compliance report (findings mapped to a framework's controls).
+    getComplianceReport: (scanId: string, framework: string) =>
+      http
+        .get<ApiSuccess<{ framework: string; score_pct: number; controls_needs_attention: number; controls_in_scope: number; html: string }>>(
+          `/scans/${scanId}/report/compliance`,
+          { params: { framework } },
+        )
+        .then((r) => r.data.data)
+        .catch(normalizeError),
+
+    // Downloads the compliance report as a standalone HTML file.
+    downloadComplianceReport: async (scanId: string, framework: string) => {
+      const r = await http
+        .get(`/scans/${scanId}/report/compliance`, { params: { framework, download: 1 }, responseType: "blob" })
+        .catch(normalizeError);
+      const url = URL.createObjectURL(r.data as Blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `aegis-${framework}-${scanId}.html`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    },
+
     getScan: (scanId: string) =>
       http
         .get<ApiSuccess<ScanReport>>(`/scans/${scanId}`)

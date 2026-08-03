@@ -7,12 +7,15 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	git "github.com/go-git/go-git/v5"
+	gitconfig "github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
+	"github.com/go-git/go-git/v5/storage/memory"
 )
 
 // GitClient clones repositories into per-scan workspace directories.
@@ -77,9 +80,54 @@ func (g *GitClient) Clone(ctx context.Context, scanID, repoURL, branch, token st
 
 	if _, err := git.PlainCloneContext(ctx, dir, false, opts); err != nil {
 		cleanup()
-		return nil, fmt.Errorf("clone %s: %w", repoURL, err)
+		return nil, g.cloneError(ctx, repoURL, branch, token, err)
 	}
 	return &Checkout{Dir: dir, Cleanup: cleanup}, nil
+}
+
+// cloneError turns a raw clone failure into a clear, user-facing message. A
+// missing-branch failure is the common real-user case (Phase 2G): we list the
+// repo's actual branches so the message tells the user exactly what to pick.
+func (g *GitClient) cloneError(ctx context.Context, repoURL, branch, token string, err error) error {
+	msg := strings.ToLower(err.Error())
+	missingRef := branch != "" && (strings.Contains(msg, "couldn't find remote ref") ||
+		strings.Contains(msg, "reference not found") || strings.Contains(msg, "not found"))
+	if missingRef {
+		if names := g.remoteBranches(ctx, repoURL, token); len(names) > 0 {
+			avail := names
+			if len(avail) > 12 {
+				avail = avail[:12]
+			}
+			return fmt.Errorf("branch %q was not found in %s. Available branches: %s",
+				branch, repoURL, strings.Join(avail, ", "))
+		}
+		return fmt.Errorf("branch %q was not found in %s; check the branch name", branch, repoURL)
+	}
+	switch {
+	case strings.Contains(msg, "authentication required") || strings.Contains(msg, "authorization failed"):
+		return fmt.Errorf("couldn't access %s — repository is private and the access token was missing or rejected", repoURL)
+	case strings.Contains(msg, "repository not found") || strings.Contains(msg, "no such host") || strings.Contains(msg, "could not resolve"):
+		return fmt.Errorf("couldn't find the repository at %s — check the URL", repoURL)
+	default:
+		return fmt.Errorf("clone %s failed: %v", repoURL, err)
+	}
+}
+
+// remoteBranches lists a repo's branch names without cloning (best-effort).
+func (g *GitClient) remoteBranches(ctx context.Context, repoURL, token string) []string {
+	rem := git.NewRemote(memory.NewStorage(), &gitconfig.RemoteConfig{Name: "origin", URLs: []string{repoURL}})
+	refs, err := rem.ListContext(ctx, &git.ListOptions{Auth: authFor(repoURL, token)})
+	if err != nil {
+		return nil
+	}
+	var names []string
+	for _, r := range refs {
+		if r.Name().IsBranch() {
+			names = append(names, r.Name().Short())
+		}
+	}
+	sort.Strings(names)
+	return names
 }
 
 // ExtractUpload extracts an uploaded code archive (Method B) into a per-scan

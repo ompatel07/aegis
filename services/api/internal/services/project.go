@@ -6,7 +6,9 @@ import (
 	"encoding/hex"
 	"regexp"
 	"strings"
+	"time"
 
+	"github.com/aegis-platform/api/internal/gitremote"
 	"github.com/aegis-platform/api/internal/models"
 	"github.com/aegis-platform/api/internal/repository"
 )
@@ -15,6 +17,15 @@ import (
 type ProjectService struct {
 	projects *repository.ProjectRepository
 	orgs     *repository.OrganizationRepository
+}
+
+// DetectBranches inspects a remote repository without cloning and returns its
+// default branch + branch list — powering the "auto-detect vs choose a branch"
+// UI when connecting a repo. token is optional (needed only for private repos).
+func (s *ProjectService) DetectBranches(ctx context.Context, repoURL, token string) (string, []string, error) {
+	dctx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
+	return gitremote.Detect(dctx, repoURL, token)
 }
 
 func NewProjectService(projects *repository.ProjectRepository, orgs *repository.OrganizationRepository) *ProjectService {
@@ -35,9 +46,19 @@ type ProjectInput struct {
 }
 
 func (s *ProjectService) Create(ctx context.Context, userID string, in ProjectInput) (*models.Project, error) {
+	// Branch resolution (Phase 2G): never assume "main". Use the branch the user
+	// specified; otherwise best-effort auto-detect the remote's real default. If
+	// detection fails (e.g. a private repo whose token is connected later), leave
+	// it empty — the orchestrator clones the remote's default HEAD when no branch
+	// is set, so scanning still works for master/develop/etc.
 	branch := in.DefaultBranch
-	if branch == "" {
-		branch = "main"
+	isUpload := in.RepoType != nil && *in.RepoType == "upload"
+	if branch == "" && !isUpload && in.RepoURL != nil && *in.RepoURL != "" {
+		dctx, cancel := context.WithTimeout(ctx, 12*time.Second)
+		if def, _, derr := gitremote.Detect(dctx, *in.RepoURL, ""); derr == nil && def != "" {
+			branch = def
+		}
+		cancel()
 	}
 
 	// Resolve the owning org: the one requested (member+ required) or the user's

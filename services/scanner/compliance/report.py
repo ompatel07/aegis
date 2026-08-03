@@ -22,7 +22,10 @@ from typing import Any
 
 import yaml
 
-FRAMEWORK_DIR = Path(__file__).resolve().parents[3] / "compliance" / "frameworks"
+# Framework mapping YAMLs ship next to this module (…/compliance/frameworks) so
+# they resolve identically in the repo checkout and inside the scanner container.
+# (Phase 2G: the old parents[3] path crashed in /app; the files weren't shipped.)
+FRAMEWORK_DIR = Path(__file__).resolve().parent / "frameworks"
 
 # Remediation SLAs by severity (days) — drives the remediation timeline.
 SLA_DAYS = {"critical": 7, "high": 30, "medium": 90, "low": 180, "info": 365}

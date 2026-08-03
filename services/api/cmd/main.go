@@ -140,7 +140,7 @@ func run() error {
 	ruleSvc := services.NewRuleService(projectRepo, projectRuleRepo, cfg.ScannerBaseURL)
 	aiBackend := ai.New(ai.Config{Provider: cfg.AIProvider, Model: cfg.AIModel, APIKey: cfg.AIAPIKey, BaseURL: cfg.AIBaseURL})
 	aiSvc := services.NewAIService(aiBackend, findingRepo, aiAuditRepo)
-	reportSvc := services.NewReportService(scanRepo, findingRepo, projectRepo, aiBackend, aiAuditRepo)
+	reportSvc := services.NewReportService(scanRepo, findingRepo, projectRepo, aiBackend, aiAuditRepo, cfg.ScannerBaseURL)
 	log.Info().Str("provider", aiSvc.Provider()).Bool("enabled", aiSvc.Enabled()).Msg("AI layer")
 
 	// ── Handlers ─────────────────────────────────────────────────────────────
@@ -235,6 +235,7 @@ func run() error {
 			r.Route("/projects", func(r chi.Router) {
 				r.Get("/", projectH.List)
 				r.Post("/", projectH.Create)
+				r.Post("/detect-branches", projectH.DetectBranches)
 				r.Get("/{id}", projectH.Get)
 				r.Put("/{id}", projectH.Update)
 				r.Delete("/{id}", projectH.Delete)
@@ -266,6 +267,7 @@ func run() error {
 				r.Get("/{scanId}/findings", scanH.ListFindings)
 				r.Get("/{scanId}/report", reportH.Get)
 				r.Get("/{scanId}/report/executive", execReportH.Executive)
+				r.Get("/{scanId}/report/compliance", execReportH.Compliance)
 				r.Get("/{scanId}/policy", policyH.Evaluate)
 				r.Get("/{scanId}/export/sarif", scanH.ExportSARIF)
 				r.Get("/{scanId}/export/sbom", scanH.ExportSBOM)
