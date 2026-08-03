@@ -85,7 +85,9 @@ func (p *ScanProcessor) ProcessTask(ctx context.Context, task *asynq.Task) error
 
 	// ── Size guard ───────────────────────────────────────────────────────────
 	if sizeMB, serr := adapters.DirSizeMB(checkout.Dir); serr == nil && sizeMB > p.maxRepoSizeMB {
-		msg := fmt.Sprintf("repository too large: %dMB exceeds limit of %dMB", sizeMB, p.maxRepoSizeMB)
+		msg := fmt.Sprintf("Repository is too large to scan (%d MB, current limit %d MB). "+
+			"Scope the scan to specific directories, or contact us about a plan for large monorepos.",
+			sizeMB, p.maxRepoSizeMB)
 		// Permanent condition — mark failed and skip retry.
 		_ = p.store.MarkFailed(ctx, payload.ScanID, msg)
 		log.Warn().Msg(msg)

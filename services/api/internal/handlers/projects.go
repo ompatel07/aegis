@@ -82,7 +82,7 @@ func friendlyRepoError(err error, hadToken bool) string {
 		if hadToken {
 			return "Couldn't access the repository — the access token was rejected. Check that the token is valid and has read access to this repo."
 		}
-		return "This repository looks private. Provide an access token (or connect the integration) so Aegis can read it."
+		return "This repository is private or doesn't exist. If it's private, provide an access token (or connect the integration); if it's public, double-check the URL."
 	case strings.Contains(msg, "repository not found") || strings.Contains(msg, "not found") || strings.Contains(msg, "could not resolve") || strings.Contains(msg, "no such host"):
 		return "Couldn't find the repository at that URL. Check the URL (and that the repo exists and is spelled correctly)."
 	case strings.Contains(msg, "timeout") || strings.Contains(msg, "deadline exceeded"):
