@@ -9,6 +9,7 @@ CVSS → severity mapping: >=9.0 critical, >=7.0 high, >=4.0 medium, else low.
 from __future__ import annotations
 
 import json
+import os
 
 from config import Settings
 from logging_config import get_logger
@@ -121,10 +122,46 @@ def _parse(raw: dict, root: str, index: "reachability.ReachabilityIndex | None")
     for res in raw.get("Results", []) or []:
         target = res.get("Target", "")
         ecosystem = reachability.ecosystem_for_type(res.get("Type"))
-        findings.extend(_parse_vulnerabilities(res, target, ecosystem, index))
+        findings.extend(_parse_vulnerabilities(res, target, ecosystem, index, root))
         findings.extend(_parse_misconfigurations(res, target, res.get("Type", "")))
     findings.sort(key=lambda f: (_rank(f), f.file_path))
     return findings
+
+
+def _locate_in_lockfile(root: str, target: str, pkg: str, installed: str) -> int | None:
+    """Best-effort: find the line where pkg@installed appears in the lockfile.
+
+    Trivy does not emit a line/location for dependency-file vulnerabilities, so the
+    SCA finding otherwise points at "package-lock.json" with no line. We locate the
+    exact entry ourselves — preferring a line that names BOTH the package and the
+    flagged version (this disambiguates e.g. two postcss versions in one lockfile),
+    falling back to a package-name token. Any failure returns None (no regression).
+    """
+    if not target or not pkg:
+        return None
+    path = os.path.join(root, target)
+    try:
+        if not os.path.isfile(path) or os.path.getsize(path) > 8_000_000:
+            return None
+        with open(path, "r", encoding="utf-8", errors="ignore") as fh:
+            lines = fh.readlines()
+    except OSError:
+        return None
+
+    name_hit: int | None = None
+    for i, line in enumerate(lines, 1):
+        if pkg not in line:
+            continue
+        # A line naming the package + the exact flagged version is the best anchor.
+        if installed and installed in line:
+            return i
+        if name_hit is None:
+            # Token-ish match ("pkg": / pkg== / pkg@ / /pkg") to avoid substrings.
+            for probe in (f'"{pkg}"', f"'{pkg}'", f"{pkg}==", f"{pkg}@", f"/{pkg}", f"{pkg} "):
+                if probe in line:
+                    name_hit = i
+                    break
+    return name_hit
 
 
 def _parse_vulnerabilities(
@@ -132,6 +169,7 @@ def _parse_vulnerabilities(
     target: str,
     ecosystem: str | None,
     index: "reachability.ReachabilityIndex | None",
+    root: str = "",
 ) -> list[Finding]:
     out: list[Finding] = []
     for vuln in res.get("Vulnerabilities", []) or []:
@@ -165,6 +203,7 @@ def _parse_vulnerabilities(
                 ) or pkg,
                 description=normalizer.truncate(vuln.get("Description"), 8000),
                 file_path=target or pkg,
+                line_start=_locate_in_lockfile(root, target, pkg, installed),
                 cwe_id=str(cwe_list[0]) if cwe_list else None,
                 cve_id=vuln.get("VulnerabilityID"),
                 owasp_category="A06:2021 - Vulnerable and Outdated Components",
