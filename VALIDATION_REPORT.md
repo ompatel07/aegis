@@ -60,27 +60,42 @@ here is whether that's accurate, item by item:
 | **Exposed secrets / env vars** | **No** — no `.env` committed, no hardcoded keys/tokens (only `process.env.QA_ROUTES` in a QA script) | 0 | ✅ correct (nothing to miss) |
 | **SSRF in `fetch`** | **No** — 2 fetches, both static/relative URLs (`/search-index.json`, Netlify `/`); no user-controlled URL | 0 | ✅ correct |
 | **Insecure form handling / Netlify / honeypot** | **No** — `EnquiryForm` is secure: `data-netlify-honeypot` + hidden honeypot input + client-side validation; submits urlencoded POST to Netlify | 0 | ✅ correct |
-| **`dangerouslySetInnerHTML` XSS** | **5 uses** (all JSON-LD `JSON.stringify(schema)` of static product data — low-risk here) | **0** | ⚠️ **FALSE NEGATIVE (capability gap)** |
+| **`dangerouslySetInnerHTML` XSS** | **5 uses** (all JSON-LD `JSON.stringify(schema)` of static product data — low-risk here) | **0** | ✅ **FIXED** — new taint rule catches tainted uses; client1's 5 safe uses stay 0 (see below) |
 
-### The one real false negative: React `dangerouslySetInnerHTML` XSS
+### The one real false negative — found, then FIXED: React `dangerouslySetInnerHTML` XSS
 
 - client1's 5 instances are the **canonical low-risk pattern** — JSON-LD structured
-  data built from **static** product data (template literals). Not currently
-  exploitable, exactly as the user assessed.
-- **But Aegis's detection of this sink is missing entirely.** I planted a
-  deliberately **tainted** case — `searchParams.q → dangerouslySetInnerHTML={{__html:
-  q}}` (a real, exploitable Next.js XSS) — and Aegis flagged **0**. So this isn't
-  "correctly ignoring safe static data"; the sink isn't covered at all.
-- Aegis's JS/TS rulesets (`p/typescript`, `p/javascript`, `p/nodejsscan` + the Aegis
-  taint rules, which target Express `res.send`) **do not include a React
-  `dangerouslySetInnerHTML` XSS rule**. (In my test even stock `p/react`/`p/xss`
-  returned 0 on the tainted case, so a robust fix is an **Aegis custom taint rule**
-  for React XSS sinks — `dangerouslySetInnerHTML` with a tainted `__html` — matching
-  how Aegis already covers other sinks per language.)
-- **Severity: medium, and it did not affect client1's accuracy** (its instances are
-  static/trusted). But it is a genuine coverage gap for **any React/Next.js app**
-  with dynamic data. **Reported, not fixed** — a React XSS taint rule warrants its
-  own positive/negative-fixture verification (the Pass-3 discipline).
+  data built from **static** product data. Not exploitable, exactly as assessed.
+- **But the sink was not covered at all.** A planted **tainted** case —
+  `searchParams.q → dangerouslySetInnerHTML={{__html: q}}` (a real Next.js XSS) —
+  was flagged **0**. Aegis's JS/TS rulesets (`p/typescript`/`p/javascript`/
+  `p/nodejsscan` + Aegis taint rules targeting Express `res.send`) had no React
+  `dangerouslySetInnerHTML` rule (even stock `p/react`/`p/xss` returned 0 in test).
+
+**Fix — new taint rule `aegis-react-xss`** (`rules/taint/javascript.yaml`),
+precision-safe by construction (taint-mode: fires only when the `__html` value
+traces to a user-controlled source; the safe static JSON-LD pattern has no source):
+
+- **Sources:** `useSearchParams()`, `searchParams`/`.get()`, `router.query`,
+  `window.location.*` / `location.*`, `$E.target.value` (form input).
+- **Sink:** the React `{__html: …}` payload (element-agnostic; that key is used for
+  nothing else).
+- **Sanitizers:** `DOMPurify.sanitize`, `sanitizeHtml`, `he.encode`,
+  `validator.escape`, `escapeHtml`.
+
+**Before → after (verified):**
+
+| Test | Before | After |
+|------|:------:|:-----:|
+| planted `searchParams.q → __html` (real XSS) | ❌ missed | ✅ **caught** (aegis-react-xss, high) |
+| `useSearchParams` / server `searchParams` prop / `location.hash` / `router.query` → `__html` | — | ✅ all fire |
+| **client1's 5 real uses** (static JSON-LD) | 0 | ✅ **still 0 (0 FP)** |
+| static const, `JSON.stringify(const)`, DOMPurify-sanitized, prop→JSON.stringify | — | ✅ 0 (clean) |
+| `vercel/next-learn` (4 files using `dangerouslySetInnerHTML`) | — | ✅ **0 false positives** |
+
+Verified via direct fixtures, `semgrep --test` (**31/31 pass**), the scanner test
+suite (**51/51 pass**), and live scans. **Precision-safe: catches real React XSS,
+leaves safe patterns clean.**
 
 **Everything else Aegis reported "nothing" on is genuinely accurate** — client1 is a
 static export with no secrets, no server-side input handling, and a hardened form.
@@ -122,11 +137,13 @@ identified the dependency precisely (`package@version` + CVE id).
 |------------------|--------|
 | CVEs found are true positives (user-confirmed) | ✅ (5/5, correct version math) |
 | Reachability distinguishes present vs reachable, surfaced to user | ✅ postcss "Not reachable" / sharp "Reachable · direct" + score weight |
-| False-negative accounting | ✅ secrets / SSRF / forms correctly clean; ⚠️ one real gap: **React `dangerouslySetInnerHTML` XSS** (reported, not fixed) |
+| False-negative accounting | ✅ secrets / SSRF / forms correctly clean; the one gap (**React `dangerouslySetInnerHTML` XSS**) is now **FIXED** — new `aegis-react-xss` taint rule, precision-safe |
 | SARIF CVE location | ✅ **fixed** — exact lockfile line |
 
 **Bottom line:** on this real unseen repo Aegis is accurate about what it finds
 **and** honest about priority (reachability de-weights the build-time postcss CVEs).
-The only missed class is React `dangerouslySetInnerHTML` XSS — which didn't matter
-for client1 (static data) but is a real detection gap worth a dedicated taint-rule
-fix. The SARIF location gap is fixed.
+The one missed class — React `dangerouslySetInnerHTML` XSS — has been **fixed with a
+precision-safe taint rule** (catches tainted uses, leaves the safe static pattern
+clean: client1's 5 uses and next-learn's 4 stay at 0 FP). The SARIF location gap is
+also fixed. Both the reachability presentation and the accuracy are validated on
+real code.

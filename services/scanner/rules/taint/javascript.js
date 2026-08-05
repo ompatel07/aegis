@@ -116,7 +116,22 @@ function codeOk(req) {
   return JSON.parse(data);
 }
 
+// ── React XSS via dangerouslySetInnerHTML ────────────────────────────────────
+function reactXssBad(searchParams) {
+  const q = searchParams.get("q");
+  // ruleid: aegis-react-xss
+  return <div dangerouslySetInnerHTML={{ __html: q }} />;
+}
+
+function reactXssOk() {
+  // Safe: static JSON-LD structured data (no user-controlled source).
+  const schema = { "@type": "Organization", name: "Acme" };
+  // ok: aegis-react-xss
+  return <script dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />;
+}
+
 module.exports = {
   sqliBad, sqliOk, xssBad, xssOk, cmdBad, cmdOk, ssrfBad, ssrfOk,
   pathBad, pathOk, nosqlBad, nosqlOk, ldapBad, ldapOk, codeBad, codeOk,
+  reactXssBad, reactXssOk,
 };

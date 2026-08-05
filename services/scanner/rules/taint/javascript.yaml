@@ -91,6 +91,67 @@ rules:
               - pattern: document.write($H)
           - focus-metavariable: $H
 
+  # ── React XSS via dangerouslySetInnerHTML ────────────────────────────────────
+  # Taint-mode by design: fires ONLY when the __html value traces to a user-
+  # controlled source (searchParams / URL / router query / location / form input).
+  # The safe static pattern — dangerouslySetInnerHTML={{__html: JSON.stringify(
+  # constantSchema)}} for JSON-LD — has no tainted source and is NOT flagged.
+  - id: aegis-react-xss
+    mode: taint
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      User-controlled data flows into React's dangerouslySetInnerHTML without
+      sanitization, enabling XSS. Sanitize the HTML before rendering
+      (DOMPurify.sanitize(value)), or render the value as text instead of raw
+      HTML. Never pass query/URL/router/form input straight to __html.
+    metadata:
+      cwe:
+        - "CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"
+      owasp:
+        - "A03:2021 - Injection"
+      category: security
+      subcategory: [vuln]
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: MEDIUM
+      technology: [javascript, typescript, react, nextjs, browser]
+      references:
+        - https://owasp.org/www-community/attacks/xss/
+    pattern-sources:
+      - pattern-either:
+          # Next.js / React Router query string + URL (user-controlled).
+          - pattern: useSearchParams()
+          - pattern: searchParams.get(...)
+          - pattern: searchParams
+          - pattern: searchParams.$K
+          - pattern: useRouter().query
+          - pattern: $R.query
+          - pattern: $R.query.$K
+          # Browser location.
+          - pattern: window.location.search
+          - pattern: window.location.hash
+          - pattern: window.location.href
+          - pattern: location.search
+          - pattern: location.hash
+          - pattern: document.location.$X
+          # Form / controlled-input values.
+          - pattern: $E.target.value
+    pattern-sanitizers:
+      - pattern-either:
+          - pattern: DOMPurify.sanitize(...)
+          - pattern: sanitizeHtml(...)
+          - pattern: sanitize(...)
+          - pattern: he.encode(...)
+          - pattern: validator.escape(...)
+          - pattern: escapeHtml(...)
+    pattern-sinks:
+      # The {__html: …} object is React's dangerouslySetInnerHTML payload — a
+      # precise, element-agnostic sink (this key is used for nothing else).
+      - patterns:
+          - pattern: "{__html: $HTML}"
+          - focus-metavariable: $HTML
+
   # ── OS command injection ─────────────────────────────────────────────────────
   - id: aegis-js-command-injection
     mode: taint

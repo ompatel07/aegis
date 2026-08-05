@@ -54,6 +54,17 @@ below).
   `aegis-*-command-injection`, `aegis-js-xss`) fired cross-language alongside the
   registry rules — corroborating detection, not single-rule reliance.
 
+- **React XSS coverage added (Phase 2G validation).** A real-repo validation on
+  `github.com/ompatel07/client1` (Next.js) surfaced a false negative: React
+  **`dangerouslySetInnerHTML`** XSS was not detected (even when tainted by
+  `searchParams`). Fixed with a new precision-safe taint rule **`aegis-react-xss`**
+  (sources: searchParams / router query / `window.location` / form input; sink: the
+  React `{__html: …}` payload; sanitizer-aware). Verified: the planted
+  `searchParams.q → __html` XSS is now caught, while safe static JSON-LD stays clean
+  — **0 false positives** on client1's 5 real uses and `vercel/next-learn`'s 4
+  (`semgrep --test` 31/31, scanner suite 51/51). See
+  [VALIDATION_REPORT.md](VALIDATION_REPORT.md).
+
 ---
 
 ## Engine 2 — SCA (Trivy) — ✅ PASS
