@@ -97,6 +97,20 @@ below).
   the other four. Findings carried `reachable=True` for the imported packages and
   `reachable=False` for the declared-but-unused ones — exactly the discrimination
   the scorer needs to prioritize reachable, direct-dependency CVEs.
+- **Vendored (copied-in) library coverage added (Phase 2G validation).** Trivy is
+  manifest-based, so a repo that vendors a library by copying its source in (no
+  composer.json / package.json) was invisible to SCA — a repo bundling an old
+  PHPMailer (5.2.x, incl. the CVE-2016-10033 RCE) got a clean "0 vulnerable
+  dependencies." New **curated fingerprinting** (`utils/vendored_fingerprint.py`,
+  run in the SCA engine) detects copied-in libs by a verified file+marker+exact-
+  version signature (PHPMailer, FPDF, jQuery, Bootstrap) and resolves CVEs via OSV.
+  **Precision-first:** flags only on an exact version match, skips `vendor/`/
+  `node_modules/`, dedups against Trivy (no double-count). **Verified:** Project-
+  Taaza's *current* PHPMailer 6.8.1 → **0 phantom CVEs**; planted **PHPMailer 5.2.0
+  → 10 real CVEs** (incl. CVE-2016-10033), jQuery 1.12.4 → 4, Bootstrap 3.3.7 → 7;
+  **0 false positives** on app `VERSION` consts, same-named non-lib files, doc
+  mentions, `vendor/` copies, and comparative repos. See
+  [VALIDATION_REPORT.md](VALIDATION_REPORT.md).
 
 ---
 

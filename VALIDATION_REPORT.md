@@ -163,7 +163,7 @@ Reproduced: 27 SAST security findings — **12 in the user's app code** (11 SQLi
 XSS) and **15 in vendored third-party libraries** (PHPMailer: 4 `exec-use` + 6
 `unlink-use`; bundled FPDF docs: 5 `plaintext-http-link`). SCA: **0 findings**.
 
-## Gap 1 — SCA misses vendored (copied-in) dependencies — ⚠️ CONFIRMED (real gap)
+## Gap 1 — SCA misses vendored (copied-in) dependencies — ✅ FIXED
 
 Aegis's SCA (Trivy) is **manifest-based**. Project-Taaza has **no
 composer.json/lock/package.json** — it bundles PHPMailer and FPDF by copying their
@@ -181,12 +181,56 @@ carries **10 known vulns** in OSV. A repo vendoring that version would get a cle
 - **Gap size:** medium–high for **legacy / PHP / vendored-library** projects (old
   PHP apps, WordPress plugins, jQuery/Bootstrap copied in). Modern composer-/
   npm-managed projects are fully covered (Aegis's 100%-precision SCA is unaffected).
-- **Fix path (recommended): library fingerprinting.** Detect known vendored libs by
-  a content/version signature — PHPMailer's `const VERSION = '…'`, FPDF's version
-  string, jQuery's banner comment — resolve `name@version`, and query OSV/GHSA for
-  CVEs (Aegis already cross-references OSV). This catches vendored code Trivy can't.
-  Trivy alone cannot help without a manifest. A curated fingerprint set (top ~20
-  commonly-vendored libs) would cover the vast majority of real cases.
+### The fix (built + verified) — curated library fingerprinting
+
+`utils/vendored_fingerprint.py`, run inside the SCA engine after Trivy, detects
+copied-in libraries by a **curated, verified signature** and resolves their CVEs via
+**OSV** for the exact `package@version`. **Precision-first** by construction — a
+library is flagged only when its **distinctive file + an identity marker + an exact
+version** all match; if the version can't be read with confidence, it is **not
+flagged** (a wrong version read would invent CVEs). It **skips `vendor/` /
+`node_modules/`** and **dedups against Trivy** (by package+CVE), so a
+manifest-managed dependency is never double-counted.
+
+**Curated set (verified against real library files):** PHPMailer
+(`const VERSION` + `namespace PHPMailer`), FPDF (`const VERSION` + `class FPDF`),
+jQuery (banner `jQuery … vX.Y.Z`), Bootstrap (banner `Bootstrap vX.Y.Z`). Extendable
+— only libraries whose version is reliably readable are added. Findings are tagged
+`code_ownership: third_party` + `detected_via: fingerprint` (Gap 2 integration), so
+they land in the report's third-party section.
+
+**Precision (the whole point) — verified:**
+
+| Test | Result |
+|------|--------|
+| **Project-Taaza current PHPMailer 6.8.1 + FPDF 1.86** | **0 fingerprint CVEs** — no phantom flags on a patched version ✅ |
+| app file with `const VERSION = '5.2.0'` (not a lib) | not flagged (filename/marker) ✅ |
+| a file *named* `PHPMailer.php` that isn't PHPMailer (no `namespace`/`class` marker) | not flagged ✅ |
+| a changelog mentioning "PHPMailer 5.2.0" in prose | not flagged ✅ |
+| an app `assets/jquery.js` with no jQuery banner | not flagged ✅ |
+| `vendor/phpmailer/…` copy (manifest-managed) | **skipped — no double-count** ✅ |
+| comparative repos `pallets/click`, `client1` | 0 fingerprint findings ✅ |
+
+**Recall — verified:**
+
+| Planted vendored library | CVEs caught |
+|--------------------------|-------------|
+| **PHPMailer 5.2.0** | **10** incl. **CVE-2016-10033** (the RCE) + CVE-2016-10045 (critical), correct `fixed_version` per CVE |
+| jQuery 1.12.4 | 4 |
+| Bootstrap 3.3.7 | 7 |
+
+**End-to-end through the real-user product path:** an upload with a vendored
+PHPMailer 5.2.0 + an app-code SQLi scanned to **1 "your code" finding (the SQLi) +
+10 vendored CVEs** — the CVEs shown in the third-party section and carried into the
+SARIF export as `code_ownership: third_party`. Scanner suite **51/51**; no regression
+(current-version and manifest-based projects unaffected).
+
+**Honest scope:** curated to 4 high-confidence libraries to start (precision over
+coverage) — TCPDF and others can be added once their version signature is verified.
+This is not a general fingerprinter; it targets the common vendored libs where the
+version is unambiguous. (Separately, an unrelated Method-B limitation surfaced in
+testing: zip uploads whose entries lack explicit directory records fail extraction;
+git-clone scans — the primary path — are unaffected. Noted, not part of Gap 1.)
 
 ## Gap 2 — no "your code" vs "bundled library" distinction — ✅ FIXED
 
@@ -272,7 +316,7 @@ score number.**
 
 | Gap | Verdict | Fix (proposed, not yet applied) |
 |-----|---------|--------------------------------|
-| 1 — SCA misses vendored deps | ⚠️ **real gap** (low concrete risk *here* — vendored copies are current; real for old vendored libs) | library fingerprinting → OSV lookup |
+| 1 — SCA misses vendored deps | ✅ **FIXED** — curated library fingerprinting → OSV; precision-first (Taaza current → 0 phantom CVEs; planted old PHPMailer → 10 real CVEs incl. CVE-2016-10033); no double-count | shipped (PHPMailer/FPDF/jQuery/Bootstrap) |
 | 2 — app vs library code | ✅ **FIXED** — findings tagged app/third-party; UI leads with your code, third-party collapsed; SARIF property; 0 misclassified | (scoring unchanged; app-drives-score recommended, awaiting go-ahead) |
 | 3 — "Security: 0" display | ✅ **correct** | optional "/100" clarity polish |
 

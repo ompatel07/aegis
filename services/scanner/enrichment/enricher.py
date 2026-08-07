@@ -89,8 +89,15 @@ def _tag_ownership(f: Finding) -> None:
     try:
         from utils import code_ownership
 
-        ownership, reason = code_ownership.classify(f.file_path)
         meta = f.metadata if isinstance(f.metadata, dict) else {}
+        # A fingerprinted vendored library is third-party by definition — keep that,
+        # don't let the path classifier (which may not recognise e.g.
+        # assets/js/jquery-1.12.4.js) override it back to "app".
+        if meta.get("detected_via") == "fingerprint" or meta.get("vendored"):
+            meta["code_ownership"] = "third_party"
+            f.metadata = meta
+            return
+        ownership, reason = code_ownership.classify(f.file_path)
         meta["code_ownership"] = ownership
         if reason:
             meta["ownership_reason"] = reason

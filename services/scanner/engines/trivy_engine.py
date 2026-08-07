@@ -23,7 +23,7 @@ from models.scan_result import (
     SeveritySummary,
 )
 from enrichment import enricher
-from utils import normalizer, reachability
+from utils import normalizer, reachability, vendored_fingerprint
 from utils.sandbox import binary_available, run_with_retry
 
 log = get_logger("trivy")
@@ -98,6 +98,13 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
         index = None
 
     findings = _parse(raw, req.path, index)
+    # Vendored-library fingerprinting: catch CVEs in libraries copied into the repo
+    # without a manifest (Trivy can't see them). Deduped against Trivy's results so a
+    # manifest-managed dep is never double-counted. Best-effort — never fails SCA.
+    try:
+        findings.extend(_fingerprint_findings(req.path, findings))
+    except Exception as exc:  # noqa: BLE001
+        log.warning("trivy.fingerprint_failed", error=str(exc))
     enricher.enrich_all(findings)
     reachable = sum(1 for f in findings if (f.metadata or {}).get("reachable") is True)
     log.info(
@@ -115,6 +122,60 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
         duration_seconds=result.duration_seconds,
         scan_id=req.scan_id,
     )
+
+
+def _fingerprint_findings(root: str, existing: list[Finding]) -> list[Finding]:
+    """Detect vendored (copied-in) libraries by fingerprint and turn their known
+    OSV CVEs into SCA findings. Deduped against Trivy's manifest results by
+    (package, cve) so a dependency is never counted twice. Tagged third-party +
+    detected_via=fingerprint so the report is clear about provenance."""
+    # (package_lower, cve_id) pairs Trivy already reported — don't duplicate.
+    seen: set[tuple[str, str]] = set()
+    for f in existing:
+        pkg = ((f.metadata or {}).get("package") or "").lower()
+        if pkg and f.cve_id:
+            seen.add((pkg, f.cve_id))
+
+    out: list[Finding] = []
+    for lib in vendored_fingerprint.detect_libraries(root):
+        pkg, ver, eco, path = lib["package"], lib["version"], lib["ecosystem"], lib["file"]
+        for v in vendored_fingerprint.osv_vulns(pkg, eco, ver):
+            cve = vendored_fingerprint.cve_id(v) or v.get("id", "")
+            if not cve or (pkg.lower(), cve) in seen:
+                continue
+            seen.add((pkg.lower(), cve))
+            fixed = vendored_fingerprint.fixed_version(v, pkg)
+            fix = (f"Update the vendored {lib['lib']} ({pkg} {ver}) to {fixed} or later."
+                   if fixed else f"Update or replace the vendored {lib['lib']} ({pkg} {ver}).")
+            out.append(Finding(
+                pillar=Pillar.SECURITY,
+                engine=Engine.TRIVY,
+                rule_id=cve,
+                rule_name=normalizer.truncate(f"{pkg} {ver}", 500) or pkg,
+                severity=normalizer.label_to_severity(vendored_fingerprint.vuln_severity(v)),
+                title=normalizer.truncate(
+                    f"{v.get('summary') or cve} in vendored {lib['lib']} {ver}", 1000) or cve,
+                description=normalizer.truncate(
+                    f"{v.get('details') or v.get('summary') or ''}\n\n"
+                    f"Detected via fingerprint: a copy of {lib['lib']} ({pkg} {ver}) is vendored "
+                    f"into this repo at {path} (no package manifest). {cve} affects this version.", 8000),
+                file_path=path,
+                cve_id=cve,
+                owasp_category="A06:2021 - Vulnerable and Outdated Components",
+                fix_suggestion=fix,
+                metadata={
+                    "package": pkg,
+                    "installed_version": ver,
+                    "fixed_version": fixed,
+                    "detected_via": "fingerprint",
+                    "vendored": True,
+                    "library": lib["lib"],
+                    "code_ownership": "third_party",
+                    "ownership_reason": f"vendored library (fingerprint): {lib['lib']} {ver}",
+                    "primary_url": (v.get("references") or [{}])[0].get("url") if v.get("references") else None,
+                },
+            ))
+    return out
 
 
 def _parse(raw: dict, root: str, index: "reachability.ReachabilityIndex | None") -> list[Finding]:
