@@ -194,6 +194,12 @@ func buildResult(f models.Finding, ruleIdx int) Result {
 			"severity": f.Severity,
 		},
 	}
+	// Code ownership (Phase 2G): tag whether the finding is in the user's own app
+	// code or in bundled/vendored third-party code, so downstream tools can
+	// prioritize app-code findings.
+	if own := metaString(f, "code_ownership"); own != "" {
+		res.Properties["code_ownership"] = own
+	}
 	if loc, ok := physicalLocation(f.FilePath, f.LineStart, f.LineEnd, f.ColumnStart, f.ColumnEnd); ok {
 		res.Locations = []Location{loc}
 	}
@@ -201,6 +207,22 @@ func buildResult(f models.Finding, ruleIdx int) Result {
 		res.CodeFlows = cf
 	}
 	return res
+}
+
+// metaString pulls a string value out of a finding's JSON metadata (empty if
+// absent or unparseable).
+func metaString(f models.Finding, key string) string {
+	if len(f.Metadata) == 0 {
+		return ""
+	}
+	var m map[string]any
+	if err := json.Unmarshal(f.Metadata, &m); err != nil {
+		return ""
+	}
+	if s, ok := m[key].(string); ok {
+		return s
+	}
+	return ""
 }
 
 // codeFlows converts a deep-scan finding's metadata.dataflow into SARIF

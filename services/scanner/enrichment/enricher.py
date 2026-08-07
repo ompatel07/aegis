@@ -78,8 +78,25 @@ def enrich_all(findings: list[Finding]) -> list[Finding]:
         except Exception as exc:  # noqa: BLE001 — one bad finding must not abort
             log.debug("enrichment.finding_failed", rule_id=f.rule_id, error=str(exc))
             _fallback_only(f)
+        _tag_ownership(f)
     _score_false_positives(findings)
     return findings
+
+
+def _tag_ownership(f: Finding) -> None:
+    """Tag the finding with code ownership (app vs third-party/vendored), from its
+    file path. Precision-first: defaults to "app" when not confident. Never raises."""
+    try:
+        from utils import code_ownership
+
+        ownership, reason = code_ownership.classify(f.file_path)
+        meta = f.metadata if isinstance(f.metadata, dict) else {}
+        meta["code_ownership"] = ownership
+        if reason:
+            meta["ownership_reason"] = reason
+        f.metadata = meta
+    except Exception as exc:  # noqa: BLE001 — tagging must never break a scan
+        log.debug("enrichment.ownership_failed", rule_id=getattr(f, "rule_id", "?"), error=str(exc))
 
 
 def _score_false_positives(findings: list[Finding]) -> None:

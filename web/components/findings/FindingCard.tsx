@@ -10,7 +10,7 @@ import { ReachabilityBadge, ReachabilityDetail } from "./ReachabilityBadge";
 import { useApi } from "@/lib/use-api";
 import { useToast } from "@/lib/use-toast";
 import type { Finding, StepsToReproduce, SoRNode } from "@/lib/types";
-import { ArrowDown, Check, Clock, Copy, FileCode2, ShieldAlert, Sparkles, Wrench, Route } from "lucide-react";
+import { ArrowDown, Check, Clock, Copy, FileCode2, Package, ShieldAlert, Sparkles, Wrench, Route } from "lucide-react";
 
 /** Small inline copy-to-clipboard button. */
 function CopyButton({ value, label }: { value: string; label: string }) {
@@ -77,6 +77,22 @@ function NewBadge({ finding }: { finding: Finding }) {
   );
 }
 
+/** Marks findings that live in bundled/vendored third-party code (not the user's
+ * own app code) so they read as secondary. Renders nothing for app-code findings. */
+function OwnershipBadge({ metadata }: { metadata?: Record<string, unknown> }) {
+  if ((metadata?.code_ownership as string | undefined) !== "third_party") return null;
+  const reason = metadata?.ownership_reason as string | undefined;
+  return (
+    <Badge
+      className="border-slate-400/40 bg-slate-400/15 text-slate-500"
+      title={reason ? `Third-party / bundled code — ${reason}` : "Third-party / bundled code (not your app code)"}
+    >
+      <Package className="mr-1 h-3 w-3" />
+      third-party
+    </Badge>
+  );
+}
+
 export function FindingCard({ finding, onUpdated }: { finding: Finding; onUpdated?: () => void }) {
   const api = useApi();
   const toast = useToast();
@@ -130,6 +146,7 @@ export function FindingCard({ finding, onUpdated }: { finding: Finding; onUpdate
               <SeverityBadge severity={finding.severity} />
               <Badge className="border-border bg-secondary text-secondary-foreground">{finding.engine}</Badge>
               <NewBadge finding={finding} />
+              <OwnershipBadge metadata={finding.metadata} />
               <ReachabilityBadge metadata={finding.metadata} />
               <LikelyFPBadge p={finding.false_positive_probability} />
               {finding.is_suppressed ? (
@@ -153,6 +170,7 @@ export function FindingCard({ finding, onUpdated }: { finding: Finding; onUpdate
             <RiskBadge risk={finding.risk_level} />
             <SeverityBadge severity={finding.severity} />
             <Badge className="border-border bg-secondary text-secondary-foreground">{finding.engine}</Badge>
+            <OwnershipBadge metadata={finding.metadata} />
             <EffortBadge effort={finding.estimated_effort} />
           </div>
           <DialogTitle>{heading}</DialogTitle>

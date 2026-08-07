@@ -188,7 +188,7 @@ carries **10 known vulns** in OSV. A repo vendoring that version would get a cle
   Trivy alone cannot help without a manifest. A curated fingerprint set (top ~20
   commonly-vendored libs) would cover the vast majority of real cases.
 
-## Gap 2 — no "your code" vs "bundled library" distinction — ⚠️ CONFIRMED (prioritization gap)
+## Gap 2 — no "your code" vs "bundled library" distinction — ✅ FIXED
 
 Findings carry **no third-party / code-ownership tag**. Aegis *does* exclude the
 **standard** package dirs (`vendor/`, `node_modules/` are in the SAST skip-list),
@@ -205,12 +205,55 @@ A user should see **"your code has 11 SQL injections"** as the headline, clearly
 separated from **"a library you bundled uses exec()."** Today they're one
 undifferentiated list of 27.
 
-- **Fix path:** tag each finding with **code ownership** (`app` vs `third_party`) by
-  detecting library/vendored directories (`vendor`, `node_modules`, `PHPMailer`,
-  `fpdf`, `third_party`, `dist`, `bower_components`, plus the fingerprinted libs from
-  Gap 1). Keep **reporting** both (don't hide vendored findings — a bundled RCE still
-  matters) but let the UI **filter / section** them so app-code findings lead. This
-  is a tagging + presentation change, not exclusion.
+### The fix (built + verified)
+
+Every finding is now tagged with **code ownership** — `app` vs `third_party` — in a
+single central choke point (`enrichment/enricher.py`, applied to all 7 engines via
+`enrich_all`). The classifier (`utils/code_ownership.py`) is **path-based and
+precision-first: when not confident, it returns `app`** (never hide a real app-code
+bug as third-party). Third-party is asserted only on high-confidence signals:
+
+- **Dependency dirs:** `node_modules`, `vendor`, `bower_components`, `jspm_packages`,
+  `site-packages`, `.venv`/`venv`, `third_party`/`third-party`, `external`.
+- **Distinctive vendored-library dir names:** `PHPMailer`, `fpdf`, `tcpdf`, `mpdf`,
+  `dompdf`, `phpexcel`, `phpspreadsheet`, `htmlpurifier`, `smarty`, `tinymce`,
+  `ckeditor`, `datatables`, `fontawesome`, … (curated; extendable).
+- **Build/bundled output:** `dist`, `.next`, `_next`, `.nuxt`; and **minified files**
+  (`*.min.js`, `*.min.css`, `*.bundle.js`).
+
+**UI (functional; visual polish is the next prompt):** the findings list now **leads
+with "Your code · N"**, puts bundled-library findings in a **collapsible "Third-party
+/ bundled libraries · M"** section, adds an **ownership filter** (all / your code /
+third-party) and a **"third-party" badge** on those finding cards. **Both are still
+reported** — nothing is dropped. **SARIF export** carries a `code_ownership` property
+on every result.
+
+**Before → after (Project-Taaza, verified end-to-end through the real-user path):**
+
+| | Before | After |
+|--|--------|-------|
+| 27 security findings | one undifferentiated pile | **Your code · 12** (11 SQLi + 1 XSS) led first; **Third-party · 15** (PHPMailer exec/unlink, fpdf) collapsed below |
+| finding metadata | no ownership | `code_ownership` = `app` / `third_party` (+ reason) |
+| SARIF | no ownership | `code_ownership` property on all 161 results |
+
+**Precision check (0 app-code misclassified):** unit test **23/23** (incl. traps
+`lib/`, `libs/`, `includes/`, `src/vendor_utils.ts`, `my-vendor-tool.js` → all
+`app`); `pallets/click` (Python) **203 findings all `app`**; `ompatel07/client1`
+(Next.js) **82 findings all `app`**. Scanner suite **51/51**; finding counts
+unchanged (tagging only adds metadata). No app-code finding anywhere was tagged
+third-party.
+
+### Score impact (recommended, NOT silently changed)
+
+The security **scoring formula is unchanged this session** — third-party findings
+still weight the score the same as app-code findings, exactly as before. Given the
+new ownership tag, the **recommendation** is: **app-code findings should drive the
+primary security score**, with third-party findings shown but **down-weighted** (you
+fix your own SQLi; you can't edit a bundled library's internal `exec()` — you update
+or replace the library, which is really Gap 1's job). This mirrors the existing
+reachability weighting (unreachable SCA ×0.5). The tag now exists in metadata, so
+this is a small, well-scoped follow-up — **awaiting go-ahead before changing any
+score number.**
 
 ## Gap 3 — "Security: 0" display — ✅ CONFIRMED CORRECT (minor clarity note)
 
@@ -230,7 +273,7 @@ undifferentiated list of 27.
 | Gap | Verdict | Fix (proposed, not yet applied) |
 |-----|---------|--------------------------------|
 | 1 — SCA misses vendored deps | ⚠️ **real gap** (low concrete risk *here* — vendored copies are current; real for old vendored libs) | library fingerprinting → OSV lookup |
-| 2 — app vs library code | ⚠️ **real prioritization gap** | tag findings by code-ownership + UI filter/section |
+| 2 — app vs library code | ✅ **FIXED** — findings tagged app/third-party; UI leads with your code, third-party collapsed; SARIF property; 0 misclassified | (scoring unchanged; app-drives-score recommended, awaiting go-ahead) |
 | 3 — "Security: 0" display | ✅ **correct** | optional "/100" clarity polish |
 
 **No inflation:** the SAST accuracy is excellent (11/11 SQLi + XSS true positives in

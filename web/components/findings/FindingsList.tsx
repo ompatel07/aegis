@@ -11,7 +11,7 @@ import { useApi } from "@/lib/use-api";
 import { useToast } from "@/lib/use-toast";
 import type { Pillar, Severity } from "@/lib/types";
 import { FindingCard } from "./FindingCard";
-import { CheckCheck, ShieldCheck } from "lucide-react";
+import { CheckCheck, ChevronDown, ChevronRight, Package, ShieldCheck } from "lucide-react";
 
 const SEVERITIES: (Severity | "all")[] = ["all", "critical", "high", "medium", "low", "info"];
 const SEV_RANK: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3, info: 4 };
@@ -42,6 +42,10 @@ export function FindingsList({ scanId, pillar }: { scanId: string; pillar: Pilla
   const [newOnly, setNewOnly] = useState(false);
   const [hideSuppressed, setHideSuppressed] = useState(true);
   const [sort, setSort] = useState<SortKey>("severity");
+  // Code ownership: lead with the user's own app code; bundled/vendored library
+  // findings are secondary (Phase 2G). "all" | "app" | "third_party".
+  const [ownership, setOwnership] = useState<"all" | "app" | "third_party">("all");
+  const [showThirdParty, setShowThirdParty] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
 
@@ -72,6 +76,14 @@ export function FindingsList({ scanId, pillar }: { scanId: string; pillar: Pilla
     return list;
   }, [all, severity, engine, newOnly, hideSuppressed, sort]);
 
+  const isThirdParty = (f: (typeof all)[number]) =>
+    (f.metadata?.code_ownership as string | undefined) === "third_party";
+  const appShown = useMemo(() => shown.filter((f) => !isThirdParty(f)), [shown]);
+  const tpShown = useMemo(() => shown.filter((f) => isThirdParty(f)), [shown]);
+  // Only offer the ownership split when this scan actually has third-party findings.
+  const hasThirdParty = tpShown.length > 0 || (ownership !== "all" && all.some(isThirdParty));
+  const visible = ownership === "app" ? appShown : ownership === "third_party" ? tpShown : [...appShown, ...tpShown];
+
   function toggleSelect(id: string) {
     setSelected((s) => {
       const n = new Set(s);
@@ -79,10 +91,10 @@ export function FindingsList({ scanId, pillar }: { scanId: string; pillar: Pilla
       return n;
     });
   }
-  const allSelected = shown.length > 0 && shown.every((f) => selected.has(f.id));
+  const allSelected = visible.length > 0 && visible.every((f) => selected.has(f.id));
 
   async function bulk(kind: "fp" | "suppress") {
-    const ids = shown.filter((f) => selected.has(f.id)).map((f) => f.id);
+    const ids = visible.filter((f) => selected.has(f.id)).map((f) => f.id);
     if (ids.length === 0) return;
     setBulkBusy(true);
     try {
@@ -112,6 +124,14 @@ export function FindingsList({ scanId, pillar }: { scanId: string; pillar: Pilla
           <span className="mr-1 text-xs font-medium text-muted-foreground">Severity</span>
           {SEVERITIES.map((s) => <Pill key={s} active={severity === s} onClick={() => setSeverity(s)}>{s}</Pill>)}
         </div>
+        {hasThirdParty ? (
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="mr-1 text-xs font-medium text-muted-foreground">Code</span>
+            <Pill active={ownership === "all"} onClick={() => setOwnership("all")}>all</Pill>
+            <Pill active={ownership === "app"} onClick={() => setOwnership("app")}>your code ({appShown.length})</Pill>
+            <Pill active={ownership === "third_party"} onClick={() => setOwnership("third_party")}>third-party ({tpShown.length})</Pill>
+          </div>
+        ) : null}
         <div className="flex flex-wrap items-center gap-1.5">
           {engines.length > 1 ? (
             <>
@@ -146,7 +166,7 @@ export function FindingsList({ scanId, pillar }: { scanId: string; pillar: Pilla
         </div>
       ) : null}
 
-      {shown.length === 0 ? (
+      {visible.length === 0 ? (
         <EmptyState
           icon={ShieldCheck}
           title={`No ${pillar} findings match`}
@@ -155,29 +175,65 @@ export function FindingsList({ scanId, pillar }: { scanId: string; pillar: Pilla
       ) : (
         <>
           <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>Showing {shown.length}{all.length > shown.length ? ` of ${all.length}` : ""}{data && data.meta.total > all.length ? ` (${data.meta.total} total)` : ""}</span>
-            <button className="flex items-center gap-1 hover:text-foreground" onClick={() => setSelected(allSelected ? new Set() : new Set(shown.map((f) => f.id)))}>
+            <span>Showing {visible.length}{all.length > visible.length ? ` of ${all.length}` : ""}{data && data.meta.total > all.length ? ` (${data.meta.total} total)` : ""}</span>
+            <button className="flex items-center gap-1 hover:text-foreground" onClick={() => setSelected(allSelected ? new Set() : new Set(visible.map((f) => f.id)))}>
               <CheckCheck className="h-3.5 w-3.5" /> {allSelected ? "Deselect all" : "Select all"}
             </button>
           </div>
-          <div className="space-y-2">
-            {shown.map((f) => (
-              <div key={f.id} className="flex items-start gap-2">
-                <input
-                  type="checkbox"
-                  aria-label={`Select finding ${f.rule_id}`}
-                  checked={selected.has(f.id)}
-                  onChange={() => toggleSelect(f.id)}
-                  className="mt-4 h-4 w-4 shrink-0 rounded border-input"
-                />
-                <div className="min-w-0 flex-1">
-                  <FindingCard finding={f} onUpdated={refetch} />
+
+          {/* Lead with the user's own code; bundled/vendored findings are secondary. */}
+          {ownership === "all" && hasThirdParty ? (
+            <>
+              {appShown.length > 0 ? (
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-foreground">
+                    Your code · {appShown.length}
+                  </p>
+                  {appShown.map(renderRow)}
                 </div>
-              </div>
-            ))}
-          </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No findings in your own code — the rest are in bundled libraries.</p>
+              )}
+
+              {tpShown.length > 0 ? (
+                <div className="space-y-2">
+                  <button
+                    onClick={() => setShowThirdParty((v) => !v)}
+                    className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:text-foreground"
+                  >
+                    {showThirdParty ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                    <Package className="h-3.5 w-3.5" /> Third-party / bundled libraries · {tpShown.length}
+                  </button>
+                  {showThirdParty ? tpShown.map(renderRow) : (
+                    <p className="pl-5 text-xs text-muted-foreground">
+                      Findings inside libraries you bundled (not your own code). Expand to review.
+                    </p>
+                  )}
+                </div>
+              ) : null}
+            </>
+          ) : (
+            <div className="space-y-2">{visible.map(renderRow)}</div>
+          )}
         </>
       )}
     </div>
   );
+
+  function renderRow(f: (typeof all)[number]) {
+    return (
+      <div key={f.id} className="flex items-start gap-2">
+        <input
+          type="checkbox"
+          aria-label={`Select finding ${f.rule_id}`}
+          checked={selected.has(f.id)}
+          onChange={() => toggleSelect(f.id)}
+          className="mt-4 h-4 w-4 shrink-0 rounded border-input"
+        />
+        <div className="min-w-0 flex-1">
+          <FindingCard finding={f} onUpdated={refetch} />
+        </div>
+      </div>
+    );
+  }
 }

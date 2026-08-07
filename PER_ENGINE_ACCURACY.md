@@ -54,6 +54,16 @@ below).
   `aegis-*-command-injection`, `aegis-js-xss`) fired cross-language alongside the
   registry rules — corroborating detection, not single-rule reliance.
 
+- **Code-ownership tagging added (Phase 2G validation).** A real PHP repo
+  (`whxitte/Project-Taaza`) that vendors PHPMailer/FPDF by copying them in produced
+  27 findings — the user's 11 SQLi + 1 XSS mixed with 15 bundled-library findings.
+  Every finding is now tagged `code_ownership` = `app` / `third_party`
+  (`utils/code_ownership.py`, applied to all engines via `enricher.enrich_all`);
+  the UI leads with "Your code" and collapses "Third-party / bundled libraries", and
+  SARIF carries a `code_ownership` property. Precision-first (unsure → app): 23/23
+  unit, `pallets/click` 203 all-app, `client1` 82 all-app, **0 app-code
+  misclassified**; scoring unchanged. See [VALIDATION_REPORT.md](VALIDATION_REPORT.md).
+
 - **React XSS coverage added (Phase 2G validation).** A real-repo validation on
   `github.com/ompatel07/client1` (Next.js) surfaced a false negative: React
   **`dangerouslySetInnerHTML`** XSS was not detected (even when tainted by
