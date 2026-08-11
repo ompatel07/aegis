@@ -84,3 +84,38 @@ handling repos that pass the size guard but still blow the memory/time budget
 Both items are deferred to a dedicated performance pass at launch prep, on real
 hardware. Do not implement piecemeal now — measure first on representative infra,
 then tune against the grafana baseline above.
+
+---
+
+# Fast-follow backlog (non-performance)
+
+Small, tracked items found during validation — **not yet fixed.**
+
+## 1. Zip-upload: archives without explicit directory entries fail extraction
+
+**Found:** Phase-2G Gap-1 validation (2026-08). Method B (zip/tar **upload**)
+extraction fails when an archive entry references a nested path (e.g.
+`PHPMailer/PHPMailer.php`) but the archive contains **no explicit directory record**
+for the parent (`PHPMailer/`). The extractor opens the destination file without
+creating its parent directory first, so the scan ends `failed` with
+`open …/PHPMailer/PHPMailer.php: no such file or directory`.
+
+- **Impact: LOW.** The primary connection path — **git clone** — preserves
+  directories and is **unaffected**; only zip/tar uploads whose packaging tool omitted
+  directory entries hit this, and it fails cleanly with a clear error (no crash, no
+  data issue). Most zip tools *do* emit directory entries, so it's an edge case.
+- **Fix (when scheduled):** in the archive extractor (`orchestrator/internal/adapters/
+  archive.go`), `MkdirAll` the parent directory of each file entry before writing it
+  (independent of explicit directory records). Keep the existing zip-slip / decompression-
+  bomb guards.
+
+## 2. Gap-2 scoring: app-code vs third-party weighting — DEFERRED (pending decision)
+
+The Phase-2G Gap-2 work tags every finding `code_ownership` = `app` / `third_party`
+and separates them in the UI/SARIF, but **the security-scoring formula was left
+unchanged** (third-party findings still weight the score the same as app-code). The
+**recommendation** — app-code findings drive the primary security score, third-party
+down-weighted (you fix your own bug; you *update* a bundled library) — is **deferred
+by decision until scoring is reviewed holistically** (alongside reachability
+weighting and any other score levers), so score numbers aren't changed piecemeal. No
+action until that review. (See `VALIDATION_REPORT.md`, Gap 2.)

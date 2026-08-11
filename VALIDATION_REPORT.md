@@ -296,8 +296,11 @@ primary security score**, with third-party findings shown but **down-weighted** 
 fix your own SQLi; you can't edit a bundled library's internal `exec()` — you update
 or replace the library, which is really Gap 1's job). This mirrors the existing
 reachability weighting (unreachable SCA ×0.5). The tag now exists in metadata, so
-this is a small, well-scoped follow-up — **awaiting go-ahead before changing any
-score number.**
+this is a small, well-scoped follow-up. **Decision: deferred** until security
+scoring is reviewed **holistically** (alongside reachability weighting and other
+score levers), so numbers aren't changed piecemeal — tracked in
+[`PERFORMANCE_TODO.md`](PERFORMANCE_TODO.md) (Fast-follow backlog #2). No score
+change until that review.
 
 ## Gap 3 — "Security: 0" display — ✅ CONFIRMED CORRECT (minor clarity note)
 
