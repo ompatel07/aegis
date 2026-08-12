@@ -1,0 +1,252 @@
+rules:
+  # ── SQL injection ────────────────────────────────────────────────────────────
+  - id: aegis-php-sql-injection
+    mode: taint
+    languages: [php]
+    severity: ERROR
+    message: >-
+      Untrusted request data ($_GET / $_POST / $_REQUEST / $_COOKIE) flows into a
+      raw SQL query string. An attacker can alter the query (read/modify arbitrary
+      rows, exfiltrate data). Use prepared statements with bound parameters
+      (mysqli_prepare + bind_param, or PDO::prepare + bindValue), never string
+      concatenation / interpolation.
+    metadata:
+      cwe:
+        - "CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"
+      owasp:
+        - "A03:2021 - Injection"
+      category: security
+      subcategory: [vuln]
+      confidence: HIGH
+      likelihood: HIGH
+      impact: HIGH
+      technology: [php]
+      references:
+        - https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html
+    pattern-sources:
+      - pattern-either:
+          - pattern: $_GET
+          - pattern: $_POST
+          - pattern: $_REQUEST
+          - pattern: $_COOKIE
+          - pattern: $_GET[...]
+          - pattern: $_POST[...]
+          - pattern: $_REQUEST[...]
+          - pattern: $_COOKIE[...]
+          - pattern: $_SERVER["QUERY_STRING"]
+          - pattern: $_SERVER["REQUEST_URI"]
+          - pattern: $_SERVER["HTTP_REFERER"]
+          - pattern: $_SERVER["HTTP_USER_AGENT"]
+          - pattern: file_get_contents("php://input")
+    pattern-sanitizers:
+      - pattern-either:
+          - pattern: intval(...)
+          - pattern: floatval(...)
+          - pattern: (int)$X
+          - pattern: (float)$X
+          - pattern: mysqli_real_escape_string(...)
+          - pattern: $CONN->real_escape_string(...)
+          - pattern: $PDO->quote(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: mysqli_query($CONN, $QUERY)
+              - pattern: mysqli_multi_query($CONN, $QUERY)
+              - pattern: mysql_query($QUERY, ...)
+              - pattern: $CONN->query($QUERY)
+              - pattern: $CONN->multi_query($QUERY)
+              - pattern: $PDO->query($QUERY)
+              - pattern: $PDO->exec($QUERY)
+          - focus-metavariable: $QUERY
+
+  # ── Cross-site scripting (reflected) ─────────────────────────────────────────
+  - id: aegis-php-xss
+    mode: taint
+    languages: [php]
+    severity: ERROR
+    message: >-
+      Untrusted request data is echoed into the HTML response without escaping,
+      enabling reflected XSS. Escape output with htmlspecialchars(...,
+      ENT_QUOTES) or htmlentities() before printing; never echo request data
+      directly.
+    metadata:
+      cwe:
+        - "CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"
+      owasp:
+        - "A03:2021 - Injection"
+      category: security
+      subcategory: [vuln]
+      confidence: HIGH
+      likelihood: MEDIUM
+      impact: MEDIUM
+      technology: [php]
+      references:
+        - https://owasp.org/www-community/attacks/xss/
+    pattern-sources:
+      - pattern-either:
+          - pattern: $_GET[...]
+          - pattern: $_POST[...]
+          - pattern: $_REQUEST[...]
+          - pattern: $_COOKIE[...]
+          - pattern: $_SERVER["QUERY_STRING"]
+          - pattern: $_SERVER["REQUEST_URI"]
+          - pattern: $_SERVER["HTTP_REFERER"]
+          - pattern: $_SERVER["HTTP_USER_AGENT"]
+          - pattern: $_SERVER["PHP_SELF"]
+          - pattern: $_SERVER["PATH_INFO"]
+    pattern-sanitizers:
+      - pattern-either:
+          - pattern: htmlspecialchars(...)
+          - pattern: htmlentities(...)
+          - pattern: strip_tags(...)
+          - pattern: intval(...)
+          - pattern: (int)$X
+          - pattern: urlencode(...)
+          - pattern: rawurlencode(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: echo $SINK;
+              - pattern: print $SINK;
+              - pattern: print($SINK);
+              - pattern: printf($SINK, ...);
+          - focus-metavariable: $SINK
+
+  # ── OS command injection ─────────────────────────────────────────────────────
+  - id: aegis-php-command-injection
+    mode: taint
+    languages: [php]
+    severity: ERROR
+    message: >-
+      Untrusted request data flows into an OS command executed through a shell.
+      An attacker can inject arbitrary commands. Avoid shelling out with request
+      data; if unavoidable, pass arguments through escapeshellarg() and the
+      command name through escapeshellcmd().
+    metadata:
+      cwe:
+        - "CWE-78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')"
+      owasp:
+        - "A03:2021 - Injection"
+      category: security
+      subcategory: [vuln]
+      confidence: HIGH
+      likelihood: HIGH
+      impact: HIGH
+      technology: [php]
+      references:
+        - https://owasp.org/www-community/attacks/Command_Injection
+    pattern-sources:
+      - pattern-either:
+          - pattern: $_GET[...]
+          - pattern: $_POST[...]
+          - pattern: $_REQUEST[...]
+          - pattern: $_COOKIE[...]
+          - pattern: $_SERVER["QUERY_STRING"]
+          - pattern: $_SERVER["HTTP_USER_AGENT"]
+          - pattern: file_get_contents("php://input")
+    pattern-sanitizers:
+      - pattern-either:
+          - pattern: escapeshellarg(...)
+          - pattern: escapeshellcmd(...)
+          - pattern: intval(...)
+          - pattern: (int)$X
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: exec($CMD, ...)
+              - pattern: system($CMD, ...)
+              - pattern: shell_exec($CMD)
+              - pattern: passthru($CMD, ...)
+              - pattern: popen($CMD, ...)
+              - pattern: proc_open($CMD, ...)
+              - pattern: pcntl_exec($CMD, ...)
+          - focus-metavariable: $CMD
+
+  # ── Path traversal / local file inclusion ────────────────────────────────────
+  - id: aegis-php-path-traversal
+    mode: taint
+    languages: [php]
+    severity: ERROR
+    message: >-
+      Untrusted request data flows into a filesystem path or an include/require.
+      An attacker can traverse directories (../../etc/passwd) or include arbitrary
+      files (LFI/RFI → code execution). Resolve to a fixed base with basename()
+      and validate against an allowlist; never pass request data straight to a
+      file API or include.
+    metadata:
+      cwe:
+        - "CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')"
+      owasp:
+        - "A01:2021 - Broken Access Control"
+      category: security
+      subcategory: [vuln]
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: HIGH
+      technology: [php]
+      references:
+        - https://owasp.org/www-community/attacks/Path_Traversal
+    pattern-sources:
+      - pattern-either:
+          - pattern: $_GET[...]
+          - pattern: $_POST[...]
+          - pattern: $_REQUEST[...]
+          - pattern: $_COOKIE[...]
+    pattern-sanitizers:
+      - pattern-either:
+          - pattern: basename(...)
+          - pattern: realpath(...)
+          - pattern: intval(...)
+          - pattern: (int)$X
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: include $P;
+              - pattern: include_once $P;
+              - pattern: require $P;
+              - pattern: require_once $P;
+              - pattern: fopen($P, ...)
+              - pattern: file_get_contents($P)
+              - pattern: readfile($P)
+              - pattern: file($P, ...)
+              - pattern: unlink($P)
+          - focus-metavariable: $P
+
+  # ── LDAP injection ───────────────────────────────────────────────────────────
+  - id: aegis-php-ldap-injection
+    mode: taint
+    languages: [php]
+    severity: ERROR
+    message: >-
+      Untrusted request data flows into an LDAP search filter. An attacker can
+      alter the filter to bypass authentication or read arbitrary directory
+      entries. Escape filter input with ldap_escape($value, "", LDAP_ESCAPE_FILTER).
+    metadata:
+      cwe:
+        - "CWE-90: Improper Neutralization of Special Elements used in an LDAP Query ('LDAP Injection')"
+      owasp:
+        - "A03:2021 - Injection"
+      category: security
+      subcategory: [vuln]
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: HIGH
+      technology: [php]
+      references:
+        - https://owasp.org/www-community/attacks/LDAP_Injection
+    pattern-sources:
+      - pattern-either:
+          - pattern: $_GET[...]
+          - pattern: $_POST[...]
+          - pattern: $_REQUEST[...]
+          - pattern: $_COOKIE[...]
+    pattern-sanitizers:
+      - pattern-either:
+          - pattern: ldap_escape(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: ldap_search($CONN, $BASE, $FILTER, ...)
+              - pattern: ldap_list($CONN, $BASE, $FILTER, ...)
+              - pattern: ldap_read($CONN, $BASE, $FILTER, ...)
+          - focus-metavariable: $FILTER

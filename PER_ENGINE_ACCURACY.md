@@ -75,6 +75,29 @@ below).
   (`semgrep --test` 31/31, scanner suite 51/51). See
   [VALIDATION_REPORT.md](VALIDATION_REPORT.md).
 
+- **PHP cross-function taint pack added (P2a, competitive parity).** PHP previously
+  got registry rules only — no `aegis-php-*` taint layer. Added 5 taint-mode rules
+  (`rules/taint/php.yaml`) matching the quality bar of the other 43:
+
+  | Rule | Class (CWE) | Sources | Silencing sanitizers |
+  |------|-------------|---------|----------------------|
+  | `aegis-php-sql-injection` | SQLi (CWE-89) | `$_GET/$_POST/$_REQUEST/$_COOKIE`, request `$_SERVER` keys, `php://input` | prepared stmts (by construction), `intval`/`(int)`, `mysqli_real_escape_string`, `PDO::quote` |
+  | `aegis-php-xss` | XSS (CWE-79) | request superglobals + reflected `$_SERVER` keys | `htmlspecialchars`, `htmlentities`, `strip_tags`, casts, `urlencode` |
+  | `aegis-php-command-injection` | Cmd (CWE-78) | request superglobals, `php://input` | `escapeshellarg`, `escapeshellcmd`, casts |
+  | `aegis-php-path-traversal` | Path/LFI (CWE-22) | request superglobals | `basename`, `realpath`, casts |
+  | `aegis-php-ldap-injection` | LDAP (CWE-90) | request superglobals | `ldap_escape` |
+
+  **Precision-first, verified:** positive + sanitized-negative fixture per rule
+  (`rules/taint/php.php`) via `semgrep --test` → **5/5 pass**; full custom-taint
+  suite **36/36** (was 31/31). **Re-scan of `whxitte/Project-Taaza`:**
+  `aegis-php-sql-injection` fires on **11 findings across the same 11 real vuln
+  spots** the registry SQLi rule flags (`admin-login`, `reset_pass`, `checkout`,
+  `login`, `update-payment`, … — parity, ±1 line as aegis anchors the sink), plus
+  **1 genuine reflected XSS** the registry SQLi rule doesn't surface
+  (`table-booking-handler.php:100`, request input → `echo` into a `<script>` alert).
+  **No spurious findings on Taaza's safe code** (12 aegis-php findings, all true
+  positives).
+
 ---
 
 ## Engine 2 — SCA (Trivy) — ✅ PASS
