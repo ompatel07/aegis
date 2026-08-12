@@ -147,7 +147,7 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
 
     from enrichment import enricher
 
-    enricher.enrich_all(findings)
+    enricher.enrich_all(findings, req.path)
 
     return EngineResult(
         engine=Engine.QUALITY,

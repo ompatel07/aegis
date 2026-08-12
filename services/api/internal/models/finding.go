@@ -59,9 +59,21 @@ type Finding struct {
 	// AI-generated-code tagging (Phase 2C): whether this finding sits in a file
 	// the AI-code classifier flagged, and that file's AI-generated probability.
 
-	// IsNew: deviates from the project baseline (Phase 2C TASK 4). "New" findings
-	// display first and can gate PRs under grandfathering mode.
+	// IsNew: genuinely new versus the project's prior scans — its stable
+	// fingerprint was never seen before, or was resolved and has now reopened
+	// (P1a instance-level lifecycle). "New" findings display first and gate PRs.
 	IsNew bool `db:"is_new" json:"is_new"`
+
+	// Inline code snippet on every finding (P1c): the flagged line(s) plus a
+	// little surrounding context, with the 1-based line of the snippet's first
+	// line so the UI can number it.
+	CodeSnippet      *string `db:"code_snippet" json:"code_snippet,omitempty"`
+	SnippetStartLine *int    `db:"snippet_start_line" json:"snippet_start_line,omitempty"`
+
+	// Lifecycle identity + state (P1a). Fingerprint is the stable cross-scan id;
+	// LifecycleStatus is new | existing | reopened for findings in this scan.
+	Fingerprint     *string `db:"fingerprint" json:"fingerprint,omitempty"`
+	LifecycleStatus *string `db:"lifecycle_status" json:"lifecycle_status,omitempty"`
 
 	CreatedAt time.Time `db:"created_at" json:"created_at"`
 }

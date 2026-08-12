@@ -281,7 +281,7 @@ def _step_finding(rule_id: str, name: str, step: DeploymentStep, severity: Sever
 def _result(report, findings, req, status: EngineStatus) -> EngineResult:
     from enrichment import enricher
 
-    enricher.enrich_all(findings)
+    enricher.enrich_all(findings, req.path)
     return EngineResult(
         engine=Engine.DEPLOYMENT, pillar=Pillar.DEPLOYMENT, status=status,
         findings=findings, summary=SeveritySummary.from_findings(findings),

@@ -69,8 +69,12 @@ def _load() -> dict:
     return _templates
 
 
-def enrich_all(findings: list[Finding]) -> list[Finding]:
-    """Enrich every finding in place; returns the same list for convenience."""
+def enrich_all(findings: list[Finding], root: str = "") -> list[Finding]:
+    """Enrich every finding in place; returns the same list for convenience.
+
+    `root` is the scan's repo root — when given, every finding gets an inline
+    code_snippet (P1c) and a stable lifecycle fingerprint (P1a). Both are
+    best-effort and never fail a scan."""
     templates = _load()
     for f in findings:
         try:
@@ -79,8 +83,21 @@ def enrich_all(findings: list[Finding]) -> list[Finding]:
             log.debug("enrichment.finding_failed", rule_id=f.rule_id, error=str(exc))
             _fallback_only(f)
         _tag_ownership(f)
+    _attach_snippets(findings, root)
     _score_false_positives(findings)
     return findings
+
+
+def _attach_snippets(findings: list[Finding], root: str) -> None:
+    """Attach inline code snippet + stable fingerprint to every finding (P1a/P1c).
+    Best-effort: a read failure leaves the snippet empty and the fingerprint on a
+    still-deterministic rule+file basis."""
+    try:
+        from utils import snippet
+
+        snippet.attach(findings, root)
+    except Exception as exc:  # noqa: BLE001 — must never break a scan
+        log.debug("enrichment.snippet_failed", error=str(exc))
 
 
 def _tag_ownership(f: Finding) -> None:

@@ -89,6 +89,17 @@ class Finding(BaseModel):
     # Local ML false-positive filter output (advisory: sorts + badges, never hides).
     false_positive_probability: float | None = None
 
+    # ── Inline code + lifecycle identity (P1a/P1c) ───────────────────────────
+    # code_snippet: the flagged line(s) plus a little surrounding context, shown
+    # inline for EVERY finding type (not just taint). snippet_start_line is the
+    # 1-based source line of the snippet's first line so the UI can number it.
+    code_snippet: str | None = None
+    snippet_start_line: int | None = None
+    # fingerprint: stable, deterministic, line-shift-resilient identity for
+    # cross-scan lifecycle tracking (new/existing/resolved/reopened). Content-
+    # based (rule + file + normalized flagged code), never the raw line number.
+    fingerprint: str | None = None
+
 
 class SeveritySummary(BaseModel):
     critical: int = 0

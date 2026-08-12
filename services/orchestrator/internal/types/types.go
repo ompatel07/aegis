@@ -56,9 +56,19 @@ type Finding struct {
 	// Local ML false-positive filter output (advisory).
 	FalsePositiveProbability *float64 `json:"false_positive_probability"`
 
-	// IsNew: this finding deviates from the project baseline (its rule was not
-	// seen before). Set by the orchestrator's baseline pass (Phase 2C TASK 4).
+	// Inline code + lifecycle identity (P1a/P1c), populated by the scanner.
+	CodeSnippet      string `json:"code_snippet"`
+	SnippetStartLine *int   `json:"snippet_start_line"`
+	Fingerprint      string `json:"fingerprint"`
+
+	// IsNew: this finding is genuinely new versus the project's prior scans —
+	// its stable fingerprint was never seen before (or was resolved and has now
+	// reopened). Set by the orchestrator's lifecycle pass (P1a).
 	IsNew bool `json:"is_new"`
+	// LifecycleStatus: new | existing | reopened for findings present in this
+	// scan. (resolved findings are absent from the scan and tracked separately in
+	// project_finding_states.) Set by the lifecycle pass.
+	LifecycleStatus string `json:"lifecycle_status"`
 }
 
 // SeveritySummary holds per-severity counts.

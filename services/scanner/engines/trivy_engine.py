@@ -105,7 +105,7 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
         findings.extend(_fingerprint_findings(req.path, findings))
     except Exception as exc:  # noqa: BLE001
         log.warning("trivy.fingerprint_failed", error=str(exc))
-    enricher.enrich_all(findings)
+    enricher.enrich_all(findings, req.path)
     reachable = sum(1 for f in findings if (f.metadata or {}).get("reachable") is True)
     log.info(
         "trivy.completed",

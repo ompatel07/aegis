@@ -104,7 +104,7 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
     findings = _parse_output(data, req.path)
     from enrichment import enricher
 
-    enricher.enrich_all(findings)
+    enricher.enrich_all(findings, req.path)
     log.info("joern.completed", scan_id=req.scan_id, findings=len(findings))
     return EngineResult(
         engine=Engine.JOERN, pillar=Pillar.SECURITY, status=EngineStatus.COMPLETED,
