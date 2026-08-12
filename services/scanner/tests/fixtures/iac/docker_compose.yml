@@ -1,0 +1,31 @@
+# Test fixture for rules/iac/docker_compose.yaml — kept OUT of rules/iac on purpose:
+# the scanner passes the whole rules/iac dir as a semgrep --config, so a target
+# file living there would be loaded as a (broken) rule and disable compose scanning.
+# Paired with the rule via test_iac_rules.py:
+#   semgrep --test --config rules/iac/docker_compose.yaml <this file>
+services:
+  bad:
+    image: nginx
+    # ruleid: aegis-compose-privileged
+    privileged: true
+    # ruleid: aegis-compose-host-network
+    network_mode: host
+    cap_add:
+      # ruleid: aegis-compose-dangerous-capability
+      - SYS_ADMIN
+    ports:
+      # ruleid: aegis-compose-port-all-interfaces
+      - "0.0.0.0:8080:8080"
+
+  good:
+    image: nginx
+    # ok: aegis-compose-privileged
+    privileged: false
+    # ok: aegis-compose-host-network
+    network_mode: bridge
+    cap_add:
+      # ok: aegis-compose-dangerous-capability
+      - NET_BIND_SERVICE
+    ports:
+      # ok: aegis-compose-port-all-interfaces
+      - "127.0.0.1:8080:8080"
