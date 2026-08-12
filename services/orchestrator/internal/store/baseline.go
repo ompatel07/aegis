@@ -29,24 +29,10 @@ func applyBaseline(ctx context.Context, tx *sqlx.Tx, projectID, scanID string, f
 		return err
 	}
 
-	// Rules already known for this project (established before this scan).
-	known := map[string]bool{}
-	rows, err := tx.QueryxContext(ctx,
-		`SELECT rule_id FROM project_baseline_findings WHERE project_id = $1`, projectID)
-	if err != nil {
-		return err
-	}
-	for rows.Next() {
-		var rid string
-		if err := rows.Scan(&rid); err != nil {
-			_ = rows.Close()
-			return err
-		}
-		known[rid] = true
-	}
-	_ = rows.Close()
-
-	// Tag new findings + tally this scan's per-rule counts.
+	// Tally this scan's per-rule counts for the rule-level baseline profile.
+	// NOTE: is_new is now set by applyLifecycle (P1a, instance-level); this pass
+	// no longer tags findings — it only maintains the rule-level profile and the
+	// team-learning stats that other subsystems read.
 	type agg struct {
 		count    int
 		engine   string
@@ -55,9 +41,6 @@ func applyBaseline(ctx context.Context, tx *sqlx.Tx, projectID, scanID string, f
 	counts := map[string]*agg{}
 	for i := range findings {
 		f := &findings[i]
-		if !firstScan && !known[f.RuleID] {
-			f.IsNew = true
-		}
 		a := counts[f.RuleID]
 		if a == nil {
 			a = &agg{engine: f.Engine, severity: f.Severity}

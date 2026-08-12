@@ -27,50 +27,52 @@ A three-scan cycle on one project (`Fix-Rescan (Part A)`), three Python files:
 | 2 | **No phantom findings** | ✅ PASS | `c.py` (unchanged) produced the **identical** 4 rule IDs in every scan (`aegis-py-xss` + 3 registry). No new finding ever appeared in code that didn't change — consistent with Pass-1 determinism. |
 | 3 | **Persistence** | ✅ PASS | The unfixed `c.py` XSS is present in all three scans — an unfixed finding never silently vanished. |
 | 4 | **Re-introduction (detection)** | ✅ PASS | Re-breaking `a.py` in Scan 3 re-detected the SQLi (5 findings back on `a.py`). A fixed-then-reintroduced vuln is caught on the next scan. |
-| 5 | **Baseline / new-existing-resolved state** | ⚠️ PARTIAL — see below | `is_new` was `false` on every finding in all three scans, including Scan 3's re-introduced vuln. |
+| 5 | **Instance-level lifecycle: new / existing / resolved / reopened** | ✅ PASS (built — P1a) | See below. Every finding now carries `fingerprint` + `lifecycle_status`; resolved findings are tracked with the scan that resolved them. |
 
-Checks 1–4 — the core fix-rescan mechanics — **pass cleanly**. Fixed code stops
-producing findings, unchanged code is stable, and re-introduced bugs come back.
+Checks 1–5 — the full fix-rescan lifecycle — **pass cleanly**.
 
-## Check 5 — baseline granularity (the honest gap)
+## Check 5 — instance-level lifecycle (built in P1a, 2026-08-12)
 
-Aegis's per-project baseline is **rule-level, not finding-instance-level**
-([`orchestrator/internal/store/baseline.go`](services/orchestrator/internal/store/baseline.go)).
-The first completed scan grandfathers every rule it saw; on later scans a finding
-is flagged `is_new` **only when its `rule_id` was never seen in the project
-before**. There is no per-instance fingerprint (file + line + rule + snippet hash)
-and no stored record of resolved findings.
+The old baseline was **rule-level**: a finding was `is_new` only when its `rule_id`
+had never fired in the project, so resolved state wasn't tracked and a new instance
+of an already-seen rule wasn't flagged. That is now replaced by an **instance-level
+lifecycle** keyed on a stable, deterministic, line-shift-resilient fingerprint
+(scanner [`utils/snippet.py`](services/scanner/utils/snippet.py): `sha256(rule + file
++ normalized flagged code + per-basis ordinal)` — never the raw line number). The
+orchestrator ([`store/lifecycle.go`](services/orchestrator/internal/store/lifecycle.go))
+diffs each scan against `project_finding_states` and classifies every finding.
 
-Consequences, all observed:
+**Verified on the extended Part-A cycle** (scan → fix → rescan → re-break → add a
+brand-new vuln), real code, upload path:
 
-- **Resolved state is not tracked.** A fixed finding simply stops appearing — there
-  is no "resolved" record, no resolved count, and no fixed-on-scan-N history. Fix
-  *detection* works (check 1); fix *state* is not surfaced.
-- **Re-introduced / genuinely-new instances of an already-seen rule are not flagged
-  `is_new`.** Scan 3's restored SQLi is `is_new = false` because `aegis-py-sql-injection`
-  was already grandfathered in Scan 1. A brand-new SQLi a developer adds in new code
-  is likewise not "new" if that rule ever fired before — which weakens the
-  `block_new_findings` PR gate ([`services/policy.go`](services/api/internal/services/policy.go)).
-- **No "reopened" concept.**
+| Event | Expected | Observed |
+|-------|----------|----------|
+| Scan 1 (baseline: a.py SQLi, b.py cmd-inj, c.py XSS) | all grandfathered `existing`, `is_new=false` | ✅ e.g. a.py `aegis-py-sql-injection` → `existing`, is_new=false |
+| Scan 2 (fix a.py + b.py; c.py unchanged) | a.py + b.py **resolved** (record the resolving scan); c.py `existing` | ✅ b.py's 4 findings → `resolved`, `resolved_scan_id` = scan 2; c.py `existing` |
+| Scan 3 (re-break a.py) | a.py SQLi **reopened**, `is_new=true` | ✅ a.py → `reopened`, is_new=true |
+| Scan 4 (add **new** file d.py with SQLi) | d.py SQLi **new**, `is_new=true` — *even though `aegis-py-sql-injection` fired before* | ✅ d.py → `new`, is_new=true |
+| c.py fingerprint across all 4 scans | byte-identical (determinism) | ✅ stable = `b886e677…` |
+| Same repo scanned 3× | identical fingerprint set (determinism) | ✅ 9/9 fingerprints byte-stable across 3 runs, no nulls |
+| Finding moved down N lines (code inserted above) | same fingerprint | ✅ unit-verified: shifted down 2 lines → identical fingerprint |
 
-This is a deliberate noise-reduction design (grandfather a rule so the PR gate isn't
-swamped), and it is not *broken* — it does exactly what it documents. But it is
-**coarser than the market leaders'** finding-state model. Snyk, SonarQube ("New
-Code"), and Checkmarx all track per-issue state via a stable fingerprint:
-**New / Existing / Fixed(Resolved) / Reopened**, and show it per finding.
+**The `block_new_findings` PR-gate weakness is fixed:** the gate keys on `is_new`
+([`services/policy.go`](services/api/internal/services/policy.go)), which is now
+instance-level — a genuinely new finding in new code is flagged `is_new=true` even
+when its rule fired before, so the gate blocks it.
 
-### Recommendation (logged, not built — out of audit scope)
+**Surfaced in the API:** every finding carries `fingerprint`, `lifecycle_status`
+(new/existing/reopened), and `is_new`. Resolved findings — absent from the current
+scan — are exposed via `GET /api/v1/projects/{id}/lifecycle`, which returns
+per-status counts and each resolved finding with its `resolved_scan_id`. Verified:
+`{existing: 9, new: 5, resolved: 4}` with the 4 resolved findings correctly
+attributed to the fixing scan.
 
-Add a stable per-finding fingerprint and an instance-level state table so Aegis can
-report New / Existing / Resolved / Reopened per finding and per scan. This is a
-subsystem (schema + migration + diff + API + UI), not a precision-safe one-line
-hardening, so it is **logged as the top fix-rescan priority** rather than built in
-this audit. Tracked in `COMPETITIVE_AUDIT.md` (P1). Until then, the honest
-statement is: **Aegis detects fixes and re-introductions correctly, but does not
-yet label per-finding lifecycle state.**
+This matches the finding-state model of Snyk, SonarQube ("New Code"), and Checkmarx.
 
 ## Bottom line
 
-Detection across the fix cycle is **correct and stable** (checks 1–4). The gap is
-**presentation of finding lifecycle state** (check 5) — logged as P1, feeds both a
-backend state-tracking build and the UI pass.
+Detection **and** lifecycle presentation across the fix cycle are **correct and
+stable** (checks 1–5). The former P1 gap is closed: Aegis now tracks
+New / Existing / Resolved / Reopened per finding via a deterministic fingerprint,
+records which scan resolved each fixed finding, and gates PRs on genuinely-new
+findings. Remaining work is UI presentation of the new lifecycle data (UI pass).

@@ -166,6 +166,19 @@ func (h *ProjectHandler) Baseline(w http.ResponseWriter, r *http.Request) {
 	httpx.WriteSuccess(w, http.StatusOK, data)
 }
 
+// Lifecycle handles GET /api/v1/projects/{id}/lifecycle — the project's
+// finding-lifecycle summary: per-status counts (new/existing/resolved/reopened)
+// and the resolved findings (which are absent from any current scan's findings).
+func (h *ProjectHandler) Lifecycle(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.UserID(r.Context())
+	data, err := h.projects.Lifecycle(r.Context(), chi.URLParam(r, "id"), userID)
+	if err != nil {
+		writeServiceError(w, h.log, err)
+		return
+	}
+	httpx.WriteSuccess(w, http.StatusOK, data)
+}
+
 // Delete handles DELETE /api/v1/projects/{id}.
 func (h *ProjectHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.UserID(r.Context())

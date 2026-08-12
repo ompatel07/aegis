@@ -247,6 +247,7 @@ func run() error {
 				r.Get("/{id}/rules", ruleH.List)
 				r.Post("/{id}/rules", ruleH.Create)
 				r.Get("/{id}/baseline", projectH.Baseline)
+				r.Get("/{id}/lifecycle", projectH.Lifecycle)
 				r.Get("/{id}/policy", policyH.Get)
 				r.Put("/{id}/policy", policyH.Set)
 				r.Get("/{id}/slack", notifyH.GetProjectSlack)

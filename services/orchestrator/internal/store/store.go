@@ -104,6 +104,12 @@ func (s *Store) SaveResults(ctx context.Context, scanID, projectID string, agg p
 	if err := applyTeamPriors(ctx, tx, projectID, agg.Findings); err != nil {
 		return fmt.Errorf("apply team priors: %w", err)
 	}
+	// Instance-level lifecycle (P1a): classify new/existing/reopened, record
+	// resolved, set is_new — must run before applyBaseline (which now only keeps
+	// the rule-level profile + team-learning stats, no longer sets is_new).
+	if err := applyLifecycle(ctx, tx, projectID, scanID, agg.Findings); err != nil {
+		return fmt.Errorf("apply lifecycle: %w", err)
+	}
 	if err := applyBaseline(ctx, tx, projectID, scanID, agg.Findings); err != nil {
 		return fmt.Errorf("apply baseline: %w", err)
 	}
@@ -154,7 +160,7 @@ func (s *Store) SaveResults(ctx context.Context, scanID, projectID string, agg p
 	return nil
 }
 
-const findingColumnCount = 29
+const findingColumnCount = 31
 
 // insertFindings bulk-inserts findings in chunks (bounded by Postgres' param limit).
 func insertFindings(ctx context.Context, tx *sqlx.Tx, scanID string, findings []types.Finding) error {
@@ -181,7 +187,8 @@ func buildInsert(scanID string, chunk []types.Finding) (string, []any) {
 		 cwe_id, cve_id, owasp_category, fix_suggestion, metadata,
 		 title_human, impact, risk_level, remediation_action, remediation_details,
 		 estimated_effort, context_metadata, false_positive_probability,
-		 is_new, code_snippet, snippet_start_line) VALUES `)
+		 is_new, code_snippet, snippet_start_line,
+		 fingerprint, lifecycle_status) VALUES `)
 
 	args := make([]any, 0, len(chunk)*findingColumnCount)
 	for i, f := range chunk {
@@ -208,6 +215,7 @@ func buildInsert(scanID string, chunk []types.Finding) (string, []any) {
 			nullStr(f.EstimatedEffort), metadataJSON(f.ContextMetadata),
 			f.FalsePositiveProbability,
 			f.IsNew, nullStr(f.CodeSnippet), f.SnippetStartLine,
+			nullStr(f.Fingerprint), nullStr(f.LifecycleStatus),
 		)
 	}
 	return b.String(), args

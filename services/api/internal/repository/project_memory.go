@@ -65,3 +65,60 @@ func (r *ProjectRepository) Baseline(ctx context.Context, projectID string, gran
 	}
 	return out, nil
 }
+
+// ── Finding lifecycle view (P1a) ──────────────────────────────────────────────
+
+// FindingState is one distinct finding (by fingerprint) tracked across a
+// project's scan history, with its current lifecycle status.
+type FindingState struct {
+	Fingerprint     string  `db:"fingerprint" json:"fingerprint"`
+	RuleID          *string `db:"rule_id" json:"rule_id,omitempty"`
+	Engine          *string `db:"engine" json:"engine,omitempty"`
+	Severity        *string `db:"severity" json:"severity,omitempty"`
+	FilePath        *string `db:"file_path" json:"file_path,omitempty"`
+	Title           *string `db:"title" json:"title,omitempty"`
+	Status          string  `db:"status" json:"status"`
+	FirstSeenScanID *string `db:"first_seen_scan_id" json:"first_seen_scan_id,omitempty"`
+	LastSeenScanID  *string `db:"last_seen_scan_id" json:"last_seen_scan_id,omitempty"`
+	ResolvedScanID  *string `db:"resolved_scan_id" json:"resolved_scan_id,omitempty"`
+	TimesSeen       int     `db:"times_seen" json:"times_seen"`
+}
+
+// LifecycleData is the project-wide lifecycle summary: counts per status plus the
+// currently-resolved findings (which are absent from any current scan's findings,
+// so they can only be surfaced from here).
+type LifecycleData struct {
+	Counts   map[string]int  `json:"counts"`
+	Resolved []FindingState  `json:"resolved"`
+}
+
+// Lifecycle returns the per-status counts and the resolved findings for a project.
+func (r *ProjectRepository) Lifecycle(ctx context.Context, projectID string) (*LifecycleData, error) {
+	out := &LifecycleData{Counts: map[string]int{}, Resolved: []FindingState{}}
+
+	rows, err := r.db.QueryxContext(ctx,
+		`SELECT status, count(*) FROM project_finding_states WHERE project_id = $1 GROUP BY status`, projectID)
+	if err != nil {
+		return nil, err
+	}
+	for rows.Next() {
+		var status string
+		var n int
+		if err := rows.Scan(&status, &n); err != nil {
+			_ = rows.Close()
+			return nil, err
+		}
+		out.Counts[status] = n
+	}
+	_ = rows.Close()
+
+	if err := r.db.SelectContext(ctx, &out.Resolved, `
+		SELECT fingerprint, rule_id, engine, severity, file_path, title, status,
+		       first_seen_scan_id, last_seen_scan_id, resolved_scan_id, times_seen
+		  FROM project_finding_states
+		 WHERE project_id = $1 AND status = 'resolved'
+		 ORDER BY updated_at DESC LIMIT 200`, projectID); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
