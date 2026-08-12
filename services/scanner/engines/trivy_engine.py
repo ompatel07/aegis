@@ -23,7 +23,7 @@ from models.scan_result import (
     SeveritySummary,
 )
 from enrichment import enricher
-from utils import normalizer, reachability, vendored_fingerprint
+from utils import kev, normalizer, reachability, vendored_fingerprint
 from utils.sandbox import binary_available, run_with_retry
 
 log = get_logger("trivy")
@@ -173,6 +173,7 @@ def _fingerprint_findings(root: str, existing: list[Finding]) -> list[Finding]:
                     "code_ownership": "third_party",
                     "ownership_reason": f"vendored library (fingerprint): {lib['lib']} {ver}",
                     "primary_url": (v.get("references") or [{}])[0].get("url") if v.get("references") else None,
+                    **kev.kev_info(cve),
                 },
             ))
     return out
@@ -252,6 +253,10 @@ def _parse_vulnerabilities(
         if index is not None and ecosystem is not None and pkg:
             reach = index.annotate(ecosystem, pkg)
 
+        # CISA KEV: is this CVE actively exploited in the wild? The strongest
+        # triage signal — flagged prominently + weighted up in scoring.
+        kev_meta = kev.kev_info(vuln.get("VulnerabilityID"))
+
         out.append(
             Finding(
                 pillar=Pillar.SECURITY,
@@ -284,6 +289,7 @@ def _parse_vulnerabilities(
                     "reachable_file_count": reach.get("reachable_file_count"),
                     "is_direct": reach.get("is_direct"),
                     "reachability_ecosystem": reach.get("reachability_ecosystem"),
+                    **kev_meta,
                 },
             )
         )

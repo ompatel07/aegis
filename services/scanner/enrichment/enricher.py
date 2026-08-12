@@ -156,6 +156,23 @@ def _enrich(f: Finding, templates: dict) -> None:
         cm.update(_cvss_breakdown(f))
     f.context_metadata = cm or None
 
+    _apply_kev(f)
+
+
+def _apply_kev(f: Finding) -> None:
+    """If this CVE is on the CISA KEV list, make it prominent: lead the impact with
+    an 'Actively exploited' marker + the date, and raise risk to critical. The raw
+    kev_* fields already ride in f.metadata (set by the SCA engine)."""
+    meta = f.metadata if isinstance(f.metadata, dict) else {}
+    if not meta.get("kev"):
+        return
+    date = meta.get("kev_date_added")
+    ransom = " — used in ransomware campaigns" if meta.get("kev_ransomware") else ""
+    marker = f"⚠ Actively exploited in the wild (CISA KEV{f', added {date}' if date else ''}){ransom}. "
+    f.impact = marker + (f.impact or "")
+    # Actively-exploited vulnerabilities are top-priority regardless of CVSS band.
+    f.risk_level = "critical"
+
 
 def _fallback_only(f: Finding) -> None:
     f.risk_level = f.risk_level or _RISK_BY_SEVERITY.get(_sev(f), "low")

@@ -48,6 +48,15 @@ async def lifespan(app: FastAPI):
     except Exception as exc:  # noqa: BLE001 — ML is best-effort, never fatal
         log.warning("startup.ml_model_unavailable", error=str(exc))
 
+    # Warm the CISA KEV catalog so the first scan can flag actively-exploited CVEs
+    # without a cold fetch. Best-effort — a failure just means no KEV flag.
+    try:
+        from utils import kev
+
+        await asyncio.get_event_loop().run_in_executor(None, kev.refresh)
+    except Exception as exc:  # noqa: BLE001 — KEV is best-effort, never fatal
+        log.warning("startup.kev_unavailable", error=str(exc))
+
     # Keep rule packs / vuln DBs fresh in the background (on boot + every 6h).
     refresh_task = asyncio.create_task(_rulepack_refresh_loop())
     yield
@@ -73,6 +82,13 @@ async def _rulepack_refresh_loop() -> None:
                 else:
                     log.warning("rulepack.trivy_db_refresh_failed",
                                 error=(res.stderr or "")[:300])
+            # Refresh the CISA KEV catalog on the same cadence as the vuln DB.
+            try:
+                from utils import kev
+
+                await asyncio.get_event_loop().run_in_executor(None, lambda: kev.refresh(force=True))
+            except Exception as exc:  # noqa: BLE001
+                log.warning("rulepack.kev_refresh_failed", error=str(exc))
         except asyncio.CancelledError:
             raise
         except Exception as exc:  # noqa: BLE001 — never crash on a refresh error

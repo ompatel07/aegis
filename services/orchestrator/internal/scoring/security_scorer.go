@@ -24,6 +24,10 @@ const (
 	weightUnreachable  = 0.5 // proven not imported/used anywhere
 	weightReachable    = 1.0 // imported/used
 	weightDirectFactor = 1.2 // reachable AND a direct dependency: +20%
+	// A CVE on the CISA KEV list is actively exploited in the wild — the strongest
+	// urgency signal. It multiplies the penalty on top of reachability so an
+	// exploited, reachable vuln dominates the score.
+	weightKEVFactor = 1.5
 )
 
 // SecurityScore computes the security pillar score from security-pillar findings.
@@ -38,9 +42,21 @@ func SecurityScore(findings []types.Finding) int {
 		if base == 0 {
 			continue
 		}
-		score -= base * reachabilityWeight(f)
+		score -= base * reachabilityWeight(f) * kevWeight(f)
 	}
 	return clampScore(int(math.Round(score)))
+}
+
+// kevWeight bumps the penalty for a CVE that is on the CISA KEV list (actively
+// exploited). Non-KEV / non-SCA findings are unaffected (1.0).
+func kevWeight(f types.Finding) float64 {
+	if f.Metadata == nil {
+		return 1.0
+	}
+	if exploited, ok := f.Metadata["kev"].(bool); ok && exploited {
+		return weightKEVFactor
+	}
+	return 1.0
 }
 
 func severityPenalty(severity string) float64 {

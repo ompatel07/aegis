@@ -110,3 +110,44 @@ feedback" true *automatically*, wire: (1) a feedback→JSONL exporter, (2) a
 scheduled retrain job, and optionally (3) fold `project_rule_stats.fp_rate` into
 scoring for true per-team personalization. Until then it is an accurate *manual*
 capability, not an automated loop.
+
+---
+
+## CISA KEV — actively-exploited flagging (P1b, 2026-08-12)
+
+**Why.** A CVE on CISA's Known Exploited Vulnerabilities list is being *actively
+exploited in the wild* — the single strongest triage signal, stronger than CVSS
+alone. Snyk surfaces exploit maturity; Aegis now surfaces the authoritative KEV
+signal, free.
+
+**Architecture (real).** `services/scanner/utils/kev.py` loads the free CISA KEV
+JSON feed (`known_exploited_vulnerabilities.json`, ~1.6k entries) into an in-memory
+`CVE → {date_added, name, ransomware, due_date}` map. Warmed on scanner boot
+(`main.py` lifespan) and refreshed every 6 h in the rulepack-refresh loop — the
+**same cadence as the CVE-intelligence feeds** (Trivy DB, OSV). The SCA engine
+(`trivy_engine.py`) flags every CVE finding (both manifest-based and vendored-
+fingerprint) via `kev.kev_info(cve)`, adding `kev` / `kev_date_added` /
+`kev_name` / `kev_ransomware` to the finding metadata. Enrichment leads the
+finding's impact with an "⚠ Actively exploited in the wild (CISA KEV, added …)"
+marker and raises `risk_level` to critical. Scoring
+(`scoring/security_scorer.go`) multiplies the penalty by `weightKEVFactor = 1.5`
+on top of reachability, so an exploited, reachable vuln dominates the score.
+
+### Verified live (2026-08-12)
+
+| Check | Result |
+| --- | --- |
+| KEV feed reachable + parsed | ✅ **1,665** entries, catalogVersion **2026.08.11** |
+| Known-KEV lookup (positive) | ✅ `is_kev(CVE-2021-44228)` = true; case-insensitive |
+| Non-KEV lookup (negative) | ✅ `is_kev(CVE-2099-00000)` = false; `kev_info` = `{}` |
+| Trivy detects a KEV CVE from a manifest | ✅ `pom.xml` w/ log4j-core 2.14.1 → CVE-2021-44228 |
+| **E2E: KEV finding flagged** | ✅ CVE-2021-44228 → `kev=true`, `kev_date_added=2021-12-10`, `kev_ransomware=true`, impact leads with the marker, `risk_level=critical` |
+| **E2E: non-KEV findings NOT flagged** | ✅ all 5 non-KEV CVEs on the same package carry no `kev` flag, no marker (0 false positives) |
+| Prioritization weight | ✅ `kevWeight` = 1.5 applied in the security scorer (multiplicative with reachability) |
+| Refresh cadence | ✅ boot warm-up + 6 h refresh loop (matches Trivy DB / OSV) |
+
+**Verdict.** KEV flagging is **accurate and precision-safe** — actively-exploited
+CVEs are flagged prominently with the CISA date and ransomware signal and weighted
+up in scoring; non-KEV CVEs are untouched. Data surfaced in finding metadata +
+impact; a dedicated UI badge is deferred to the UI pass (like the P1a lifecycle and
+P1c snippet data).
