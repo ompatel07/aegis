@@ -23,7 +23,7 @@ from models.scan_result import (
     SeveritySummary,
 )
 from enrichment import enricher
-from utils import kev, normalizer, reachability, vendored_fingerprint
+from utils import epss, kev, normalizer, reachability, vendored_fingerprint
 from utils.sandbox import binary_available, run_with_retry
 
 log = get_logger("trivy")
@@ -105,6 +105,12 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
         findings.extend(_fingerprint_findings(req.path, findings))
     except Exception as exc:  # noqa: BLE001
         log.warning("trivy.fingerprint_failed", error=str(exc))
+    # EPSS: one batched exploit-probability lookup for all CVEs in this scan.
+    # Best-effort — a failure just leaves findings without an EPSS field.
+    try:
+        _attach_epss(findings)
+    except Exception as exc:  # noqa: BLE001
+        log.warning("trivy.epss_failed", error=str(exc))
     enricher.enrich_all(findings, req.path)
     reachable = sum(1 for f in findings if (f.metadata or {}).get("reachable") is True)
     log.info(
@@ -179,15 +185,110 @@ def _fingerprint_findings(root: str, existing: list[Finding]) -> list[Finding]:
     return out
 
 
+def _attach_epss(findings: list[Finding]) -> None:
+    """Batch-fetch EPSS scores for every CVE in the scan and attach them. One
+    request for all CVEs; best-effort."""
+    cve_ids = [f.cve_id for f in findings if f.cve_id]
+    if not cve_ids:
+        return
+    scores = epss.scores_for(cve_ids)
+    if not scores:
+        return
+    for f in findings:
+        if not f.cve_id:
+            continue
+        info = scores.get(f.cve_id.strip().upper())
+        if info:
+            meta = f.metadata if isinstance(f.metadata, dict) else {}
+            meta.update(info)
+            f.metadata = meta
+
+
 def _parse(raw: dict, root: str, index: "reachability.ReachabilityIndex | None") -> list[Finding]:
     findings: list[Finding] = []
     for res in raw.get("Results", []) or []:
         target = res.get("Target", "")
         ecosystem = reachability.ecosystem_for_type(res.get("Type"))
-        findings.extend(_parse_vulnerabilities(res, target, ecosystem, index, root))
+        dep_paths = _dependency_paths(res)
+        findings.extend(_parse_vulnerabilities(res, target, ecosystem, index, root, dep_paths))
         findings.extend(_parse_misconfigurations(res, target, res.get("Type", "")))
     findings.sort(key=lambda f: (_rank(f), f.file_path))
     return findings
+
+
+def _dependency_paths(res: dict) -> dict[str, dict]:
+    """Build pkgID -> introduced-through metadata from Trivy's dependency graph.
+
+    Trivy emits Packages[] with Relationship (root/direct/indirect) and DependsOn
+    (child pkg IDs). For a transitive (indirect) vulnerable package we walk the
+    graph from a DIRECT dependency down to it, so the finding can show
+    "your-app -> dep-A -> vulnerable-dep-B" — telling the user which of THEIR
+    direct dependencies to update. Trivy usually omits the synthetic root node, so
+    we synthesize it for display and derive transitivity from each package's own
+    Relationship (not chain length). Returns {} when the lockfile carries no graph.
+    """
+    pkgs = res.get("Packages") or []
+    if not pkgs:
+        return {}
+    by_id: dict[str, dict] = {}
+    children: dict[str, list[str]] = {}
+    root_label = "your app"
+    directs: list[str] = []
+    for p in pkgs:
+        pid = p.get("ID")
+        if not pid:
+            continue
+        by_id[pid] = p
+        children[pid] = list(p.get("DependsOn") or [])
+        rel = p.get("Relationship")
+        if rel == "root":
+            root_label = _pkg_label(p, pid)
+        elif rel == "direct":
+            directs.append(pid)
+
+    # BFS from every direct dependency; record the shortest chain (direct -> pkg)
+    # to each reachable package. chain[0] is always the actionable direct dep.
+    from collections import deque
+
+    best: dict[str, list[str]] = {}
+    for start in directs:
+        q: deque[list[str]] = deque([[start]])
+        seen_local: set[str] = {start}
+        while q:
+            path = q.popleft()
+            node = path[-1]
+            if node not in best or len(path) < len(best[node]):
+                best[node] = path
+            for child in children.get(node, []):
+                if child not in seen_local:
+                    seen_local.add(child)
+                    q.append(path + [child])
+
+    out: dict[str, dict] = {}
+    for pid, p in by_id.items():
+        rel = p.get("Relationship")
+        chain = best.get(pid)
+        if chain is None:
+            # A direct dep is its own entry point; anything else without a chain
+            # (no graph edge found) we leave unannotated.
+            if rel == "direct":
+                chain = [pid]
+            else:
+                continue
+        labels = [_pkg_label(by_id.get(n) or {}, n) for n in chain]
+        transitive = rel == "indirect" or len(chain) > 1
+        out[pid] = {
+            "dependency_path": [root_label] + labels,
+            "introduced_through": labels[0],  # the direct dep the user declared
+            "is_transitive": transitive,
+        }
+    return out
+
+
+def _pkg_label(p: dict, pid: str) -> str:
+    name = p.get("Name") or pid.split("@")[0]
+    ver = p.get("Version")
+    return f"{name}@{ver}" if ver else (name or pid)
 
 
 def _locate_in_lockfile(root: str, target: str, pkg: str, installed: str) -> int | None:
@@ -232,8 +333,10 @@ def _parse_vulnerabilities(
     ecosystem: str | None,
     index: "reachability.ReachabilityIndex | None",
     root: str = "",
+    dep_paths: dict[str, list[str]] | None = None,
 ) -> list[Finding]:
     out: list[Finding] = []
+    dep_paths = dep_paths or {}
     for vuln in res.get("Vulnerabilities", []) or []:
         cvss = vuln.get("CVSS", {}) or {}
         score = _best_cvss(cvss)
@@ -256,6 +359,12 @@ def _parse_vulnerabilities(
         # CISA KEV: is this CVE actively exploited in the wild? The strongest
         # triage signal — flagged prominently + weighted up in scoring.
         kev_meta = kev.kev_info(vuln.get("VulnerabilityID"))
+
+        # Dependency path: for a transitive vuln, the introduced-through chain
+        # (your-app -> dep-A -> vulnerable-dep-B), so the user knows which of THEIR
+        # direct deps to update. From Trivy's dependency graph via PkgID.
+        pkg_id = vuln.get("PkgID") or (f"{pkg}@{installed}" if pkg and installed else "")
+        dep_meta = dep_paths.get(pkg_id) or {}
 
         out.append(
             Finding(
@@ -290,6 +399,7 @@ def _parse_vulnerabilities(
                     "is_direct": reach.get("is_direct"),
                     "reachability_ecosystem": reach.get("reachability_ecosystem"),
                     **kev_meta,
+                    **dep_meta,
                 },
             )
         )

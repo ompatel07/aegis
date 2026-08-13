@@ -134,6 +134,29 @@ below).
   **0 false positives** on app `VERSION` consts, same-named non-lib files, doc
   mentions, `vendor/` copies, and comparative repos. See
   [VALIDATION_REPORT.md](VALIDATION_REPORT.md).
+- **CISA KEV — actively-exploited flag (P1b).** Every CVE finding is checked against
+  the CISA Known Exploited Vulnerabilities catalog; a hit sets `kev` +
+  `kev_date_added` + `kev_ransomware`, leads the impact with "⚠ Actively exploited
+  in the wild", raises risk to critical, and multiplies the score penalty ×1.5.
+  Verified: Log4Shell CVE-2021-44228 flagged (date 2021-12-10, ransomware); all
+  non-KEV CVEs on the same package unflagged (0 FPs). See
+  [INTELLIGENCE_VERIFICATION.md](INTELLIGENCE_VERIFICATION.md).
+- **EPSS + dependency path (P2b, Snyk-parity data).** Two additions to each SCA
+  finding's data, matching what Snyk shows:
+  - **EPSS** — one batched first.org lookup per scan (per-CVE 24 h cache, EPSS's
+    daily cadence) attaches `epss_score` + `epss_percentile` (probability the CVE
+    is exploited in the next 30 days). Complements KEV (confirmed) with a
+    probability for the long tail. Best-effort: a CVE EPSS doesn't score simply
+    carries no field (no fabricated 0). **Verified:** on a real lockfile, 30/32
+    CVEs got real scores (e.g. CVE-2019-10744 → 0.05006 / p0.915); the 2 misses
+    were brand-new CVEs EPSS hasn't rated yet.
+  - **Dependency path** — from Trivy's dependency graph (`Relationship` +
+    `DependsOn`), each finding shows the introduced-through chain + which **direct**
+    dep to update (`dependency_path`, `introduced_through`, `is_transitive`).
+    **Verified:** a transitive vuln shows `your app → wrapper@1.0.0 →
+    lodash@4.17.11` (`introduced_through=wrapper`, transitive=true); a direct vuln
+    shows `your app → axios@0.21.0` (transitive=false). 32/32 findings carried a
+    correct path.
 
 ---
 
