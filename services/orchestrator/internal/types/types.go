@@ -69,6 +69,10 @@ type Finding struct {
 	// scan. (resolved findings are absent from the scan and tracked separately in
 	// project_finding_states.) Set by the lifecycle pass.
 	LifecycleStatus string `json:"lifecycle_status"`
+
+	// IssueType: SonarQube-style bug | vulnerability | code_smell (P2c), from the
+	// scanner's enrichment classifier.
+	IssueType string `json:"issue_type"`
 }
 
 // SeveritySummary holds per-severity counts.

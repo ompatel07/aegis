@@ -100,6 +100,11 @@ class Finding(BaseModel):
     # based (rule + file + normalized flagged code), never the raw line number.
     fingerprint: str | None = None
 
+    # SonarQube-style issue type: bug | vulnerability | code_smell (P2c). Security-
+    # pillar findings are vulnerabilities; quality findings are code smells (or a
+    # bug for the few crash/logic-risk rules). Set by enrichment.
+    issue_type: str | None = None
+
 
 class SeveritySummary(BaseModel):
     critical: int = 0

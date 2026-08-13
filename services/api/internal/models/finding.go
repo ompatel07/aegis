@@ -75,5 +75,8 @@ type Finding struct {
 	Fingerprint     *string `db:"fingerprint" json:"fingerprint,omitempty"`
 	LifecycleStatus *string `db:"lifecycle_status" json:"lifecycle_status,omitempty"`
 
+	// IssueType: SonarQube-style bug | vulnerability | code_smell (P2c).
+	IssueType *string `db:"issue_type" json:"issue_type,omitempty"`
+
 	CreatedAt time.Time `db:"created_at" json:"created_at"`
 }

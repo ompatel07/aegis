@@ -17,6 +17,11 @@ type Aggregated struct {
 	OverallScore    int
 	OverallGrade    string
 
+	// SonarQube-style A–E ratings (P2c).
+	ReliabilityRating    string
+	SecurityRating       string
+	MaintainabilityRating string
+
 	QualityIssuesTotal   int
 	SecurityIssuesTotal  int
 	SecretsFound         int
@@ -88,6 +93,12 @@ func Aggregate(results []*types.EngineResult) Aggregated {
 	agg.OverallScore, agg.OverallGrade = scoring.OverallScore(
 		agg.SecurityScore, agg.QualityScore, agg.DeploymentScore,
 	)
+
+	// SonarQube-style A–E ratings (P2c): reliability/security from the worst
+	// bug/vulnerability severity, maintainability from the maintainability sub-score.
+	agg.ReliabilityRating = scoring.ReliabilityRating(agg.Findings)
+	agg.SecurityRating = scoring.SecurityRating(agg.Findings)
+	agg.MaintainabilityRating = scoring.MaintainabilityRating(qualityMetrics)
 
 	// Raw engine output (stored to scans.raw_*_output).
 	agg.RawSemgrep = rawOf(byEngine["semgrep"])

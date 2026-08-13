@@ -83,9 +83,36 @@ def enrich_all(findings: list[Finding], root: str = "") -> list[Finding]:
             log.debug("enrichment.finding_failed", rule_id=f.rule_id, error=str(exc))
             _fallback_only(f)
         _tag_ownership(f)
+        _classify_issue_type(f)
     _attach_snippets(findings, root)
     _score_false_positives(findings)
     return findings
+
+
+# Quality rules that represent a genuine crash/logic-reliability risk (SonarQube
+# "Bug"), as opposed to maintainability smells. Precision-first: when unsure
+# between Bug and Code Smell, we keep Code Smell to avoid false alarms — so this
+# set is deliberately empty until a clearly bug-class quality rule exists.
+_QUALITY_BUG_RULES: set[str] = set()
+
+
+def _classify_issue_type(f: Finding) -> None:
+    """SonarQube-style issue type (P2c): bug | vulnerability | code_smell.
+
+    - Security-pillar findings (SAST / SCA / secrets) are vulnerabilities.
+    - Quality-pillar findings are code smells (maintainability/complexity/
+      duplication/style), except the few crash/logic-risk rules mapped to bug.
+    - Deployment / other findings are left untyped.
+    Precision-first: unsure between bug and smell -> smell.
+    """
+    try:
+        pillar = f.pillar.value if hasattr(f.pillar, "value") else str(f.pillar)
+        if pillar == "security":
+            f.issue_type = "vulnerability"
+        elif pillar == "quality":
+            f.issue_type = "bug" if (f.rule_id or "") in _QUALITY_BUG_RULES else "code_smell"
+    except Exception as exc:  # noqa: BLE001 — classification must never break a scan
+        log.debug("enrichment.issue_type_failed", rule_id=getattr(f, "rule_id", "?"), error=str(exc))
 
 
 def _attach_snippets(findings: list[Finding], root: str) -> None:

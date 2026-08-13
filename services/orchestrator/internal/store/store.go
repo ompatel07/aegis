@@ -138,6 +138,7 @@ func (s *Store) SaveResults(ctx context.Context, scanID, projectID string, agg p
 			raw_gitleaks_output = $13, raw_quality_output = $14,
 			error_message = $15,
 			rule_pack_version = $16,
+			reliability_rating = $17, security_rating = $18, maintainability_rating = $19,
 			completed_at = now(),
 			duration_seconds = GREATEST(0, EXTRACT(EPOCH FROM (now() - COALESCE(started_at, queued_at)))::int)
 		WHERE id = $1`
@@ -150,6 +151,7 @@ func (s *Store) SaveResults(ctx context.Context, scanID, projectID string, agg p
 		[]byte(agg.RawSemgrep), []byte(agg.RawTrivy),
 		[]byte(agg.RawGitleaks), []byte(agg.RawQuality),
 		errMsg, nullStr(agg.RulePackVersion),
+		nullStr(agg.ReliabilityRating), nullStr(agg.SecurityRating), nullStr(agg.MaintainabilityRating),
 	); err != nil {
 		return fmt.Errorf("update scan: %w", err)
 	}
@@ -160,7 +162,7 @@ func (s *Store) SaveResults(ctx context.Context, scanID, projectID string, agg p
 	return nil
 }
 
-const findingColumnCount = 31
+const findingColumnCount = 32
 
 // insertFindings bulk-inserts findings in chunks (bounded by Postgres' param limit).
 func insertFindings(ctx context.Context, tx *sqlx.Tx, scanID string, findings []types.Finding) error {
@@ -188,7 +190,7 @@ func buildInsert(scanID string, chunk []types.Finding) (string, []any) {
 		 title_human, impact, risk_level, remediation_action, remediation_details,
 		 estimated_effort, context_metadata, false_positive_probability,
 		 is_new, code_snippet, snippet_start_line,
-		 fingerprint, lifecycle_status) VALUES `)
+		 fingerprint, lifecycle_status, issue_type) VALUES `)
 
 	args := make([]any, 0, len(chunk)*findingColumnCount)
 	for i, f := range chunk {
@@ -215,7 +217,7 @@ func buildInsert(scanID string, chunk []types.Finding) (string, []any) {
 			nullStr(f.EstimatedEffort), metadataJSON(f.ContextMetadata),
 			f.FalsePositiveProbability,
 			f.IsNew, nullStr(f.CodeSnippet), f.SnippetStartLine,
-			nullStr(f.Fingerprint), nullStr(f.LifecycleStatus),
+			nullStr(f.Fingerprint), nullStr(f.LifecycleStatus), nullStr(f.IssueType),
 		)
 	}
 	return b.String(), args

@@ -283,6 +283,25 @@ smoke of SAST/SCA/Quality confirmed no cross-engine impact.
   into an object."* — names the function, the measured value, the threshold, and a
   concrete refactor. Deterministic measurements: "accuracy" here is arithmetic
   correctness, and it is exact.
+- **SonarQube-style typing + A–E ratings (P2c).** Every finding now carries an
+  `issue_type` — **bug | vulnerability | code_smell** — set in enrichment:
+  security-pillar findings (SAST/SCA/secrets) are **vulnerabilities**; quality
+  findings (complexity/duplication/magic-numbers/tech-debt/style) are **code
+  smells**. Precision-first: when unsure between bug and smell we keep smell (the
+  bug-class quality-rule set is deliberately empty until a clear crash/logic rule
+  exists), so a maintainability finding is never mislabelled a reliability bug.
+  Each completed scan also gets three **A–E ratings** derived from data already
+  computed:
+  - **Reliability** = worst-severity Bug (SonarQube model; no bugs → A).
+  - **Security** = worst-severity Vulnerability (no vulns → A).
+  - **Maintainability** = maintainability sub-score bucketed **A ≥ 90, B ≥ 80,
+    C ≥ 70, D ≥ 50, else E**.
+
+  **Verified on real scans:** a vulnerable repo (SQLi + command-injection + high
+  complexity) → 9 findings typed `vulnerability`, 2 typed `code_smell`, ratings
+  **reliability A / security E / maintainability E**; a clean, documented module →
+  **A / A / A** (quality_score 85, security_score 100). Ratings track the scores
+  (not degenerate), and **0 quality findings were mistyped** as bug/vulnerability.
 
 ---
 

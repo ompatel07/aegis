@@ -30,6 +30,11 @@ type Scan struct {
 	OverallScore    *int    `db:"overall_score" json:"overall_score,omitempty"`
 	OverallGrade    *string `db:"overall_grade" json:"overall_grade,omitempty"`
 
+	// SonarQube-style A–E ratings (P2c), derived from scores + finding severities.
+	ReliabilityRating     *string `db:"reliability_rating" json:"reliability_rating,omitempty"`
+	SecurityRating        *string `db:"security_rating" json:"security_rating,omitempty"`
+	MaintainabilityRating *string `db:"maintainability_rating" json:"maintainability_rating,omitempty"`
+
 	QualityIssuesTotal   int `db:"quality_issues_total" json:"quality_issues_total"`
 	SecurityIssuesTotal  int `db:"security_issues_total" json:"security_issues_total"`
 	SecretsFound         int `db:"secrets_found" json:"secrets_found"`
