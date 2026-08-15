@@ -333,6 +333,11 @@ export interface Finding {
   false_positive_probability?: number;
   // Phase 2C: deviates from the project baseline.
   is_new?: boolean;
+  // Inline code + lifecycle identity (P1a/P1c).
+  code_snippet?: string;
+  snippet_start_line?: number;
+  fingerprint?: string;
+  lifecycle_status?: "new" | "existing" | "reopened";
   created_at: string;
 }
 

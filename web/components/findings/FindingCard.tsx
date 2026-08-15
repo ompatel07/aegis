@@ -56,8 +56,12 @@ function EffortBadge({ effort }: { effort?: string }) {
   );
 }
 
-function LikelyFPBadge({ p }: { p?: number }) {
+function LikelyFPBadge({ p, severity, kev }: { p?: number; severity?: string; kev?: boolean }) {
   if (p == null || p <= 0.5) return null;
+  // Floor: never badge a critical-severity or actively-exploited (CISA-KEV)
+  // finding as a likely false positive, whatever the ML score. The score still
+  // exists internally (sorting) — only the badge is suppressed here.
+  if (severity === "critical" || kev) return null;
   return (
     <Badge className="border-slate-400/40 bg-slate-400/15 text-slate-500" title="Local ML estimate">
       likely FP {Math.round(p * 100)}%
@@ -148,7 +152,11 @@ export function FindingCard({ finding, onUpdated }: { finding: Finding; onUpdate
               <NewBadge finding={finding} />
               <OwnershipBadge metadata={finding.metadata} />
               <ReachabilityBadge metadata={finding.metadata} />
-              <LikelyFPBadge p={finding.false_positive_probability} />
+              <LikelyFPBadge
+                p={finding.false_positive_probability}
+                severity={finding.severity}
+                kev={finding.metadata?.kev === true}
+              />
               {finding.is_suppressed ? (
                 <Badge className="border-border bg-muted text-muted-foreground">suppressed</Badge>
               ) : null}

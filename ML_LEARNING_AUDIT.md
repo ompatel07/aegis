@@ -104,20 +104,27 @@ FP probability **only for rules with `total_feedback ≥ 3`**:
 - **Within-band:** ML does push likely-FPs to the bottom of *their own* severity
   band (by design, to surface likely-real issues first) — a critical stays in the
   critical band, never hidden.
-- **Two honest nuances (advisory, not blockers):**
-  1. **KEV bumps `risk_level` + score weight (×1.5) + a prominent badge, but not the
-     ordering `severity` column.** A KEV finding on a lower-CVSS CVE sorts by that
-     CVSS band (it's still flagged "Actively exploited" and never hidden). Most KEV
-     CVEs are already high/critical, so this rarely matters — but if the team wants
-     KEV to always sort top-of-list, that's a small future change.
-  2. **The "likely FP" badge has no severity/KEV floor** — a critical/KEV finding
-     with a blended fp_prob > 0.5 *can* show the badge (it did in §A after 3 FP
-     marks). It's advisory and never hides, but suppressing that badge on
-     critical/KEV findings is a reasonable pre-launch polish.
-- **Verdict:** the safety floor the question asks about (high-severity/KEV findings
-  are **not hidden and not cross-band deprioritized** by ML) **exists and is
-  verified.** The two nuances above are advisory-display refinements, **not**
-  must-fix blockers.
+- **Two display-floor refinements — now CLOSED (2026-08-13, display/sort only, no
+  detection change):**
+  1. ✅ **KEV top-of-band sorting.** The default ordering now leads with a KEV key —
+     API `ORDER BY CASE WHEN metadata->>'kev'='true' THEN 0 ELSE 1 END, <severity>,
+     fp ASC, file_path, line_start, fingerprint` (`repository/finding.go`), and the
+     web default sort mirrors it (`FindingsList.tsx`). A KEV finding now sorts above
+     **every** non-KEV finding regardless of CVSS band. **Verified:** a real *medium*
+     finding tagged KEV jumped from rank 29 → rank 3 (into the KEV block above all
+     non-KEV criticals); ordering is deterministic across identical scans (byte-stable
+     fingerprint sequence ×2). The `fingerprint` tiebreak makes the order fully
+     content-deterministic.
+  2. ✅ **Likely-FP badge suppressed on critical/KEV.** `LikelyFPBadge`
+     (`FindingCard.tsx`) now returns nothing when `severity === "critical"` **or**
+     `kev` is set, whatever the ML score. **Verified** (truth table): critical + high
+     fp → no badge, KEV (any severity) + high fp → no badge, non-critical non-KEV +
+     high fp → badge still shows (no regression), fp ≤ 0.5 → no badge. The ML score
+     still exists internally (used for within-band sorting); only the badge is
+     suppressed, and ML still hides nothing.
+- **Verdict:** the safety floor (high-severity/KEV findings **not hidden and not
+  cross-band deprioritized** by ML) holds, **and** both display refinements are now
+  closed. KEV leads the list; critical/KEV are never mislabelled "likely FP".
 
 ### Privacy — metadata-only ✅
 
@@ -151,6 +158,8 @@ Same repo scanned **twice** (project A, back-to-back):
 - ✅ **Per-project memory: ON, isolated, advisory-only, never hides** — proven live.
 - ✅ **Global/cross-project learning: OFF** — seed-only, no exporter, no retrain, no
   project-id in features; defer post-launch with guardrails.
-- ✅ **Severity floor holds** — ML never hides and never cross-band deprioritizes;
-  the only refinements (KEV top-sort, badge-on-critical) are advisory polish.
+- ✅ **Severity floor holds** — ML never hides and never cross-band deprioritizes.
+  Both display refinements are **closed**: KEV findings sort top-of-list; the
+  likely-FP badge is suppressed on critical/KEV findings (display/sort only, no
+  detection change; verified + deterministic).
 - ✅ **Determinism intact** — ML/memory did not break byte-stable fingerprints.

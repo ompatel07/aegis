@@ -15,6 +15,8 @@ import { CheckCheck, ChevronDown, ChevronRight, Package, ShieldCheck } from "luc
 
 const SEVERITIES: (Severity | "all")[] = ["all", "critical", "high", "medium", "low", "info"];
 const SEV_RANK: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3, info: 4 };
+// CISA-KEV = actively exploited: the strongest triage signal, sorted above all else.
+const isKEV = (f: { metadata?: Record<string, unknown> | null }) => f.metadata?.kev === true;
 
 type SortKey = "severity" | "file" | "rule" | "fp";
 
@@ -70,7 +72,16 @@ export function FindingsList({ scanId, pillar }: { scanId: string; pillar: Pilla
         case "file": return (a.file_path + a.line_start).localeCompare(b.file_path + b.line_start);
         case "rule": return a.rule_id.localeCompare(b.rule_id);
         case "fp": return (b.false_positive_probability ?? 0) - (a.false_positive_probability ?? 0);
-        default: return SEV_RANK[a.severity] - SEV_RANK[b.severity];
+        // Default: KEV (actively exploited) first, then severity band, then likely
+        // false positives pushed down, then a stable fingerprint tiebreak so the
+        // order is identical across identical scans (matches the API ordering).
+        default: {
+          if (isKEV(a) !== isKEV(b)) return isKEV(a) ? -1 : 1;
+          if (SEV_RANK[a.severity] !== SEV_RANK[b.severity]) return SEV_RANK[a.severity] - SEV_RANK[b.severity];
+          const fpDelta = (a.false_positive_probability ?? 0) - (b.false_positive_probability ?? 0);
+          if (fpDelta !== 0) return fpDelta;
+          return (a.fingerprint ?? "").localeCompare(b.fingerprint ?? "");
+        }
       }
     });
     return list;

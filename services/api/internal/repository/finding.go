@@ -64,13 +64,14 @@ func (r *FindingRepository) ListByScan(
 		return nil, 0, err
 	}
 
-	// Order by severity, then push likely false positives down within each band
-	// (FP-probability-adjusted priority), then file/line for stability.
+	// KEV (actively exploited) first, then severity band, then push likely false
+	// positives down within each band, then file/line/fingerprint for stable,
+	// deterministic ordering across identical scans.
 	listQ := fmt.Sprintf(`
 		SELECT * FROM findings
 		WHERE %s
-		ORDER BY %s, COALESCE(false_positive_probability, 0) ASC, file_path, line_start NULLS LAST
-		LIMIT $%d OFFSET $%d`, clause, severityRankSQL, idx, idx+1)
+		ORDER BY %s, %s, COALESCE(false_positive_probability, 0) ASC, file_path, line_start NULLS LAST, COALESCE(fingerprint, '')
+		LIMIT $%d OFFSET $%d`, clause, kevFirstSQL, severityRankSQL, idx, idx+1)
 	args = append(args, limit, offset)
 
 	findings := []models.Finding{}
@@ -86,8 +87,8 @@ func (r *FindingRepository) AllByScan(ctx context.Context, scanID string) ([]mod
 	q := fmt.Sprintf(`
 		SELECT * FROM findings
 		WHERE scan_id = $1
-		ORDER BY %s, COALESCE(false_positive_probability, 0) ASC, file_path, line_start NULLS LAST
-		LIMIT 50000`, severityRankSQL)
+		ORDER BY %s, %s, COALESCE(false_positive_probability, 0) ASC, file_path, line_start NULLS LAST, COALESCE(fingerprint, '')
+		LIMIT 50000`, kevFirstSQL, severityRankSQL)
 	findings := []models.Finding{}
 	if err := r.db.SelectContext(ctx, &findings, q, scanID); err != nil {
 		return nil, err
@@ -173,6 +174,11 @@ const severityRankSQL = `
 		WHEN 'low'      THEN 3
 		ELSE 4
 	END`
+
+// kevFirstSQL floats CISA-KEV (actively-exploited) findings to the very top,
+// above every non-KEV finding regardless of CVSS band — the strongest triage
+// signal leads. Display ordering only; detection/severity are untouched.
+const kevFirstSQL = `CASE WHEN COALESCE(metadata->>'kev', '') = 'true' THEN 0 ELSE 1 END`
 
 // GetByIDForUser loads a finding, enforcing ownership via scan → project → user.
 // RoleInFindingOrg returns the caller's role in the org that owns the finding
