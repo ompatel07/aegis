@@ -96,13 +96,31 @@ rules:
           - pattern: $_SERVER["PATH_INFO"]
     pattern-sanitizers:
       - pattern-either:
+          # HTML-escaping — the real defense.
           - pattern: htmlspecialchars(...)
           - pattern: htmlentities(...)
           - pattern: strip_tags(...)
-          - pattern: intval(...)
-          - pattern: (int)$X
           - pattern: urlencode(...)
           - pattern: rawurlencode(...)
+          # Numeric coercion / formatting — output can't carry markup.
+          - pattern: intval(...)
+          - pattern: floatval(...)
+          - pattern: (int)$X
+          - pattern: (float)$X
+          - pattern: count(...)
+          - pattern: number_format(...)
+          - pattern: round(...)
+          # Prepared-statement DB reads: a request value bound through a prepared
+          # statement and read back is no longer *reflected* request data (this
+          # rule's sources are request-only, so this adds no stored-XSS blind spot).
+          - pattern: $S->fetch(...)
+          - pattern: $S->fetchAll(...)
+          - pattern: $S->fetchColumn(...)
+          - pattern: $S->fetchObject(...)
+          - pattern: mysqli_fetch_assoc(...)
+          - pattern: mysqli_fetch_array(...)
+          - pattern: mysqli_fetch_row(...)
+          - pattern: mysqli_fetch_object(...)
     pattern-sinks:
       - patterns:
           - pattern-either:

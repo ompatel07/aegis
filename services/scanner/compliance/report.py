@@ -70,6 +70,21 @@ def _is_open(f: dict) -> bool:
     return not (f.get("is_false_positive") or f.get("is_suppressed"))
 
 
+def _is_generated_output(f: dict) -> bool:
+    """True for findings inside generated / pre-rendered build output (deploy
+    snapshots, bundles, minified files). These are build artifacts, not the org's
+    hand-written code or its declared dependencies, so they are excluded from the
+    compliance grade — otherwise hundreds of near-identical findings in a static
+    export (e.g. a `netlify-static/` snapshot) drown the real controls. Vendored-
+    library findings (dependency dirs / CVEs) are NOT excluded here — only build
+    output is."""
+    meta = f.get("metadata") or {}
+    if meta.get("code_ownership") != "third_party":
+        return False
+    reason = str(meta.get("ownership_reason") or "").lower()
+    return reason.startswith("build/bundled output") or "minified/bundled" in reason
+
+
 def load_framework(name: str) -> dict:
     path = name if os.path.sep in name else str(FRAMEWORK_DIR / f"{name}.yaml")
     with open(path, encoding="utf-8") as fh:
@@ -88,6 +103,8 @@ def map_findings(findings: list[dict], framework: dict) -> list[ControlResult]:
         owasps = {o.upper() for o in ev.get("owasp", [])}
         if in_scope:
             for f in findings:
+                if _is_generated_output(f):
+                    continue  # build artifacts don't drive the compliance grade
                 if (_cwe_key(f.get("cwe_id")) in cwes) or (_owasp_key(f.get("owasp_category")) in owasps):
                     cr.findings.append(f)
         results.append(cr)

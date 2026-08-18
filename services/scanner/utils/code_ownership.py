@@ -25,8 +25,13 @@ _DEP_DIRS = {
     "site-packages", ".venv", "venv", "virtualenv", "external", "externals",
 }
 
-# Build output that bundles library code (not source the user edits by hand).
-_GENERATED_DIRS = {"dist", ".next", "_next", ".nuxt"}
+# Build output that bundles library code (not source the user edits by hand),
+# incl. pre-rendered/static-export publish dirs (the deploy snapshot, regenerated
+# from source — findings here are build artifacts, not hand-written code).
+_GENERATED_DIRS = {
+    "dist", ".next", "_next", ".nuxt", ".output", ".vercel",
+    "netlify-static", "_site", "storybook-static", ".docusaurus",
+}
 
 # Distinctive vendored-library directory names (exact path segment, lower-cased).
 # Each is a library name that is essentially never a user's own app directory, so

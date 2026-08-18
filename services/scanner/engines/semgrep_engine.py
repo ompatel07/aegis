@@ -14,6 +14,7 @@ import datetime
 import hashlib
 import json
 import os
+import re
 import shutil
 import tempfile
 
@@ -136,6 +137,88 @@ def _custom_rules_dir() -> str | None:
     return _bundled_rules_dir(_CUSTOM_RULES_DIR)
 
 
+# ── Project-defined sanitizer detection (precision-first XSS) ──────────────────
+# HTML-escaping functions. A project function whose body calls one of these is a
+# real output-escaping wrapper (e.g. `function sanitize($x){return htmlspecialchars($x);}`)
+# and must silence the XSS taint rule — otherwise we false-positive on every use
+# of a well-written app's own escaper. We trust ONLY wrappers we have *seen* escape
+# (never a name guess), so this adds no false negatives.
+_HTML_ESCAPERS = ("htmlspecialchars", "htmlentities", "htmlescape", "strip_tags")
+_PHP_FUNC_DEF = re.compile(r"function\s+([A-Za-z_]\w*)\s*\(", re.IGNORECASE)
+_WALK_SKIP = {".git", "vendor", "node_modules", ".next", "_next", "dist", "build"}
+
+
+def _php_escaper_wrappers(root: str, cap_files: int = 5000, cap_bytes: int = 2_000_000) -> set[str]:
+    """Names of project PHP functions whose body calls an HTML-escaper — verified
+    escaping wrappers we can trust as XSS sanitizers. Best-effort; bounded."""
+    out: set[str] = set()
+    scanned = 0
+    try:
+        for dirpath, dirs, files in os.walk(root):
+            dirs[:] = [d for d in dirs if d not in _WALK_SKIP]
+            for fn in files:
+                if not fn.endswith((".php", ".inc", ".phtml")):
+                    continue
+                scanned += 1
+                if scanned > cap_files:
+                    return out
+                path = os.path.join(dirpath, fn)
+                try:
+                    if os.path.getsize(path) > cap_bytes:
+                        continue
+                    with open(path, encoding="utf-8", errors="ignore") as fh:
+                        text = fh.read()
+                except OSError:
+                    continue
+                for m in _PHP_FUNC_DEF.finditer(text):
+                    name = m.group(1)
+                    if name.lower() in _HTML_ESCAPERS:
+                        continue
+                    body = text[m.end(): m.end() + 1000]
+                    nxt = body.find("function ")  # don't bleed into the next def
+                    if nxt != -1:
+                        body = body[:nxt]
+                    if any(e in body for e in _HTML_ESCAPERS):
+                        out.add(name)
+    except Exception as exc:  # noqa: BLE001 — detection must never break a scan
+        log.debug("semgrep.escaper_scan_failed", error=str(exc))
+    return out
+
+
+def _augmented_taint_dir(root: str, base_dir: str) -> str | None:
+    """If the project defines its own HTML-escaping wrapper(s), return a temp copy
+    of the taint rules with aegis-php-xss taught to treat them as sanitizers.
+    Returns None (use the static rules) when there's nothing to add. Best-effort."""
+    wrappers = _php_escaper_wrappers(root)
+    if not wrappers:
+        return None
+    try:
+        import yaml
+
+        tmp = tempfile.mkdtemp(prefix="aegis-taint-")
+        for fn in os.listdir(base_dir):  # copy every rule file verbatim
+            if fn.endswith((".yaml", ".yml")):
+                shutil.copy(os.path.join(base_dir, fn), os.path.join(tmp, fn))
+        php_path = os.path.join(tmp, "php.yaml")
+        with open(php_path, encoding="utf-8") as fh:
+            doc = yaml.safe_load(fh)
+        extra = [{"pattern": f"{w}(...)"} for w in sorted(wrappers)]
+        for rule in doc.get("rules", []):
+            if rule.get("id") != "aegis-php-xss":
+                continue
+            for san in rule.get("pattern-sanitizers", []) or []:
+                pe = san.get("pattern-either")
+                if isinstance(pe, list):
+                    pe.extend(extra)
+        with open(php_path, "w", encoding="utf-8") as fh:
+            yaml.safe_dump(doc, fh, sort_keys=False, allow_unicode=True)
+        log.info("semgrep.project_sanitizers", wrappers=sorted(wrappers))
+        return tmp
+    except Exception as exc:  # noqa: BLE001 — augmentation must never break a scan
+        log.warning("semgrep.sanitizer_augment_failed", error=str(exc))
+        return None
+
+
 def _semgrep_jobs(settings: Settings) -> int:
     """Worker count for Semgrep's per-file parallelism (Track 1e). Honors an
     explicit SEMGREP_JOBS override, else uses all CPUs the container is allotted
@@ -185,6 +268,16 @@ _DEFAULT_EXCLUDE_RULES = [
     # go taint rules (rules/taint/go.yaml); these add only noise.
     "go.lang.security.audit.xss.no-direct-write-to-responsewriter.no-direct-write-to-responsewriter",
     "go.lang.security.audit.xss.no-fprintf-to-responsewriter.no-fprintf-to-responsewriter",
+    # PHP: `echoed-request` flags ANY echo of request data with no dataflow and no
+    # sanitizer awareness — it fires straight through htmlspecialchars() wrappers
+    # (e.g. a project's sanitize() helper), a large false-positive source. Real
+    # PHP XSS is covered precisely, sanitizer-aware, by Aegis's own taint rule
+    # (rules/taint/php.yaml: aegis-php-xss), so this only adds noise + double-counts.
+    "php.lang.security.injection.echoed-request.echoed-request",
+    # `tainted-callable` is over-broad: it fired on `$pdo->prepare($query)` (a
+    # prepared statement, not a callable) — a clear false positive. Dynamic-callable
+    # RCE from request data is rare and better handled by a precise rule if added.
+    "php.lang.security.injection.tainted-callable.tainted-callable",
 ]
 
 
@@ -225,6 +318,13 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
 
     registry_configs = _select_configs(settings, languages, project_types)
     custom_dir = _custom_rules_dir()
+
+    # Teach the PHP XSS taint rule about the project's own HTML-escaping wrappers
+    # (e.g. a sanitize() helper) so it doesn't false-positive on escaped output.
+    # Uses a per-scan augmented copy of the taint rules; cleaned up below.
+    aug_taint_dir = _augmented_taint_dir(req.path, custom_dir) if custom_dir else None
+    if aug_taint_dir:
+        custom_dir = aug_taint_dir
 
     # Per-project custom rules (already validated at upload) live for the duration
     # of this scan in a temp dir added on top of the registry + Aegis packs.
@@ -288,6 +388,8 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
 
     if project_rules_dir:
         shutil.rmtree(project_rules_dir, ignore_errors=True)
+    if aug_taint_dir:
+        shutil.rmtree(aug_taint_dir, ignore_errors=True)
 
     findings = _parse(raw, req.path)
     from enrichment import enricher
