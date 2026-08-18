@@ -73,6 +73,68 @@ def render_report(rows, template):
     assert clones == [], f"distinct code wrongly flagged as duplicate: {clones}"
 
 
+# Two SVG icon components share the boilerplate `<svg id=… viewBox>` scaffold but
+# are distinct presentational assets (a plus icon vs a minus icon) — clone detection
+# should NOT flag them: there is no reusable logic to extract.
+_ICON_MINUS = '''\
+export function Minus(props) {
+    return (
+      <svg
+        id="Layer_1"
+        data-name="Layer 1"
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 16 16"
+        {...props}
+      >
+        <defs>
+          <style>{'.cls-1{fill-rule:evenodd}'}</style>
+        </defs>
+        <path className="cls-1" d="M.5 8.5v-1h15v1z" />
+      </svg>
+    );
+  }
+'''
+_ICON_PLUS = '''\
+export function Plus(props) {
+    return (
+      <svg
+        id="Layer_1"
+        data-name="Layer 1"
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 16 16"
+        {...props}
+      >
+        <defs>
+          <style>{'.cls-1{fill-rule:evenodd}'}</style>
+        </defs>
+        <path className="cls-1" d="M.5 8.5v-1h15v1z" />
+        <path className="cls-1" d="M8.5 15.5h-1V.5h1z" />
+      </svg>
+    );
+  }
+'''
+
+
+def test_svg_icon_components_not_flagged_as_clones(tmp_path):
+    a = _write(tmp_path, "Minus.js", _ICON_MINUS)
+    b = _write(tmp_path, "Plus.js", _ICON_PLUS)
+    _dup, clones = duplication.find_clones([(a, "javascript"), (b, "javascript")], str(tmp_path))
+    assert clones == [], f"SVG icon scaffold wrongly flagged as duplicate: {clones}"
+
+
+def test_svg_dominated_detection_is_precise():
+    assert duplication._is_svg_dominated(_ICON_MINUS) is True
+    # A real logic file that merely mentions '<svg' in a string is NOT SVG-dominated.
+    logic = (
+        "function build() {\n"
+        "  for (let i = 0; i < 10; i++) { emit(i); }\n"
+        "  const tag = '<svg/>';\n"
+        "  return render(tag) + compute(a, b, c);\n"
+        "}\n"
+    )
+    assert duplication._is_svg_dominated(logic) is False
+
+
 def test_normalize_tokens_collapses_identifiers_keeps_literals():
     toks = [t for t, _ln in duplication.normalize_tokens("x = foo(42, 'hi')\n", "python")]
     assert toks.count("ID") == 2  # x, foo -> ID (rename-insensitive)

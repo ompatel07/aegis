@@ -50,6 +50,38 @@ def test_magic_number_finding_skips_test_files():
     assert q._magic_number_finding(lines, "src/calc.test.js", "javascript") is None
 
 
+def test_magic_number_finding_ignores_svg_icon_coordinates():
+    # An SVG icon component's numbers are path/coordinate/filter geometry, not
+    # extractable constants — flagging them is noise.
+    lines = [
+        "const Arrow = (props) => (",
+        "  <svg width={props.width || 50} height={props.height || 50}",
+        '    viewBox="0 0 52 2047" {...props}>',
+        '    <path d="M8 24a1 1 0 1 0 0 2v-2Zm34.707 1.707-6.364-6.364L40.586 25l-5.657 5.657z" />',
+        '    <filter x={3} y={17.636} width={44} height={22.728}>',
+        "      <feOffset dy={4} /><feGaussianBlur stdDeviation={2} />",
+        '      <feColorMatrix values="0 0 0 0 0 0 0 0 0 127 0" />',
+        "    </filter>",
+        "  </svg>",
+        ")",
+    ]
+    assert q._magic_number_finding(lines, "src/Icons/Arrow.js", "javascript") is None
+
+
+def test_magic_number_finding_still_flags_logic_beside_inline_svg():
+    # Real magic numbers in the surrounding logic must still be caught even when the
+    # file also renders an inline SVG.
+    lines = [
+        "function Chart() {",
+        "  doLayout(1440, 733, 91, 42, 8675, 512, 4096);",
+        "  return <svg viewBox='0 0 52 2047'><path d='M26 0V314C12 314 51 353z'/></svg>;",
+        "}",
+    ]
+    finding = q._magic_number_finding(lines, "src/Chart.jsx", "javascript")
+    assert finding is not None
+    assert finding.metadata["magic_number_count"] >= q._MAGIC_MIN
+
+
 def test_tech_debt_marker_detected():
     lines = ["// TODO: fix this", "const x = 1", "# FIXME later", "code()"]
     f = q._tech_debt_finding(lines, "src/a.js", "javascript")

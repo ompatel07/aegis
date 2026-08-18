@@ -48,6 +48,27 @@ _MAX_FILE_BYTES = 1_500_000
 # "Unremarkable" numeric literals that are not magic numbers.
 _ALLOWED_NUMS = {"0", "1", "2", "-1", "0.0", "1.0", "0x0", "100", "1000"}
 _NUM_RE = re.compile(r"(?<![\w.$#])-?\d+(?:\.\d+)?(?![\w.])")
+# Everything inside an <svg>…</svg> element is coordinate/path/filter geometry (the
+# glyph itself: `d="M26 0V314…"`, viewBox, width/x/y/dy/stdDeviation/feColorMatrix
+# values), not extractable constants. SVG icon components (Vector.js, Instagram.js,
+# Arrow.js, …) would otherwise report dozens of "magic numbers" that are pure noise.
+# We mask out the line-span of each <svg> element before counting, so genuine magic
+# numbers in the surrounding JS/TS logic — even in the same file — are still caught.
+# A real SVG element: an opening <svg …> through its matching </svg>. Non-greedy so
+# sibling <svg> blocks match independently; DOTALL so it spans lines. A self-closing
+# <svg/> in a string literal has no </svg> and correctly matches nothing.
+_SVG_ELEMENT_RE = re.compile(r"<svg\b.*?</svg\s*>", re.I | re.S)
+
+
+def _svg_line_mask(file_lines: list[str]) -> set[int]:
+    """1-based line numbers that fall inside an <svg>…</svg> element."""
+    code = "\n".join(file_lines)
+    masked: set[int] = set()
+    for m in _SVG_ELEMENT_RE.finditer(code):
+        start = code.count("\n", 0, m.start()) + 1
+        end = code.count("\n", 0, m.end()) + 1
+        masked.update(range(start, end + 1))
+    return masked
 _CONST_DEF_RE = re.compile(
     r"^\s*(?:export\s+)?(?:public\s+|private\s+|protected\s+)?"
     r"(?:const|final|static|readonly|val|let|var|#define|enum)\b"
@@ -353,8 +374,11 @@ def _magic_number_finding(file_lines: list[str], rel: str, language: str) -> Fin
     if any(hint in rel.lower() for hint in _TEST_HINTS):
         return None  # test fixtures legitimately contain many literals
     marker = _LINE_COMMENT.get(language)
+    svg_lines = _svg_line_mask(file_lines) if "<svg" in "".join(file_lines).lower() else set()
     hits: list[int] = []
     for lineno, raw in enumerate(file_lines, start=1):
+        if lineno in svg_lines:
+            continue  # SVG geometry, not extractable constants
         s = raw.strip()
         if not s or (marker and s.startswith(marker)) or s.startswith(("/*", "*", '"""', "'''")):
             continue

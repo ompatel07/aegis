@@ -21,11 +21,47 @@ from __future__ import annotations
 
 import bisect
 import os
+import re
 
 from logging_config import get_logger
 from utils import normalizer
 
 log = get_logger("duplication")
+
+# A real SVG element: an opening <svg …> through its matching </svg>. Non-greedy so
+# sibling <svg> blocks match independently; DOTALL so it spans lines. A self-closing
+# <svg/> in a string literal has no </svg> and correctly matches nothing.
+_SVG_ELEMENT_RE = re.compile(r"<svg\b.*?</svg\s*>", re.I | re.S)
+
+
+def _svg_covered_lines(code: str) -> set[int]:
+    """1-based line numbers spanned by any <svg>…</svg> element in `code`."""
+    covered: set[int] = set()
+    for m in _SVG_ELEMENT_RE.finditer(code):
+        start = code.count("\n", 0, m.start()) + 1
+        end = code.count("\n", 0, m.end()) + 1
+        covered.update(range(start, end + 1))
+    return covered
+
+
+def _is_svg_dominated(code: str) -> bool:
+    """True when a file is essentially an SVG icon component — most of its content
+    lives inside an <svg>…</svg> element (path/coordinate markup plus the shared
+    `<svg … viewBox>` scaffold). Such files trip clone detection on their boilerplate
+    wrapper (e.g. Minus.js vs Plus.js), but there is no reusable *logic* to extract —
+    they are distinct presentational assets. Genuine code duplication lives in logic
+    files, which are never SVG-dominated, so excluding these is precision-safe."""
+    if "<svg" not in code.lower():
+        return False
+    svg_lines = _svg_covered_lines(code)
+    total = svg = 0
+    for lineno, raw in enumerate(code.splitlines(), start=1):
+        if not raw.strip():
+            continue
+        total += 1
+        if lineno in svg_lines:
+            svg += 1
+    return total > 0 and svg / total >= 0.6
 
 MIN_TOKENS = 50                 # minimum clone length in tokens
 _MAX_FILE_BYTES = 1_500_000
@@ -91,6 +127,8 @@ def find_clones(files: list[tuple[str, str]], root: str) -> tuple[int, list[dict
         code = _read(path)
         if code is None:
             continue
+        if _is_svg_dominated(code):
+            continue  # SVG icon component — shared <svg> scaffold isn't extractable logic
         norm = normalize_tokens(code, language)
         if len(norm) < MIN_TOKENS:
             continue
