@@ -418,6 +418,22 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
     )
 
 
+def _is_non_subresource_link(matched: str) -> bool:
+    """True when a missing-integrity match is on a <link> whose rel is NOT a
+    subresource (stylesheet / preload / modulepreload) — SRI is meaningless on
+    rel=canonical/alternate/icon/preconnect/dns-prefetch/manifest/..., so flagging
+    those is a false positive. <script src> and real stylesheet/preload links are
+    kept (returns False)."""
+    m = matched.lower()
+    if "<link" not in m:
+        return False  # <script> or non-link match — a valid SRI target, keep it
+    for rel in ('rel="stylesheet"', "rel='stylesheet'", 'rel="preload"',
+                "rel='preload'", 'rel="modulepreload"', "rel='modulepreload'"):
+        if rel in m:
+            return False  # a genuine subresource link — keep it
+    return True  # a <link> with no subresource rel — false positive, drop it
+
+
 def _parse(raw: dict, root: str) -> list[Finding]:
     findings: list[Finding] = []
     for item in raw.get("results", []):
@@ -428,6 +444,14 @@ def _parse(raw: dict, root: str) -> list[Finding]:
 
         check_id = item.get("check_id", "unknown-rule")
         rule_short = check_id.rsplit(".", 1)[-1]
+
+        # Precision: the registry missing-integrity (SRI) rule fires on ANY external
+        # <link>, but Subresource Integrity only applies to <script> and
+        # <link rel="stylesheet"|"preload"|"modulepreload">. Firing on
+        # rel="canonical"/"alternate"/"icon"/... is a false positive — drop those.
+        if "missing-integrity" in check_id and _is_non_subresource_link(extra.get("lines", "") or ""):
+            continue
+
         message = extra.get("message") or rule_short
         # Rules loaded from a local dir are namespaced by semgrep with a
         # path-derived prefix (e.g. "rules.taint.aegis-js-xss" for our bundled

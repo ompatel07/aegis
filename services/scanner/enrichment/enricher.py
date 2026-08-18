@@ -141,6 +141,15 @@ def _tag_ownership(f: Finding) -> None:
             meta["code_ownership"] = "third_party"
             f.metadata = meta
             return
+        # A dependency vulnerability (SCA CVE) lives in a third-party package — you
+        # fix it by UPDATING the library, not by editing your own code — even though
+        # the manifest (package-lock.json / requirements.txt / composer.lock) sits in
+        # the app root. Tag it third-party so the UI/scoring treat it correctly.
+        if f.cve_id and meta.get("package"):
+            meta["code_ownership"] = "third_party"
+            meta["ownership_reason"] = f"third-party dependency: {meta.get('package')}"
+            f.metadata = meta
+            return
         ownership, reason = code_ownership.classify(f.file_path)
         meta["code_ownership"] = ownership
         if reason:
