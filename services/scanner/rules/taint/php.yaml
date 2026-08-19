@@ -65,10 +65,11 @@ rules:
     languages: [php]
     severity: ERROR
     message: >-
-      Untrusted request data is echoed into the HTML response without escaping,
-      enabling reflected XSS. Escape output with htmlspecialchars(...,
-      ENT_QUOTES) or htmlentities() before printing; never echo request data
-      directly.
+      Untrusted data (from the HTTP request, or read back from the database /
+      storage) is echoed into the HTML response without escaping, enabling
+      reflected or stored XSS. Escape output with htmlspecialchars(...,
+      ENT_QUOTES) or htmlentities() before printing; never echo untrusted data
+      directly into HTML.
     metadata:
       cwe:
         - "CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"
@@ -102,6 +103,12 @@ rules:
           - pattern: strip_tags(...)
           - pattern: urlencode(...)
           - pattern: rawurlencode(...)
+          # JSON encoding — `echo json_encode($x)` is an AJAX/JSON API response,
+          # not HTML. json_encode emits a quoted JSON value (booleans/numbers/
+          # escaped strings); echoing it is the standard endpoint pattern and is
+          # not reflected/stored HTML XSS. (The narrow inline-<script> breakout
+          # case is a separate concern handled by dedicated script-context rules.)
+          - pattern: json_encode(...)
           # Numeric coercion / formatting — output can't carry markup.
           - pattern: intval(...)
           - pattern: floatval(...)

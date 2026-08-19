@@ -127,3 +127,52 @@ def test_docker_base_image_reduction():
     _all_populated(f)
     assert "78%" in f.impact
     assert "node:20-slim" in f.remediation_action
+
+
+def _own(f: Finding) -> str:
+    return (f.metadata or {}).get("code_ownership")
+
+
+def test_vendored_library_findings_tagged_third_party(tmp_path):
+    """Quality/semgrep findings on a vendored JS/CSS library (copied into assets/,
+    unminified, not in a vendored dir) must be third_party — not the user's app bug.
+    Two signals: SCA fingerprint propagation, and a distribution banner."""
+    (tmp_path / "assets" / "js").mkdir(parents=True)
+    # Unminified vendored jQuery (fingerprinted by SCA) + Bootstrap (banner only).
+    (tmp_path / "assets" / "js" / "jquery-1.12.3.js").write_text(
+        "/*!\n * jQuery JavaScript Library v1.12.3\n */\n(function(){ /* ... */ })();\n",
+        encoding="utf-8")
+    (tmp_path / "assets" / "js" / "bootstrap.js").write_text(
+        "/*!\n * Bootstrap v3.3.5 (http://getbootstrap.com)\n */\n+function($){}(jQuery);\n",
+        encoding="utf-8")
+    (tmp_path / "app.js").write_text("function pay(x){ return x * 1.075; }\n", encoding="utf-8")
+
+    fp_cve = mk(engine=Engine.TRIVY, pillar=Pillar.SECURITY, rule_id="CVE-2015-9251",
+                cve_id="CVE-2015-9251", file_path="assets/js/jquery-1.12.3.js",
+                metadata={"detected_via": "fingerprint", "package": "jquery"})
+    q_on_jq = mk(engine=Engine.QUALITY, pillar=Pillar.QUALITY,
+                 rule_id="quality/high-cyclomatic-complexity",
+                 file_path="assets/js/jquery-1.12.3.js", metadata={})
+    q_on_bs = mk(engine=Engine.QUALITY, pillar=Pillar.QUALITY,
+                 rule_id="quality/high-cyclomatic-complexity",
+                 file_path="assets/js/bootstrap.js", metadata={})
+    app = mk(engine=Engine.QUALITY, pillar=Pillar.QUALITY, rule_id="quality/magic-numbers",
+             file_path="app.js", metadata={})
+
+    enricher.enrich_all([fp_cve, q_on_jq, q_on_bs, app], root=str(tmp_path))
+    assert _own(fp_cve) == "third_party"   # fingerprinted CVE
+    assert _own(q_on_jq) == "third_party"  # propagated onto the same vendored file
+    assert _own(q_on_bs) == "third_party"  # detected by distribution banner
+    assert _own(app) == "app"              # genuine app code stays app
+
+
+def test_app_file_mentioning_library_stays_app(tmp_path):
+    """Precision guard: an app file that merely references a library (no leading
+    distribution banner) must NOT be misclassified as vendored."""
+    (tmp_path / "main.js").write_text(
+        "// our app uses jQuery and Bootstrap v3 under the hood\n"
+        "import $ from 'jquery';\nfunction boot(){ return 42 * 7; }\n", encoding="utf-8")
+    f = mk(engine=Engine.QUALITY, pillar=Pillar.QUALITY, rule_id="quality/magic-numbers",
+           file_path="main.js", metadata={})
+    enricher.enrich_all([f], root=str(tmp_path))
+    assert _own(f) == "app"

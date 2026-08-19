@@ -76,13 +76,14 @@ def enrich_all(findings: list[Finding], root: str = "") -> list[Finding]:
     code_snippet (P1c) and a stable lifecycle fingerprint (P1a). Both are
     best-effort and never fail a scan."""
     templates = _load()
+    vendored = _vendored_asset_paths(findings, root)
     for f in findings:
         try:
             _enrich(f, templates)
         except Exception as exc:  # noqa: BLE001 — one bad finding must not abort
             log.debug("enrichment.finding_failed", rule_id=f.rule_id, error=str(exc))
             _fallback_only(f)
-        _tag_ownership(f)
+        _tag_ownership(f, vendored)
         _classify_issue_type(f)
     _attach_snippets(findings, root)
     _score_false_positives(findings)
@@ -127,7 +128,49 @@ def _attach_snippets(findings: list[Finding], root: str) -> None:
         log.debug("enrichment.snippet_failed", error=str(exc))
 
 
-def _tag_ownership(f: Finding) -> None:
+def _norm_path(p: str | None) -> str:
+    return (p or "").replace("\\", "/")
+
+
+def _vendored_asset_paths(findings: list[Finding], root: str) -> set[str]:
+    """File paths that are vendored third-party libraries — so EVERY finding on them
+    (quality complexity, semgrep, …), not just the SCA CVE, is tagged third-party.
+
+    Two high-confidence signals:
+      1. The SCA engine fingerprinted the file as a known library copy (its CVE
+         findings carry detected_via=fingerprint / vendored on that exact path).
+      2. The file is a JS/CSS build that opens with a distributed-library banner
+         (e.g. an unminified assets/js/jquery-1.12.3.js or assets/js/bootstrap.js
+         that neither sits in a vendored dir nor ends in .min).
+
+    Without this, a repo that copies jQuery/Bootstrap into assets/js gets jQuery's
+    own internal cyclomatic complexity and Sizzle's RegExp use reported as the
+    user's APP bugs — noise a mature tool (CodeQL) never surfaces."""
+    paths: set[str] = set()
+    for f in findings:
+        meta = f.metadata if isinstance(f.metadata, dict) else {}
+        if (meta.get("detected_via") == "fingerprint" or meta.get("vendored")) and f.file_path:
+            paths.add(_norm_path(f.file_path))
+    if root:
+        try:
+            from utils import code_ownership
+
+            seen: set[str] = set()
+            for f in findings:
+                rel = _norm_path(f.file_path)
+                if not rel or rel in seen:
+                    continue
+                seen.add(rel)
+                if rel in paths:
+                    continue
+                if code_ownership.is_vendored_asset(os.path.join(root, rel)):
+                    paths.add(rel)
+        except Exception as exc:  # noqa: BLE001 — banner scan must never break a scan
+            log.debug("enrichment.vendored_scan_failed", error=str(exc))
+    return paths
+
+
+def _tag_ownership(f: Finding, vendored: set[str] | None = None) -> None:
     """Tag the finding with code ownership (app vs third-party/vendored), from its
     file path. Precision-first: defaults to "app" when not confident. Never raises."""
     try:
@@ -139,6 +182,14 @@ def _tag_ownership(f: Finding) -> None:
         # assets/js/jquery-1.12.4.js) override it back to "app".
         if meta.get("detected_via") == "fingerprint" or meta.get("vendored"):
             meta["code_ownership"] = "third_party"
+            f.metadata = meta
+            return
+        # Any finding on a file we identified as a vendored library (by fingerprint
+        # propagation or distribution banner) is third-party — jQuery/Bootstrap's own
+        # internal complexity and audit hits are not the user's app bugs.
+        if vendored and _norm_path(f.file_path) in vendored:
+            meta["code_ownership"] = "third_party"
+            meta.setdefault("ownership_reason", "vendored third-party library (bundled build)")
             f.metadata = meta
             return
         # A dependency vulnerability (SCA CVE) lives in a third-party package — you

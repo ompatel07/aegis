@@ -46,6 +46,22 @@ function xss_ok() {
     echo "<h1>Hello " . htmlspecialchars($name, ENT_QUOTES) . "</h1>";
 }
 
+function xss_ok_json() {
+    // An AJAX/JSON endpoint echoing json_encode() is a JSON response, not HTML —
+    // not reflected XSS.
+    $id = $_POST["id"];
+    $row = get_row($id);
+    // ok: aegis-php-xss
+    echo json_encode($row);
+}
+
+function xss_still_bad_after_transform() {
+    // A benign string transform must NOT clear taint — still reflected XSS.
+    $name = $_GET["name"];
+    // ruleid: aegis-php-xss
+    echo "<h1>" . trim($name) . "</h1>";
+}
+
 // ── OS command injection ─────────────────────────────────────────────────────
 function cmd_bad() {
     $host = $_GET["host"];
