@@ -45,6 +45,9 @@ _VENDORED_LIB_DIRS = {
     # JS/CSS libraries commonly copied in (no npm):
     "tinymce", "ckeditor", "datatables", "fullcalendar", "highcharts",
     "summernote", "dropzone", "jspdf", "select2", "fontawesome", "font-awesome",
+    # Reader/viewer libraries vendored as ES modules without a license banner
+    # (foliate-js: the ebook reader engine — epub.js/mobi.js/fb2.js/epubcfi.js/…).
+    "foliate", "foliate-js", "pdfjs", "pdf.js",
 }
 
 # Minified / bundled files are shipped library builds, not source.

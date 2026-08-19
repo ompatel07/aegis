@@ -80,3 +80,20 @@ async def test_gitleaks_finds_issues():
 @pytest.mark.skipif(not _lizard_available(), reason="lizard not installed")
 async def test_quality_finds_issues():
     _assert_alive(await quality_engine.run(_req(), settings), "quality")
+
+
+def test_placeholder_secret_filter_drops_masks_keeps_real():
+    # Masked / placeholder values a hardcoded-secret rule over-matches → dropped.
+    for line in (
+        '  dummyPassword: string = "***********************";',
+        '  const pw = "changeme";',
+        '  apiKey = "your_api_key_here";',
+        "  token = ''",
+    ):
+        assert semgrep_engine._is_placeholder_secret(line) is True, line
+    # A genuine literal secret must be kept.
+    for line in (
+        '  password = "Sup3rS3cretPw!99";',
+        '  const token = "n8fH2kLpQ7rT3wYxZ0bV";',
+    ):
+        assert semgrep_engine._is_placeholder_secret(line) is False, line

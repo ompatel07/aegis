@@ -16,6 +16,23 @@ title = "Aegis custom secret rules"
 [extend]
 useDefault = true
 
+# ── Global allowlist (applies to ALL rules, incl. the stock defaults) ──────────
+# The stock `generic-api-key` rule over-matches any `…key… = "high-entropy-ish
+# string"`, so it flags things that are structurally not credentials: i18n /
+# config identifiers (e.g. `descriptionKey: 'placeholders.isbn10'`) and masked /
+# placeholder values. Tested against booklore: those two dotted-identifier hits
+# were false positives. This allowlist drops matches whose extracted SECRET is a
+# non-credential shape. Precision-first: real API keys/tokens are mixed-case or
+# carry symbols and never look like `a.b.c` or `****`, so recall is unaffected.
+[allowlist]
+description = "Aegis: drop non-secret shapes the generic rules over-match (config/i18n keys, masks, placeholders)"
+regexTarget = "secret"
+regexes = [
+  '''^[a-z][a-z0-9]*(?:\.[a-z0-9]+)+$''',                                  # dotted lowercase config/i18n key: placeholders.isbn10
+  '''^[*x•.\-_]{3,}$''',                                                   # masked value: ****, xxxx, ----
+  '''^(?i:changeme|change[_-]?me|placeholder|example|examplekey|dummy|sample|redacted|none|null|undefined|todo|test|your[_-]?\w+|replace[_-]?me)$''',
+]
+
 # ── 1. Database / message-broker connection strings with embedded credentials ──
 # Matches  scheme://[user]:password@host  for common data stores. The password
 # group requires ≥3 non-trivial chars before the '@', so credential-less URIs

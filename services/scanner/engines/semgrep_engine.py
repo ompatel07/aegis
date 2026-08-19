@@ -434,6 +434,43 @@ def _is_non_subresource_link(matched: str) -> bool:
     return True  # a <link> with no subresource rel — false positive, drop it
 
 
+# Hardcoded-secret / password rules (njsscan node_password, generic hardcoded-
+# secret) fire on any `password = "literal"`. They over-match masked or placeholder
+# values that are obviously NOT credentials — e.g. booklore's
+# `dummyPassword = "***********************"` display mask, or `password: ''`.
+_SECRET_RULE_HINTS = (
+    "hardcoded_secret", "hardcoded-secret", "hardcoded_password", "hardcoded-password",
+    "node_password", "node_username", "node_secret",
+)
+_STRING_LIT_RE = re.compile(r"""(['"`])((?:(?!\1).)*)\1""")
+_MASK_RE = re.compile(r"^[*x•.\-_\s]{3,}$", re.I)
+_PLACEHOLDER_SECRET_WORDS = {
+    "changeme", "change_me", "placeholder", "example", "dummy", "sample",
+    "redacted", "none", "null", "undefined", "todo", "test", "password", "secret",
+}
+
+
+def _is_placeholder_secret(lines: str) -> bool:
+    """True when a hardcoded-secret rule matched a line whose every string-literal
+    value is a non-credential: empty, a mask (`****`), or a placeholder word. A real
+    literal value anywhere on the line → False (keep the finding). Precision-first:
+    recall for genuine hardcoded secrets is unaffected."""
+    vals = [m.group(2) for m in _STRING_LIT_RE.finditer(lines or "")]
+    if not vals:
+        return False
+    for v in vals:
+        s = v.strip()
+        if not s or len(set(s)) <= 1 or _MASK_RE.match(s):
+            continue  # empty / single-repeated-char / mask
+        low = s.lower()
+        if low in _PLACEHOLDER_SECRET_WORDS or low.startswith(
+            ("your_", "your-", "example", "changeme", "placeholder", "dummy", "<")
+        ):
+            continue
+        return False  # a real-looking value — keep the finding
+    return True  # every value on the line was empty / mask / placeholder
+
+
 def _parse(raw: dict, root: str) -> list[Finding]:
     findings: list[Finding] = []
     for item in raw.get("results", []):
@@ -450,6 +487,14 @@ def _parse(raw: dict, root: str) -> list[Finding]:
         # <link rel="stylesheet"|"preload"|"modulepreload">. Firing on
         # rel="canonical"/"alternate"/"icon"/... is a false positive — drop those.
         if "missing-integrity" in check_id and _is_non_subresource_link(extra.get("lines", "") or ""):
+            continue
+
+        # Precision: hardcoded-secret rules over-match masked / placeholder values
+        # (a `dummyPassword = "****"` display mask, `password: ''`) that are plainly
+        # not credentials. Drop those; a real literal value keeps the finding.
+        if any(h in check_id for h in _SECRET_RULE_HINTS) and _is_placeholder_secret(
+            extra.get("lines", "") or ""
+        ):
             continue
 
         message = extra.get("message") or rule_short
