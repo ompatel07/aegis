@@ -50,6 +50,32 @@ def test_magic_number_finding_skips_test_files():
     assert q._magic_number_finding(lines, "src/calc.test.js", "javascript") is None
 
 
+def test_misparsed_js_function_name_detection():
+    # lizard JSX misparses: method-chain / 3+-segment names are not real functions.
+    assert q._is_misparsed_js_name("email.toLowerCase.trim", "jsx") is True
+    assert q._is_misparsed_js_name("data.map", "javascript") is True
+    assert q._is_misparsed_js_name("a.b.c", "typescript") is True
+    # Genuine names (and non-JS languages) are kept.
+    assert q._is_misparsed_js_name("handleSubmit", "javascript") is False
+    assert q._is_misparsed_js_name("User.login", "javascript") is False
+    assert q._is_misparsed_js_name("Foo::bar", "cpp") is False
+
+
+def test_function_findings_skip_misparsed_jsx_name():
+    class _Fn:
+        name = "email.toLowerCase.trim"
+        cyclomatic_complexity = 26
+        nloc = 269
+        start_line, end_line = 114, 409
+        parameter_count = 0
+        top_nesting_level = 0
+
+    # A misparsed JSX "function" produces no findings; a real complex one does.
+    assert q._function_findings(_Fn(), "src/Modal.jsx", "jsx", []) == []
+    _Fn.name = "ForgotPasswordModal"
+    assert len(q._function_findings(_Fn(), "src/Modal.jsx", "jsx", [])) >= 1
+
+
 def test_magic_number_finding_ignores_svg_icon_coordinates():
     # An SVG icon component's numbers are path/coordinate/filter geometry, not
     # extractable constants — flagging them is noise.

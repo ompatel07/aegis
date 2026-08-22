@@ -187,8 +187,36 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
 
 # ── Findings ─────────────────────────────────────────────────────────────────
 
+# lizard has no real JSX/TSX grammar: on React components it frequently fails to
+# find function boundaries and mislabels a merged span with a method-call chain it
+# happened to see (e.g. `email.toLowerCase.trim` for the whole ForgotPasswordModal
+# body). A genuine JS/TS function name is a single identifier or a 2-part
+# `obj.method` — a 3+-segment dotted chain, or one whose tail is a built-in method,
+# is an expression, not a definition. Such an entry is a parse artifact whose span
+# and complexity can't be trusted, so we emit no finding for it (precision-first).
+_JS_LANGS = {"javascript", "typescript", "jsx", "tsx"}
+_JS_CHAIN_METHODS = {
+    "trim", "tolowercase", "touppercase", "map", "filter", "foreach", "reduce",
+    "then", "catch", "split", "join", "replace", "slice", "concat", "find",
+    "includes", "tostring", "json", "parse", "stringify", "call", "apply", "bind",
+}
+
+
+def _is_misparsed_js_name(name: str, language: str) -> bool:
+    if language not in _JS_LANGS or not name:
+        return False
+    segs = name.split(".")
+    if len(segs) >= 3:
+        return True  # a.b.c… is a property/method chain, never a definition name
+    if len(segs) == 2 and segs[1].lower() in _JS_CHAIN_METHODS:
+        return True  # obj.trim / x.map — a method call, not a defined function
+    return False
+
+
 def _function_findings(fn, rel_path: str, language: str, file_lines: list[str]) -> list[Finding]:
     out: list[Finding] = []
+    if _is_misparsed_js_name(fn.name, language):
+        return out  # lizard JSX misparse — untrustworthy boundaries/metrics
     cc = fn.cyclomatic_complexity
 
     if cc >= _CC_WARN:
