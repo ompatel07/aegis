@@ -453,3 +453,39 @@ fabricated 0 (Taaza/laundry +10), test-bearing repos are no longer credited by a
 fabricated 60 (booklore +2, weirdos +5, salon net-neutral). No composite craters.
 Maintainability rating is coverage-independent (unchanged); compliance grade does
 not consume quality sub-scores (unchanged).
+
+---
+
+## Quality bug pack — Q2 Part A (gap closure)
+
+Hardened the three Q1 rules and added new-language variants; still zero FP.
+
+- **return-in-finally**: added the missing nested-return negatives. semgrep's
+  `...` deep-matched into callbacks, so a `return` inside an arrow / function-
+  expression / `.forEach` callback in a `finally` wrongly fired. Reworked to
+  anchor on the return (`pattern: return ...;` + `pattern-inside: finally {...}`)
+  and exclude nested functions (`pattern-not-inside` arrow + function-expr; a
+  `-java` variant excludes lambdas). Negative fixtures added for all three JS
+  callback forms and the Java lambda; each stays silent, the direct return fires.
+- **identical-if-else**: was single-statement only. Now enumerates 1..3-statement
+  branches (metavariable reuse enforces equality — Sonar S1871 catches the
+  multi-statement copy-paste). Added `-go` (no-paren `if C {…}`) and `-py`
+  (colon-block) variants beside js/ts/php. Positive + negative fixtures per arity.
+- **mutable-default-arg**: was validated against zero real Python in Q1. Now
+  validated on this repo's scanner (`/app`, ~76 .py, fixtures excluded) → 0, and
+  psf/requests (34 .py) → 0. Precision pass.
+
+**New-language / precision validation (zero FP):**
+
+| Target | Language | aegis-bug-* findings | verdict |
+|---|---|---|---|
+| this repo — scanner (`/app`, no fixtures) | Python | 1 | **TP** (dogfood, fixed below) |
+| this repo — orchestrator + API | Go | 0 | precision pass |
+| psf/requests | Python | 0 | precision pass |
+
+The one Python TP is `engines/quality_engine.py:320` — the clone-severity
+`elif tokens >= _CLONE_SEV_MEDIUM: LOW` / `else: LOW` both returned LOW, a dead
+branch (the `_CLONE_SEV_MEDIUM` tier never mattered). Our own new rule caught it;
+collapsed to `MEDIUM if tokens >= _CLONE_SEV_HIGH else LOW` (behavior-preserving)
+and removed the dead constant. The 5 Q1 repos are unchanged (salon 1 TP, rest 0);
+reliability unchanged (salon C, rest A).

@@ -83,10 +83,16 @@ def test_bug_pack_loads_into_quality_bug_rules():
     from enrichment import enricher
 
     rules = enricher._QUALITY_BUG_RULES
-    assert "aegis-bug-identical-if-else-branches" in rules
-    assert "aegis-bug-return-in-finally" in rules
-    assert "aegis-bug-mutable-default-arg" in rules
-    assert "aegis-bug-java-string-literal-equality" in rules
+    for rid in (
+        "aegis-bug-identical-if-else-branches",
+        "aegis-bug-identical-if-else-branches-go",
+        "aegis-bug-identical-if-else-branches-py",
+        "aegis-bug-return-in-finally",
+        "aegis-bug-return-in-finally-java",
+        "aegis-bug-mutable-default-arg",
+        "aegis-bug-java-string-literal-equality",
+    ):
+        assert rid in rules, f"{rid} not loaded from bugs.yaml"
     # Dropped rule must NOT be present.
     assert "aegis-bug-self-assignment" not in rules
 

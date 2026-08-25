@@ -27,11 +27,15 @@
 #     and intentional `catch {/* ignore */}` blocks make it FP-prone.
 rules:
   # ── Identical if/else branches: the condition can't matter — a copy-paste bug ─
+  # Semgrep has no block metavariable, but metavariable REUSE enforces equality,
+  # so we enumerate 1..3-statement branches (Sonar S1871). Brace syntax differs by
+  # language (js/ts/php parens, go no-parens, python colon-block), so the rule is
+  # split into three same-behaviour variants.
   - id: aegis-bug-identical-if-else-branches
     languages: [javascript, typescript, php]
     severity: WARNING
     message: >-
-      Both the `if` and the `else` branch run the exact same statement, so the
+      Both the `if` and the `else` branch run the exact same statement(s), so the
       condition has no effect. One branch was almost certainly meant to differ —
       a classic copy-paste bug that silently produces the wrong behaviour.
     metadata:
@@ -43,11 +47,77 @@ rules:
       references:
         - https://rules.sonarsource.com/java/RSPEC-1871/
     patterns:
-      - pattern: if ($C) { $S } else { $S }
+      - pattern-either:
+          - pattern: if ($C) { $S1 } else { $S1 }
+          - pattern: if ($C) { $S1; $S2 } else { $S1; $S2 }
+          - pattern: if ($C) { $S1; $S2; $S3 } else { $S1; $S2; $S3 }
+
+  - id: aegis-bug-identical-if-else-branches-go
+    languages: [go]
+    severity: WARNING
+    message: >-
+      Both the `if` and the `else` branch run the exact same statement(s), so the
+      condition has no effect (copy-paste bug).
+    metadata:
+      pillar: quality
+      issue_type: bug
+      category: correctness
+      cwe:
+        - "CWE-691: Insufficient Control Flow Management"
+      references:
+        - https://rules.sonarsource.com/java/RSPEC-1871/
+    patterns:
+      - pattern-either:
+          - pattern: if $C { $S1 } else { $S1 }
+          - pattern: if $C { $S1; $S2 } else { $S1; $S2 }
+          - pattern: if $C { $S1; $S2; $S3 } else { $S1; $S2; $S3 }
+
+  - id: aegis-bug-identical-if-else-branches-py
+    languages: [python]
+    severity: WARNING
+    message: >-
+      Both the `if` and the `else` branch run the exact same statement(s), so the
+      condition has no effect (copy-paste bug).
+    metadata:
+      pillar: quality
+      issue_type: bug
+      category: correctness
+      cwe:
+        - "CWE-691: Insufficient Control Flow Management"
+      references:
+        - https://rules.sonarsource.com/java/RSPEC-1871/
+    patterns:
+      - pattern-either:
+          - pattern: |
+              if $C:
+                  $S1
+              else:
+                  $S1
+          - pattern: |
+              if $C:
+                  $S1
+                  $S2
+              else:
+                  $S1
+                  $S2
+          - pattern: |
+              if $C:
+                  $S1
+                  $S2
+                  $S3
+              else:
+                  $S1
+                  $S2
+                  $S3
 
   # ── return in finally: silently discards any exception in the try block ──────
+  # The return must be a DIRECT statement of the finally block. semgrep's `...`
+  # deep-matches into nested callbacks, so a `return` inside an arrow/function/
+  # lambda passed to a call in finally is NOT a return-in-finally — we anchor with
+  # pattern-inside finally and exclude nested functions (split js/ts vs java
+  # because the nested-function syntax differs).
   - id: aegis-bug-return-in-finally
-    languages: [javascript, typescript, java]
+    languages: [javascript, typescript]
     severity: WARNING
     message: >-
       A `return` inside a `finally` block discards any exception thrown in the
@@ -62,11 +132,30 @@ rules:
       references:
         - https://rules.sonarsource.com/java/RSPEC-1143/
     patterns:
-      - pattern-either:
-          - pattern: |
-              try { ... } finally { ... return ...; ... }
-          - pattern: |
-              try { ... } catch (...) { ... } finally { ... return ...; ... }
+      - pattern: return ...;
+      - pattern-inside: "finally { ... }"
+      - pattern-not-inside: "(...) => { ... }"
+      - pattern-not-inside: "function (...) { ... }"
+
+  - id: aegis-bug-return-in-finally-java
+    languages: [java]
+    severity: WARNING
+    message: >-
+      A `return` inside a `finally` block discards any exception thrown in the
+      `try`/`catch` — the error is swallowed and never propagates. Move the
+      return out of `finally`; use it only for cleanup.
+    metadata:
+      pillar: quality
+      issue_type: bug
+      category: correctness
+      cwe:
+        - "CWE-584: Return Inside Finally Block"
+      references:
+        - https://rules.sonarsource.com/java/RSPEC-1143/
+    patterns:
+      - pattern: return ...;
+      - pattern-inside: "finally { ... }"
+      - pattern-not-inside: "(...) -> { ... }"
 
   # ── Python mutable default argument: shared across every call ────────────────
   - id: aegis-bug-mutable-default-arg

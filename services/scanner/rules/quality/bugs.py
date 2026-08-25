@@ -12,3 +12,23 @@ def good(a, items=None):
     items = items or []
     return items
 
+def branches(c):
+    # ruleid: aegis-bug-identical-if-else-branches-py
+    if c:
+        a()
+    else:
+        a()
+    # ok: aegis-bug-identical-if-else-branches-py
+    if c:
+        a()
+    else:
+        b()
+
+def branches_multi(c):
+    # ruleid: aegis-bug-identical-if-else-branches-py
+    if c:
+        a()
+        b()
+    else:
+        a()
+        b()

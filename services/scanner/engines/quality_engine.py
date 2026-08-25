@@ -41,8 +41,7 @@ _GOD_FUNC_NLOC = 500    # "god function" — far too large, high severity
 _MANY_PARAMS = 6        # parameter count considered a smell (>5)
 _MAX_NESTING = 4        # nesting depth beyond this is a smell
 _MAGIC_MIN = 6          # magic-number count per file before we flag it
-_CLONE_SEV_HIGH = 250   # clone token length -> high severity
-_CLONE_SEV_MEDIUM = 120 # clone token length -> medium severity
+_CLONE_SEV_HIGH = 250   # clone token length at/above which duplication is medium sev
 _MAX_FILE_BYTES = 1_500_000
 
 # "Unremarkable" numeric literals that are not magic numbers.
@@ -315,12 +314,11 @@ def _duplication_findings(clones: list[dict]) -> list[Finding]:
     out: list[Finding] = []
     for c in clones[:60]:
         tokens = c["tokens"]
-        if tokens >= _CLONE_SEV_HIGH:
-            severity = Severity.MEDIUM  # duplication is a maintainability, not a security, smell
-        elif tokens >= _CLONE_SEV_MEDIUM:
-            severity = Severity.LOW
-        else:
-            severity = Severity.LOW
+        # Duplication is a maintainability, not a security, smell — so even a large
+        # clone caps at medium; everything shorter is low. (Our own aegis-bug-
+        # identical-if-else-branches rule caught the previous elif/else here both
+        # assigning LOW — a dead branch; collapsed.)
+        severity = Severity.MEDIUM if tokens >= _CLONE_SEV_HIGH else Severity.LOW
         peers = c.get("peers") or []
         peer_txt = ("; also at " + ", ".join(peers)) if peers else ""
         out.append(
