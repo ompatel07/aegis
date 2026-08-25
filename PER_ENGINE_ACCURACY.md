@@ -411,3 +411,45 @@ Compliance grade is unaffected (bug CWEs 691/597/584/665 map to no SOC2 control;
 the compliance grade is driven by security-pillar findings). Maintainability is
 unaffected (bug findings come from the semgrep engine, not the quality engine's
 smell density).
+
+---
+
+## Quality pillar — real test coverage (Q1 Defect 2)
+
+Previously `test_coverage_score = 60.0 if has_tests else 0.0` — a coverage number
+**fabricated** from the mere presence of a test directory. That both credits a
+repo it shouldn't (any tests → 60%) and punishes one it shouldn't (no tests → 0%,
+dragging the composite down 15%). Killed.
+
+**Now:** coverage is parsed from a real report when one is shipped, else it is
+**UNKNOWN (None)** — never 0, never a constant. Parsed formats & locations
+(`quality_engine._coverage_percentage`, priority order): Istanbul
+`coverage-summary.json`, `lcov.info`, Cobertura `coverage.xml`, JaCoCo
+`jacoco.xml` (`target/site/jacoco/`, `build/reports/jacoco/`), Istanbul
+`coverage-final.json` (statement coverage), coverage.py `coverage.json`, Go
+`coverage.out` coverprofile — searched at repo root and under `coverage/`,
+`target/site/jacoco/`, `build/reports/`, `htmlcov/`, `.coverage/`.
+
+**Unknown is excluded, not zeroed.** When coverage is None the orchestrator's
+`QualityScore` drops the 0.15 coverage weight and **renormalizes** the remaining
+four metrics over their own weights (0.85), scoring only what we measured. Counting
+None as 0 would punish every repo that doesn't publish coverage. `has_tests`
+remains a separate, honest boolean ("are there tests at all") distinct from a
+coverage percentage. `QualityMetrics.test_coverage_score` is `float | None`
+(Python) / `*float64` (Go, JSON null round-trips).
+
+**Blast radius (5 validated repos — none ships a coverage report, so all → None):**
+
+| Repo | has_tests | coverage before → after | composite quality before → after | maintainability rating |
+|---|---|---|---|---|
+| whxitte/Project-Taaza | false | 0 → None | 57 → **67** | E → E |
+| mohaiminur/laundry | false | 0 → None | 58 → **68** | E → E |
+| booklore-app/booklore | true | 60 → None | 70 → **72** | C → C |
+| ryndngl/Salon | true | 60 → None | 56 → 56 | E → E |
+| The-Weirdos-NFT | true | 60 → None | 87 → **92** | A → A |
+
+Every shift is in the honest direction: no-test repos are no longer punished by a
+fabricated 0 (Taaza/laundry +10), test-bearing repos are no longer credited by a
+fabricated 60 (booklore +2, weirdos +5, salon net-neutral). No composite craters.
+Maintainability rating is coverage-independent (unchanged); compliance grade does
+not consume quality sub-scores (unchanged).

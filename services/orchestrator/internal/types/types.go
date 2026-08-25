@@ -89,8 +89,10 @@ type QualityMetrics struct {
 	ComplexityScore       float64 `json:"complexity_score"`
 	DuplicationScore      float64 `json:"duplication_score"`
 	MaintainabilityScore  float64 `json:"maintainability_score"`
-	TestCoverageScore     float64 `json:"test_coverage_score"`
-	DocumentationScore    float64 `json:"documentation_score"`
+	// nil = coverage not measured (no report shipped); excluded from the composite
+	// quality score rather than counted as 0. A pointer so JSON null round-trips.
+	TestCoverageScore     *float64 `json:"test_coverage_score"`
+	DocumentationScore    float64  `json:"documentation_score"`
 	AvgCyclomatic         float64 `json:"avg_cyclomatic_complexity"`
 	MaxCyclomatic         int     `json:"max_cyclomatic_complexity"`
 	DuplicatedLinePercent float64 `json:"duplicated_line_percentage"`

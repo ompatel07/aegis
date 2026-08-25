@@ -521,22 +521,126 @@ def _has_tests(files: list[tuple[str, str]]) -> bool:
     return False
 
 
-def _coverage_percentage(root: str) -> float | None:
-    """Best-effort: read a coverage summary if the project ships one."""
-    candidates = ["coverage/coverage-summary.json", "coverage-summary.json"]
-    for rel in candidates:
-        path = os.path.join(root, rel)
-        if os.path.isfile(path):
-            try:
-                import json
+# Coverage report locations we look for, in priority order, each paired with the
+# parser for its format. We report a coverage number ONLY when a real report is
+# found and parses; otherwise coverage is UNKNOWN (None) — never fabricated.
+_COVERAGE_CANDIDATES: list[tuple[str, str]] = [
+    ("coverage/coverage-summary.json", "istanbul_summary"),
+    ("coverage-summary.json", "istanbul_summary"),
+    ("coverage/lcov.info", "lcov"),
+    ("lcov.info", "lcov"),
+    ("coverage/lcov-report/lcov.info", "lcov"),
+    ("coverage/cobertura-coverage.xml", "cobertura"),
+    ("coverage.xml", "cobertura"),
+    ("cobertura.xml", "cobertura"),
+    ("coverage/cobertura.xml", "cobertura"),
+    ("target/site/jacoco/jacoco.xml", "jacoco"),
+    ("build/reports/jacoco/test/jacocoTestReport.xml", "jacoco"),
+    ("build/reports/jacoco/jacocoTestReport.xml", "jacoco"),
+    ("jacoco.xml", "jacoco"),
+    ("coverage/coverage-final.json", "istanbul_final"),
+    ("coverage-final.json", "istanbul_final"),
+    ("coverage.json", "coveragepy_json"),
+    (".coverage/coverage.json", "coveragepy_json"),
+    ("htmlcov/coverage.json", "coveragepy_json"),
+    ("coverage.out", "go_coverprofile"),
+    ("coverage.cov", "go_coverprofile"),
+]
 
-                with open(path, "r", encoding="utf-8") as fh:
-                    data = json.load(fh)
-                pct = data.get("total", {}).get("lines", {}).get("pct")
-                if isinstance(pct, (int, float)):
-                    return float(pct)
-            except (OSError, ValueError):
-                continue
+
+def _coverage_percentage(root: str) -> float | None:
+    """Real line/statement coverage from a shipped report, or None if unknown.
+
+    Parses lcov, Cobertura, JaCoCo, Istanbul (summary + final), coverage.py JSON
+    and Go coverprofile from their common locations. Returns None — NOT 0, NOT a
+    fabricated constant — when no parseable report exists, so the composite score
+    can exclude an unmeasured metric rather than punish it."""
+    for rel, fmt in _COVERAGE_CANDIDATES:
+        path = os.path.join(root, rel)
+        if not os.path.isfile(path):
+            continue
+        try:
+            pct = _parse_coverage_report(path, fmt)
+        except Exception as exc:  # noqa: BLE001 — a malformed report must not fail a scan
+            log.debug("coverage.parse_failed", path=path, fmt=fmt, error=str(exc))
+            continue
+        if pct is not None:
+            return _clamp(pct)
+    return None
+
+
+def _parse_coverage_report(path: str, fmt: str) -> float | None:
+    import json
+    import xml.etree.ElementTree as ET
+
+    if fmt == "istanbul_summary":
+        with open(path, encoding="utf-8") as fh:
+            pct = (json.load(fh).get("total", {}).get("lines", {}) or {}).get("pct")
+        return float(pct) if isinstance(pct, (int, float)) else None
+
+    if fmt == "lcov":
+        lf = lh = 0
+        with open(path, encoding="utf-8", errors="ignore") as fh:
+            for line in fh:
+                if line.startswith("LF:"):
+                    lf += int(line[3:].strip() or 0)
+                elif line.startswith("LH:"):
+                    lh += int(line[3:].strip() or 0)
+        return (lh / lf * 100.0) if lf else None
+
+    if fmt == "cobertura":
+        r = ET.parse(path).getroot()
+        lr = r.get("line-rate")
+        if lr is not None:
+            return float(lr) * 100.0
+        lc, lv = r.get("lines-covered"), r.get("lines-valid")
+        if lc and lv and int(lv):
+            return int(lc) / int(lv) * 100.0
+        return None
+
+    if fmt == "jacoco":
+        # Report-level LINE counter (direct child of <report>).
+        for c in ET.parse(path).getroot().findall("counter"):
+            if c.get("type") == "LINE":
+                covered = int(c.get("covered", 0))
+                total = covered + int(c.get("missed", 0))
+                return (covered / total * 100.0) if total else None
+        return None
+
+    if fmt == "istanbul_final":
+        with open(path, encoding="utf-8") as fh:
+            data = json.load(fh)
+        total = covered = 0
+        for fdata in data.values():
+            for hit in (fdata.get("s", {}) or {}).values():
+                total += 1
+                if isinstance(hit, (int, float)) and hit > 0:
+                    covered += 1
+        return (covered / total * 100.0) if total else None
+
+    if fmt == "coveragepy_json":
+        with open(path, encoding="utf-8") as fh:
+            pct = (json.load(fh).get("totals", {}) or {}).get("percent_covered")
+        return float(pct) if isinstance(pct, (int, float)) else None
+
+    if fmt == "go_coverprofile":
+        total = covered = 0
+        with open(path, encoding="utf-8", errors="ignore") as fh:
+            for line in fh:
+                if line.startswith("mode:") or not line.strip():
+                    continue
+                parts = line.rsplit(" ", 2)
+                if len(parts) != 3:
+                    continue
+                try:
+                    numstmt, count = int(parts[1]), int(parts[2])
+                except ValueError:
+                    continue
+                total += numstmt
+                if count > 0:
+                    covered += numstmt
+        return (covered / total * 100.0) if total else None
+
     return None
 
 
@@ -561,17 +665,17 @@ def _build_metrics(
     # Documentation: target ~15% comment density = full marks.
     documentation_score = _clamp((comment_density / 0.15) * 100.0)
 
-    # Coverage: use real % if known; otherwise a heuristic from test presence.
-    if coverage_pct is not None:
-        test_coverage_score = _clamp(coverage_pct)
-    else:
-        test_coverage_score = 60.0 if has_tests else 0.0
+    # Coverage: a real % ONLY when a coverage report was parsed. If none exists,
+    # coverage is UNKNOWN → None (never a fabricated 60 or a punitive 0). None is
+    # excluded from the composite quality score by the orchestrator, and
+    # `has_tests` carries the honest "are there tests at all" signal separately.
+    test_coverage_score = round(_clamp(coverage_pct), 2) if coverage_pct is not None else None
 
     return QualityMetrics(
         complexity_score=round(complexity_score, 2),
         duplication_score=round(duplication_score, 2),
         maintainability_score=round(maintainability_score, 2),
-        test_coverage_score=round(test_coverage_score, 2),
+        test_coverage_score=test_coverage_score,
         documentation_score=round(documentation_score, 2),
         avg_cyclomatic_complexity=round(avg_cc, 2),
         max_cyclomatic_complexity=max_cc,

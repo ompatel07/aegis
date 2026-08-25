@@ -131,7 +131,9 @@ class QualityMetrics(BaseModel):
     complexity_score: float = 0.0
     duplication_score: float = 0.0
     maintainability_score: float = 0.0
-    test_coverage_score: float = 0.0
+    # None = coverage not measured (no report shipped). Distinct from 0.0 (a report
+    # that says nothing is covered). Excluded from the composite score when None.
+    test_coverage_score: float | None = None
     documentation_score: float = 0.0
 
     avg_cyclomatic_complexity: float = 0.0

@@ -58,16 +58,34 @@ func TestSecurityScoreReachabilityWeighting(t *testing.T) {
 }
 
 func TestQualityScoreWeightedAverage(t *testing.T) {
+	cov := 0.0
 	m := &types.QualityMetrics{
-		ComplexityScore:      100, // *0.30
-		DuplicationScore:     100, // *0.20
-		MaintainabilityScore: 100, // *0.25
-		TestCoverageScore:    0,   // *0.15
-		DocumentationScore:   0,   // *0.10
+		ComplexityScore:      100,   // *0.30
+		DuplicationScore:     100,   // *0.20
+		MaintainabilityScore: 100,   // *0.25
+		TestCoverageScore:    &cov,  // *0.15  (measured: 0%)
+		DocumentationScore:   0,     // *0.10
 	}
-	// 30 + 20 + 25 + 0 + 0 = 75
+	// 30 + 20 + 25 + 0 + 0 = 75 (all five weights sum to 1.0)
 	if got := QualityScore(m); got != 75 {
 		t.Fatalf("QualityScore = %d, want 75", got)
+	}
+}
+
+// When coverage is unmeasured (nil) it is EXCLUDED and the remaining weights are
+// renormalized — not counted as 0, which would wrongly punish the score.
+func TestQualityScoreNilCoverageRenormalizes(t *testing.T) {
+	m := &types.QualityMetrics{
+		ComplexityScore:      100, // 0.30
+		DuplicationScore:     100, // 0.20
+		MaintainabilityScore: 100, // 0.25
+		TestCoverageScore:    nil, // unmeasured -> excluded
+		DocumentationScore:   0,   // 0.10
+	}
+	// Measured weight = 0.30+0.20+0.25+0.10 = 0.85; weighted = 0.30+0.20+0.25+0 = 0.75
+	// renormalized = 75/85 = 88.2 -> 88. (Counting coverage as 0 would give 75.)
+	if got := QualityScore(m); got != 88 {
+		t.Fatalf("QualityScore(nil coverage) = %d, want 88 (renormalized, not 75)", got)
 	}
 }
 
