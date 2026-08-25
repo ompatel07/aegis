@@ -25,6 +25,36 @@
 #     idiom is syntactically indistinguishable from a real self-assignment.
 #   - empty-catch: SonarQube classifies it as a code *smell* (S108), not a bug,
 #     and intentional `catch {/* ignore */}` blocks make it FP-prone.
+#   - js-assignment-in-condition (`if ($X = $Y)`): 17 FP / 0 TP — all jQuery's
+#     idiomatic `if ((elem = getX()))` truthiness assignments (ESLint no-cond-
+#     assign explicitly ALLOWS the double-paren form). Semgrep strips redundant
+#     parens, so `if ((x=y))` (intentional) is indistinguishable from `if (x=y)`
+#     (typo). Can't tighten → dropped.
+#   - js-async-foreach (async callback to `.forEach`): semgrep's `async (...) =>`
+#     pattern leaks onto non-async arrows (FP on a plain `forEach((x)=>{...})`),
+#     and the metavariable-pattern form fails to parse. No 0-FP formulation found.
+#   - java-discarded-string-result (`s.trim();` as a statement, Sonar S2201):
+#     semgrep matched the call as a SUB-expression too — FP on `s = s.trim();` and
+#     `f(s.trim())` where the result IS used. Can't anchor to expression-statement
+#     only in semgrep OSS.
+#   - go-copied-mutex (sync.Mutex/WaitGroup copied by value): needs type/field
+#     resolution to know a struct contains a lock — not available in semgrep OSS.
+#     (`go vet` catches it.) High-severity candidate once expressible.
+#   - go-defer-in-loop: intentional in short loops; FP-prone without flow scope.
+#   - go-loopvar-capture-in-goroutine: DELIBERATELY omitted — Go 1.22 changed
+#     loopvar semantics, so the same code is a bug pre-1.22 and correct after.
+#     Deciding requires parsing the `go` directive in go.mod (engine plumbing).
+#   - js-duplicate-object-keys / js-duplicate-case-labels: require cross-`...`
+#     key equality, which semgrep OSS cannot assert.
+#   - js-indexOf-gt-zero: `.indexOf(x) > 0` is legitimately "present after index 0"
+#     as often as it is an off-by-one; too FP-prone.
+#   - java-thread-run-instead-of-start / java-int-division-to-double: need type
+#     resolution (is it a Thread? are both operands int?) — not in semgrep OSS.
+#   - py-broad-except-before-narrow: ordering of except clauses is not expressible
+#     as a single AST pattern.
+#   - unreachable-code-after-return (cross-language): in JS a `function foo(){}`
+#     declaration after a return is HOISTED and legal, as are TS type/interface
+#     declarations; could not exclude them cleanly, so dropped.
 rules:
   # ── Identical if/else branches: the condition can't matter — a copy-paste bug ─
   # Semgrep has no block metavariable, but metavariable REUSE enforces equality,
@@ -213,3 +243,143 @@ rules:
           - pattern: "\"...\" == $X"
           - pattern: $X != "..."
           - pattern: "\"...\" != $X"
+
+  # ═══ Q2 Parts B–D: new bug rules (validated 0-FP on 9 repos: the 5 Q1 repos +
+  # this repo's Go/Python + gin + cobra + requests) ═══════════════════════════
+
+  # ── Go: deref of a value before its error is checked → guaranteed nil panic ──
+  # HIGH-severity candidate (guaranteed panic) for the future severity ladder.
+  - id: aegis-bug-go-nil-deref-before-err-check
+    languages: [go]
+    severity: WARNING
+    message: >-
+      This defers a method call on a value that is used BEFORE its error is
+      checked. When the call returns an error the value is typically nil, so the
+      deferred call dereferences nil and panics. Check `err != nil` and return
+      before deferring on the result.
+    metadata:
+      pillar: quality
+      issue_type: bug
+      category: correctness
+      cwe:
+        - "CWE-476: NULL Pointer Dereference"
+      references:
+        - https://staticcheck.dev/docs/checks#SA5001
+    patterns:
+      - pattern-either:
+          - pattern: |
+              $R, $ERR := $CALL(...)
+              defer $R.$M(...)
+          - pattern: |
+              $R, $ERR := $CALL(...)
+              defer $R.$F.$M(...)
+      - metavariable-regex: {metavariable: $ERR, regex: '^(err|e)$'}
+
+  # ── Go: WaitGroup.Add() inside the goroutine it counts → races with Wait() ───
+  - id: aegis-bug-go-waitgroup-add-in-goroutine
+    languages: [go]
+    severity: WARNING
+    message: >-
+      `WaitGroup.Add()` is called inside the goroutine it is meant to count. Add()
+      must run before the goroutine starts; calling it inside races with Wait(),
+      which may return before the goroutine is counted. Call Add() before `go`.
+    metadata:
+      pillar: quality
+      issue_type: bug
+      category: concurrency
+      cwe:
+        - "CWE-362: Concurrent Execution using Shared Resource with Improper Synchronization"
+      references:
+        - https://pkg.go.dev/sync#WaitGroup.Add
+    patterns:
+      - pattern: |
+          go func() {
+            ...
+            $WG.Add(...)
+            ...
+          }()
+
+  # ── JS/TS: `.length < 0` is always false — the guard never triggers ──────────
+  - id: aegis-bug-js-length-lt-zero
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: >-
+      `.length` is never negative, so `.length < 0` is always false and this
+      branch is dead. You almost certainly meant `=== 0` (empty) or `> 0`
+      (non-empty).
+    metadata:
+      pillar: quality
+      issue_type: bug
+      category: correctness
+      cwe:
+        - "CWE-570: Expression is Always False"
+    patterns:
+      - pattern: $X.length < 0
+
+  # ── JS/TS: typeof compared to a value that typeof never returns → always false ─
+  - id: aegis-bug-js-typeof-invalid-comparison
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: >-
+      `typeof` never returns this string (valid results are undefined/object/
+      boolean/number/string/function/symbol/bigint), so the comparison is always
+      false. E.g. arrays are `"object"`, not `"array"`; check `Array.isArray(x)`.
+    metadata:
+      pillar: quality
+      issue_type: bug
+      category: correctness
+      cwe:
+        - "CWE-570: Expression is Always False"
+      references:
+        - https://rules.sonarsource.com/javascript/RSPEC-3403/
+    patterns:
+      - pattern-either:
+          - pattern: typeof $X === "array"
+          - pattern: typeof $X == "array"
+          - pattern: typeof $X === "null"
+          - pattern: typeof $X == "null"
+          - pattern: typeof $X === "String"
+          - pattern: typeof $X === "Number"
+          - pattern: typeof $X === "Boolean"
+          - pattern: typeof $X === "integer"
+          - pattern: typeof $X === "float"
+          - pattern: typeof $X === "undefinded"
+          - pattern: typeof $X === "funtion"
+
+  # ── Python: identity comparison (`is`) against a literal → interning accident ─
+  - id: aegis-bug-py-is-literal-comparison
+    languages: [python]
+    severity: WARNING
+    message: >-
+      `is` / `is not` against a literal compares object identity, not value, and
+      is true only by CPython interning accident (and warns in 3.8+). Use `==`.
+    metadata:
+      pillar: quality
+      issue_type: bug
+      category: correctness
+      cwe:
+        - "CWE-480: Use of Incorrect Operator"
+      references:
+        - https://docs.python.org/3/reference/expressions.html#is
+    patterns:
+      - pattern-either:
+          - pattern: $X is "..."
+          - pattern: $X is not "..."
+
+  # ── Python: assert on a tuple literal → non-empty tuple is always truthy ──────
+  - id: aegis-bug-py-assert-on-tuple
+    languages: [python]
+    severity: WARNING
+    message: >-
+      `assert (cond, "msg")` asserts a 2-tuple, which is always truthy, so the
+      assertion never fires. Drop the parentheses: `assert cond, "msg"`.
+    metadata:
+      pillar: quality
+      issue_type: bug
+      category: correctness
+      cwe:
+        - "CWE-670: Always-Incorrect Control Flow Implementation"
+      references:
+        - https://rules.sonarsource.com/python/RSPEC-5905/
+    patterns:
+      - pattern: assert ($A, $B)

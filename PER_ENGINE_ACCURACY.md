@@ -489,3 +489,53 @@ branch (the `_CLONE_SEV_MEDIUM` tier never mattered). Our own new rule caught it
 collapsed to `MEDIUM if tokens >= _CLONE_SEV_HIGH else LOW` (behavior-preserving)
 and removed the dead constant. The 5 Q1 repos are unchanged (salon 1 TP, rest 0);
 reliability unchanged (salon C, rest A).
+
+---
+
+## Quality bug pack — Q2 Parts B–D (inventory depth)
+
+Q1 shipped 4 rules; an "A" reliability meant "we have four rules". This pass grew
+the pack to **13 rules across 5 languages** (all AST/Semgrep, all fixture-proven
+for recall, all gated to **zero FP** across 9 repos), so an "A" now means "13
+rules across Go/JS/TS/Java/Python found nothing".
+
+**New rules shipped (all WARNING → medium):**
+
+| Rule | Lang | Bug |
+|---|---|---|
+| `aegis-bug-go-nil-deref-before-err-check` | Go | defer a method on a value used before its `err` is checked → nil panic. *High-severity candidate.* |
+| `aegis-bug-go-waitgroup-add-in-goroutine` | Go | `WaitGroup.Add()` inside the goroutine it counts → races with `Wait()` |
+| `aegis-bug-js-length-lt-zero` | js/ts | `.length < 0` is always false |
+| `aegis-bug-js-typeof-invalid-comparison` | js/ts | `typeof` vs a string it never returns (`"array"`, …) — always false (S3403) |
+| `aegis-bug-py-is-literal-comparison` | py | `is`/`is not` against a literal — identity, not value |
+| `aegis-bug-py-assert-on-tuple` | py | `assert (cond, "msg")` — a non-empty tuple is always truthy (S5905) |
+
+Plus the Part A variants: `identical-if-else-branches-{go,py}`,
+`return-in-finally-java`. Full DROPPED list (with FP counts / reasons) lives at
+the top of `bugs.yaml` — the js-assignment-in-condition drop is the notable one:
+17 FP on jQuery's idiomatic `if ((elem = getX()))` truthiness assignments, which
+semgrep can't distinguish from the `if (x = y)` typo (it strips redundant parens).
+
+**Success metric — bug findings & reliability, before Q2 (4 rules) vs after (13):**
+
+| Repo | Language | bugs before → after | reliability before → after |
+|---|---|---|---|
+| whxitte/Project-Taaza | PHP | 0 → 0 | A → A |
+| mohaiminur/laundry | PHP | 0 → 0 | A → A |
+| booklore-app/booklore | Angular+Java | 0 → 0 | A → A |
+| ryndngl/Salon | Electron/React | 1 → 1 | C → C |
+| The-Weirdos-NFT | React | 0 → 0 | A → A |
+| this repo — orchestrator+API | Go | 0 → 0 | A → A |
+| this repo — scanner | Python | 0 → 0 | A → A |
+| gin-gonic/gin | Go | 0 → 0 | A → A |
+| spf13/cobra | Go | 0 → 0 | A → A |
+| psf/requests | Python | 0 → 0 | A → A |
+
+Repos with Reliability ≠ A: **1 (salon)** — unchanged. That is the honest result:
+the new rules add recall for bug classes these particular repos don't contain, so
+on clean/mature code the yield is 0 (a precision pass, per the gate: "mature repos
+test precision — near-zero is a pass, not a failure"). The letter is the same for
+9 of 10 repos, but the confidence behind an "A" is now 13 AST rules deep, not 4.
+Composite quality scores unchanged (bug findings are semgrep-pillar; they don't
+feed the quality composite). No security finding was reclassified as bug
+(pillar-gated + test-enforced); the Q1 four rules behave identically.

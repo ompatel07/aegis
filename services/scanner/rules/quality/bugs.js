@@ -53,3 +53,19 @@ function okFinally() {
   try { r = risky(); } finally { cleanup(); }
   return r;
 }
+
+function lengthCheck(a) {
+  // ruleid: aegis-bug-js-length-lt-zero
+  if (a.length < 0) return true;
+  // ok: aegis-bug-js-length-lt-zero
+  if (a.length === 0) return false;
+  return null;
+}
+
+function typeofCheck(x) {
+  // ruleid: aegis-bug-js-typeof-invalid-comparison
+  if (typeof x === "array") return 1;
+  // ok: aegis-bug-js-typeof-invalid-comparison
+  if (typeof x === "string") return 2;
+  return 0;
+}

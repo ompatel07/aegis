@@ -91,6 +91,12 @@ def test_bug_pack_loads_into_quality_bug_rules():
         "aegis-bug-return-in-finally-java",
         "aegis-bug-mutable-default-arg",
         "aegis-bug-java-string-literal-equality",
+        "aegis-bug-go-nil-deref-before-err-check",
+        "aegis-bug-go-waitgroup-add-in-goroutine",
+        "aegis-bug-js-length-lt-zero",
+        "aegis-bug-js-typeof-invalid-comparison",
+        "aegis-bug-py-is-literal-comparison",
+        "aegis-bug-py-assert-on-tuple",
     ):
         assert rid in rules, f"{rid} not loaded from bugs.yaml"
     # Dropped rule must NOT be present.

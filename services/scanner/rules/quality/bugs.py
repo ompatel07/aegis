@@ -32,3 +32,20 @@ def branches_multi(c):
     else:
         a()
         b()
+
+
+def is_literal(x):
+    # ruleid: aegis-bug-py-is-literal-comparison
+    if x is "admin":
+        return 1
+    # ok: aegis-bug-py-is-literal-comparison
+    if x == "admin":
+        return 2
+    return 0
+
+
+def assert_tuple(cond):
+    # ruleid: aegis-bug-py-assert-on-tuple
+    assert (cond, "must be true")
+    # ok: aegis-bug-py-assert-on-tuple
+    assert cond, "must be true"
