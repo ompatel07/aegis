@@ -349,3 +349,65 @@ sca,secrets,quality,deployment}`; existing harnesses in
 [`benchmarks/comparative/`](benchmarks/comparative/) and
 [`benchmarks/iac/`](benchmarks/iac/); intelligence checks are DB queries against
 `intelligence_sync_log` / `cve_database` / `scans.needs_reeval`.
+
+---
+
+## Quality pillar — reliability-bug pack (Q1)
+
+Powers the SonarQube-style **Reliability** rating, which was previously a
+hardcoded `A` for 100% of scans (`_QUALITY_BUG_RULES` was an empty set, so no
+finding could ever be typed `issue_type=bug`). A "bug" is the highest-trust-cost
+claim we make — "your code is wrong", not "this is a smell" — so every rule runs
+on Semgrep's **real grammar** (never regex/line heuristics, the source of our
+last three FP incidents f221bd2 / 43bc13f / 299c2e1) and is gated to **zero FP**
+on the five validated repos before shipping.
+
+**Pack:** `services/scanner/rules/quality/bugs.yaml`. Each rule carries
+`metadata.pillar=quality` (routes it to the QUALITY pillar in
+`semgrep_engine._parse`, not security) and `metadata.issue_type=bug`
+(`enricher._QUALITY_BUG_RULES` is loaded from this pack at import — single source
+of truth, never hand-maintained).
+
+**Severity cap:** no rule emits `ERROR`, so the normalizer's worst output is
+`medium` (WARNING). One reliability bug therefore caps a repo's Reliability
+rating at **C**, never D/E, on day one. `high` (→ D) and any critical (→ E) are
+reserved for a future, separately-proven pack of genuine crash / data-loss rules.
+
+| Rule | Languages | Semgrep severity → ours | Bug class |
+|---|---|---|---|
+| `aegis-bug-identical-if-else-branches` | js, ts, php | WARNING → medium | both branches run the same statement — condition is dead (copy-paste bug) |
+| `aegis-bug-return-in-finally` | js, ts, java | WARNING → medium | `return` in `finally` silently discards exceptions |
+| `aegis-bug-mutable-default-arg` | python | WARNING → medium | mutable default (`[]`/`{}`/`set()`) shared across calls |
+| `aegis-bug-java-string-literal-equality` | java | WARNING → medium | `==`/`!=` against a String literal (reference, not value, equality) |
+
+**Dropped at the 0-FP gate (do not re-add without new evidence):**
+- `aegis-bug-self-assignment` (`$X = $X`): **48 FP / 0 TP** across the five repos.
+  `readonly EntityType = EntityType;` is the Angular template-exposure idiom (LHS
+  is a new class field, RHS the imported enum), `$s = (string)$s;` is a PHP
+  defensive cast, `a = b = c` is a JS chained assignment — all textually `X = X`,
+  none bugs, and the Angular form is *syntactically indistinguishable* from a
+  real self-assignment.
+- `empty catch/except`: SonarQube classifies it as a code **smell** (S108), not a
+  bug; intentional `catch {/* ignore */}` blocks make it FP-prone.
+- `unreachable-after-return`, `assignment-in-condition`: deferred — semgrep
+  statement-sequencing / intentional-assignment (`while ((l = read()) != null)`)
+  make a 0-FP form non-trivial; not shipped until proven.
+- duplicate object keys / case labels, Go `_ = err` discard/shadow: not precisely
+  expressible in semgrep OSS without cross-`...` equality or type/flow info.
+
+**Validation (bug findings per repo, zero FP):**
+
+| Repo | Language | `aegis-bug-*` findings | Reliability before → after |
+|---|---|---|---|
+| whxitte/Project-Taaza | PHP | 0 | A → A |
+| mohaiminur/laundry | PHP | 0 | A → A |
+| booklore-app/booklore | Angular + Java | 0 | A → A |
+| ryndngl/Salon_Desktop_App_Client | Electron/React | 1 (true positive) | A → **C** |
+| The-Weirdos-NFT | React | 0 | A → A |
+
+The one finding — `salon/src/main/main.js:101`, `if (response.ok) { return result; }
+else { return result; }` — is a genuine bug (the `response.ok` check is dead).
+Compliance grade is unaffected (bug CWEs 691/597/584/665 map to no SOC2 control;
+the compliance grade is driven by security-pillar findings). Maintainability is
+unaffected (bug findings come from the semgrep engine, not the quality engine's
+smell density).

@@ -1,0 +1,126 @@
+# Aegis reliability-bug rules (quality pillar, issue_type=bug).
+#
+# These power the SonarQube-style Reliability rating. A "bug" is the highest-
+# trust-cost claim we make — "your code is wrong", not "this is a smell" — so
+# every rule here runs on Semgrep's real grammar (never regex/line heuristics)
+# and is gated to ZERO false positives on our validated repos before shipping.
+#
+# SEVERITY CAP (see PER_ENGINE_ACCURACY.md): no rule here emits ERROR, so the
+# worst our normalizer produces is `medium` (WARNING) — never high/critical.
+# One reliability bug therefore caps a repo's Reliability rating at C, never
+# D/E, on day one. `high` is reserved for a future, separately-proven pack of
+# genuine crash / data-loss rules.
+#
+# Routing: metadata.pillar=quality sends these to the QUALITY pillar (not
+# security) in semgrep_engine._parse; metadata.issue_type=bug is loaded into
+# enrichment.enricher._QUALITY_BUG_RULES at import so _classify_issue_type tags
+# them issue_type=bug. bugs.yaml is the single source of truth for both.
+#
+# DROPPED (failed the 0-FP gate, documented in PER_ENGINE_ACCURACY.md):
+#   - aegis-bug-self-assignment (`$X = $X`): 48 FP / 0 TP across the 5 validated
+#     repos. `readonly EntityType = EntityType;` is the Angular template-exposure
+#     idiom (LHS is a new class field, RHS the imported enum — not a self-assign),
+#     `$s = (string)$s;` is a PHP defensive cast, `a = b = c` is a JS chained
+#     assignment. All are textually `X = X` yet none are bugs, and the Angular
+#     idiom is syntactically indistinguishable from a real self-assignment.
+#   - empty-catch: SonarQube classifies it as a code *smell* (S108), not a bug,
+#     and intentional `catch {/* ignore */}` blocks make it FP-prone.
+rules:
+  # ── Identical if/else branches: the condition can't matter — a copy-paste bug ─
+  - id: aegis-bug-identical-if-else-branches
+    languages: [javascript, typescript, php]
+    severity: WARNING
+    message: >-
+      Both the `if` and the `else` branch run the exact same statement, so the
+      condition has no effect. One branch was almost certainly meant to differ —
+      a classic copy-paste bug that silently produces the wrong behaviour.
+    metadata:
+      pillar: quality
+      issue_type: bug
+      category: correctness
+      cwe:
+        - "CWE-691: Insufficient Control Flow Management"
+      references:
+        - https://rules.sonarsource.com/java/RSPEC-1871/
+    patterns:
+      - pattern: if ($C) { $S } else { $S }
+
+  # ── return in finally: silently discards any exception in the try block ──────
+  - id: aegis-bug-return-in-finally
+    languages: [javascript, typescript, java]
+    severity: WARNING
+    message: >-
+      A `return` inside a `finally` block discards any exception thrown in the
+      `try`/`catch` — the error is swallowed and never propagates. Move the
+      return out of `finally`; use it only for cleanup.
+    metadata:
+      pillar: quality
+      issue_type: bug
+      category: correctness
+      cwe:
+        - "CWE-584: Return Inside Finally Block"
+      references:
+        - https://rules.sonarsource.com/java/RSPEC-1143/
+    patterns:
+      - pattern-either:
+          - pattern: |
+              try { ... } finally { ... return ...; ... }
+          - pattern: |
+              try { ... } catch (...) { ... } finally { ... return ...; ... }
+
+  # ── Python mutable default argument: shared across every call ────────────────
+  - id: aegis-bug-mutable-default-arg
+    languages: [python]
+    severity: WARNING
+    message: >-
+      A mutable value (list/dict/set) as a default argument is created once and
+      shared across every call, so mutations leak between calls. Use `None` as
+      the default and build the container inside the function.
+    metadata:
+      pillar: quality
+      issue_type: bug
+      category: correctness
+      cwe:
+        - "CWE-665: Improper Initialization"
+      references:
+        - https://docs.python-guide.org/writing/gotchas/#mutable-default-arguments
+    patterns:
+      - pattern-either:
+          - pattern: |
+              def $F(..., $A=[], ...):
+                ...
+          - pattern: |
+              def $F(..., $A={}, ...):
+                ...
+          - pattern: |
+              def $F(..., $A=set(), ...):
+                ...
+          - pattern: |
+              def $F(..., $A=list(), ...):
+                ...
+          - pattern: |
+              def $F(..., $A=dict(), ...):
+                ...
+
+  # ── Java: reference equality against a String literal (should be .equals) ────
+  - id: aegis-bug-java-string-literal-equality
+    languages: [java]
+    severity: WARNING
+    message: >-
+      `==` / `!=` against a String literal compares object references, not
+      contents, so it is true only by interning accident and usually wrong. Use
+      `.equals()` (or `"literal".equals(x)` to be null-safe).
+    metadata:
+      pillar: quality
+      issue_type: bug
+      category: correctness
+      cwe:
+        - "CWE-597: Use of Wrong Operator in String Comparison"
+      references:
+        - https://rules.sonarsource.com/java/RSPEC-4973/
+    patterns:
+      - pattern-either:
+          - pattern: $X == "..."
+          - pattern: "\"...\" == $X"
+          - pattern: $X != "..."
+          - pattern: "\"...\" != $X"

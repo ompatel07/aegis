@@ -90,11 +90,35 @@ def enrich_all(findings: list[Finding], root: str = "") -> list[Finding]:
     return findings
 
 
-# Quality rules that represent a genuine crash/logic-reliability risk (SonarQube
-# "Bug"), as opposed to maintainability smells. Precision-first: when unsure
-# between Bug and Code Smell, we keep Code Smell to avoid false alarms — so this
-# set is deliberately empty until a clearly bug-class quality rule exists.
-_QUALITY_BUG_RULES: set[str] = set()
+# Quality-pillar rules that represent a genuine reliability *bug* (SonarQube
+# "Bug"), as opposed to a maintainability smell. Loaded ONCE from the bundled
+# rules/quality/*.yaml pack (single source of truth — never hand-maintained here)
+# so a finding whose rule declares metadata.issue_type=bug is tagged issue_type=
+# "bug" and drives the Reliability rating. Precision-first: when a quality rule is
+# not in this set, it stays a code_smell.
+def _load_quality_bug_rules() -> set[str]:
+    ids: set[str] = set()
+    rules_dir = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "rules", "quality"
+    )
+    try:
+        import yaml
+
+        for name in os.listdir(rules_dir):
+            if not name.endswith((".yaml", ".yml")):
+                continue
+            with open(os.path.join(rules_dir, name), encoding="utf-8") as fh:
+                doc = yaml.safe_load(fh) or {}
+            for rule in doc.get("rules", []) or []:
+                meta = rule.get("metadata") or {}
+                if meta.get("issue_type") == "bug" and rule.get("id"):
+                    ids.add(str(rule["id"]))
+    except Exception as exc:  # noqa: BLE001 — a missing/broken pack must not break scans
+        log.debug("enrichment.bug_rule_load_failed", error=str(exc))
+    return ids
+
+
+_QUALITY_BUG_RULES: set[str] = _load_quality_bug_rules()
 
 
 def _classify_issue_type(f: Finding) -> None:

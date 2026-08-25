@@ -76,6 +76,14 @@ _IAC_RULES_DIR = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "rules", "iac"
 )
 
+# Aegis reliability-bug rules (Q1): aegis-bug-* patterns that assert "your code is
+# wrong" on a real grammar. They carry metadata.pillar=quality so _parse routes
+# them to the QUALITY pillar (not security), where the enricher tags them
+# issue_type=bug and they drive the SonarQube-style Reliability rating.
+_QUALITY_RULES_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "rules", "quality"
+)
+
 
 def _select_configs(settings: Settings, languages: list[str], project_types: list[str]) -> list[str]:
     """Build the ordered, de-duplicated `--config` list for this scan."""
@@ -334,8 +342,9 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
 
     ai_code_dir = _bundled_rules_dir(_AI_CODE_RULES_DIR)
     iac_dir = _bundled_rules_dir(_IAC_RULES_DIR)
+    quality_dir = _bundled_rules_dir(_QUALITY_RULES_DIR)
     bundled = (([custom_dir] if custom_dir else []) + ([ai_code_dir] if ai_code_dir else [])
-               + ([iac_dir] if iac_dir else []))
+               + ([iac_dir] if iac_dir else []) + ([quality_dir] if quality_dir else []))
     configs = registry_configs + bundled
     rule_pack_version = _rule_pack_version(configs, req.custom_rules)
 
@@ -513,6 +522,11 @@ def _parse(raw: dict, root: str) -> list[Finding]:
             else "registry"
         )
 
+        # Route by the rule's declared pillar: aegis-bug-* quality rules carry
+        # metadata.pillar=quality and belong to the QUALITY pillar (reliability
+        # bugs), not security. Everything else stays a security finding.
+        rule_pillar = Pillar.QUALITY if metadata.get("pillar") == "quality" else Pillar.SECURITY
+
         severity = normalizer.normalize_semgrep_severity(extra.get("severity", ""), metadata)
         cwe_id = normalizer.extract_cwe(metadata)
         # Steps-to-reproduce from Semgrep's taint dataflow trace (Phase 2E Task 1).
@@ -521,7 +535,7 @@ def _parse(raw: dict, root: str) -> list[Finding]:
 
         findings.append(
             Finding(
-                pillar=Pillar.SECURITY,
+                pillar=rule_pillar,
                 engine=Engine.SEMGREP,
                 rule_id=rule_id,
                 rule_name=normalizer.truncate(rule_short, 500) or rule_short,
