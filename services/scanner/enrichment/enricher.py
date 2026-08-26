@@ -86,6 +86,15 @@ def enrich_all(findings: list[Finding], root: str = "") -> list[Finding]:
         _tag_ownership(f, vendored)
         _classify_issue_type(f)
     _attach_snippets(findings, root)
+    # Down-rank test-fixture / placeholder / expired secrets (precision S1). Runs
+    # after snippets so the bcrypt fallback value is populated; never suppresses,
+    # only caps at LOW + tags. A live-format provider credential is left untouched.
+    try:
+        from enrichment import secret_context
+
+        secret_context.annotate(findings)
+    except Exception as exc:  # noqa: BLE001 — a tagging pass must never fail a scan
+        log.debug("enrichment.secret_context_failed", error=str(exc))
     _score_false_positives(findings)
     return findings
 

@@ -55,7 +55,10 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
             "--report-format", "json",
             "--report-path", report_path,
             "--no-banner",
-            "--redact",            # redact secret values in the report
+            # NOTE: intentionally NOT --redact. The secret-context pass
+            # (enrichment.secret_context) must see the real value to check JWT
+            # expiry, placeholder shape, and live-provider format; it re-redacts
+            # the value immediately after classifying, so no raw secret is stored.
             "--exit-code", "0",    # findings are not an error for our purposes
         ]
         # Layer Aegis's custom rules on top of the defaults when the config ships
