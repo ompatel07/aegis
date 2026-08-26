@@ -44,3 +44,7 @@ Thumbs.db
 
 # Docker
 **/.docker/
+
+# Validation Run V1 raw audit JSON (large; regenerate via scripts/validation_v1_driver.py)
+docs/validation_v1/*.json
+docs/validation_v1/_auto_report.md
