@@ -91,7 +91,10 @@ def test_dedup_semgrep_rules_removed():
     them, or the same bug would be reported twice."""
     import yaml
 
-    with open(os.path.join(os.path.dirname(ruff_engine._MAP_PATH), "bugs.yaml"),
+    # bugs.yaml lives under rules/quality/; ruff_map.yaml lives under config/ (it
+    # is NOT a semgrep rule file and must stay out of semgrep-loaded dirs).
+    scanner_dir = os.path.dirname(os.path.dirname(ruff_engine._MAP_PATH))
+    with open(os.path.join(scanner_dir, "rules", "quality", "bugs.yaml"),
               encoding="utf-8") as fh:
         doc = yaml.safe_load(fh)
     semgrep_ids = {r["id"] for r in doc["rules"]}

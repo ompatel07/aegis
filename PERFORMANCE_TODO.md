@@ -119,3 +119,41 @@ down-weighted (you fix your own bug; you *update* a bundled library) — is **de
 by decision until scoring is reviewed holistically** (alongside reachability
 weighting and any other score levers), so score numbers aren't changed piecemeal. No
 action until that review. (See `VALIDATION_REPORT.md`, Gap 2.)
+
+---
+
+## Validation Run V1 findings (2026-08-26) — new items
+
+### P0 (correctness / observability) — silent custom-rule degradation
+**Do not fix during V1; fix after.** V1 discovered that a non-rule YAML placed in
+a semgrep-loaded directory (`config/ruff_map.yaml`, then under `rules/quality/`)
+made `semgrep --config rules/quality` exit 2. The semgrep engine's fallback then
+retried with **registry packs only**, silently dropping the custom taint engine +
+the reliability bug pack — yet the scan still reported `status=completed` with no
+degraded signal to the API, UI, or report. It was invisible for 7 repos and only
+caught by inspecting `ruleset` on findings.
+
+The **packaging trigger** is fixed (ruff_map.yaml moved to `config/`, guarded by
+`test_custom_pack_loads.py`). The **behaviour** is NOT fixed and is the P0: a
+custom-rule load failure must surface an explicit **degraded-scan state**
+(`status=degraded` + which packs were dropped) propagated to the scan record /
+API / UI, so a silent fallback can never again pass as a clean scan. Any future
+non-rule file, rule syntax error, or registry outage should trip it.
+
+### Perf item — SAST internal 600s timeout on large TypeScript
+`documenso` (230k LOC) and `formbricks` (454k LOC) both hit the scanner's internal
+600s semgrep timeout → SAST `status=failed`, 0 findings, entire security pillar
+lost. `outline` (304k LOC) completed at 437s — borderline. Large TS/Next.js is the
+worst case. Feeds Item 1 (semgrep efficiency) + consider per-language time budgets.
+
+### Perf item — subprocess fork/exec failure under memory pressure
+`akaunting` (231k LOC PHP): after a heavy 212s SAST run, the next engines' trivy
+and gitleaks `subprocess` spawns failed with `FileNotFoundError` (fork/exec under
+low free RAM; binaries were present, no OOM-kill). Cascade of engine failures that
+looked like "binary not found". Needs: a scanner memory floor, or serialized heavy
+subprocess spawns, or a spawn-failure retry/backoff — and a distinct error, not a
+generic failure.
+
+### Data point — quality engine wall time
+`snipe-it` (600k LOC PHP): quality engine (lizard/radon/duplication) took ~22 min.
+Duplication detection is the long pole on very large repos.

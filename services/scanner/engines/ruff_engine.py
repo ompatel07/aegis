@@ -10,7 +10,7 @@ Boundaries enforced here:
   * `--isolated` — ignore the customer's pyproject.toml / ruff.toml so their
     config can neither silence our findings nor enable rules we did not audit.
   * `--select <explicit codes>` — ONLY the hand-picked allowlist in
-    rules/quality/ruff_map.yaml. Never a whole category.
+    config/ruff_map.yaml. Never a whole category.
   * `--no-cache` — byte-identical repeat scans (Hardening Pass 1 determinism).
 
 Findings are first-class quality-pillar findings: pillar=quality, engine=ruff,
@@ -33,8 +33,13 @@ from utils.sandbox import binary_available, run_command
 
 log = get_logger("ruff")
 
+# NOTE: this file lives in services/scanner/config/, NOT under rules/quality/.
+# semgrep loads rules/quality/ wholesale as a rule pack, and ruff_map.yaml is not
+# a semgrep rule file — placing it there made `--config rules/quality` exit 2,
+# which silently degraded every SAST scan to registry-packs-only (custom taint +
+# bug pack dropped). Keep this map outside any semgrep-loaded directory.
 _MAP_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                         "rules", "quality", "ruff_map.yaml")
+                         "config", "ruff_map.yaml")
 
 _SEVERITY = {
     "critical": Severity.CRITICAL, "high": Severity.HIGH, "medium": Severity.MEDIUM,
