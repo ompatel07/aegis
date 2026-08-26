@@ -10,6 +10,7 @@ ENV PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     TRIVY_VERSION=0.71.2 \
     GITLEAKS_VERSION=8.21.2 \
+    RUFF_VERSION=0.8.6 \
     GO_VERSION=1.22.10 \
     NODE_MAJOR=20 \
     JOERN_VERSION=4.0.570 \
@@ -24,8 +25,8 @@ RUN set -eux; \
     # Resolve arch-specific asset names once.
     arch="$(dpkg --print-architecture)"; \
     case "$arch" in \
-        amd64) gl_arch="x64";   go_arch="amd64"; trivy_arch="Linux-64bit" ;; \
-        arm64) gl_arch="arm64"; go_arch="arm64"; trivy_arch="Linux-ARM64" ;; \
+        amd64) gl_arch="x64";   go_arch="amd64"; trivy_arch="Linux-64bit"; ruff_arch="x86_64" ;; \
+        arm64) gl_arch="arm64"; go_arch="arm64"; trivy_arch="Linux-ARM64"; ruff_arch="aarch64" ;; \
         *) echo "unsupported arch: $arch" >&2; exit 1 ;; \
     esac; \
     \
@@ -40,6 +41,17 @@ RUN set -eux; \
         -o /tmp/gitleaks.tar.gz; \
     tar -xzf /tmp/gitleaks.tar.gz -C /usr/local/bin gitleaks; \
     rm /tmp/gitleaks.tar.gz; \
+    \
+    # Ruff (pinned static Rust binary — type-aware Python bug source, Q3). Needs
+    # no Python env and no installed deps, so it never builds/executes customer
+    # code. Version is pinned for determinism (must equal ruff_version in
+    # rules/quality/ruff_map.yaml). Tarball nests the binary one dir deep.
+    curl -fsSL "https://github.com/astral-sh/ruff/releases/download/${RUFF_VERSION}/ruff-${ruff_arch}-unknown-linux-gnu.tar.gz" \
+        -o /tmp/ruff.tar.gz; \
+    tar -xzf /tmp/ruff.tar.gz -C /usr/local/bin --strip-components=1 \
+        "ruff-${ruff_arch}-unknown-linux-gnu/ruff"; \
+    rm /tmp/ruff.tar.gz; \
+    ruff --version; \
     \
     # Go (for `go build` deployment checks + Go projects).
     curl -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-${go_arch}.tar.gz" -o /tmp/go.tar.gz; \

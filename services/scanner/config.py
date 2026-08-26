@@ -34,6 +34,9 @@ class Settings(BaseSettings):
     semgrep_jobs: int = 0
     trivy_bin: str = "trivy"
     gitleaks_bin: str = "gitleaks"
+    # Ruff — type-aware Python bug source for the quality pillar (Q3). A single
+    # static Rust binary: no Python env, no installed deps, no code execution.
+    ruff_bin: str = "ruff"
     # Deep-scan backends. Joern (Apache-2.0) is bundled; codeql is opt-in and
     # only used where the customer has installed the CLI under their own license.
     joern_bin: str = "joern"
@@ -60,6 +63,7 @@ class Settings(BaseSettings):
     trivy_timeout_seconds: int = 600
     gitleaks_timeout_seconds: int = 300
     quality_timeout_seconds: int = 300
+    ruff_timeout_seconds: int = 300
     deployment_timeout_seconds: int = 900
     deep_scan_timeout_seconds: int = 1800  # CPG build + dataflow is slow
 

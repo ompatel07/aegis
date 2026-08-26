@@ -25,6 +25,17 @@
 #     idiom is syntactically indistinguishable from a real self-assignment.
 #   - empty-catch: SonarQube classifies it as a code *smell* (S108), not a bug,
 #     and intentional `catch {/* ignore */}` blocks make it FP-prone.
+#
+# DEDUP — superseded by Ruff (Q3), which has a real Python semantic engine where
+# ours was only a pattern. When two engines detect the same defect we report it
+# ONCE. Removed the Semgrep versions; the SAME aegis_rule_ids are now produced by
+# Ruff (mapped in rules/quality/ruff_map.yaml), so lifecycle/enrichment/dedup are
+# unaffected:
+#   - aegis-bug-mutable-default-arg  -> Ruff B006 (mutable-argument-default)
+#   - aegis-bug-py-is-literal-comparison -> Ruff F632 (is-literal)
+# No other overlap: our remaining 11 Semgrep rules cover langs/patterns Ruff does
+# not (Ruff is Python-only), and our Python `assert-on-tuple` uses a different
+# ruff code (F631) that we did not allowlist, so there is no double report.
 #   - js-assignment-in-condition (`if ($X = $Y)`): 17 FP / 0 TP — all jQuery's
 #     idiomatic `if ((elem = getX()))` truthiness assignments (ESLint no-cond-
 #     assign explicitly ALLOWS the double-paren form). Semgrep strips redundant
@@ -187,39 +198,8 @@ rules:
       - pattern-inside: "finally { ... }"
       - pattern-not-inside: "(...) -> { ... }"
 
-  # ── Python mutable default argument: shared across every call ────────────────
-  - id: aegis-bug-mutable-default-arg
-    languages: [python]
-    severity: WARNING
-    message: >-
-      A mutable value (list/dict/set) as a default argument is created once and
-      shared across every call, so mutations leak between calls. Use `None` as
-      the default and build the container inside the function.
-    metadata:
-      pillar: quality
-      issue_type: bug
-      category: correctness
-      cwe:
-        - "CWE-665: Improper Initialization"
-      references:
-        - https://docs.python-guide.org/writing/gotchas/#mutable-default-arguments
-    patterns:
-      - pattern-either:
-          - pattern: |
-              def $F(..., $A=[], ...):
-                ...
-          - pattern: |
-              def $F(..., $A={}, ...):
-                ...
-          - pattern: |
-              def $F(..., $A=set(), ...):
-                ...
-          - pattern: |
-              def $F(..., $A=list(), ...):
-                ...
-          - pattern: |
-              def $F(..., $A=dict(), ...):
-                ...
+  # aegis-bug-mutable-default-arg is now owned by Ruff B006 (see DEDUP note in the
+  # header) — the Semgrep pattern version was removed in Q3.
 
   # ── Java: reference equality against a String literal (should be .equals) ────
   - id: aegis-bug-java-string-literal-equality
@@ -346,25 +326,8 @@ rules:
           - pattern: typeof $X === "undefinded"
           - pattern: typeof $X === "funtion"
 
-  # ── Python: identity comparison (`is`) against a literal → interning accident ─
-  - id: aegis-bug-py-is-literal-comparison
-    languages: [python]
-    severity: WARNING
-    message: >-
-      `is` / `is not` against a literal compares object identity, not value, and
-      is true only by CPython interning accident (and warns in 3.8+). Use `==`.
-    metadata:
-      pillar: quality
-      issue_type: bug
-      category: correctness
-      cwe:
-        - "CWE-480: Use of Incorrect Operator"
-      references:
-        - https://docs.python.org/3/reference/expressions.html#is
-    patterns:
-      - pattern-either:
-          - pattern: $X is "..."
-          - pattern: $X is not "..."
+  # aegis-bug-py-is-literal-comparison is now owned by Ruff F632 (see DEDUP note in
+  # the header) — the Semgrep pattern version was removed in Q3.
 
   # ── Python: assert on a tuple literal → non-empty tuple is always truthy ──────
   - id: aegis-bug-py-assert-on-tuple

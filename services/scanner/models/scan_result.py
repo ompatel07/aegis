@@ -33,6 +33,7 @@ class Engine(str, Enum):
     DEPLOYMENT = "deployment"
     CODEQL = "codeql"
     JOERN = "joern"
+    RUFF = "ruff"
 
 
 class EngineStatus(str, Enum):

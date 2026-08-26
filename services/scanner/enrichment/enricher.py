@@ -105,16 +105,32 @@ def _load_quality_bug_rules() -> set[str]:
         import yaml
 
         for name in os.listdir(rules_dir):
-            if not name.endswith((".yaml", ".yml")):
+            # Only Semgrep bug packs here — ruff_map.yaml has a different schema
+            # (a dict of ruff codes) and is loaded via ruff_engine.bug_rule_ids().
+            if not name.endswith((".yaml", ".yml")) or name == "ruff_map.yaml":
                 continue
-            with open(os.path.join(rules_dir, name), encoding="utf-8") as fh:
-                doc = yaml.safe_load(fh) or {}
-            for rule in doc.get("rules", []) or []:
-                meta = rule.get("metadata") or {}
-                if meta.get("issue_type") == "bug" and rule.get("id"):
-                    ids.add(str(rule["id"]))
+            try:
+                with open(os.path.join(rules_dir, name), encoding="utf-8") as fh:
+                    doc = yaml.safe_load(fh) or {}
+                for rule in doc.get("rules", []) or []:
+                    if not isinstance(rule, dict):
+                        continue
+                    meta = rule.get("metadata") or {}
+                    if meta.get("issue_type") == "bug" and rule.get("id"):
+                        ids.add(str(rule["id"]))
+            except Exception as exc:  # noqa: BLE001 — one bad pack must not drop the rest
+                log.debug("enrichment.bug_pack_load_failed", pack=name, error=str(exc))
     except Exception as exc:  # noqa: BLE001 — a missing/broken pack must not break scans
         log.debug("enrichment.bug_rule_load_failed", error=str(exc))
+    # Ruff (Q3) bug rules share this single source: their aegis_rule_ids (issue_
+    # type=bug in ruff_map.yaml) must be tagged issue_type=bug too — including the
+    # dedup ids Ruff now owns (mutable-default, is-literal).
+    try:
+        from engines import ruff_engine
+
+        ids |= ruff_engine.bug_rule_ids()
+    except Exception as exc:  # noqa: BLE001
+        log.debug("enrichment.ruff_bug_rule_load_failed", error=str(exc))
     return ids
 
 

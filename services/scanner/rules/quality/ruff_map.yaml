@@ -1,0 +1,114 @@
+# Ruff (astral-sh/ruff) rule ALLOWLIST for the quality pillar (Q3).
+#
+# Ruff gives us a real, type-aware Python semantic engine — a single static Rust
+# binary that needs no Python env and no installed dependencies (so we never
+# execute or install customer code). It ships ~800 rules of wildly varying
+# precision, most of them style opinions, so we hand-pick EXPLICIT per-code
+# entries and pass exactly these to `--select`. We NEVER select a whole category
+# (`--select F` would drag in F401 unused-import and every other style rule and
+# throw away the precision we built in Q1/Q2).
+#
+# Invocation (ruff_engine.py): ruff check --output-format=json --no-cache
+# --isolated --select <these codes>. `--isolated` ignores the customer's
+# pyproject.toml / ruff.toml so their config can neither silence our findings nor
+# enable rules we did not audit. `--no-cache` keeps repeat scans byte-identical.
+#
+# Severity is capped at `medium` for every rule (same cap as the Semgrep bug
+# pack) — one reliability bug never grades a repo below C on day one.
+ruff_version: "0.8.6"
+
+rules:
+  # ── pyflakes (F): genuine correctness errors ────────────────────────────────
+  F811:
+    aegis_rule_id: aegis-bug-ruff-redefinition-of-unused
+    issue_type: bug
+    severity: medium  # a function/class redefined before use — the first is dead
+  F632:
+    aegis_rule_id: aegis-bug-py-is-literal-comparison   # DEDUP: replaces our Semgrep rule
+    issue_type: bug
+    severity: medium
+  F502:
+    aegis_rule_id: aegis-bug-ruff-percent-format-expected-mapping
+    issue_type: bug
+    severity: medium  # `%`-format expected a mapping but got a sequence -> TypeError
+  F506:
+    aegis_rule_id: aegis-bug-ruff-percent-format-mixed
+    issue_type: bug
+    severity: medium  # `%`-format mixes positional and named -> error
+  F701:
+    aegis_rule_id: aegis-bug-ruff-break-outside-loop
+    issue_type: bug
+    severity: medium
+  F702:
+    aegis_rule_id: aegis-bug-ruff-continue-outside-loop
+    issue_type: bug
+    severity: medium
+  F706:
+    aegis_rule_id: aegis-bug-ruff-return-outside-function
+    issue_type: bug
+    severity: medium
+
+  # ── flake8-bugbear (B): real bugs (not the opinionated B0xx style ones) ──────
+  B006:
+    aegis_rule_id: aegis-bug-mutable-default-arg   # DEDUP: replaces our Semgrep rule
+    issue_type: bug
+    severity: medium
+  B015:
+    aegis_rule_id: aegis-bug-ruff-pointless-comparison
+    issue_type: bug
+    severity: medium  # a comparison whose result is discarded — did you mean to assign/assert?
+
+  # ── pylint errors (PLE): genuine errors only ────────────────────────────────
+  PLE0101:
+    aegis_rule_id: aegis-bug-ruff-return-value-in-init
+    issue_type: bug
+    severity: medium  # returning a value from __init__ is a TypeError
+
+  # ── flake8-async (ASYNC): real async-correctness bugs ───────────────────────
+  ASYNC251:
+    aegis_rule_id: aegis-bug-ruff-blocking-sleep-in-async
+    issue_type: bug
+    severity: medium  # time.sleep() in async code always blocks the event loop
+
+# ── REJECTED ruff codes (audited, deliberately NOT ingested) ──────────────────
+# Kept here with reasons, same discipline as the DROPPED block in bugs.yaml.
+rejected:
+  "E*, W* (pycodestyle)": >-
+    Style/formatting, not bugs, and not our pillar. Never selected.
+  "S* (flake8-bandit)": >-
+    SECURITY findings. The Semgrep engine owns the security pillar; ingesting
+    bandit here would double-count and inflate our security numbers against our
+    own accuracy claims. Never selected.
+  "N* (pep8-naming), I* (isort), D* (pydocstyle), Q* (quotes), COM, ANN": >-
+    Opinionated naming / import-order / docstring / formatting style. Not bugs.
+  F401 (unused-import): >-
+    A maintainability smell, not a reliability bug, and high-volume/noisy on real
+    code. Not ingested (could be revisited as a code_smell if we ever surface a
+    smell tier from Ruff).
+  F841 (unused-variable): >-
+    Smell, not a bug.
+  F821 (undefined-name): >-
+    DROPPED at the gate. Real FP class: fires on legit Py2/3 compat shims guarded
+    by `if sys.version_info[0] == 2: x = basestring` (ruff handles `try/except
+    NameError` but not version_info guards) and on other conditionally-defined
+    names. High value but not 0-FP; would need flow analysis of the guard.
+  B018 (useless-expression): >-
+    DROPPED at the gate — 16 FP on psf/requests. `resp.content  # Consume socket`
+    is a deliberate side-effect access, and `requests.packages.urllib3` in tests
+    is an existence check. Ruff can't tell those from a truly dead expression.
+  B017 (assert-raises-Exception): >-
+    DROPPED — a test-quality nit, not a reliability bug, and FP when a test
+    genuinely wants "any exception". Fired on mature requests.
+  ASYNC230 (blocking-open-in-async): >-
+    DROPPED — context-dependent. A blocking `open()` of a small local file in an
+    async function is a negligible, often-deliberate stall; flagging it as a
+    reliability *bug* overstates it (our own scanner does it for tiny rule reads).
+    ASYNC251 (time.sleep in async) is kept because a real sleep always blocks.
+  F811-note: >-
+    Kept (bug), but note: some codebases redefine via typing.overload / functools
+    .singledispatch — ruff already excludes those, verified 0 FP on the gate.
+  B008 (function-call-in-default-argument): >-
+    Often intentional (FastAPI Depends(), Query()); opinionated — not a bug.
+  B023 (loop-variable-binding): >-
+    Real in some cases but FP-prone without flow analysis of when the closure
+    runs; deferred until provably 0-FP.

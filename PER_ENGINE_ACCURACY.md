@@ -539,3 +539,96 @@ test precision — near-zero is a pass, not a failure"). The letter is the same 
 Composite quality scores unchanged (bug findings are semgrep-pillar; they don't
 feed the quality composite). No security finding was reclassified as bug
 (pillar-gated + test-enforced); the Q1 four rules behave identically.
+
+## Quality bug pack — Q3 (Ruff: a type-aware Python bug source)
+
+Q1/Q2 grew the Semgrep pack to 13 rules, but hit a wall on Python: six candidate
+bug classes need **type/scope inference** that Semgrep OSS doesn't have. Q3 adds a
+**second bug engine** — [Ruff](https://github.com/astral-sh/ruff) `0.8.6`, a single
+static Rust binary that gives real semantic analysis (scope resolution, control
+flow) **without ever installing or executing customer code**: no Python env, no
+`pip install`, no dependency resolution. That property is why Ruff — not a
+Python-hosted linter — was the only acceptable answer.
+
+**Boundaries baked into the invocation** (`engines/ruff_engine.py`):
+`ruff check --output-format=json --no-cache --isolated --exclude <deps> --select
+<11 explicit codes>`.
+- `--isolated` — the customer's `pyproject.toml` / `ruff.toml` is ignored, so their
+  config can neither silence our findings nor enable un-audited rules.
+- `--select <explicit codes>` — an **explicit per-code allowlist**, never a category
+  (`--select F` would drag in F401 and 200 style rules). 11 codes, hand-picked.
+- `--no-cache` — byte-identical repeat scans.
+- `--exclude` — `.venv`/`site-packages`/`node_modules`/vendored/generated dirs.
+  `--isolated` disables Ruff's *default* excludes, so without this it scanned a
+  stray `.venv` and flagged third-party code the customer can't fix — that leak was
+  the source of every "FP" in the first triage pass; with excludes it's zero.
+
+**The 11-code allowlist** (all typed `bug`, all capped at `medium` — one bug never
+grades a repo below C on day one):
+
+| Ruff | Aegis id | Bug |
+|---|---|---|
+| F811 | `aegis-bug-ruff-redefinition-of-unused` | function/class redefined before use — the first is dead |
+| F632 | `aegis-bug-py-is-literal-comparison` | `is` against a literal — identity, not value **(dedup)** |
+| F502 | `aegis-bug-ruff-percent-format-expected-mapping` | `%`-format expected a mapping, got a sequence → TypeError |
+| F506 | `aegis-bug-ruff-percent-format-mixed` | `%`-format mixes positional and named |
+| F701 | `aegis-bug-ruff-break-outside-loop` | `break` outside a loop → SyntaxError |
+| F702 | `aegis-bug-ruff-continue-outside-loop` | `continue` outside a loop |
+| F706 | `aegis-bug-ruff-return-outside-function` | `return` outside a function |
+| B006 | `aegis-bug-mutable-default-arg` | mutable default argument **(dedup)** |
+| B015 | `aegis-bug-ruff-pointless-comparison` | a comparison whose result is discarded |
+| PLE0101 | `aegis-bug-ruff-return-value-in-init` | returning a value from `__init__` → TypeError |
+| ASYNC251 | `aegis-bug-ruff-blocking-sleep-in-async` | `time.sleep()` in async code blocks the event loop |
+
+**Dedup (Part C).** Ruff's B006 and F632 are strictly better than the two Semgrep
+patterns we already shipped for the same bugs (type-aware, zero-config, no
+brace/AST corner cases), so those two rules were **removed from `bugs.yaml`** and
+their `aegis-bug-*` ids are now **owned by Ruff**. A finding is emitted once, by one
+engine — proven by `test_dedup_semgrep_rules_removed`. No other allowlist overlap
+exists (checked the full set against the 11 Semgrep rules).
+
+**Zero bandit/security leakage (Part B).** The `S*` (flake8-bandit) category is
+**never selected** — ingesting it here would double-count against the security
+pillar and inflate our own accuracy numbers. `E*`/`W*` (pycodestyle style) are
+likewise excluded. Enforced by `test_no_style_or_security_category_ingested`
+(asserts no allowlisted code starts with `E`/`W`/`S`). Every rejected code is
+documented with its reason in `ruff_map.yaml` — including four dropped **at the FP
+gate**: F821 (fires on `sys.version_info` Py2 compat shims), B018 (16 FP on
+psf/requests — `resp.content  # consume socket` side-effect access), B017 (test
+nit), ASYNC230 (context-dependent blocking `open()`).
+
+**Gates — all green (live runs, ruff 0.8.6):**
+
+| Gate | Result |
+|---|---|
+| Recall (all 11 codes fire on planted bugs) | ✅ 11/11 |
+| FP triage, by hand, 8 repos | ✅ **0 findings** — this repo (scanner), psf/requests, pallets/flask, + 5 Q1 repos |
+| Determinism (repeat scan byte-identical) | ✅ identical |
+| Config isolation (hostile `pyproject.toml` `ignore=["ALL"]`) | ✅ bare `ruff check` → 0; our `--isolated` invocation → 2 |
+| Lifecycle scan→fix→rescan | ✅ New → Existing → *(line-shifted)* Existing → Resolved → Reopened |
+| First-class enrichment | ✅ pillar=quality, engine=ruff, issue_type=bug, medium, content fingerprint, inline snippet, ownership |
+| Full scanner suite + `go build ./...` + Go scoring tests | ✅ 85 passed / build OK / scoring ok |
+
+**Yield (before Q3 vs after) — Ruff findings per repo:**
+
+| Repo | Language | Ruff bugs | reliability |
+|---|---|---|---|
+| this repo — scanner | Python (~76 files) | 0 | A → A |
+| psf/requests | Python (mature) | 0 | A → A |
+| pallets/flask | Python (mature) | 0 | A → A |
+| whxitte/Project-Taaza | PHP | 0 | A → A |
+| mohaiminur/laundry | PHP | 0 | A → A |
+| booklore-app/booklore | Angular+Java | 0 | A → A |
+| ryndngl/Salon | Electron/React | 0 | C → C |
+| The-Weirdos-NFT | React | 0 | A → A |
+
+Repos with Reliability ≠ A: **1 (salon)** — unchanged, and its one bug is
+JS, not Python. As in Q2 this is a **precision pass**: mature Python (requests,
+flask) and non-Python repos don't contain these specific bug classes, so the
+honest yield on the validated set is 0 — the gate for mature repos is *near-zero
+is a pass, not a failure*. The value Q3 ships is **type-aware Python capability
+that Semgrep OSS structurally cannot provide** (proven by 11/11 recall on planted
+bugs), delivered under the same never-execute-customer-code boundary as every other
+engine, plus a **better engine** now backing the two dedup'd rules. The letter is
+unchanged; the analysis behind a Python "A" is now a type-aware semantic pass deep,
+not pattern-matching alone.

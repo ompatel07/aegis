@@ -165,6 +165,16 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
         has_tests=has_tests, coverage_pct=coverage_pct,
     )
 
+    # Ruff — type-aware Python bugs (Q3), merged into the quality pillar. Added
+    # AFTER metrics (bug findings must not inflate the maintainability smell
+    # density) but BEFORE enrichment (so they get ownership tagging, inline
+    # snippet, the content-based lifecycle fingerprint, issue_type and FP scoring
+    # like every other finding).
+    from engines import ruff_engine
+
+    ruff_findings, ruff_raw = await ruff_engine.collect(req, settings)
+    findings.extend(ruff_findings)
+
     from enrichment import enricher
 
     enricher.enrich_all(findings, req.path)
@@ -179,6 +189,7 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
         raw={
             "files_analyzed": len(files),
             "metrics": metrics.model_dump(),
+            "ruff": ruff_raw,
         },
         scan_id=req.scan_id,
     )
