@@ -339,8 +339,7 @@ def _parse_vulnerabilities(
     dep_paths = dep_paths or {}
     for vuln in res.get("Vulnerabilities", []) or []:
         cvss = vuln.get("CVSS", {}) or {}
-        score = _best_cvss(cvss)
-        vector = _best_cvss_vector(cvss)
+        score, cvss_source, vector = _select_cvss(cvss)
         severity = normalizer.cvss_to_severity(score, vuln.get("Severity"))
         pkg = vuln.get("PkgName", "")
         installed = vuln.get("InstalledVersion", "")
@@ -389,6 +388,7 @@ def _parse_vulnerabilities(
                     "fixed_version": fixed,
                     "cvss_score": score,
                     "cvss_vector": vector,
+                    "cvss_source": cvss_source,
                     "primary_url": vuln.get("PrimaryURL"),
                     "data_source": (vuln.get("DataSource") or {}).get("Name"),
                     # Reachability (import/usage-level). reachable is None when
@@ -448,27 +448,38 @@ def _parse_misconfigurations(res: dict, target: str, result_type: str = "") -> l
     return out
 
 
-def _best_cvss(cvss: dict) -> float | None:
-    """Pick the highest V3 base score across all CVSS data sources."""
-    best: float | None = None
-    for source in (cvss or {}).values():
-        if not isinstance(source, dict):
+# CVSS source precedence (precision S1). NEVER take max() across sources — that
+# inflated scores (V1 reported axios CVE-2026-42043 at 10.0 when NVD says 7.2,
+# because a vendor source disagreed and max() won). Authoritative order: NVD, then
+# GHSA, then any vendor source. The chosen source is recorded in `cvss_source`.
+_CVSS_PRECEDENCE = ("nvd", "ghsa")
+
+
+def _select_cvss(cvss: dict) -> tuple[float | None, str | None, str | None]:
+    """Return (score, source, vector) chosen by source precedence — not by max().
+    Prefers the V3 base score; falls back to V2 only within the same source. When
+    no source carries a score, returns (None, source-of-vector-if-any, vector) so
+    the caller derives severity from the advisory's own label instead of guessing."""
+    if not isinstance(cvss, dict) or not cvss:
+        return None, None, None
+    ordered = [k for k in _CVSS_PRECEDENCE if k in cvss] + sorted(
+        k for k in cvss if k not in _CVSS_PRECEDENCE
+    )
+    vector_only: tuple[str, str] | None = None  # (source, vector) if no score found
+    for src in ordered:
+        s = cvss.get(src)
+        if not isinstance(s, dict):
             continue
-        score = source.get("V3Score") or source.get("V2Score")
+        score = s.get("V3Score")
+        if not isinstance(score, (int, float)):
+            score = s.get("V2Score")
         if isinstance(score, (int, float)):
-            best = score if best is None else max(best, score)
-    return best
-
-
-def _best_cvss_vector(cvss: dict) -> str | None:
-    """Return a CVSS v3 vector string (prefer nvd), for plain-English breakdown."""
-    preferred = (cvss or {}).get("nvd") if isinstance(cvss, dict) else None
-    if isinstance(preferred, dict) and preferred.get("V3Vector"):
-        return preferred["V3Vector"]
-    for source in (cvss or {}).values():
-        if isinstance(source, dict) and source.get("V3Vector"):
-            return source["V3Vector"]
-    return None
+            return float(score), src, s.get("V3Vector")
+        if vector_only is None and s.get("V3Vector"):
+            vector_only = (src, s["V3Vector"])
+    if vector_only is not None:
+        return None, vector_only[0], vector_only[1]
+    return None, None, None
 
 
 def _rank(f: Finding) -> int:
