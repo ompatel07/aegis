@@ -1,34 +1,31 @@
 # Precision Pass S1 — make severity honest
 
-Two defects from Validation V1 that corrupt every downstream severity number.
-Build: on top of `66db94d`. Engines: gitleaks 8.21.2, trivy 0.71.2, semgrep 1.97.0.
+Two defects from Validation V1 that corrupt every downstream severity number, plus
+a plaintext-secret leak introduced while fixing Defect 1. Build: on `66db94d`.
+Engines: gitleaks 8.21.2, trivy 0.71.2, semgrep 1.97.0.
 
 ## Headline
 
-**Corpus criticals: 660 → 526 (−134).** Measured LIVE for the 5 biggest-offender
-repos (585/630 secrets), offline-valid signals (path prior + v3.1-vector CVSS) for
-the other 10. The other-10 secrets are an **upper bound** (see §Redaction).
-
-> ⚠️ **397 of the 526 remaining criticals are pocketbase test JWTs** (see §JWT).
-> Excluding pocketbase, the other 14 repos drop **247 → 129 (−48%)**. The pocketbase
-> residual is a spec decision left to the reviewer.
+**Corpus criticals: 660 → 127 (−533).** Measured LIVE for the 5 biggest-offender
+repos (covering 585/630 secrets); offline-valid signals (path prior + v3.1-vector
+CVSS) for the other 10. The other-10 secrets after-count is an **upper bound** (V1
+stored redacted values — see §Redaction), so the true figure is ≤ 127.
 
 | repo | crit before | crit after | source |
 |---|--:|--:|---|
-| pocketbase | 413 | **397** | LIVE (390 future-dated JWTs remain — see §JWT) |
-| formbricks | 128 | 74 | LIVE (40 placeholder + 14 fixture down-ranked) |
+| pocketbase | 413 | **7** | LIVE (392 test-fixture JWTs + 14 expired → LOW) |
+| formbricks | 128 | 74 | LIVE (40 placeholder + 14 fixture) |
 | documenso | 27 | 22 | LIVE (5 placeholder) |
 | mealie | 20 | 2 | LIVE (17 fixture + 1 placeholder → 0 secret crits) |
-| snipe-it | 9 | 4 | LIVE (2 fixture secrets + 1 bcrypt→LOW; SCA via CVSS) |
-| outline | 14 | 2 | offline (CVSS-from-vector) |
+| snipe-it | 9 | 4 | LIVE (2 fixture secrets + bcrypt→LOW; SCA via CVSS) |
+| outline | 14 | 2 | offline |
+| usememos | 10 | 0 | offline |
 | netbox | 7 | 1 | offline |
-| usememos | 10 | 3 | offline |
-| navidrome | 9 | 4 | offline |
+| navidrome | 9 | 3 | offline |
 | pterodactyl | 11 | 9 | offline |
 | paperless | 4 | 1 | offline |
-| mall | 5 | 5 | offline |
-| eladmin | 2 | 2 | offline |
-| akaunting / monica | 0 / 1 | 0 / 0 | offline |
+| mall | 5 | 0 | offline |
+| eladmin / monica / akaunting | 2 / 1 / 0 | 2 / 0 / 0 | offline |
 
 ---
 
@@ -36,94 +33,127 @@ the other 10. The other-10 secrets are an **upper bound** (see §Redaction).
 
 `enrichment/secret_context.py`, wired into `enricher.enrich_all` (covers gitleaks
 secrets + the SAST `detected-bcrypt-hash` rule). **Down-rank to LOW + tag, never
-suppress.** Three independent signals:
+suppress.** Signals:
 
 1. **path prior** — `*_test.*`, `/tests/`, `/spec/`, `/fixtures/`, `/factories/`,
    `/mocks/`, `/testdata/`, `/seeds/`, `*.example`, `.env.example`, … .
 2. **placeholder shape** — repeated char, `changeme`/`your-*`/`xxx`/`<…>`/`${…}`/
    `example`/`dummy`/`placeholder`, or Shannon entropy < 3.0.
-3. **expired JWT** — decode the payload, read `exp`; past ⇒ cannot be live.
-   Malformed/undecodable ⇒ unknown, not down-ranked.
+3. **expired JWT** — decode payload, read `exp`; past ⇒ cannot be live.
 
-Findings tagged `metadata.secret_context = test-fixture | placeholder | expired |
-live-format` with a reason. **Mandatory override:** a value matching a live-format
-provider credential (AWS `AKIA`/`ASIA`, GitHub `ghp_`, Stripe `sk_live_`, Slack
-`xox[baprs]-`, Google `AIza`, OpenAI, Twilio, SendGrid, npm, PyPI, a PEM block with
-a real key body) is **never** down-ranked, in any path.
+Tagged `metadata.secret_context = test-fixture | placeholder | expired |
+live-format` + reason. **Mandatory override:** a live-format provider credential
+(AWS `AKIA`/`ASIA`, GitHub `ghp_`, Stripe `sk_live_`, Slack `xox*`, Google `AIza`,
+OpenAI, Twilio, SendGrid, npm, PyPI, a PEM with a real key body) is **never**
+down-ranked, in any path.
 
-### The redaction discovery (why offline replay is limited)
-gitleaks ran with `--redact`, so V1 stored the literal string `"REDACTED"` as the
-secret value — the JWT-expiry, placeholder, and provider signals **cannot be
-evaluated on V1 data**. Fix: `--redact` removed; `secret_context` re-redacts the
-value to a short prefix + length (`AKIA…[20c]`) immediately after classifying, so
-no raw secret is stored. Value-based signals are therefore validated by the LIVE
-re-scan, not the offline replay.
+### JWT policy (corrected from the original S1 spec)
+The path prior applies to **all** secret types, **JWTs included**; expiry is an
+*additional* signal, not the only one:
+- future-dated JWT **outside** a fixture path → unchanged (critical)
+- future-dated JWT **inside** a fixture path → **LOW / test-fixture**
+- expired JWT anywhere → **LOW / expired**
 
-### JWT reality — the pocketbase caveat (needs a decision)
-The spec assumed pocketbase's 404 JWTs are expired. They are **not**: decoding the
-actual `apis/*_test.go` tokens shows `exp: 2524604461` (**year 2050**) — future-
-dated so the tests never break. Per spec test #4 (*future-dated JWT → unchanged*,
-JWTs governed by expiry alone), only the 14 genuinely-expired tokens down-rank; 390
-future-dated test JWTs stay critical. **My implementation is correct per spec**, but
-it leaves pocketbase at 397 criticals.
+This resolves pocketbase, whose 404 test JWTs are future-dated (`exp` year 2050,
+so tests never break) — not expired. **Accepted residual risk:** a genuinely live
+JWT committed to a test file reads LOW, because JWTs have no live-format signature
+the way `AKIA`/`ghp_` do. Acceptable because we down-rank rather than suppress — it
+stays in the report, just not in Top Risks.
 
-**Decision for the reviewer:** if future-dated JWTs that ALSO sit in a fixture path
-should down-rank (a one-line change that contradicts test #4 as literally worded),
-pocketbase drops ~390 and the corpus lands near **136**. Left unchanged pending your
-call, because test #4 is explicit.
+### Redaction — why offline replay of value-based signals is impossible
+gitleaks ran with `--redact` in V1, so the stored `match` is the literal
+`"REDACTED"`. The JWT-expiry / placeholder / provider signals cannot be evaluated
+on V1 data — only the path prior (from `file_path`) and the bcrypt rule are valid
+offline. Value-based signals are validated by the LIVE re-scans.
 
 ### Gates
 - **Provider override (live):** AWS + GitHub + PEM keys planted in `testdata/` all
   stay **critical / live-format**. ✓
-- **Expired-JWT (live):** expired JWT in `*_test.go` → **LOW/expired**; future-dated
-  → **critical/unchanged**. ✓
-- **Recall (Pass-3 suite):** precision 1.000, **recall 0.917** — unchanged (the
-  down-rank caps severity without removing findings, so recall is mathematically
-  invariant; the single FN is a bare-key gitleaks limitation, not S1). 0.917 is the
-  same 11/12 Pass 3 reported as 0.92. ✓
+- **JWT (live):** expired `*_test.go` → LOW/expired; future `*_test.go` →
+  LOW/test-fixture; future `src/` → critical/unchanged. ✓
 - **bcrypt:** seeded hash in `database/factories/*` → HIGH→LOW/test-fixture. ✓
+- **Recall (Pass-3 suite):** precision 1.000, **recall 0.917 — unchanged.** The
+  suite (`benchmarks/comparative/secrets_bench.py`) scores a detection **regardless
+  of severity** (TP = planted file appears in `findings`), so down-ranking (which
+  caps severity without removing findings) is mathematically recall-invariant. The
+  lone FN (`planted_aws_secret.py`, a bare 40-char key) is a gitleaks limitation,
+  not S1; 0.917 is the same 11/12 Pass 3 reported as 0.92.
+
+---
+
+## Defect 1b (BLOCKING) — plaintext secret leak from removing `--redact`
+
+Removing `--redact` let the raw value cross the classification boundary. Fixed as
+its own `fix(security)` commit.
+
+**Investigation first:** can gitleaks 8.21.2 give the signals with `--redact` still
+on? Verified against real output — with `--redact` the report keeps `Entropy` and
+`RuleID` but replaces `Secret`/`Match` with `"REDACTED"`. Entropy alone is not
+enough: the **provider-key override and JWT-expiry both require the value**, so
+`--redact` cannot stay on. Redact-at-boundary is the approach.
+
+**Trade-off (stated honestly):** we now hold plaintext in memory *during
+classification*, where previously we never did. The mitigation is that it never
+crosses a persistence, network, or log boundary — proven by a leak test, not a code
+reading.
+
+- **Leak 1 — `EngineResult.raw` → Postgres.** `raw={"findings": raw_findings}` held
+  gitleaks' plaintext `Secret`/`Match`, persisted to `scans.raw_gitleaks_output` and
+  sent over the scanner→orchestrator hop. Fix: `secret_context.redact_raw_findings`
+  scrubs `Secret`/`Match`/`Line` (reusing the single `_redact`) before the
+  `EngineResult` is built. A third carrier was found and fixed too: `enrich_all`'s
+  `_attach_snippets` had filled `code_snippet` with the raw source line — now
+  scrubbed in the same pass.
+- **Leak 2 — plaintext report file survives a hard kill.** The unredacted report is
+  written to disk; `finally` does not run on SIGKILL (OOM). Fix: report lives in a
+  private `0700` dir, is created `0600` by `mkstemp`, is **shredded** (zero-overwrite
+  + unlink) after use, and the scanner **sweeps stale `gitleaks-*` files on startup**
+  — the only crash-safe guarantee, since SIGKILL is uncatchable.
+
+**Leak gate — `tests/test_secret_never_leaks.py`:** plants a unique sentinel, runs a
+FULL scan through the real entrypoint, and asserts the sentinel plaintext is absent
+from the serialized `EngineResult` (the single payload feeding Postgres / HTTP /
+SARIF / compliance / Redis), every finding field, `.raw`, DEBUG logs, a forced
+exception traceback inside `annotate`, and `/tmp`. Classification is verified to run
+BEFORE redaction (a live scan still tags provider/JWT/fixture correctly).
 
 ---
 
 ## Defect 2 — CVSS score inflation
 
-`engines/trivy_engine.py`: `_best_cvss` took **`max()` across all CVSS sources**
-(nvd/ghsa/redhat/…), so any single high vendor score won. Replaced with
-`_select_cvss` — **source precedence NVD → GHSA → vendor**, prefer V3, never
-fabricate, record `metadata.cvss_source`. When no source has a score, severity
-falls back to the advisory's own label (already handled by `cvss_to_severity`).
+`engines/trivy_engine.py`: `_best_cvss` took **`max()` across all CVSS sources**.
+Replaced with `_select_cvss` — **precedence NVD → GHSA → vendor**, prefer V3, never
+fabricate, record `metadata.cvss_source`; no score ⇒ severity from the advisory's
+own label.
 
-### Audit (offline, valid — V1 stored real v3.1 vectors)
-Re-deriving each SCA finding's base score from its stored vector and comparing to
-the stored score: **29 of 280 auditable findings differ by > 0.5** (10%). This is a
-lower bound — it catches score-vs-own-vector disagreement but not cases where score
-and vector both came from the same inflated source (the live re-scan, NVD-first,
-catches those). 3 cases flipped critical → lower:
+**Offline audit (V1 stored real vectors):** re-deriving each score from its v3.1
+vector, **29 of 280 auditable findings differ by > 0.5** (10%); 3 flip critical →
+lower (snipe jspdf CVE-2026-31938 9.6→6.1, -25940 9.6→8.1, -25755 9.6→8.8); the rest
+are mostly high→medium (lodash, axios, dompurify, postcss, brace-expansion,
+react-router). Lower bound — the vector audit can't catch same-source inflation; the
+live NVD-first re-scan does.
 
-| repo | CVE | pkg | stored | vector-derived |
-|---|---|---|--:|--:|
-| snipe | CVE-2026-31938 | jspdf | 9.6 (crit) | **6.1 (med)** |
-| snipe | CVE-2026-25940 | jspdf | 9.6 (crit) | **8.1 (high)** |
-| snipe | CVE-2026-25755 | jspdf | 9.6 (crit) | **8.8 (high)** |
-
-Most of the other 26 are high→medium inflation (axios, lodash, dompurify, postcss,
-brace-expansion, react-router …) — e.g. lodash `CVE-2025-13465` stored 8.2 vs
-vector 5.3; axios `CVE-2026-40175` stored 8.1 vs 4.8. This is systemic, not a
-one-off, and matters for the scoring pass even where it doesn't cross the critical
-line.
+**Historical note:** `_best_cvss` used `max()` for the **entire life of the SCA
+engine**, so the *severity* in all prior validations (client1's 5 CVEs, Taaza's 10
+PHPMailer CVEs, …) was potentially inflated. This changes **severity only** — the
+**TP/FP verdicts and version math are unaffected** (a CVE is still real, the
+installed version is still in range). **"SCA 100% precision" survives and should not
+be discarded.**
 
 ---
 
 ## Verification gate summary
 | gate | result |
 |---|---|
-| Offline CVSS replay + before/after | ✓ 29 mismatches; CVSS-only corpus 660→657 |
-| Live re-scan (5 repos) | ✓ pocketbase/formbricks/documenso/mealie/snipe |
+| Leak test (10 sinks) | ✓ sentinel absent everywhere |
+| Offline CVSS audit + before/after | ✓ 29 mismatches |
+| Live re-scan (5 repos) | ✓ pocketbase 413→7, formbricks 128→74, … |
 | Provider-key override (live plant) | ✓ AWS/GitHub/PEM in testdata stay critical |
-| Expired-JWT (live plant) | ✓ expired→LOW, future→unchanged |
-| Secrets recall (Pass 3) | ✓ 0.917 (unchanged), precision 1.000 |
-| Full scanner suite | ✓ 103 passed |
-| `go build ./...` + scoring tests | ✓ build OK, scoring ok |
+| JWT policy (live plant) | ✓ expired→LOW, future-in-fixture→LOW, future-in-src→critical |
+| Secrets recall (Pass 3) | ✓ 0.917 unchanged (severity-agnostic scoring) |
+| Full scanner suite | ✓ 107 passed |
+| `go build ./...` + scoring tests | ✓ |
+| **Corpus criticals** | **660 → 127** |
 
-Harness: `scripts/validation_v1_replay.py` (CVSS audit), `validation_s1_rescan.py`
-(live re-scan), `validation_s1_tally.py` (corpus tally).
+Harness: `scripts/validation_v1_replay.py`, `validation_s1_rescan.py`,
+`validation_s1_tally.py`.

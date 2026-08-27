@@ -47,10 +47,16 @@ def sev(x):
 
 def mkf(fd):
     eng = Engine.GITLEAKS if fd.get("engine") == "gitleaks" else Engine.SEMGREP
+    meta = dict(fd.get("metadata") or {})
+    # V1 stored the literal "REDACTED" (gitleaks --redact was on then). Blank it so
+    # the placeholder signal cannot false-fire on the word "redacted" — offline we
+    # can only trust the PATH prior (file_path is real), which is what we want here.
+    if meta.get("match") == "REDACTED":
+        meta["match"] = ""
     return Finding(pillar=Pillar.SECURITY, engine=eng, rule_id=fd.get("rule_id") or "x",
                    rule_name="x", severity=Severity(fd.get("severity") or "low"), title="x",
                    file_path=fd.get("file_path") or "", code_snippet=fd.get("code_snippet"),
-                   metadata=fd.get("metadata") or {})
+                   metadata=meta)
 
 
 def main():

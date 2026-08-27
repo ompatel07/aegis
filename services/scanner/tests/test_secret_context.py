@@ -57,23 +57,32 @@ def test_pem_private_key_body_in_fixtures_stays_critical():
     assert f.severity == Severity.CRITICAL
 
 
-# ── expired-JWT check governs jwt findings ───────────────────────────────────
-def test_expired_jwt_in_test_downranked():
-    f = mk("jwt", "apis/backup_test.go", "token=" + _jwt(-3600))
+# ── JWT policy (corrected): expiry is an ADDITIONAL signal; the path prior
+#    applies to JWTs like any other secret ─────────────────────────────────────
+def test_expired_jwt_anywhere_downranked():
+    # expired is decisive regardless of path (here: a non-fixture path)
+    f = mk("jwt", "src/auth.go", "token=" + _jwt(-3600))
     secret_context.annotate([f])
     assert f.severity == Severity.LOW
     assert ctx(f) == "expired"
 
 
-def test_future_jwt_in_test_unchanged():
+def test_future_jwt_in_fixture_path_downranked():
     f = mk("jwt", "apis/backup_test.go", "token=" + _jwt(+3600))
     secret_context.annotate([f])
-    assert f.severity == Severity.CRITICAL  # could be live; path prior must NOT apply
+    assert f.severity == Severity.LOW
+    assert ctx(f) == "test-fixture"
+
+
+def test_future_jwt_outside_fixture_unchanged():
+    f = mk("jwt", "src/auth.go", "token=" + _jwt(+3600))
+    secret_context.annotate([f])
+    assert f.severity == Severity.CRITICAL  # could be live, and not in a fixture path
     assert ctx(f) is None
 
 
-def test_malformed_jwt_unchanged():
-    f = mk("jwt", "apis/backup_test.go", "eyJhbGc.NOTBASE64!!!.sig")
+def test_malformed_jwt_outside_fixture_unchanged():
+    f = mk("jwt", "src/auth.go", "eyJhbGc.NOTBASE64!!!.sig")
     secret_context.annotate([f])
     assert f.severity == Severity.CRITICAL
 

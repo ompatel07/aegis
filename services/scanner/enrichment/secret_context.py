@@ -232,10 +232,14 @@ def annotate(findings: list[Finding]) -> None:
                 continue
 
             rid = (f.rule_id or "").lower()
-            if "jwt" in rid:
-                # (S1 original policy — corrected in the next commit)
-                if _jwt_exp_status(value) == "expired":
-                    _cap_low(f, "expired", "JWT exp claim is in the past — cannot be live")
+            # Expired JWT: cannot be live, anywhere. Checked first so context reads
+            # "expired". Otherwise the path prior applies to JWTs like any other
+            # secret (a future-dated JWT in a fixture path is a test fixture; a
+            # future-dated JWT OUTSIDE a fixture path stays critical — JWTs have no
+            # live-format signature the way AKIA/ghp_ do, so we down-rank, not
+            # suppress, and accept that residual risk).
+            if "jwt" in rid and _jwt_exp_status(value) == "expired":
+                _cap_low(f, "expired", "JWT exp claim is in the past — cannot be live")
                 continue
 
             if _is_placeholder(value, entropy):
