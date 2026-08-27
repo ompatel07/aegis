@@ -11,13 +11,14 @@ import (
 type Aggregated struct {
 	Findings []types.Finding
 
-	// Quality and Deployment are pointers: nil = NOT MEASURED (engine unavailable /
-	// nothing attempted), persisted as NULL, excluded from the overall. Security is
-	// always measured. This mirrors how coverage represents "not measured".
+	// All pillar scores + overall are pointers: nil = NOT MEASURED (engine
+	// unavailable / nothing attempted / LOC unknown), persisted as NULL and excluded
+	// from the overall, which renormalizes. Mirrors how coverage represents "not
+	// measured" — never a fabricated number.
 	QualityScore    *int
-	SecurityScore   int
+	SecurityScore   *int
 	DeploymentScore *int
-	OverallScore    int
+	OverallScore    *int
 	OverallGrade    string
 
 	// SonarQube-style A–E ratings (P2c).

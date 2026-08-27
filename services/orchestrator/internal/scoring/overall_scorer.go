@@ -49,26 +49,27 @@ func DeploymentScore(report *types.DeploymentReport) *int {
 	return &v
 }
 
-// OverallScore combines the measured pillar scores and returns the score + grade.
-// Security is always measured; quality and deployment may be nil (not measured),
-// in which case they are dropped and the remaining pillar weights renormalize —
-// scoring only what was actually measured.
-func OverallScore(security int, quality, deployment *int) (int, string) {
-	weighted := float64(security) * weightSecurity
-	total := weightSecurity
-	if quality != nil {
-		weighted += float64(*quality) * weightQuality
-		total += weightQuality
+// OverallScore combines the MEASURED pillar scores and returns the score + grade,
+// or (nil, "N/A") when nothing was measured. Any pillar may be nil (not measured)
+// — security when LOC is unknown, quality when its engine failed, deployment when
+// nothing was attempted — and nil pillars are dropped with the remaining weights
+// renormalized. Never substitutes a number for a pillar that did not run.
+func OverallScore(security, quality, deployment *int) (*int, string) {
+	var weighted, total float64
+	add := func(v *int, w float64) {
+		if v != nil {
+			weighted += float64(*v) * w
+			total += w
+		}
 	}
-	if deployment != nil {
-		weighted += float64(*deployment) * weightDeployment
-		total += weightDeployment
-	}
-	if total == 0 { // impossible (security always present), but never divide by zero
-		return security, Grade(security)
+	add(security, weightSecurity)
+	add(quality, weightQuality)
+	add(deployment, weightDeployment)
+	if total == 0 {
+		return nil, "N/A" // nothing measured
 	}
 	overall := clampScore(int(math.Round(weighted / total)))
-	return overall, Grade(overall)
+	return &overall, Grade(overall)
 }
 
 // Grade maps an overall score to a letter grade.

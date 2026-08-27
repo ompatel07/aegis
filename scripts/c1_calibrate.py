@@ -236,12 +236,24 @@ def main():
     def rank_by(key, rev=True):
         order = sorted(rows, key=key, reverse=rev)
         return {r["slug"]: i for i, r in enumerate(order)}
-    r_sec = rank_by(lambda r: r["sec_weighted"] / r["kloc"])
-    r_debt = rank_by(lambda r: r["dup_pct"] * BD + (r["nondup_smells"] / r["kloc"]) * BS)
-    # security is the higher-stakes pillar (0.40 vs 0.35), so the EXPECTED ranking
-    # weights security density above tech debt — independent of the K_SEC/BD/BS
-    # constants, it just encodes that priority.
-    exp = sorted(rows, key=lambda r: 0.55 * r_sec[r["slug"]] + 0.45 * r_debt[r["slug"]])
+    # RAW-input ranking — deliberately uses NONE of the formula's machinery (no
+    # severity weights, no reachability/KEV, no pillar weights). Just three raw
+    # signals, each ranked, then the rank positions averaged equally:
+    #   (critical+high) count per KLOC · duplicated-line % · non-dup smells per KLOC
+    # This is independent of the scoring function, so agreement actually validates it.
+    r_ch = rank_by(lambda r: (r["sec"].get("critical", 0) + r["sec"].get("high", 0)) / r["kloc"])
+    r_dup = rank_by(lambda r: r["dup_pct"])
+    r_sm = rank_by(lambda r: r["nondup_smells"] / r["kloc"])
+    exp = sorted(rows, key=lambda r: (r_ch[r["slug"]] + r_dup[r["slug"]] + r_sm[r["slug"]]) / 3.0)
+    # Raw-B: equal SECURITY-category vs DEBT-category weight (debt = avg of dup+smell
+    # ranks), so debt isn't implicitly double-weighted by having 2 of 3 signals.
+    # Still formula-independent (no severity/pillar weights).
+    expB = sorted(rows, key=lambda r: 0.5 * r_ch[r["slug"]]
+                  + 0.5 * ((r_dup[r["slug"]] + r_sm[r["slug"]]) / 2.0))
+    print("\n=== EXPECTED-B (security-cat vs debt-cat, equal) vs COMPUTED ===")
+    compB = sorted(rows, key=lambda r: r["scores"]["overall"])
+    for i, (e, c) in enumerate(zip(expB, compB), 1):
+        print(f"{i:>2}  {e['slug']:28}{c['slug']:28}{'' if e['slug']==c['slug'] else '  <-- differ'}")
     comp = sorted(rows, key=lambda r: r["scores"]["overall"])  # worst first
     print("\n=== EXPECTED (independent evidence) vs COMPUTED (overall score) ===")
     print(f"{'#':>2}  {'EXPECTED worst→best':28}{'COMPUTED worst→best':28}")

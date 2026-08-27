@@ -31,20 +31,33 @@ Security BEFORE 0/E on all 15; AFTER spreads 31–92. Letter still worst-severit
 (one critical → E), so `sec` letters stay E where a critical exists — the SCORE now
 distinguishes 9-crit-in-53k (pterodactyl 31) from 4-crit-in-548k (snipe 91).
 
-## Expected (independent evidence) vs computed ranking
+## Expected vs computed ranking — from RAW evidence (de-circularized)
 
-Expected = 0.55·(security weighted-density rank) + 0.45·(tech-debt rank), from the
-raw metrics, weighting security higher because it is the higher-stakes pillar —
-independent of the K/B constants. Computed = overall-score order.
+The first version of this check used the formula's own weighted density + pillar
+weights, so expected and computed were two evaluations of the same function —
+agreement proved nothing (the C1 follow-up caught this). Rebuilt from RAW inputs
+only: **(critical+high) count per KLOC · duplicated-line % · non-dup smells per KLOC**
+— no severity weights, no reachability, no KEV, no pillar weights.
 
-Extremes agree: worst {mealie, eladmin, mall, pocketbase}, best {akaunting, snipe,
-netbox, paperless}. **One material disagreement, justified:** pterodactyl is
-EXPECTED #6 but COMPUTED #1 (worst). It has by far the densest criticals (9 crit +
-31 high in 53k LOC); the security-weighted overall correctly makes it worst, while
-the rank-average dilutes that because its duplication is the LOWEST (7.4%). Security
-density this extreme *should* dominate — the computed result is the more correct of
-the two. Remaining differences are ±1–2 positions within a tight mid-band (overall
-73–80) — rank noise, not disagreement of kind.
+**Raw-A (equal average of the three signal ranks) DISAGREES materially** with the
+computed overall order (e.g. pterodactyl raw #11 vs computed #1). The cause is
+structural: Raw-A has TWO debt signals (dup%, smells) to ONE security signal, so it
+implicitly weights maintainability 2:1 over security — the opposite of the intended
+priority — and it counts a critical the same as a high.
+
+**Raw-B (equal SECURITY-category vs DEBT-category weight, debt = avg of dup+smell
+ranks — still no severity/pillar weights) AGREES** on the extremes and most of the
+order: worst {mealie, eladmin, mall, pocketbase}, best {akaunting, snipe, netbox,
+paperless}; matches at eladmin, outline, monica, formbricks, paperless. The residual
+gap (pterodactyl Raw-B #4 vs computed #1) is precisely the **severity weighting**
+(critical 2.5× high) that the raw check omits — pterodactyl has 9 criticals.
+
+So the disagreement reduces to two explicit, defensible formula choices the raw
+check leaves out: **security ranks above maintainability**, and **a critical is
+worse than a high**. This is a value judgement, not a bug — and per the review
+protocol it is surfaced for a human decision, NOT resolved here by declaring the
+computed result "more correct" (the mistake the first check made with pterodactyl).
+The constants were NOT re-tuned on the strength of this check.
 
 ## mall-vs-mealie duplication sanity (must hold)
 
@@ -58,7 +71,7 @@ maintainability via the measured **percentage**, and the emitted-findings cap (s
 
 | score / rating | no findings | no files / LOC unknown | unsupported lang | engine failed | engine timed out |
 |---|---|---|---|---|---|
-| **Security** | 100 (clean) | count-based fallback (can't normalize; documented, not fabricated) | 100 if no findings | findings absent → scored on what ran¹ | same as failed¹ |
+| **Security** | 100 (clean) | **nil = not measured** (can't normalize without LOC; no broken-formula fallback) | 100 if no findings | findings absent → scored on what ran¹ | same as failed¹ |
 | **Quality** | high (few smells) | `nil` = **not measured** | `nil` | `nil` = not measured | `nil` |
 | **Deployment** | — | — | — | `nil` = not measured | `nil` |
 | **Overall** | from measured pillars | renormalized over measured | renormalized | excludes nil pillars | excludes nil pillars |
@@ -66,11 +79,13 @@ maintainability via the measured **percentage**, and the emitted-findings cap (s
 | **Security rating (letter)** | A (no vulns) | A | A | A¹ | A¹ |
 | **Maintainability rating** | from score | **N/A** (nil metrics) | N/A | **N/A** | N/A |
 
-¹ **Known gap, flagged not fixed:** if ALL of a pillar's engines fail, absence of
-findings currently reads as "clean" (Security 100, Reliability/Security-rating A)
-rather than "not measured". The aggregator records `EngineErrors`; wiring that into
-a per-pillar "not measured" is a follow-up (the honest fix, out of C1's scope).
-Quality and Deployment already return `nil` correctly.
+¹ **Logged as a P0** (`PERFORMANCE_TODO.md`), not a follow-up: if ALL of a pillar's
+engines fail, absence of findings reads as "clean" (Security 100,
+Reliability/Security-rating A) — the Q1 constant-A defect in the failure path. C1
+closed what it can detect (Quality/Deployment nil; Security nil when LOC unknown);
+wiring `EngineErrors` into a per-pillar "not measured" for Security/Reliability is
+the P0. LOC-unknown security is now nil (not the count-based fallback), and the
+overall renormalizes over every measured pillar including security.
 
 ## Justification for every constant
 
@@ -95,7 +110,28 @@ Quality and Deployment already return `nil` correctly.
 - **pillar weights security 0.40 / quality 0.35 / deployment 0.25**: unchanged base;
   security highest as the higher-stakes pillar. Deployment renormalizes OUT when not
   measured (0.40/0.75 + 0.35/0.75).
-- **grade bands A≥90 B≥75 C≥60 D≥40 else F**: unchanged.
+- **grade bands A≥90 B≥75 C≥60 D≥40 else F**: kept (analysis below).
+
+## Grade-band calibration
+
+Overall scores on the S1 corpus, sorted: **59, 60, 60, 70, 70, 73, 75, 77, 78, 78,
+80, 86, 86, 87, 90** → **D:1, C:5, B:8, A:1** under A≥90 B≥75 C≥60 D≥40.
+
+Is 8/15 in B a band artifact? No. Two independent reasons to KEEP the bands:
+- They are **absolute**, not percentile — a 90 is an A on any corpus. Re-fitting
+  bands to spread THESE 15 repos evenly would overfit to the sample and make a
+  grade mean something different next month.
+- The B cluster is **real, not lumped**: the 8 B-scores span 75–87 and the repos
+  are genuinely similar (mature OSS, low vuln density, moderate tech debt). Moving
+  the A cut to 85 would grade an 86 "excellent", which it is not; the split at 90
+  reflects that none of these 15 is actually excellent. The corpus being mostly
+  "good (B)" is a property of the corpus, not the bands — a catastrophic repo
+  (e.g. 9 criticals in 10k LOC) lands in F, and pterodactyl's dense criticals put
+  it at 59 (D), so the low bands are reachable, not compressed away.
+- The letter is deliberately coarse; the SCORE (75 vs 87) differentiates finely for
+  anyone who needs it.
+
+Conclusion: the conventional academic mapping is the right absolute scale; no change.
 
 ## Down-ranked S1 secrets contribute at down-ranked severity — confirmed
 

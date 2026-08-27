@@ -157,3 +157,22 @@ generic failure.
 ### Data point — quality engine wall time
 `snipe-it` (600k LOC PHP): quality engine (lizard/radon/duplication) took ~22 min.
 Duplication detection is the long pole on very large repos.
+
+---
+
+## P0 (correctness) — a fully-failed pillar must not read as a clean A
+
+Raised by C1's unknown-value audit. If ALL of a pillar's engines fail (or time out),
+the absence of findings currently reads as CLEAN, not "not measured":
+  - SecurityScore → 100, SecurityRating (letter) → A
+  - ReliabilityRating → A (no bugs, because the bug-producing engines didn't run)
+A half-failed scan showing A/100 is the Q1 constant-A defect resurfacing in the
+failure path — the exact class this whole line of work exists to kill.
+
+C1 fixed the pillars we can detect: Quality and Deployment return nil (not measured),
+and Security returns nil when LOC is unknown (the quality engine failed). The
+remaining gap is the SAME failure that leaves findings simply absent: the aggregator
+records `EngineErrors`, but that is not wired into a per-pillar "not measured" state
+for Security/Reliability/Security-rating. Fix: when a pillar's engines are all in
+`EngineErrors`, that pillar's score AND letter are "not measured", excluded and
+renormalized — never A/100. This is a P0, not a follow-up.

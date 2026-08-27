@@ -18,8 +18,8 @@ func TestSecurityScoreDensity(t *testing.T) {
 		{Pillar: types.PillarQuality, Severity: types.SeverityCritical},  // ignored
 	}
 	// weighted 39 over 10 KLOC = density 3.9; 100 - 5.5*3.9 = 78.55 -> 79
-	if got := SecurityScore(findings, 10000); got != 79 {
-		t.Fatalf("SecurityScore(density) = %d, want 79", got)
+	if got := SecurityScore(findings, 10000); got == nil || *got != 79 {
+		t.Fatalf("SecurityScore(density) = %v, want 79", got)
 	}
 }
 
@@ -29,20 +29,20 @@ func TestSecurityScoreDensityDistinguishesSize(t *testing.T) {
 	f := []types.Finding{{Pillar: types.PillarSecurity, Severity: types.SeverityCritical}}
 	small := SecurityScore(f, 10000)  // density 2.5 -> 86
 	large := SecurityScore(f, 500000) // density 0.05 -> ~100
-	if !(large > small) {
-		t.Fatalf("density must reward size: small=%d large=%d", small, large)
+	if small == nil || large == nil || !(*large > *small) {
+		t.Fatalf("density must reward size: small=%v large=%v", small, large)
 	}
 }
 
-// LOC unknown (quality engine failed) -> degrade to the raw count-based penalty,
-// never fabricate.
-func TestSecurityScoreUnknownLOCFallsBackToCount(t *testing.T) {
+// LOC unknown (quality engine failed) -> NOT MEASURED (nil), never the count-based
+// formula this pass declared broken.
+func TestSecurityScoreUnknownLOCNotMeasured(t *testing.T) {
 	findings := []types.Finding{
-		{Pillar: types.PillarSecurity, Severity: types.SeverityCritical}, // 25
-		{Pillar: types.PillarSecurity, Severity: types.SeverityHigh},     // 10
+		{Pillar: types.PillarSecurity, Severity: types.SeverityCritical},
+		{Pillar: types.PillarSecurity, Severity: types.SeverityHigh},
 	}
-	if got := SecurityScore(findings, 0); got != 65 { // 100 - 35
-		t.Fatalf("SecurityScore(no LOC) = %d, want 65 (count fallback)", got)
+	if got := SecurityScore(findings, 0); got != nil {
+		t.Fatalf("SecurityScore(no LOC) = %v, want nil (not measured)", got)
 	}
 }
 
@@ -51,8 +51,8 @@ func TestSecurityScoreFloorsAtZero(t *testing.T) {
 	for i := range findings {
 		findings[i] = types.Finding{Pillar: types.PillarSecurity, Severity: types.SeverityCritical}
 	}
-	if got := SecurityScore(findings, 1000); got != 0 { // 125 density -> clamp 0
-		t.Fatalf("SecurityScore = %d, want 0 (floored)", got)
+	if got := SecurityScore(findings, 1000); got == nil || *got != 0 { // 125 density -> clamp 0
+		t.Fatalf("SecurityScore = %v, want 0 (floored)", got)
 	}
 }
 
@@ -79,8 +79,8 @@ func TestSecurityScoreReachabilityStillWeights(t *testing.T) {
 		{"undetermined full", mk(nil, nil), 86},
 	}
 	for _, c := range cases {
-		if got := SecurityScore([]types.Finding{c.f}, 10000); got != c.want {
-			t.Errorf("%s: got %d, want %d", c.name, got, c.want)
+		if got := SecurityScore([]types.Finding{c.f}, 10000); got == nil || *got != c.want {
+			t.Errorf("%s: got %v, want %d", c.name, got, c.want)
 		}
 	}
 }
@@ -132,24 +132,33 @@ func TestDeploymentScoreNotMeasured(t *testing.T) {
 }
 
 func TestOverallScoreAllMeasured(t *testing.T) {
-	score, grade := OverallScore(80, ptr(90), ptr(100)) // 32+31.5+25=88.5 -> 89
-	if score != 89 || grade != "B" {
-		t.Fatalf("OverallScore = %d/%s, want 89/B", score, grade)
+	score, grade := OverallScore(ptr(80), ptr(90), ptr(100)) // 32+31.5+25=88.5 -> 89
+	if score == nil || *score != 89 || grade != "B" {
+		t.Fatalf("OverallScore = %v/%s, want 89/B", score, grade)
 	}
 }
 
 // Deployment not measured -> excluded + renormalize over security+quality.
 func TestOverallScoreDeploymentNotMeasuredRenormalizes(t *testing.T) {
-	score, _ := OverallScore(80, ptr(90), nil) // (32+31.5)/0.75 = 84.67 -> 85
-	if score != 85 {
-		t.Fatalf("OverallScore(no deploy) = %d, want 85 (renormalized, not fabricated)", score)
+	score, _ := OverallScore(ptr(80), ptr(90), nil) // (32+31.5)/0.75 = 84.67 -> 85
+	if score == nil || *score != 85 {
+		t.Fatalf("OverallScore(no deploy) = %v, want 85 (renormalized, not fabricated)", score)
 	}
 }
 
 func TestOverallScoreOnlySecurityMeasured(t *testing.T) {
-	score, _ := OverallScore(80, nil, nil) // 32/0.40 = 80
-	if score != 80 {
-		t.Fatalf("OverallScore(security only) = %d, want 80", score)
+	score, _ := OverallScore(ptr(80), nil, nil) // 32/0.40 = 80
+	if score == nil || *score != 80 {
+		t.Fatalf("OverallScore(security only) = %v, want 80", score)
+	}
+}
+
+// Nothing measured (e.g. LOC unknown so security nil, quality+deployment nil) ->
+// nil / "N/A", never a fabricated number.
+func TestOverallScoreNothingMeasured(t *testing.T) {
+	score, grade := OverallScore(nil, nil, nil)
+	if score != nil || grade != "N/A" {
+		t.Fatalf("OverallScore(all nil) = %v/%s, want nil/N/A", score, grade)
 	}
 }
 

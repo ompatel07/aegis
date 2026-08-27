@@ -48,9 +48,12 @@ const (
 // carries its down-ranked severity, so it contributes less — the point of S1.
 //
 // Unknown value: no security findings → 100 (measured, clean). LOC unknown (quality
-// engine failed) → cannot normalize, so fall back to the raw penalty sum (the old
-// count-based behaviour) rather than fabricate — documented in PRECISION/scoring.
-func SecurityScore(findings []types.Finding, totalCodeLines int) int {
+// engine failed) → the density cannot be computed, so the score is NOT MEASURED
+// (nil), excluded from the overall and renormalized — the same contract as quality
+// and deployment. We do NOT fall back to the count-based formula this pass declared
+// broken (four criticals → 0 for every repo). The findings and the letter
+// (SecurityRating) are unaffected; only the normalized score is withheld.
+func SecurityScore(findings []types.Finding, totalCodeLines int) *int {
 	var weighted float64
 	for _, f := range findings {
 		if f.Pillar != types.PillarSecurity {
@@ -63,13 +66,14 @@ func SecurityScore(findings []types.Finding, totalCodeLines int) int {
 		weighted += base * reachabilityWeight(f) * kevWeight(f)
 	}
 	if totalCodeLines <= 0 {
-		return clampScore(int(math.Round(100 - weighted))) // LOC unknown: degrade to count-based
+		return nil // LOC unknown → not measured
 	}
 	kloc := float64(totalCodeLines) / 1000.0
 	if kloc < 0.001 {
 		kloc = 0.001
 	}
-	return clampScore(int(math.Round(100 - kSecurityDensity*(weighted/kloc))))
+	v := clampScore(int(math.Round(100 - kSecurityDensity*(weighted/kloc))))
+	return &v
 }
 
 // kevWeight bumps the penalty for a CVE that is on the CISA KEV list (actively

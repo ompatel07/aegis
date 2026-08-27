@@ -148,9 +148,9 @@ func (p *ScanProcessor) ProcessTask(ctx context.Context, task *asynq.Task) error
 	p.stage(ctx, payload.ScanID, progress.StageCompleted)
 
 	log.Info().
-		Int("overall", agg.OverallScore).
+		Str("overall", scoreLog(agg.OverallScore)).
 		Str("grade", agg.OverallGrade).
-		Int("security", agg.SecurityScore).
+		Str("security", scoreLog(agg.SecurityScore)).
 		Str("quality", scoreLog(agg.QualityScore)).
 		Str("deployment", scoreLog(agg.DeploymentScore)).
 		Int("findings", len(agg.Findings)).
