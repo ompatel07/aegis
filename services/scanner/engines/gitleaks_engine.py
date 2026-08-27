@@ -140,6 +140,11 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
     # EngineResult.raw — that field is persisted to scans.raw_gitleaks_output and
     # crosses the scanner→orchestrator hop. Single redaction impl (secret_context).
     secret_context.redact_raw_findings(raw_findings)
+    # defence in depth: the transient bare value must never serialize, even if the
+    # enrichment pass above was interrupted for some finding.
+    for f in findings:
+        if isinstance(f.metadata, dict):
+            f.metadata.pop("_secret_raw", None)
     return EngineResult(
         engine=Engine.GITLEAKS,
         pillar=Pillar.SECURITY,
@@ -206,6 +211,10 @@ def _parse(raw_findings: list[dict], root: str) -> list[Finding]:
                     "entropy": item.get("Entropy"),
                     "tags": item.get("Tags"),
                     "commit": item.get("Commit"),
+                    # Transient: the exact secret value, used ONLY for the
+                    # value-based snippet scrub (utils.snippet). secret_context pops
+                    # it in enrich_all before the finding is ever serialized.
+                    "_secret_raw": item.get("Secret"),
                 },
             )
         )

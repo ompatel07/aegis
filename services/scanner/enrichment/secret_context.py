@@ -247,13 +247,11 @@ def annotate(findings: list[Finding]) -> None:
             elif _in_fixture_path(f.file_path):
                 _cap_low(f, "test-fixture", "secret sits in a test/fixture/example path")
         finally:
-            # scrub the raw value out of what gets stored, always. Two carriers:
-            #  - metadata["match"] (the gitleaks match text)
-            #  - code_snippet, which _attach_snippets filled with the raw SOURCE
-            #    line for this finding — it contains the secret verbatim.
-            if is_gitleaks:
-                if isinstance(f.metadata, dict) and f.metadata.get("match"):
+            # scrub the raw value out of what gets stored, always. The code_snippet
+            # is redacted (surgically, keeping the line readable) by utils.snippet
+            # for ALL secret findings; here we (a) redact the gitleaks match text and
+            # (b) drop the transient _secret_raw so the plaintext never serializes.
+            if is_gitleaks and isinstance(f.metadata, dict):
+                if f.metadata.get("match"):
                     f.metadata["match"] = _redact(value)
-                if f.code_snippet:
-                    f.code_snippet = _redact(str(f.code_snippet))
-                    f.snippet_start_line = None
+                f.metadata.pop("_secret_raw", None)

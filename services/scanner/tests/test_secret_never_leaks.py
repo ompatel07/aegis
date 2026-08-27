@@ -116,17 +116,80 @@ def test_no_leak_in_exception_traceback(monkeypatch, caplog):
         raise AssertionError("expected annotate to raise")
 
 
-def test_finally_redacts_even_when_classification_raises(monkeypatch):
-    """The finally scrub must run even if classification raises — no plaintext left
-    on the Finding."""
+def test_finally_redacts_match_and_pops_raw_even_when_classification_raises(monkeypatch):
+    """annotate's finally must scrub the match and drop the transient _secret_raw
+    even if classification raises."""
     def boom(*_a, **_k):
         raise RuntimeError("boom")
 
     monkeypatch.setattr(secret_context, "_is_placeholder", boom)
     f = _mk(SENTINEL)
+    f.metadata["_secret_raw"] = SENTINEL
     try:
         secret_context.annotate([f])
     except RuntimeError:
         pass
     assert SENTINEL not in (f.metadata.get("match") or "")
-    assert SENTINEL not in (f.code_snippet or "")
+    assert "_secret_raw" not in f.metadata
+
+
+# ── Hole 2: non-token-shaped secrets (gitleaks) ──────────────────────────────
+@pytest.mark.skipif(
+    not __import__("utils.sandbox", fromlist=["binary_available"]).binary_available(
+        settings.gitleaks_bin),
+    reason="gitleaks binary not available",
+)
+def test_non_token_shaped_secret_scrubbed_from_snippet(tmp_path):
+    # password (low entropy, not token-shaped) + a URI credential, on adjacent lines
+    (tmp_path / "db.py").write_text(
+        'DB_PASSWORD = "summer2024"\n'
+        'DATABASE_URL = "postgres://admin:hunter2@localhost/db"\n',
+        encoding="utf-8",
+    )
+    req = ScanRequest(path=str(tmp_path), scan_id="nontoken")
+    result = asyncio.run(gitleaks_engine.run(req, settings))
+    assert result.findings, "expected the connection string to be detected"
+    for f in result.findings:
+        assert "summer2024" not in (f.code_snippet or ""), "password leaked in snippet"
+        assert "hunter2" not in (f.code_snippet or ""), "URI credential leaked in snippet"
+    blob = result.model_dump_json()
+    assert "summer2024" not in blob and "hunter2" not in blob
+
+
+# ── Hole 1: a hardcoded secret SEMGREP catches (not gitleaks) ────────────────
+@pytest.mark.skipif(
+    not __import__("utils.sandbox", fromlist=["binary_available"]).binary_available(
+        settings.semgrep_bin),
+    reason="semgrep binary not available",
+)
+def test_semgrep_detected_secret_scrubbed_from_snippet(tmp_path):
+    from engines import semgrep_engine
+
+    marker = "Zx7Qw2Ep9Rt4Yu1Io6Pa3Sd8Fg5Hj0KlSEMGREPSENTINEL"
+    (tmp_path / "app.js").write_text(
+        f'const secret = "{marker}";\nconst password = "{marker}2";\n', encoding="utf-8")
+    req = ScanRequest(path=str(tmp_path), scan_id="semgrepsec")
+    result = asyncio.run(semgrep_engine.run(req, settings))
+    sec = [f for f in result.findings if f.file_path.endswith("app.js")]
+    assert sec, "semgrep did not flag the planted secret — test would be vacuous"
+    # IF flagged, the snippet AND the line-carrying metadata must be redacted
+    # (Hole-1 guard + the metadata.lines carrier). NOTE: EngineResult.raw (the raw
+    # semgrep JSON) is a SEPARATE pre-existing carrier, out of scope for the snippet
+    # fix — see PRECISION_S1.md "known remaining carriers".
+    for f in sec:
+        assert marker not in (f.code_snippet or ""), (
+            f"semgrep rule {f.rule_id} leaked plaintext in code_snippet"
+        )
+        assert marker not in json.dumps(f.metadata or {}, default=str), (
+            f"semgrep rule {f.rule_id} leaked plaintext in metadata"
+        )
+
+
+# ── Gate 4: snippets stay READABLE — only the secret is masked ───────────────
+def test_snippet_stays_readable_only_secret_masked():
+    from utils import snippet
+    line = 'DB_PASSWORD = "summer2024"  # set in prod'
+    out = snippet._redact(line)
+    assert "summer2024" not in out          # secret masked
+    assert "DB_PASSWORD" in out             # variable name survives
+    assert "# set in prod" in out           # trailing comment survives

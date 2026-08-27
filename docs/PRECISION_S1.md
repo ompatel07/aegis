@@ -119,6 +119,62 @@ BEFORE redaction (a live scan still tags provider/JWT/fixture correctly).
 
 ---
 
+## Defect 1c (SECURITY) — pre-existing snippet leak from Q1 (NOT an S1 regression)
+
+**Correction to follow-up 1:** the `code_snippet` carrier is **not** collateral from
+removing `--redact`. `git log --follow` on `utils/snippet.py` shows one commit,
+**eb4fc04 (2026-08-12)** — S1 (`0c0d6f0`) never touched it. This leak shipped in
+that commit and was live in **every scan from 2026-08-12 to 2026-08-27**.
+
+**Record correction:** our P1 claim "secrets redacted (no plaintext)" was
+**inaccurate for semgrep-detected credentials** for that window. Only gitleaks
+snippets were redacted; every semgrep credential rule persisted its raw source line.
+Do not repeat the claim without this fix in place.
+
+**Hole 1 — `_is_secret` only matched gitleaks.** Semgrep credential rules
+(`node_secret`, `node_password`, `detected-bcrypt-hash`, `detected-jwt-token`,
+`detected-private-key`, `hardcoded-*`, `python-logger-credential-disclosure`, …,
+CWE-798/259) got no snippet redaction. Fixed: `_is_secret` is now a **capability
+check** — gitleaks, OR a rule id naming a secret (hints grounded in the actual V1
+rule ids), OR CWE-798/259, OR a metadata category of "secret".
+
+**Hole 2 — regex missed non-token-shaped secrets.** `_SECRET_RUN` (base64/hex runs)
+can't catch `password = "hunter2"` or the credential in a connection string. Fixed,
+layered (both, via the single `secret_context._redact`):
+  a) **value-based** — for gitleaks, the exact value (passed transiently, popped
+     before serialization) is scrubbed surgically;
+  b) **regex** — `_SECRET_RUN` plus assignment-RHS (`password/token/api_key/... =
+     "…"`) and URI-credential (`scheme://user:PASS@host`) patterns, for the
+     no-value semgrep cases. Only secret-shaped substrings are masked; the rest of
+     the line survives (readability gated by test).
+
+**A further carrier found:** semgrep stores the matched line in
+`metadata["lines"]` (truncated 2000) — redacted for secret findings in the same
+pass (keys: lines/line/code/snippet/matched/context).
+
+**KNOWN REMAINING carrier (out of scope for the snippet fix, flagged):** the raw
+semgrep JSON in `EngineResult.raw` (→ `scans.raw_semgrep_output`) still holds
+matched lines for semgrep secret findings — the same class as gitleaks Leak 1,
+which was fixed for gitleaks only. Recommend a follow-up to redact secret findings'
+lines in the raw semgrep output before persistence.
+
+**Blast radius (local Postgres, 78 scans / 12,339 findings):** 9 `code_snippet` +
+110 `metadata.lines` rows held plaintext credentials (3 RSA key bodies, bcrypt
+hashes, hardcoded passwords). Cleaned with a one-off (`scripts/s1_snippet_cleanup.py`,
+same `_redact`) — **0 RSA/bcrypt/token bodies remain** (56 rows still match the
+crude rule-name predicate but are false-positive hits like
+`"Password must be 8-18 characters"`, no credential). The local V1/S1 audit JSONs
+were scrubbed too (`scripts/s1_json_scrub.py`, 198 fields).
+
+**Gate (`tests/test_secret_never_leaks.py`, extended):** non-token secret
+(`DB_PASSWORD="summer2024"` + `postgres://admin:hunter2@…`) → absent from
+code_snippet; a SEMGREP-caught hardcoded secret → absent from code_snippet +
+metadata (Hole-1 guard); the gitleaks sentinel case still green; snippets stay
+readable (variable name + comment survive, only the secret masked). Full suite: 110
+passed. Pass-3 recall: **0.917 unchanged**.
+
+---
+
 ## Defect 2 — CVSS score inflation
 
 `engines/trivy_engine.py`: `_best_cvss` took **`max()` across all CVSS sources**.

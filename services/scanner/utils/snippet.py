@@ -29,10 +29,35 @@ _CONTEXT = 2          # lines of context shown before/after the flagged line
 _MAX_SNIPPET_LINES = 12
 _MAX_LINE_LEN = 400
 _WS = re.compile(r"\s+")
-# A run of secret-like characters (base64 / hex / token bodies). For secret
-# findings the snippet is redacted so we show the offending line WITHOUT
+# For secret findings the snippet is redacted so we show the offending line WITHOUT
 # persisting the plaintext secret (matching how Snyk / GitGuardian display it).
+# Three layers, all masked via the single secret_context._redact:
+#   1. a token-shaped run (base64 / hex / token body)
 _SECRET_RUN = re.compile(r"[A-Za-z0-9+/=_\-]{16,}")
+#   2. an assignment RHS: password/token/api_key/... = "value"  (catches
+#      non-token-shaped secrets like `DB_PASSWORD = "summer2024"` that layer 1 misses)
+_ASSIGN_SECRET = re.compile(
+    r"""(?ix)
+    ( (?:pass(?:word|wd)?|pwd|secret|token|api[_-]?key|apikey|access[_-]?key
+        |client[_-]?secret|auth[_-]?token|credentials?|private[_-]?key)
+      \s*[:=]\s* )
+    ( "[^"\n]{3,}" | '[^'\n]{3,}' | [^\s"'(){}\[\];,]{3,} )
+    """
+)
+#   3. the credential segment of a URI: scheme://user:PASSWORD@host
+_URI_CRED = re.compile(r"(?i)([a-z][a-z0-9+.\-]*://[^\s:@/]+:)([^@\s/]{1,})(@)")
+
+# A finding needs snippet redaction if it exposes a credential. Capability check,
+# not an engine check — semgrep rules that flag hardcoded creds (node_secret,
+# node_password, detected-bcrypt-hash, detected-jwt-token, hardcoded-*, …, and any
+# CWE-798/259 rule) leak their raw source line otherwise. Hints grounded in the
+# rule ids actually present in the Validation V1 corpus.
+_SECRET_RULE_HINTS = (
+    "secret", "password", "passwd", "pwd", "credential", "token", "api-key",
+    "api_key", "apikey", "access-key", "access_key", "private-key", "private_key",
+    "jwt", "bcrypt", "hardcoded",
+)
+_SECRET_CWES = {"798", "259"}  # CWE-798 hardcoded creds, CWE-259 hardcoded password
 # Unit separator — safe join char that won't appear in code, keeps basis fields
 # unambiguous so distinct findings can't accidentally collide.
 _SEP = "\x1f"
@@ -58,7 +83,12 @@ def attach(findings: list[Finding], root: str) -> None:
             if lines is not None and f.line_start:
                 snippet, start = _snippet(lines, f.line_start, f.line_end)
                 if _is_secret(f):
-                    snippet = _redact(snippet)
+                    # gitleaks stashes the exact value under a transient key for the
+                    # value-based scrub; secret_context pops it before serialization.
+                    meta = f.metadata if isinstance(f.metadata, dict) else {}
+                    value = meta.get("_secret_raw")
+                    snippet = _redact(snippet, value)
+                    _redact_meta_lines(meta, value)  # semgrep 'lines' etc. also leak
                 f.code_snippet = snippet
                 f.snippet_start_line = start
             basis = _basis(f, flagged)
@@ -126,17 +156,68 @@ def _basis(f: Finding, flagged: str) -> str:
 
 
 def _is_secret(f: Finding) -> bool:
+    """Capability check: does this finding expose a credential (so its snippet must
+    be redacted)? True for gitleaks, for any rule whose id names a secret, and for
+    CWE-798/259 — NOT an engine check (semgrep credential rules leak otherwise)."""
     eng = f.engine.value if hasattr(f.engine, "value") else str(f.engine)
-    return eng == "gitleaks"
+    if eng == "gitleaks":
+        return True
+    rid = (f.rule_id or "").lower()
+    if any(h in rid for h in _SECRET_RULE_HINTS):
+        return True
+    cwe = "".join(ch for ch in (f.cwe_id or "") if ch.isdigit())
+    if cwe in _SECRET_CWES:
+        return True
+    meta = f.metadata if isinstance(f.metadata, dict) else {}
+    return "secret" in str(meta.get("category") or "").lower()
 
 
-def _redact(text: str) -> str:
-    """Mask secret-like runs, keeping a 4-char prefix so the line stays readable
-    but the plaintext secret is never persisted."""
-    def mask(m: "re.Match[str]") -> str:
-        s = m.group(0)
-        return s[:4] + "…REDACTED" if len(s) > 8 else "…REDACTED"
-    return _SECRET_RUN.sub(mask, text)
+def _mask(s: str) -> str:
+    """The one masker — delegates to secret_context._redact (single impl)."""
+    from enrichment.secret_context import _redact as _sc_redact
+    return _sc_redact(s)
+
+
+# Metadata keys that carry raw source text and therefore the secret: semgrep puts
+# the matched line in `lines`; other engines use these too. Redacted for secret
+# findings alongside code_snippet.
+_META_LINE_KEYS = ("lines", "line", "code", "snippet", "matched", "context")
+
+
+def _redact_meta_lines(meta: dict, value: str | None) -> None:
+    if not isinstance(meta, dict):
+        return
+    for k in _META_LINE_KEYS:
+        v = meta.get(k)
+        if isinstance(v, str) and v:
+            meta[k] = _redact(v, value)
+
+
+def _redact(text: str, value: str | None = None) -> str:
+    """Scrub a snippet, keeping surrounding code readable. Layered:
+      a) value-based (primary): if the exact secret value is known (gitleaks),
+         replace just that string — surgical, no heuristics.
+      b) regex (fallback): assignment RHS, URI credential segment, and token-shaped
+         runs — covers findings with no value (the semgrep credential rules) and
+         non-token-shaped secrets (`password = "hunter2"`).
+    Only secret-shaped substrings are masked; the rest of the line survives."""
+    out = text
+    if value and len(value) >= 3 and value in out:
+        out = out.replace(value, _mask(value))
+
+    def _assign(m: "re.Match[str]") -> str:
+        rhs = m.group(2)
+        quote = rhs[0] if rhs[:1] in "\"'" and rhs[-1:] == rhs[:1] else ""
+        body = rhs[1:-1] if quote else rhs
+        # skip env lookups / function calls — not literal secrets
+        if not body or "(" in body or body.lower().startswith(("os.", "process.", "env.")):
+            return m.group(0)
+        return m.group(1) + quote + _mask(body) + quote
+
+    out = _ASSIGN_SECRET.sub(_assign, out)
+    out = _URI_CRED.sub(lambda m: m.group(1) + _mask(m.group(2)) + m.group(3), out)
+    out = _SECRET_RUN.sub(lambda m: _mask(m.group(0)), out)
+    return out
 
 
 def _hash(basis: str, ordinal: int) -> str:
