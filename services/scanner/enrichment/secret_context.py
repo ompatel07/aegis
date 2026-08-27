@@ -33,7 +33,10 @@ import math
 import re
 import time
 
+from logging_config import get_logger
 from models.scan_result import SEVERITY_ORDER, Finding, Severity
+
+log = get_logger("secret_context")
 
 # ── which findings this applies to ───────────────────────────────────────────
 # gitleaks secrets, plus the SAST detected-bcrypt-hash rule (seeded hashes in
@@ -186,30 +189,6 @@ def _redact(value: str) -> str:
     return (v[:4] + "…[" + str(len(v)) + "c]") if len(v) > 8 else "***"
 
 
-# gitleaks 8.21.2 value-bearing fields (verified against real output): `Secret`
-# holds the raw value; `Match` embeds it inside the surrounding source line. Older
-# schemas also emit `Line`. Nothing else (Fingerprint is file:rule:startline).
-_GITLEAKS_VALUE_KEYS = ("Secret", "Match", "Line")
-
-
-def redact_raw_findings(raw: list) -> list:
-    """Scrub the raw gitleaks JSON in place BEFORE it enters EngineResult.raw (which
-    is persisted to Postgres + crosses the scanner→orchestrator hop). Reuses
-    `_redact`. Replaces the secret value everywhere it appears — including inside the
-    `Match`/`Line` context — so no plaintext survives the classification boundary."""
-    for item in raw:
-        if not isinstance(item, dict):
-            continue
-        secret = item.get("Secret") or ""
-        red = _redact(secret) if secret else ""
-        for k in _GITLEAKS_VALUE_KEYS:
-            v = item.get(k)
-            if not isinstance(v, str) or not v:
-                continue
-            item[k] = (v.replace(secret, red) if secret and secret in v else _redact(v))
-    return raw
-
-
 def annotate(findings: list[Finding]) -> None:
     """In-place: tag + down-rank fixture/placeholder/expired secrets; never touch a
     live-format provider credential. For gitleaks findings the raw `match` is
@@ -220,7 +199,6 @@ def annotate(findings: list[Finding]) -> None:
         meta = f.metadata if isinstance(f.metadata, dict) else {}
         value = str(meta.get("match") or f.code_snippet or _lines_of(meta) or "")
         entropy = meta.get("entropy")
-        is_gitleaks = f.engine.value == "gitleaks"
 
         try:
             # mandatory override — a real provider credential is never down-ranked.
@@ -246,12 +224,8 @@ def annotate(findings: list[Finding]) -> None:
                 _cap_low(f, "placeholder", "value has placeholder shape / low entropy")
             elif _in_fixture_path(f.file_path):
                 _cap_low(f, "test-fixture", "secret sits in a test/fixture/example path")
-        finally:
-            # scrub the raw value out of what gets stored, always. The code_snippet
-            # is redacted (surgically, keeping the line readable) by utils.snippet
-            # for ALL secret findings; here we (a) redact the gitleaks match text and
-            # (b) drop the transient _secret_raw so the plaintext never serializes.
-            if is_gitleaks and isinstance(f.metadata, dict):
-                if f.metadata.get("match"):
-                    f.metadata["match"] = _redact(value)
-                f.metadata.pop("_secret_raw", None)
+        except Exception as exc:  # noqa: BLE001 — one finding must not stop the rest
+            log.debug("secret_context.classify_failed", rule_id=f.rule_id, error=str(exc))
+        # NOTE: no redaction here. The plaintext value stays on the in-memory finding
+        # (match / code_snippet) and is scrubbed at the single egress chokepoint
+        # (EngineResult serialization -> enrichment.egress).

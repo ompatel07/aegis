@@ -131,20 +131,18 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
     finally:
         _secure_delete(report_path)  # shred plaintext report (zero-overwrite + unlink)
 
+    # Record the plaintext values for the single egress chokepoint's value-scrub
+    # (EngineResult serialization). We do NOT redact here — redaction is a boundary
+    # guarantee, not this engine's job. raw_findings + findings hold plaintext in
+    # memory only; the chokepoint scrubs every field on the way out.
+    from enrichment import secret_registry
+
+    secret_registry.record(req.scan_id, (item.get("Secret") for item in raw_findings))
+
     findings = _parse(raw_findings, req.path)
-    from enrichment import enricher, secret_context
+    from enrichment import enricher
 
     enricher.enrich_all(findings, req.path)
-    # LEAK FIX: enrich_all redacts the Finding objects, but the raw gitleaks JSON
-    # below still holds plaintext (Secret/Match). Scrub it BEFORE it enters
-    # EngineResult.raw — that field is persisted to scans.raw_gitleaks_output and
-    # crosses the scanner→orchestrator hop. Single redaction impl (secret_context).
-    secret_context.redact_raw_findings(raw_findings)
-    # defence in depth: the transient bare value must never serialize, even if the
-    # enrichment pass above was interrupted for some finding.
-    for f in findings:
-        if isinstance(f.metadata, dict):
-            f.metadata.pop("_secret_raw", None)
     return EngineResult(
         engine=Engine.GITLEAKS,
         pillar=Pillar.SECURITY,
@@ -211,10 +209,6 @@ def _parse(raw_findings: list[dict], root: str) -> list[Finding]:
                     "entropy": item.get("Entropy"),
                     "tags": item.get("Tags"),
                     "commit": item.get("Commit"),
-                    # Transient: the exact secret value, used ONLY for the
-                    # value-based snippet scrub (utils.snippet). secret_context pops
-                    # it in enrich_all before the finding is ever serialized.
-                    "_secret_raw": item.get("Secret"),
                 },
             )
         )

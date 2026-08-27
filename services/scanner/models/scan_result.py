@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from enum import Enum
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_serializer
 
 
 class Severity(str, Enum):
@@ -186,6 +186,21 @@ class EngineResult(BaseModel):
     error: str | None = None
     # Reproducible id of the rule set used (semgrep), recorded on the scan.
     rule_pack_version: str | None = None
+
+    @model_serializer(mode="wrap")
+    def _redact_on_serialize(self, handler):
+        """THE egress chokepoint. Every serialization of an EngineResult — the
+        FastAPI response to the orchestrator, any model_dump/model_dump_json — is
+        scrubbed of plaintext secrets here, so it is structurally impossible to emit
+        an EngineResult that skipped redaction. See enrichment.egress."""
+        data = handler(self)
+        try:
+            from enrichment import egress
+
+            egress.scrub(data, self.scan_id)
+        except Exception:  # noqa: BLE001 — never break serialization
+            pass
+        return data
 
     @classmethod
     def failed(

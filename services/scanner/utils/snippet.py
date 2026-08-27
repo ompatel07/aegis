@@ -82,13 +82,10 @@ def attach(findings: list[Finding], root: str) -> None:
             flagged = _normalized_flagged(lines, f.line_start, f.line_end)
             if lines is not None and f.line_start:
                 snippet, start = _snippet(lines, f.line_start, f.line_end)
-                if _is_secret(f):
-                    # gitleaks stashes the exact value under a transient key for the
-                    # value-based scrub; secret_context pops it before serialization.
-                    meta = f.metadata if isinstance(f.metadata, dict) else {}
-                    value = meta.get("_secret_raw")
-                    snippet = _redact(snippet, value)
-                    _redact_meta_lines(meta, value)  # semgrep 'lines' etc. also leak
+                # NOTE: redaction is NOT done here. Secret snippets/lines are held
+                # in memory and scrubbed at the single egress chokepoint
+                # (EngineResult serialization -> enrichment.egress), so no engine can
+                # emit plaintext regardless of whether it ran this enrichment.
                 f.code_snippet = snippet
                 f.snippet_start_line = start
             basis = _basis(f, flagged)
@@ -155,21 +152,43 @@ def _basis(f: Finding, flagged: str) -> str:
     return _SEP.join(parts)
 
 
-def _is_secret(f: Finding) -> bool:
-    """Capability check: does this finding expose a credential (so its snippet must
-    be redacted)? True for gitleaks, for any rule whose id names a secret, and for
-    CWE-798/259 — NOT an engine check (semgrep credential rules leak otherwise)."""
-    eng = f.engine.value if hasattr(f.engine, "value") else str(f.engine)
-    if eng == "gitleaks":
+def is_secret_capability(engine: str, rule_id: str, cwe_id: str, category: str) -> bool:
+    """Capability check: does this finding expose a credential (so its line text must
+    be redacted)? True for gitleaks, for any rule id naming a secret, and for
+    CWE-798/259 — NOT an engine check (semgrep credential rules leak otherwise).
+    Works from primitives so both Finding objects and serialized dicts can use it."""
+    if (engine or "").lower() == "gitleaks":
         return True
-    rid = (f.rule_id or "").lower()
+    rid = (rule_id or "").lower()
     if any(h in rid for h in _SECRET_RULE_HINTS):
         return True
-    cwe = "".join(ch for ch in (f.cwe_id or "") if ch.isdigit())
+    cwe = "".join(ch for ch in (cwe_id or "") if ch.isdigit())
     if cwe in _SECRET_CWES:
         return True
+    return "secret" in (category or "").lower()
+
+
+def _is_secret(f: Finding) -> bool:
+    eng = f.engine.value if hasattr(f.engine, "value") else str(f.engine)
     meta = f.metadata if isinstance(f.metadata, dict) else {}
-    return "secret" in str(meta.get("category") or "").lower()
+    return is_secret_capability(eng, f.rule_id or "", f.cwe_id or "",
+                                str(meta.get("category") or ""))
+
+
+def is_secret_dict(d: dict) -> bool:
+    """Same check over a serialized finding/result dict (used by the egress
+    chokepoint). Tolerates gitleaks/semgrep raw key spellings."""
+    if not isinstance(d, dict):
+        return False
+    engine = d.get("engine") or ""
+    rule = d.get("rule_id") or d.get("RuleID") or d.get("check_id") or d.get("CheckID") or ""
+    cwe = d.get("cwe_id") or ""
+    if not cwe:
+        cwes = d.get("CweIDs") or d.get("cwe") or []
+        cwe = (cwes[0] if isinstance(cwes, list) and cwes else str(cwes or ""))
+    meta = d.get("metadata") if isinstance(d.get("metadata"), dict) else {}
+    return is_secret_capability(str(engine), str(rule), str(cwe),
+                                str(meta.get("category") or ""))
 
 
 def _mask(s: str) -> str:
@@ -179,18 +198,9 @@ def _mask(s: str) -> str:
 
 
 # Metadata keys that carry raw source text and therefore the secret: semgrep puts
-# the matched line in `lines`; other engines use these too. Redacted for secret
-# findings alongside code_snippet.
+# the matched line in `lines`; other engines use these too. The egress chokepoint
+# shape-scrubs these inside secret-ish subtrees.
 _META_LINE_KEYS = ("lines", "line", "code", "snippet", "matched", "context")
-
-
-def _redact_meta_lines(meta: dict, value: str | None) -> None:
-    if not isinstance(meta, dict):
-        return
-    for k in _META_LINE_KEYS:
-        v = meta.get(k)
-        if isinstance(v, str) and v:
-            meta[k] = _redact(v, value)
 
 
 def _redact(text: str, value: str | None = None) -> str:

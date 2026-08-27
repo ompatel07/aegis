@@ -152,11 +152,8 @@ layered (both, via the single `secret_context._redact`):
 `metadata["lines"]` (truncated 2000) — redacted for secret findings in the same
 pass (keys: lines/line/code/snippet/matched/context).
 
-**KNOWN REMAINING carrier (out of scope for the snippet fix, flagged):** the raw
-semgrep JSON in `EngineResult.raw` (→ `scans.raw_semgrep_output`) still holds
-matched lines for semgrep secret findings — the same class as gitleaks Leak 1,
-which was fixed for gitleaks only. Recommend a follow-up to redact secret findings'
-lines in the raw semgrep output before persistence.
+**This carrier — the raw semgrep JSON in `EngineResult.raw` — is now closed by the
+egress chokepoint (Defect 1d below), not a per-engine fix.**
 
 **Blast radius (local Postgres, 78 scans / 12,339 findings):** 9 `code_snippet` +
 110 `metadata.lines` rows held plaintext credentials (3 RSA key bodies, bcrypt
@@ -172,6 +169,50 @@ code_snippet; a SEMGREP-caught hardcoded secret → absent from code_snippet +
 metadata (Hole-1 guard); the gitleaks sentinel case still green; snippets stay
 readable (variable name + comment survive, only the secret masked). Full suite: 110
 passed. Pass-3 recall: **0.917 unchanged**.
+
+---
+
+## Defect 1d (SECURITY) — redaction is now a boundary guarantee, not per-engine
+
+**Why this architecture note matters more than the list of fixes:** four plaintext
+carriers were found *sequentially* — gitleaks `EngineResult.raw` (follow-up 1),
+`code_snippet` (follow-up 2), `metadata.lines` (found mid-2), and the raw semgrep
+JSON (flagged in 2). **Each fix was scoped to one engine while the identical defect
+sat in the next.** `deployment_engine` and `trivy_engine` returned `raw=` unredacted
+and unflagged the whole time. Per-engine redaction guarantees nothing; the fifth
+carrier is always one engine away.
+
+**The fix: one chokepoint every result must cross.**
+- **Scan-scoped values** (`enrichment/secret_registry.py`): gitleaks records the
+  plaintext values it recovers, keyed by scan_id, TTL-bounded, in memory only —
+  never persisted or logged.
+- **The chokepoint** (`enrichment/egress.py`) runs at **`EngineResult` serialization**
+  via a pydantic `@model_serializer` on the model itself. Because it lives on the
+  type, it is **structurally impossible to construct and return an EngineResult that
+  skipped it** — the FastAPI response, and every `model_dump`/`model_dump_json`, go
+  through it. It walks the whole tree (raw, findings, metadata, deployment_report,
+  nested dicts/lists) and applies:
+    - **value scrub** — replace every known secret value (exact string, zero false
+      masking) everywhere. Covers engines we have not thought of, and ones added
+      later.
+    - **shape scrub** — inside a secret-ish finding/result, regex-redact the
+      line-carrying fields (`code_snippet`, `metadata.lines`, gitleaks `Match`,
+      semgrep `extra.lines`, deployment `output`) for values we never held.
+- The per-engine redaction is **deleted** (gitleaks `redact_raw_findings` gone; the
+  enrich-time snippet/metadata redaction removed) — two paths is how one rots.
+  Redaction now happens in exactly one place.
+
+**Guarded against regressions:** `test_secret_never_leaks.py` is parametrized over
+every engine (gitleaks, semgrep, trivy, deployment, quality) and asserts the
+sentinel is absent from each serialized result; a guard test enumerates
+`engines/*_engine.py` and asserts every `run` returns `EngineResult` (so a new
+engine cannot be added on a bypassing path); another asserts no second redactor
+(`redact_raw_findings`) exists. Full suite: 115 passed. Recall: 0.917.
+
+**Blast radius (raw_* columns):** `raw_semgrep_output` held plaintext in **18
+scans** (bcrypt hashes, PEM key bodies); cleaned with the same chokepoint logic
+(`scripts/s1_snippet_cleanup.py raw`, reusing `egress`) → **0 remain**.
+`raw_trivy_output` and `raw_quality_output`: 0; there is no `raw_deployment` column.
 
 ---
 
