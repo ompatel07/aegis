@@ -20,12 +20,16 @@ var deploymentStepWeights = map[string]float64{
 	"smoke":                 15,
 }
 
-// DeploymentScore derives a 0-100 score from the deployment report's steps.
-// Only attempted steps count toward the denominator, so a project with no build
-// system (nothing attempted) scores 100 rather than being penalized.
-func DeploymentScore(report *types.DeploymentReport) int {
+// DeploymentScore derives a 0-100 score from the deployment report's steps, or
+// nil when the deployment pillar was NOT MEASURED. Nothing attempted (no build
+// system, or build execution disabled) is not a 100 — it is "we don't know", and
+// fabricating 100 handed every repo 25 free points for a check that never ran (the
+// same defect class as the fabricated-60%-coverage bug). Nil is excluded from the
+// overall and the weights renormalize, exactly as coverage does for the quality
+// score. Never substitute a number.
+func DeploymentScore(report *types.DeploymentReport) *int {
 	if report == nil {
-		return 100
+		return nil
 	}
 	var attempted, succeeded float64
 	for _, step := range report.Steps {
@@ -39,19 +43,31 @@ func DeploymentScore(report *types.DeploymentReport) int {
 		}
 	}
 	if attempted == 0 {
-		return 100
+		return nil // not measured
 	}
-	return clampScore(int(math.Round(succeeded / attempted * 100)))
+	v := clampScore(int(math.Round(succeeded / attempted * 100)))
+	return &v
 }
 
-// OverallScore combines the three pillar scores and returns the score + grade.
-func OverallScore(security, quality, deployment int) (int, string) {
-	overall := int(math.Round(
-		float64(security)*weightSecurity +
-			float64(quality)*weightQuality +
-			float64(deployment)*weightDeployment,
-	))
-	overall = clampScore(overall)
+// OverallScore combines the measured pillar scores and returns the score + grade.
+// Security is always measured; quality and deployment may be nil (not measured),
+// in which case they are dropped and the remaining pillar weights renormalize —
+// scoring only what was actually measured.
+func OverallScore(security int, quality, deployment *int) (int, string) {
+	weighted := float64(security) * weightSecurity
+	total := weightSecurity
+	if quality != nil {
+		weighted += float64(*quality) * weightQuality
+		total += weightQuality
+	}
+	if deployment != nil {
+		weighted += float64(*deployment) * weightDeployment
+		total += weightDeployment
+	}
+	if total == 0 { // impossible (security always present), but never divide by zero
+		return security, Grade(security)
+	}
+	overall := clampScore(int(math.Round(weighted / total)))
 	return overall, Grade(overall)
 }
 

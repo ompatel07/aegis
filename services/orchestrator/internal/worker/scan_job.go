@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/hibiken/asynq"
@@ -150,8 +151,8 @@ func (p *ScanProcessor) ProcessTask(ctx context.Context, task *asynq.Task) error
 		Int("overall", agg.OverallScore).
 		Str("grade", agg.OverallGrade).
 		Int("security", agg.SecurityScore).
-		Int("quality", agg.QualityScore).
-		Int("deployment", agg.DeploymentScore).
+		Str("quality", scoreLog(agg.QualityScore)).
+		Str("deployment", scoreLog(agg.DeploymentScore)).
 		Int("findings", len(agg.Findings)).
 		Dur("duration", time.Since(start)).
 		Msg("scan completed")
@@ -185,4 +186,13 @@ func (p *ScanProcessor) fail(ctx context.Context, scanID string, task *asynq.Tas
 		log.Warn().Str("reason", msg).Int("retry", retried).Msg("scan attempt failed, will retry")
 	}
 	return fmt.Errorf("%s", msg)
+}
+
+// scoreLog renders a nullable pillar score for the completion log: "not-measured"
+// when nil, else the value. Never fabricates a number for a pillar that didn't run.
+func scoreLog(v *int) string {
+	if v == nil {
+		return "not-measured"
+	}
+	return strconv.Itoa(*v)
 }

@@ -6,40 +6,40 @@ import (
 	"github.com/aegis-platform/orchestrator/internal/types"
 )
 
-// Quality sub-score weights (must sum to 1.0).
+// Quality sub-score weights (sum to 1.0 with coverage present).
+//
+// Duplication is NOT a separate weight any more — it now lives inside the
+// maintainability score (which is where a 90%-duplicated codebase should show up),
+// so weighting it separately would double-count. Documentation (comment density)
+// is DROPPED: it rewards comment spam and SonarQube deliberately does not score it;
+// its weight is redistributed to maintainability, the real tech-debt signal.
 const (
 	weightComplexity      = 0.30
-	weightDuplication     = 0.20
-	weightMaintainability = 0.25
+	weightMaintainability = 0.55
 	weightCoverage        = 0.15
-	weightDocumentation   = 0.10
 )
 
-// QualityScore computes the weighted quality pillar score from the scanner's
-// pre-computed sub-scores. A nil metrics block (quality engine unavailable)
-// yields a neutral 100 so a missing engine never tanks the grade.
+// QualityScore computes the weighted quality pillar score, or nil when NOT
+// MEASURED (no quality metrics — the engine failed or was unavailable). Returning
+// a neutral 100 there was a fabrication (the deployment-100 defect again); nil is
+// excluded from the overall and the pillar weights renormalize.
 //
-// Coverage is special: when TestCoverageScore is nil the project shipped no
-// coverage report, so coverage is UNKNOWN. We must not count it as 0 (that would
-// punish every repo that simply doesn't publish coverage). Instead we drop the
-// coverage weight and renormalize the remaining metrics over their own weights,
-// scoring only what we actually measured.
-func QualityScore(m *types.QualityMetrics) int {
+// Coverage is likewise special: TestCoverageScore nil = no coverage report shipped
+// = UNKNOWN, so its weight is dropped and the remaining sub-scores renormalize —
+// never counted as 0.
+func QualityScore(m *types.QualityMetrics) *int {
 	if m == nil {
-		return 100
+		return nil // not measured
 	}
-	weighted := m.ComplexityScore*weightComplexity +
-		m.DuplicationScore*weightDuplication +
-		m.MaintainabilityScore*weightMaintainability +
-		m.DocumentationScore*weightDocumentation
-	totalWeight := weightComplexity + weightDuplication + weightMaintainability + weightDocumentation
-
+	weighted := m.ComplexityScore*weightComplexity + m.MaintainabilityScore*weightMaintainability
+	totalWeight := weightComplexity + weightMaintainability
 	if m.TestCoverageScore != nil {
 		weighted += *m.TestCoverageScore * weightCoverage
 		totalWeight += weightCoverage
 	}
 	if totalWeight == 0 { // defensive; weights are constants > 0
-		return 100
+		return nil
 	}
-	return clampScore(int(math.Round(weighted / totalWeight)))
+	v := clampScore(int(math.Round(weighted / totalWeight)))
+	return &v
 }

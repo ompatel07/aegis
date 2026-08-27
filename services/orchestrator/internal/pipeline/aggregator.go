@@ -11,9 +11,12 @@ import (
 type Aggregated struct {
 	Findings []types.Finding
 
-	QualityScore    int
+	// Quality and Deployment are pointers: nil = NOT MEASURED (engine unavailable /
+	// nothing attempted), persisted as NULL, excluded from the overall. Security is
+	// always measured. This mirrors how coverage represents "not measured".
+	QualityScore    *int
 	SecurityScore   int
-	DeploymentScore int
+	DeploymentScore *int
 	OverallScore    int
 	OverallGrade    string
 
@@ -75,13 +78,16 @@ func Aggregate(results []*types.EngineResult) Aggregated {
 		}
 	}
 
-	// Pillar scores.
-	agg.SecurityScore = scoring.SecurityScore(agg.Findings)
-
+	// Pillar scores. Quality metrics first — the security DENSITY needs LOC.
 	var qualityMetrics *types.QualityMetrics
 	if q := byEngine["quality"]; q != nil {
 		qualityMetrics = q.QualityMetrics
 	}
+	loc := 0
+	if qualityMetrics != nil {
+		loc = qualityMetrics.TotalCodeLines
+	}
+	agg.SecurityScore = scoring.SecurityScore(agg.Findings, loc)
 	agg.QualityScore = scoring.QualityScore(qualityMetrics)
 
 	var deployReport *types.DeploymentReport
