@@ -6,9 +6,16 @@ a list of `Finding`s in this shape. The orchestrator maps these 1:1 onto the
 """
 from __future__ import annotations
 
+import contextvars
 from enum import Enum
 
 from pydantic import BaseModel, Field, model_serializer
+
+# Re-entry guard for the egress fail-closed path: the withheld stand-in result is
+# itself an EngineResult, so serializing it must not recurse into scrubbing.
+_EGRESS_WITHHELD: contextvars.ContextVar[bool] = contextvars.ContextVar(
+    "_egress_withheld", default=False
+)
 
 
 class Severity(str, Enum):
@@ -192,15 +199,40 @@ class EngineResult(BaseModel):
         """THE egress chokepoint. Every serialization of an EngineResult — the
         FastAPI response to the orchestrator, any model_dump/model_dump_json — is
         scrubbed of plaintext secrets here, so it is structurally impossible to emit
-        an EngineResult that skipped redaction. See enrichment.egress."""
+        an EngineResult that skipped redaction. See enrichment.egress.
+
+        FAILS CLOSED: if scrubbing raises, we do NOT return the (unredacted) payload.
+        We log the failure loudly (no secret values) and return a withheld, FAILED
+        result instead — emitting nothing is the only safe outcome for a security
+        boundary. A recursion guard prevents the withheld result from looping."""
         data = handler(self)
+        if _EGRESS_WITHHELD.get():
+            return data  # this IS the safe stand-in (no secrets); do not re-scrub
         try:
             from enrichment import egress
 
             egress.scrub(data, self.scan_id)
-        except Exception:  # noqa: BLE001 — never break serialization
-            pass
-        return data
+            return data
+        except Exception as exc:  # noqa: BLE001 — fail CLOSED
+            try:
+                from logging_config import get_logger
+
+                get_logger("egress").error(
+                    "egress.redaction_failed_result_withheld",
+                    engine=getattr(self.engine, "value", str(self.engine)),
+                    error=type(exc).__name__,  # type only — never the value
+                )
+            except Exception:  # noqa: BLE001
+                pass
+            token = _EGRESS_WITHHELD.set(True)
+            try:
+                return EngineResult(
+                    engine=self.engine, pillar=self.pillar, status=EngineStatus.FAILED,
+                    error="redaction failed — result withheld to prevent secret leak",
+                    scan_id=self.scan_id, duration_seconds=self.duration_seconds,
+                ).model_dump()
+            finally:
+                _EGRESS_WITHHELD.reset(token)
 
     @classmethod
     def failed(

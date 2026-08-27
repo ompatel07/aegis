@@ -100,7 +100,7 @@ ENGINE_BINS = {
 
 
 @pytest.mark.parametrize("engine_name", list(ENGINE_BINS))
-def test_engine_output_has_no_plaintext_secret(engine_name, tmp_path):
+def test_engine_output_and_logs_have_no_plaintext_secret(engine_name, tmp_path, capfd):
     binattr = ENGINE_BINS[engine_name]
     if binattr and not binary_available(getattr(settings, binattr)):
         pytest.skip(f"{binattr} not available")
@@ -118,7 +118,95 @@ def test_engine_output_has_no_plaintext_secret(engine_name, tmp_path):
         _serialize_engine("gitleaks_engine", str(tmp_path), scan_id)
 
     blob = _serialize_engine(engine_name, str(tmp_path), scan_id)
-    assert SENTINEL not in blob, f"{engine_name} leaked the sentinel in its serialized result"
+    logs = capfd.readouterr()  # fd-level → catches structlog's stdout writes
+    assert SENTINEL not in blob, f"{engine_name} leaked the sentinel in its result"
+    assert SENTINEL not in logs.out and SENTINEL not in logs.err, (
+        f"{engine_name} leaked the sentinel into logs"
+    )
+
+
+# ── FAIL CLOSED: a scrub failure must withhold the payload, not leak it ───────
+def test_egress_fails_closed_and_marks_scan_failed(monkeypatch):
+    from enrichment import egress
+
+    def boom(*_a, **_k):
+        raise RuntimeError("scrub blew up")
+
+    # both the full walk AND the fallback fail -> must raise -> withheld result
+    monkeypatch.setattr(egress, "_walk", boom)
+    monkeypatch.setattr(egress, "_flat_value_scrub", boom)
+    secret_registry.record("failclosed", [SENTINEL])
+    r = EngineResult(engine=Engine.GITLEAKS, pillar=Pillar.SECURITY,
+                     status=EngineStatus.COMPLETED, scan_id="failclosed",
+                     raw={"x": SENTINEL}, error=SENTINEL)
+    data = json.loads(r.model_dump_json())
+    assert SENTINEL not in json.dumps(data), "leaked on scrub failure — NOT fail-closed"
+    assert data["status"] == "failed"
+    assert "redaction" in (data["error"] or "").lower()
+    assert data["raw"] is None and data["findings"] == []
+
+
+def test_flat_fallback_succeeds_when_walk_fails(monkeypatch):
+    from enrichment import egress
+
+    monkeypatch.setattr(egress, "_walk", lambda *_a, **_k: (_ for _ in ()).throw(RuntimeError("x")))
+    secret_registry.record("fallback", [SENTINEL])
+    r = EngineResult(engine=Engine.GITLEAKS, pillar=Pillar.SECURITY,
+                     status=EngineStatus.COMPLETED, scan_id="fallback", raw={"x": SENTINEL})
+    d = json.loads(r.model_dump_json())
+    assert SENTINEL not in json.dumps(d)  # flat value-scrub caught it
+    assert d["status"] == "completed"     # genuine second attempt, not withheld
+
+
+# ── scan_id=None must not silently disable the value scrub ────────────────────
+def test_none_scan_id_falls_back_to_all_registry_values():
+    secret_registry.record("somescan", [SENTINEL])
+    r = EngineResult(engine=Engine.SEMGREP, pillar=Pillar.SECURITY, status=EngineStatus.FAILED,
+                     scan_id=None, error=f"tool stderr leaked {SENTINEL}")
+    assert SENTINEL not in r.model_dump_json()
+
+
+# ── a line field emitted as an ARRAY must still be shape-scrubbed ─────────────
+def test_array_valued_line_field_is_shape_scrubbed():
+    unknown = "UNKNOWNarrayZx7Qw2Ep9Rt4Yu1Io6Pa3Sd8Fg5"  # never held → shape scrub only
+    r = EngineResult(engine=Engine.SEMGREP, pillar=Pillar.SECURITY, status=EngineStatus.COMPLETED,
+                     scan_id="arr",
+                     raw={"results": [{"check_id": "node_secret",
+                                       "extra": {"lines": [f'const s = "{unknown}"']}}]})
+    assert unknown not in r.model_dump_json()
+
+
+# ── the log path is a second, deliberate chokepoint ──────────────────────────
+def test_log_scrub_processor_is_installed_by_configure():
+    import structlog
+    from logging_config import _scrub_log_secrets, configure_logging
+    configure_logging(level="DEBUG", environment="development")  # what startup does
+    procs = structlog.get_config()["processors"]
+    assert _scrub_log_secrets in procs, "log-scrub processor not wired — logs bypass redaction"
+    # and it sits after format_exc_info so it also scrubs rendered tracebacks
+    assert structlog.processors.format_exc_info in procs
+    assert procs.index(_scrub_log_secrets) > procs.index(structlog.processors.format_exc_info)
+
+
+def test_log_processor_scrubs_message_and_traceback():
+    from logging_config import _scrub_log_secrets
+    secret_registry.record("logscan", [SENTINEL])
+    ev = _scrub_log_secrets(None, "info", {
+        "event": f"failed on {SENTINEL}",
+        "exception": f'Traceback...\n  api_key = "{SENTINEL}"\nValueError',
+    })
+    assert SENTINEL not in ev["event"]
+    assert SENTINEL not in ev["exception"]
+
+
+def test_stdlib_log_filter_scrubs_record():
+    import logging as _logging
+    from logging_config import _SecretLogFilter
+    secret_registry.record("logscan2", [SENTINEL])
+    rec = _logging.LogRecord("x", _logging.INFO, __file__, 1, "leaked %s here",
+                             (SENTINEL,), None)
+    _SecretLogFilter().filter(rec)
+    assert SENTINEL not in (rec.msg % rec.args if rec.args else rec.msg)
 
 
 # ── readability: only the secret is masked, surrounding code survives ────────

@@ -44,6 +44,18 @@ def values(scan_id: str | None) -> set[str]:
         return set(entry[1]) if entry else set()
 
 
+def all_values() -> set[str]:
+    """Union of every live scan's values. Used when a result has no scan_id (e.g. a
+    failed EngineResult) and by the log-path scrub, where exact-string replacement
+    makes over-scrubbing harmless."""
+    with _LOCK:
+        _purge_locked()
+        out: set[str] = set()
+        for _, vs in _store.values():
+            out |= vs
+        return out
+
+
 def drop(scan_id: str | None) -> None:
     if not scan_id:
         return

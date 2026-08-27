@@ -30,15 +30,19 @@ _LINE_KEYS = set(snippet._META_LINE_KEYS) | {
 
 
 def scrub(data: dict, scan_id: str | None) -> dict:
-    """In-place scrub of a serialized EngineResult dict. Never raises."""
-    vals = sorted((v for v in secret_registry.values(scan_id) if v), key=len, reverse=True)
+    """In-place scrub of a serialized EngineResult dict.
+
+    FAILS CLOSED: if the full walk raises, we make ONE genuine second attempt
+    (flat value-scrub); if THAT also raises, we re-raise. A leaked credential is
+    unrecoverable, so redaction failure must never return the payload — the caller
+    (EngineResult serializer) turns a raise here into a withheld, failed result.
+    A None scan_id falls back to every live value, never to an empty set."""
+    live = secret_registry.values(scan_id) if scan_id else secret_registry.all_values()
+    vals = sorted((v for v in live if v), key=len, reverse=True)
     try:
-        _walk(data, vals, secretish=False)
-    except Exception:  # noqa: BLE001 — must never break serialization
-        try:
-            _flat_value_scrub(data, vals)  # last resort: at least kill known values
-        except Exception:  # noqa: BLE001
-            pass
+        _walk(data, vals, secretish=False, shape=False)
+    except Exception:  # noqa: BLE001 — one genuine retry, then fail closed
+        _flat_value_scrub(data, vals)  # if this raises too, it propagates → fail closed
     return data
 
 
@@ -49,23 +53,27 @@ def _value_scrub(s: str, vals: list[str]) -> str:
     return s
 
 
-def _walk(node, vals: list[str], secretish: bool) -> None:
+def _walk(node, vals: list[str], secretish: bool, shape: bool) -> None:
     if isinstance(node, dict):
         sub = secretish or snippet.is_secret_dict(node)
         for k, v in list(node.items()):
+            sh = sub and k in _LINE_KEYS  # this key carries source/tool line text
             if isinstance(v, str):
                 nv = _value_scrub(v, vals)
-                if sub and k in _LINE_KEYS:
+                if sh:
                     nv = snippet._redact(nv)
                 node[k] = nv
             else:
-                _walk(v, vals, sub)
+                _walk(v, vals, sub, sh)  # carry the line-key context into subtrees
     elif isinstance(node, list):
         for i, v in enumerate(node):
             if isinstance(v, str):
-                node[i] = _value_scrub(v, vals)
+                nv = _value_scrub(v, vals)
+                if shape:  # a list UNDER a line-key (e.g. lines: [..]) — shape-scrub
+                    nv = snippet._redact(nv)
+                node[i] = nv
             else:
-                _walk(v, vals, secretish)
+                _walk(v, vals, secretish, shape)
 
 
 def _flat_value_scrub(node, vals: list[str]) -> None:

@@ -216,6 +216,50 @@ scans** (bcrypt hashes, PEM key bodies); cleaned with the same chokepoint logic
 
 ---
 
+## Defect 1e (SECURITY) — egress fails CLOSED, and three scrub gaps
+
+The chokepoint design (1d) was right; its failure mode was wrong.
+
+**Fail open → fail closed.** The serializer swallowed a scrub exception and returned
+the UNREDACTED payload — the fourth instance of the same fail-open reflex in this
+codebase (semgrep custom-rule fallback, SAST-timeout-reports-success, and this). For
+a security boundary that is inverted: a failed scan is recoverable, a leaked
+credential is not. Now: if `egress.scrub` raises, it makes ONE genuine second attempt
+(flat value-scrub); if that also raises, it propagates, and the `EngineResult`
+serializer **withholds the payload** — returns a FAILED result with
+`error="redaction failed — result withheld…"`, `raw=null`, `findings=[]`, logged at
+ERROR (engine + exception type only, never a value). Emitting nothing is the correct
+outcome. Guarded by `test_egress_fails_closed_and_marks_scan_failed`.
+(The related deferred P0 — semgrep custom-rule degradation reporting success — is
+confirmed still on the list in `PERFORMANCE_TODO.md`; not fixed here.)
+
+**Gap 1 — `scan_id=None` silently disabled the value scrub.** `EngineResult.failed()`
+defaults `scan_id` to None and carries tool stderr in `error`; with no scan_id the
+value scrub found no values and only shape-scrub ran. Now a None scan_id falls back
+to **every live registry value** (exact-string, so over-scrubbing is harmless), never
+an empty set. `test_none_scan_id_falls_back_to_all_registry_values`.
+
+**Gap 2 — strings inside LISTS were never shape-scrubbed.** `_walk` shape-scrubbed
+only dict values; a line field emitted as an ARRAY (`lines: ["…", "…"]`, which some
+tools do) got value-scrub only. The parent line-key context is now carried into the
+list branch. `test_array_valued_line_field_is_shape_scrubbed`.
+
+**Gap 3 — the chokepoint covers EngineResult, not logs or tracebacks.** Anything
+logged during scanning, and any rendered traceback, bypassed the serializer. Added a
+**second, deliberate chokepoint on the log path**: a structlog processor
+(`_scrub_log_secrets`, placed after `format_exc_info` so it scrubs rendered
+tracebacks) plus a stdlib `logging.Filter` for bridged loggers (uvicorn / semgrep
+libs), both value-scrubbing every record against the live registry. Guarded by
+`test_log_scrub_processor_is_installed_by_configure`,
+`test_log_processor_scrubs_message_and_traceback`, `test_stdlib_log_filter_scrubs`,
+and the per-engine parametrized test now also asserts the sentinel is absent from
+fd-level captured logs.
+
+Full suite: 122 passed. Recall: 0.917. Live gates (provider override, JWT policy,
+no plaintext in the HTTP response): green.
+
+---
+
 ## Defect 2 — CVSS score inflation
 
 `engines/trivy_engine.py`: `_best_cvss` took **`max()` across all CVSS sources**.
