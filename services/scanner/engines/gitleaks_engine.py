@@ -36,6 +36,45 @@ _GITLEAKS_CONFIG = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "rules", "gitleaks.toml"
 )
 
+# gitleaks writes an UNREDACTED report to disk (we need the raw value to classify).
+# Keep it in a private, 0700 dir so it is never world-readable, shred it after use,
+# and sweep any stragglers on startup — an OOM SIGKILL cannot be caught, so a
+# crash-safe sweep is the only guarantee that plaintext does not linger on disk.
+_GK_TMPDIR = os.path.join(tempfile.gettempdir(), "aegis-gitleaks")
+
+
+def _secure_delete(path: str) -> None:
+    """Overwrite the file with zeros, then unlink. Best-effort."""
+    try:
+        if os.path.isfile(path):
+            size = os.path.getsize(path)
+            with open(path, "r+b", buffering=0) as fh:
+                fh.write(b"\x00" * size)
+                fh.flush()
+                os.fsync(fh.fileno())
+    except OSError:
+        pass
+    try:
+        os.remove(path)
+    except OSError:
+        pass
+
+
+def _sweep_stale_reports() -> None:
+    """Shred any leftover gitleaks report files from a previous (possibly killed)
+    run. Called at import so it runs every scanner start."""
+    try:
+        os.makedirs(_GK_TMPDIR, mode=0o700, exist_ok=True)
+        os.chmod(_GK_TMPDIR, 0o700)
+        for name in os.listdir(_GK_TMPDIR):
+            if name.startswith("gitleaks-"):
+                _secure_delete(os.path.join(_GK_TMPDIR, name))
+    except OSError as exc:
+        log.debug("gitleaks.sweep_failed", error=str(exc))
+
+
+_sweep_stale_reports()
+
 
 async def run(req: ScanRequest, settings: Settings) -> EngineResult:
     if not binary_available(settings.gitleaks_bin):
@@ -44,7 +83,11 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
             "gitleaks binary not found on PATH", scan_id=req.scan_id,
         )
 
-    report_fd, report_path = tempfile.mkstemp(prefix="gitleaks-", suffix=".json")
+    os.makedirs(_GK_TMPDIR, mode=0o700, exist_ok=True)
+    # mkstemp creates the file 0600 (owner-only) — the report is never
+    # world-readable while it exists.
+    report_fd, report_path = tempfile.mkstemp(prefix="gitleaks-", suffix=".json",
+                                              dir=_GK_TMPDIR)
     os.close(report_fd)
 
     try:
@@ -86,15 +129,17 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
 
         raw_findings = _read_report(report_path)
     finally:
-        try:
-            os.remove(report_path)
-        except OSError:
-            pass
+        _secure_delete(report_path)  # shred plaintext report (zero-overwrite + unlink)
 
     findings = _parse(raw_findings, req.path)
-    from enrichment import enricher
+    from enrichment import enricher, secret_context
 
     enricher.enrich_all(findings, req.path)
+    # LEAK FIX: enrich_all redacts the Finding objects, but the raw gitleaks JSON
+    # below still holds plaintext (Secret/Match). Scrub it BEFORE it enters
+    # EngineResult.raw — that field is persisted to scans.raw_gitleaks_output and
+    # crosses the scanner→orchestrator hop. Single redaction impl (secret_context).
+    secret_context.redact_raw_findings(raw_findings)
     return EngineResult(
         engine=Engine.GITLEAKS,
         pillar=Pillar.SECURITY,

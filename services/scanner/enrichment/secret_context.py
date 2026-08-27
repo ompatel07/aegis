@@ -178,11 +178,36 @@ def _cap_low(f: Finding, context: str, reason: str) -> None:
 def _redact(value: str) -> str:
     """Mask a secret for storage — reveal only a short identifying prefix (AKIA,
     ghp_, eyJ…) + length, never the body. gitleaks runs WITHOUT --redact so we can
-    classify; this is where the value is scrubbed before it is stored anywhere."""
+    classify; this is where the value is scrubbed before it is stored anywhere.
+    THE single redaction implementation — do not add another."""
     if not value:
         return ""
     v = value.strip()
     return (v[:4] + "…[" + str(len(v)) + "c]") if len(v) > 8 else "***"
+
+
+# gitleaks 8.21.2 value-bearing fields (verified against real output): `Secret`
+# holds the raw value; `Match` embeds it inside the surrounding source line. Older
+# schemas also emit `Line`. Nothing else (Fingerprint is file:rule:startline).
+_GITLEAKS_VALUE_KEYS = ("Secret", "Match", "Line")
+
+
+def redact_raw_findings(raw: list) -> list:
+    """Scrub the raw gitleaks JSON in place BEFORE it enters EngineResult.raw (which
+    is persisted to Postgres + crosses the scanner→orchestrator hop). Reuses
+    `_redact`. Replaces the secret value everywhere it appears — including inside the
+    `Match`/`Line` context — so no plaintext survives the classification boundary."""
+    for item in raw:
+        if not isinstance(item, dict):
+            continue
+        secret = item.get("Secret") or ""
+        red = _redact(secret) if secret else ""
+        for k in _GITLEAKS_VALUE_KEYS:
+            v = item.get(k)
+            if not isinstance(v, str) or not v:
+                continue
+            item[k] = (v.replace(secret, red) if secret and secret in v else _redact(v))
+    return raw
 
 
 def annotate(findings: list[Finding]) -> None:
@@ -208,7 +233,7 @@ def annotate(findings: list[Finding]) -> None:
 
             rid = (f.rule_id or "").lower()
             if "jwt" in rid:
-                # JWTs are governed by expiry alone; path/placeholder do not apply.
+                # (S1 original policy — corrected in the next commit)
                 if _jwt_exp_status(value) == "expired":
                     _cap_low(f, "expired", "JWT exp claim is in the past — cannot be live")
                 continue
@@ -218,6 +243,13 @@ def annotate(findings: list[Finding]) -> None:
             elif _in_fixture_path(f.file_path):
                 _cap_low(f, "test-fixture", "secret sits in a test/fixture/example path")
         finally:
-            # scrub the raw value out of what gets stored, always.
-            if is_gitleaks and isinstance(f.metadata, dict) and f.metadata.get("match"):
-                f.metadata["match"] = _redact(value)
+            # scrub the raw value out of what gets stored, always. Two carriers:
+            #  - metadata["match"] (the gitleaks match text)
+            #  - code_snippet, which _attach_snippets filled with the raw SOURCE
+            #    line for this finding — it contains the secret verbatim.
+            if is_gitleaks:
+                if isinstance(f.metadata, dict) and f.metadata.get("match"):
+                    f.metadata["match"] = _redact(value)
+                if f.code_snippet:
+                    f.code_snippet = _redact(str(f.code_snippet))
+                    f.snippet_start_line = None
