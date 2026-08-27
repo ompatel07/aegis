@@ -58,7 +58,7 @@ func SecurityRating(findings []types.Finding) string {
 //	A ≥ 90, B ≥ 80, C ≥ 70, D ≥ 50, else E.
 func MaintainabilityRating(m *types.QualityMetrics) string {
 	if m == nil {
-		return "A"
+		return "N/A" // NOT MEASURED — never a fabricated "A" (unknown-value audit, C1)
 	}
 	return scoreToRating(m.MaintainabilityScore)
 }

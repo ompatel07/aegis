@@ -158,9 +158,15 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
     has_tests = _has_tests(files)
     coverage_pct = _coverage_percentage(req.path)
 
+    # Smell count for MAINTAINABILITY must exclude duplication findings: those are
+    # display-capped at 60 (see _duplication_findings), and letting a *capped count*
+    # feed scoring inverted the metric (a 90%-duplicated repo emitted only 60 clone
+    # findings → looked LESS smelly). Duplication enters maintainability via the
+    # measured dup_pct instead; the emitted-findings cap NEVER feeds scoring.
+    nondup_smell_count = sum(1 for f in findings if f.rule_id != "quality/duplicated-code")
     metrics = _build_metrics(
         avg_cc=avg_cc, max_cc=max_cc, total_functions=total_functions,
-        total_code_lines=total_code_lines, smell_count=len(findings),
+        total_code_lines=total_code_lines, smell_count=nondup_smell_count,
         dup_pct=dup_pct, comment_density=comment_density,
         has_tests=has_tests, coverage_pct=coverage_pct,
     )
@@ -663,15 +669,23 @@ def _build_metrics(
     # Complexity: 100 when avg <= 5, decaying ~6 pts per point of avg CC above 5.
     complexity_score = _clamp(100.0 - max(0.0, avg_cc - 5.0) * 6.0)
 
-    # Duplication: directly inverse of duplicated-line percentage.
+    # Duplication: directly inverse of duplicated-line percentage. Kept for display;
+    # the composite quality score folds duplication into maintainability instead of
+    # weighting it twice.
     duplication_score = _clamp(100.0 - dup_pct)
 
-    # Maintainability: penalize smell density (smells per 1k LOC).
+    # Maintainability = the tech-debt score, from the MEASURED duplication percentage
+    # plus non-duplication smell density (smells per KLOC). Calibrated on the S1
+    # corpus (C1): weights 0.55 (dup%) + 4.0 (smell density) spread the 15 repos and
+    # rank a 90.5%-duplicated repo (mall) WORSE than a 32%-duplicated one (mealie),
+    # which the old `100 - smell_density*8` (fed by a capped clone count) inverted.
     kloc = max(total_code_lines / 1000.0, 0.001)
-    smell_density = smell_count / kloc
-    maintainability_score = _clamp(100.0 - smell_density * 8.0)
+    nondup_smell_density = smell_count / kloc
+    maintainability_score = _clamp(100.0 - dup_pct * 0.55 - nondup_smell_density * 4.0)
 
-    # Documentation: target ~15% comment density = full marks.
+    # Documentation: comment density. Still surfaced for display, but NO LONGER fed
+    # into the composite quality score — it rewards comment spam and SonarQube does
+    # not score it (C1). Its weight was redistributed to maintainability.
     documentation_score = _clamp((comment_density / 0.15) * 100.0)
 
     # Coverage: a real % ONLY when a coverage report was parsed. If none exists,
