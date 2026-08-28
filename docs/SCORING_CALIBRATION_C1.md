@@ -55,9 +55,15 @@ gap (pterodactyl Raw-B #4 vs computed #1) is precisely the **severity weighting*
 So the disagreement reduces to two explicit, defensible formula choices the raw
 check leaves out: **security ranks above maintainability**, and **a critical is
 worse than a high**. This is a value judgement, not a bug — and per the review
-protocol it is surfaced for a human decision, NOT resolved here by declaring the
+protocol it was surfaced for a human decision, NOT resolved by declaring the
 computed result "more correct" (the mistake the first check made with pterodactyl).
-The constants were NOT re-tuned on the strength of this check.
+
+**Resolution (human decision):** the FORMULA is right, the raw expectation is too
+naive — security *should* outrank maintainability and a critical *should* outweigh a
+high. Raw-B (equal security/debt category weight, no severity weights) already
+agrees, so it stands as the canonical formula-independent check and the constants
+(`K_SEC=5.5`, `BD=0.55`, `BS=4.0`, pillar `0.40/0.35/0.25`) are validated. No
+re-tuning. pterodactyl worst (9 criticals in 53k LOC) is the intended outcome.
 
 ## mall-vs-mealie duplication sanity (must hold)
 
