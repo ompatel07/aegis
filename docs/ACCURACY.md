@@ -6,6 +6,12 @@ measured, on **which corpus**, on **what date**, at **which commit**. A number
 without those four does not belong in this file, and no accuracy number belongs
 anywhere else in the repo, marketing, or UI without a pointer back here.
 
+**Aegis is a two-pillar product** — Security and Code Quality — and never builds or
+runs customer code. Deployment testing is **CI-only** (it requires the customer's own
+pipeline to have built the workspace; Aegis inspects the artifacts and never builds),
+so it is not a pillar on the default web/API path and carries no accuracy claim here.
+See `docs/SCORING_CALIBRATION_C1.md` § Two-pillar composition.
+
 Two numbers are two different things, and this file keeps them apart:
 
 - **Benchmark** precision/recall — measured on a *synthetic* corpus (planted
@@ -92,15 +98,24 @@ OWASP Benchmark v1.2, 2,740 cases):
 far the lowest FPR (0.425 vs 0.682).** The comparative claim holds under the metric
 that *disfavours* us, so it stays. Note our Java taint rules roughly halve base
 Semgrep's FPR (0.748 → 0.425) — that FPR gap is the value the custom rules add.
-Caveat: this is a *synthetic Java taint* benchmark; a benchmark score is not a
-real-world precision claim (see the V1 triage below, and CORRECTION 2).
+
+**Limitation — this is a cross-study comparison, not a same-harness head-to-head.**
+Aegis's TPR/FPR were measured on our own harness; CodeQL's and base Semgrep's are
+taken from Xiong & Zhang, *Sifting the Noise* (arXiv:2601.22952, Table 2). The
+paper's figures were verified against the source (CodeQL FPR 0.682 matches their
+reported value), but tool version, configuration, and which CWE categories were
+scored can differ between their run and ours, so treat the gap as indicative, not
+exact. The clean version — running CodeQL ourselves on our own harness — is a
+pre-funding-deck TODO, not done here. And this is a *synthetic Java taint*
+benchmark: a benchmark score is not a real-world precision claim (see the V1 triage
+below, and CORRECTION 2).
 
 ### Real-world — V1 corpus
 
 | metric | value | corpus | date / commit | confidence |
 |---|---|---|---|---|
 | **Actionable findings, before → after Part A** | **266 → 180** crit+high (removed 188 `ai-code-*`: 86 high + 102 medium) | V1 / P1 replay | 2026-08-31 / `ad0dd66` | exact (mechanical) |
-| **`aegis-*` taint FPs root-caused & fixed** | **5 of 7** V1 findings (P2) | V1 + minimal reproductions | 2026-08-31 / `ad0dd66`+P2 | high (mechanism verified) |
+| **`aegis-*` taint FPs root-caused & fixed** | **5 of 7** V1 findings (n = 7) | V1 + minimal reproductions | 2026-08-31 / `ad0dd66`+P2 | high per verdict, **wide interval** on n=7 |
 
 **Per-rule audit (P2).** The cascadia FP was not a one-off: it traced to two
 structural defects — a sink keying on a bare method name with an unbound receiver,
@@ -129,8 +144,20 @@ reproductions of each shape; the V1 repos are not re-scanned):
 and `java.java` (`sqliUrlQueryOk`, `xssStdoutOk`) with a positive `ruleid:` guard
 that real gin input still fires (`sqliGinBad`); `semgrep --test` passes 7/7 for both,
 run by `test_taint_rules.py` — the same zero-FP discipline as the bug pack. Net: 5 of
-7 V1 taint FPs eliminated; the 2 residual are SSRF *config/internal-URL* FPs, a
-distinct signal-quality problem left as a documented follow-up.
+7 (**n = 7**, wide interval — do not read a bare percentage off 7 samples) V1 taint
+FPs eliminated; the 2 residual are SSRF *config/internal-URL* FPs, a distinct
+signal-quality problem left as a documented follow-up.
+
+**Accepted false-negative class (the cost of the source fix).** Constraining the gin
+accessors to a string-literal key means `c.Query("id")` is a source but
+`c.Query(paramName)` — a variable key — is **not**. Variable-keyed accessor calls
+are real gin code, so a genuine SQLi/XSS/SSRF flowing through one is now **missed**.
+This is a deliberate trade — a large precision gain (4 of the 5 fixed FPs) for a
+narrow recall loss on an uncommon coding shape — but it is an accepted FN class, not
+a free win. It applies to every rule sharing `request_sources`
+(`aegis-go-{sql,nosql,xss,ssrf,command,path-traversal,ldap}-injection`), since the
+literal-key constraint lives in the shared source. Named-key access — the dominant
+form — is unaffected.
 
 The 180 actionable SAST findings also include **82 "secret-shaped" registry rules**
 (`node_secret`, `detected-bcrypt-hash`, …) overlapping the secrets pillar, and **91
