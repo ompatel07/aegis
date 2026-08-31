@@ -52,6 +52,18 @@ jobs:
       - working-directory: services/scanner
         run: pip-audit -r requirements.txt
 
+  no-silent-degradation:
+    name: Structural guard (no silent degradation)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      # B1 (Pass D1): fail the build on swallowed exceptions and measurement
+      # functions that fabricate a constant on an error path, unless documented
+      # with `# fail-open:`. Keeps the whole class from creeping back in.
+      - run: python services/scanner/tools/check_no_silent_degradation.py
+
   semgrep:
     name: SAST (Semgrep + Aegis taint rules)
     runs-on: ubuntu-latest

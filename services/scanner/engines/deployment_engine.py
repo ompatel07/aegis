@@ -246,6 +246,8 @@ async def _any_port_open(ports) -> bool:
             try:
                 await writer.wait_closed()
             except Exception:
+                # fail-open: the port probe already succeeded; closing the
+                # throwaway connection is best-effort cleanup with no measurement.
                 pass
             return True
         except (OSError, asyncio.TimeoutError):

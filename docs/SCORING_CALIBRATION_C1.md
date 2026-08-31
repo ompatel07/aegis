@@ -73,25 +73,52 @@ because a capped clone count (60 for every repo) fed scoring; now duplication en
 maintainability via the measured **percentage**, and the emitted-findings cap (still
 60, for UI) never touches scoring.
 
-## The unknown-value table — what each returns when it does not know
+## The unknown-value contract — what EVERY measurement returns when it does not know
 
-| score / rating | no findings | no files / LOC unknown | unsupported lang | engine failed | engine timed out |
-|---|---|---|---|---|---|
-| **Security** | 100 (clean) | **nil = not measured** (can't normalize without LOC; no broken-formula fallback) | 100 if no findings | findings absent → scored on what ran¹ | same as failed¹ |
-| **Quality** | high (few smells) | `nil` = **not measured** | `nil` | `nil` = not measured | `nil` |
-| **Deployment** | — | — | — | `nil` = not measured | `nil` |
-| **Overall** | from measured pillars | renormalized over measured | renormalized | excludes nil pillars | excludes nil pillars |
-| **Reliability** | A (no bugs) | A | A | A (bugs absent)¹ | A¹ |
-| **Security rating (letter)** | A (no vulns) | A | A | A¹ | A¹ |
-| **Maintainability rating** | from score | **N/A** (nil metrics) | N/A | **N/A** | N/A |
+The rule the whole D1 pass enforces: when Aegis does not know, it says **not
+measured** (nil → NULL in the DB → "Not measured" in the UI). It never substitutes
+a plausible number, a clean 100, or an A. "not measured" must never render as 0,
+blank, or A. Every measurement below is checked by `TestUnknownValueContract`
+(orchestrator `internal/scoring`) and, at the pipeline seam, by `aggregator_test.go`.
 
-¹ **Logged as a P0** (`PERFORMANCE_TODO.md`), not a follow-up: if ALL of a pillar's
-engines fail, absence of findings reads as "clean" (Security 100,
-Reliability/Security-rating A) — the Q1 constant-A defect in the failure path. C1
-closed what it can detect (Quality/Deployment nil; Security nil when LOC unknown);
-wiring `EngineErrors` into a per-pillar "not measured" for Security/Reliability is
-the P0. LOC-unknown security is now nil (not the count-based fallback), and the
-overall renormalizes over every measured pillar including security.
+Legend: **nil** = not measured (NULL / "Not measured"). "engine failed/timed out"
+columns assume ALL engines feeding that pillar failed — with partial coverage the
+pillar IS measured on what ran, and the failed engine is listed in `engines_degraded`.
+
+### Pillar scores & ratings
+
+| measurement | no findings | LOC / metrics unknown | all pillar engines failed/timed out |
+|---|---|---|---|
+| **Security score** | 100 (clean, measured) | **nil** (can't normalize without LOC; no broken-formula fallback) | **nil** — not measured, never 100 |
+| **Quality score** | high (few smells) | **nil** | **nil** |
+| **Deployment score** | 100 (no vulns) | — | **nil** |
+| **Overall score** | from measured pillars | renormalized over measured | **nil** / grade `N/A` when nothing measured |
+| **Reliability rating** | A (no bugs) | A | **nil** — not measured, never A |
+| **Security rating** | A (no vulns) | A | **nil** — not measured, never A |
+| **Maintainability rating** | from score | **nil** (nil metrics; CHAR(1) can't hold a sentinel, so NULL) | **nil** |
+
+### Sub-metrics that feed the pillars
+
+| measurement | unknown path → value |
+|---|---|
+| **Complexity score** | metrics absent → quality is nil (sub-score never counted as 0) |
+| **Maintainability sub-score** (`100 − 0.55·dup% − 4.0·smell-density`) | metrics absent → quality nil |
+| **Test coverage score** | no coverage report → **nil**; its weight is DROPPED and the other sub-scores renormalize — never counted as 0 |
+| **Duplication %** | not computed → maintainability metric absent → maintainability rating nil |
+| **LOC / KLOC** | unknown → security nil (above); density undefined, no fallback |
+
+### Raw counts & the degraded surface
+
+| measurement | unknown path → value |
+|---|---|
+| **security_issues_total / secrets_found / vulnerabilities_found** | raw observation counts. If the engine did not run they surface as 0 **beside a populated `engines_degraded[]`** — a 0 is only honest next to the degraded banner that says coverage was lost. Never silently 0. |
+| **engines_degraded[]** | the scan-level not-measured signal. Non-empty ⇒ the scan is DEGRADED (SARIF `executionSuccessful=false`, amber banner "results are incomplete, not clean"), never presented as clean. Fed by both failed engines (`status=failed`) and self-degraded engines (e.g. custom rule pack failed to load). |
+
+The all-engines-failed → constant-A gap (previously footnoted here as an open P0 in
+`PERFORMANCE_TODO.md`) is **CLOSED** by Pass D1: the aggregator computes per-pillar
+"measured" from completed-engine presence and sets score AND rating to nil when a
+pillar has no completed engine. See `fix(reliability): surface engine degradation
+end-to-end` and `aggregator_test.go` (`TestAggregateAllSecurityEnginesFailed_NotMeasured`).
 
 ## Justification for every constant
 

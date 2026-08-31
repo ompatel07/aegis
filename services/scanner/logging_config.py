@@ -26,16 +26,26 @@ def _scrub_log_secrets(logger, method_name, event_dict):
     record is value-scrubbed against the live secret values (exact string, so
     over-scrubbing is harmless). Placed after format_exc_info so it also scrubs the
     rendered traceback."""
+    vals = _live_secret_values()
+    if not vals:
+        return event_dict
     try:
-        vals = _live_secret_values()
-        if vals:
-            from enrichment import egress
-
-            for k, v in list(event_dict.items()):
-                if isinstance(v, str):
-                    event_dict[k] = egress._value_scrub(v, vals)
+        from enrichment import egress
     except Exception:  # noqa: BLE001
-        pass
+        # fail closed: the scrubber is unavailable but we KNOW there are live
+        # secrets, so blank every string field rather than risk emitting one raw.
+        for k, v in list(event_dict.items()):
+            if isinstance(v, str):
+                event_dict[k] = "[redacted: scrubber unavailable]"
+        return event_dict
+    for k, v in list(event_dict.items()):
+        if isinstance(v, str):
+            try:
+                event_dict[k] = egress._value_scrub(v, vals)
+            except Exception:  # noqa: BLE001
+                # fail closed: could not prove this field is secret-free, so
+                # withhold its content rather than emit a possibly-raw secret.
+                event_dict[k] = "[redacted: scrub error]"
     return event_dict
 
 
@@ -44,20 +54,24 @@ class _SecretLogFilter(logging.Filter):
     through logging.basicConfig, which structlog's processor does not see)."""
 
     def filter(self, record: logging.LogRecord) -> bool:
+        vals = _live_secret_values()
+        if not vals:
+            return True
         try:
-            vals = _live_secret_values()
-            if vals:
-                from enrichment import egress
+            from enrichment import egress
 
-                if isinstance(record.msg, str):
-                    record.msg = egress._value_scrub(record.msg, vals)
-                if record.args:
-                    record.args = tuple(
-                        egress._value_scrub(a, vals) if isinstance(a, str) else a
-                        for a in record.args
-                    )
+            if isinstance(record.msg, str):
+                record.msg = egress._value_scrub(record.msg, vals)
+            if record.args:
+                record.args = tuple(
+                    egress._value_scrub(a, vals) if isinstance(a, str) else a
+                    for a in record.args
+                )
         except Exception:  # noqa: BLE001
-            pass
+            # fail closed: we know there are live secrets but could not scrub this
+            # record, so blank its content rather than let it through unredacted.
+            record.msg = "[redacted: scrub error]"
+            record.args = None
         return True
 
 

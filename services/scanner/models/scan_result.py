@@ -233,6 +233,8 @@ class EngineResult(BaseModel):
                     error=type(exc).__name__,  # type only — never the value
                 )
             except Exception:  # noqa: BLE001
+                # fail-open: logging the redaction failure is best-effort; the
+                # result is withheld below regardless of whether this log lands.
                 pass
             token = _EGRESS_WITHHELD.set(True)
             try:
