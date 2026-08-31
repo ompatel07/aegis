@@ -17,7 +17,8 @@ const (
 	StatusFailed    = "failed"
 )
 
-// Scan is one run of the 3-pillar pipeline. Score fields are nullable until the
+// Scan is one run of the two-pillar pipeline (Security + Code Quality; deployment
+// is CI-mode only). Score fields are nullable until the
 // scan completes, so they are pointers and omitted from JSON when absent.
 type Scan struct {
 	ID        string  `db:"id" json:"id"`

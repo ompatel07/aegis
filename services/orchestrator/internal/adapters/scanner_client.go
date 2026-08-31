@@ -25,9 +25,14 @@ type scanRequest struct {
 	CustomRules  []string `json:"custom_rules,omitempty"`
 }
 
-// deploymentRequest extends scanRequest with build controls.
+// deploymentRequest extends scanRequest with build controls. Aegis always sends
+// CIMode=true and BuildEnabled=false: the orchestrator only ever reaches this in CI
+// mode, and Aegis never builds customer code — the scanner inspects the pre-built
+// workspace and reports NOT MEASURED if no artifacts are present.
 type deploymentRequest struct {
 	scanRequest
+	CIMode              bool `json:"ci_mode"`
+	BuildEnabled        bool `json:"build_enabled"`
 	SmokeTest           bool `json:"smoke_test"`
 	StartTimeoutSeconds int  `json:"start_timeout_seconds"`
 }
@@ -99,7 +104,9 @@ func (s *ScannerClient) Quality(ctx context.Context, path, scanID string, langs,
 func (s *ScannerClient) Deployment(ctx context.Context, path, scanID string, langs, ptypes []string) (*types.EngineResult, error) {
 	return s.call(ctx, "/scan/deployment", deploymentRequest{
 		scanRequest:         s.base(path, scanID, langs, ptypes),
-		SmokeTest:           true,
+		CIMode:              true,  // inspect pre-built artifacts only
+		BuildEnabled:        false, // Aegis never builds customer code
+		SmokeTest:           false,
 		StartTimeoutSeconds: 30,
 	})
 }

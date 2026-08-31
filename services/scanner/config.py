@@ -72,7 +72,11 @@ class Settings(BaseSettings):
     deep_scan_max_repo_mb: int = 500
 
     # ── Deployment engine ────────────────────────────────────────────────────
-    deployment_build_enabled: bool = True
+    # Defaults OFF: Aegis never builds customer code. The orchestrator only reaches
+    # the deployment engine in CI mode (inspection of a pre-built workspace); this
+    # legacy build-execution default is kept only for local/dev experiments and is
+    # never enabled on the product path. See docs/ACCURACY.md (two-pillar product).
+    deployment_build_enabled: bool = False
 
     @property
     def semgrep_base_config_list(self) -> list[str]:

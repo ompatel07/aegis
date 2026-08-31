@@ -29,6 +29,12 @@ type ScanPayload struct {
 	DeepScanEnabled bool   `json:"deep_scan_enabled,omitempty"`
 	DeepScanEngine  string `json:"deep_scan_engine,omitempty"`
 
+	// CIMode gates the deployment pillar. Web/API scans leave it false (two-pillar
+	// product: Security + Code Quality). Only a CI integration — running after the
+	// customer's own pipeline built the workspace — sets it true, and even then
+	// Aegis inspects the pre-built artifacts and never builds the code itself.
+	CIMode bool `json:"ci_mode,omitempty"`
+
 	// Per-project custom Semgrep rules (YAML documents) for this scan.
 	CustomRules []string `json:"custom_rules,omitempty"`
 }

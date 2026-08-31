@@ -12,7 +12,9 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { Scan } from "@/lib/types";
 
-// Plots the three pillar scores across a project's scan history (oldest → newest).
+// Plots the pillar scores across a project's scan history (oldest → newest). Aegis
+// is a two-pillar product (Security + Code Quality); the Deployment line is drawn
+// only if any scan in the history measured it (CI mode).
 export function TrendChart({ scans }: { scans: Scan[] }) {
   const data = [...scans]
     .filter((s) => s.status === "completed")
@@ -24,6 +26,7 @@ export function TrendChart({ scans }: { scans: Scan[] }) {
       Quality: s.quality_score ?? null,
       Deployment: s.deployment_score ?? null,
     }));
+  const showDeployment = data.some((d) => d.Deployment != null);
 
   return (
     <Card>
@@ -45,7 +48,9 @@ export function TrendChart({ scans }: { scans: Scan[] }) {
               <Line type="monotone" dataKey="Overall" stroke="#2563eb" strokeWidth={2} dot={false} />
               <Line type="monotone" dataKey="Security" stroke="#dc2626" strokeWidth={2} dot={false} />
               <Line type="monotone" dataKey="Quality" stroke="#16a34a" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="Deployment" stroke="#d97706" strokeWidth={2} dot={false} />
+              {showDeployment ? (
+                <Line type="monotone" dataKey="Deployment" stroke="#d97706" strokeWidth={2} dot={false} />
+              ) : null}
             </LineChart>
           </ResponsiveContainer>
         )}

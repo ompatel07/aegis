@@ -1,5 +1,9 @@
 # Real-User End-to-End Verification (Phase 2G, Prompt 1 — Functional Correctness)
 
+> **Superseded (Pass P3, 2026-08-31):** Aegis is now a **two-pillar** product —
+> Security + Code Quality; deployment testing is CI-only. This report predates that
+> decision; see [docs/ACCURACY.md](docs/ACCURACY.md).
+
 The backend path was fully verified in Passes 1–5, but driving Aegis as a real
 customer through the product exposed a broken real-user path: a scan **failed**
 with `clone failed: couldn't find remote ref refs/heads/main` because the product
@@ -85,7 +89,7 @@ Driven as a real user via the UI's HTTP:
 7. **Finding detail → Steps-of-Reproduction** — on an uploaded taint finding the
    real-user API returned SoR **source `L6 request.args.get("name")` → sink `L7
    "SELECT … n='"+name+"'"`**, matching the code. ✅
-8. **All 3 pillars show real scores** — flask: security **0** (13 issues) ·
+8. **All pillars show real scores** (then Security · Quality · Deployment; deployment now CI-only) — flask: security **0** (13 issues) ·
    quality **71** (125) · deployment **100**; upload: 35 · 75 · 100. ✅
 
 ---
@@ -142,7 +146,7 @@ Driven through `detect-branches` (connect) + the scan failure path:
 ## What's verified live vs. referenced
 
 - **Live this pass (real HTTP):** branch auto-detect/manual/error, full scan flow
-  (public URL + upload), **exact accuracy parity**, SoR, 3 pillars, all 6
+  (public URL + upload), **exact accuracy parity**, SoR, all pillars, all 6
   compliance frameworks, all exports, export RBAC, connect-time error messages,
   failed-scan error display.
 - **Referenced (proven earlier):** the private-repo **token** clone was

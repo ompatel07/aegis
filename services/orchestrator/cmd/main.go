@@ -1,5 +1,6 @@
-// Command orchestrator consumes scan jobs from Redis (Asynq), runs the 3-pillar
-// pipeline against each repository, scores the results, and persists them.
+// Command orchestrator consumes scan jobs from Redis (Asynq), runs the two-pillar
+// pipeline (Security + Code Quality; deployment is CI-mode only) against each
+// repository, scores the results, and persists them.
 package main
 
 import (

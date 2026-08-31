@@ -104,11 +104,17 @@ export default function ScanDetailPage() {
 
       {isDone ? (
         <>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {/* Two-pillar product: Security + Code Quality. Deployment is offered
+              only in CI mode (customer's own pipeline built the workspace), so its
+              card/tab appear only when it was actually measured — never as a
+              "not measured" slot on a web scan. */}
+          <div className={cn("grid gap-4 sm:grid-cols-2", scan.deployment_score != null ? "lg:grid-cols-4" : "lg:grid-cols-3")}>
             <ScoreCard title="Overall" score={scan.overall_score} />
             <ScoreCard title="Security" score={scan.security_score} subtitle={`${scan.security_issues_total} issues · ${scan.secrets_found} secrets`} />
             <ScoreCard title="Quality" score={scan.quality_score} subtitle={`${scan.quality_issues_total} issues`} />
-            <ScoreCard title="Deployment" score={scan.deployment_score} subtitle={`${scan.vulnerabilities_found} vulns`} />
+            {scan.deployment_score != null ? (
+              <ScoreCard title="Deployment (CI)" score={scan.deployment_score} subtitle="pre-built workspace" />
+            ) : null}
           </div>
 
           <PolicyResultCard scanId={scanId} />
@@ -117,7 +123,7 @@ export default function ScanDetailPage() {
             <TabsList>
               <TabsTrigger value="security">Security</TabsTrigger>
               <TabsTrigger value="quality">Quality</TabsTrigger>
-              <TabsTrigger value="deployment">Deployment</TabsTrigger>
+              {scan.deployment_score != null ? <TabsTrigger value="deployment">Deployment (CI)</TabsTrigger> : null}
             </TabsList>
             <TabsContent value="security">
               <FindingsList scanId={scanId} pillar="security" />
@@ -125,9 +131,11 @@ export default function ScanDetailPage() {
             <TabsContent value="quality">
               <FindingsList scanId={scanId} pillar="quality" />
             </TabsContent>
-            <TabsContent value="deployment">
-              <FindingsList scanId={scanId} pillar="deployment" />
-            </TabsContent>
+            {scan.deployment_score != null ? (
+              <TabsContent value="deployment">
+                <FindingsList scanId={scanId} pillar="deployment" />
+              </TabsContent>
+            ) : null}
           </Tabs>
 
           <Card>

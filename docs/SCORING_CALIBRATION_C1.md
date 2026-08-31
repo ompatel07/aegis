@@ -140,10 +140,50 @@ end-to-end` and `aggregator_test.go` (`TestAggregateAllSecurityEnginesFailed_Not
   documentation's 0.10 redistributed to maintainability (comment density rewards
   spam; SonarQube omits it). Maintainability carries the most weight as the primary
   tech-debt signal.
-- **pillar weights security 0.40 / quality 0.35 / deployment 0.25**: unchanged base;
-  security highest as the higher-stakes pillar. Deployment renormalizes OUT when not
-  measured (0.40/0.75 + 0.35/0.75).
+- **pillar weights security 0.40 / quality 0.35 / deployment 0.25**: security highest
+  as the higher-stakes pillar. Deployment is 0.25 in CI mode; on the default web/API
+  path it is **not part of the product** (see below), so the overall is composed from
+  the two pillars at 0.40/0.75 + 0.35/0.75 = **0.533 / 0.467** (the security:quality
+  ratio is preserved).
 - **grade bands A≥90 B≥75 C≥60 D≥40 else F**: kept (analysis below).
+
+## Two-pillar composition (P3 — the deployment decision)
+
+Aegis is a **two-pillar product** at launch: Security and Code Quality. Verifying a
+build means running the customer's build (`npm ci` / `mvn package` / …) on untrusted
+code, which breaks the no-execute boundary, so the deployment pillar is **not offered**
+on the web/API path — it is not a "not measured" slot, it is simply not part of the
+default product (those are different states; conflating them is the ambiguity D1
+eliminated). Deployment is available only in **CI mode**, where the customer's own
+pipeline built the workspace and Aegis inspects the artifacts without building.
+
+Overall on the default path = `round((security·0.40 + quality·0.35) / 0.75)`. Because
+the C1 corpus was scored with deployment already dropped (V1 ran with build disabled),
+these are the same numbers as the after-table above — the two-pillar composition does
+not change them, it makes the framing honest. Re-run over all 15 repos
+(`scripts/c1_calibrate.py`, offline, no re-scan):
+
+| repo | sec | qual | maint | overall | grade |
+|---|--:|--:|--:|--:|:--|
+| pterodactyl/panel | 31 | 91 | 86 | 59 | D |
+| elunez/eladmin | 42 | 80 | 69 | 60 | C |
+| mealie-recipes/mealie | 48 | 74 | 60 | 60 | C |
+| pocketbase/pocketbase | 65 | 75 | 61 | 70 | C |
+| macrozheng/mall | 73 | 67 | 49 | 70 | C |
+| usememos/memos | 72 | 74 | 60 | 73 | C |
+| outline/outline | 68 | 84 | 75 | 75 | B |
+| navidrome/navidrome | 74 | 80 | 69 | 77 | B |
+| formbricks/formbricks | 75 | 82 | 72 | 78 | B |
+| monicahq/monica | 76 | 80 | 69 | 78 | B |
+| documenso/documenso | 85 | 75 | 61 | 80 | B |
+| netbox-community/netbox | 86 | 86 | 79 | 86 | B |
+| paperless-ngx/paperless-ngx | 88 | 83 | 73 | 86 | B |
+| snipe/snipe-it | 91 | 83 | 73 | 87 | B |
+| akaunting/akaunting | 92 | 87 | 80 | 90 | A |
+
+**Spread holds:** overall **59–90** (range 31), grades **D:1 C:5 B:8 A:1** — not one
+band. **mall-vs-mealie still holds:** mall (90.5% dup) maintainability **49** <
+mealie (32.3% dup) **60** — the more-duplicated repo scores worse.
 
 ## Grade-band calibration
 

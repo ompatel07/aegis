@@ -54,6 +54,15 @@ class DeepScanRequest(ScanRequest):
 class DeploymentRequest(ScanRequest):
     """Deployment-test request with optional build controls."""
 
+    ci_mode: bool = Field(
+        default=False,
+        description=(
+            "CI mode: inspect the customer's PRE-BUILT workspace only. Aegis never "
+            "builds the code itself — it requires an already-built workspace "
+            "(node_modules/, dist/, target/, …). If no build artifacts are found it "
+            "reports NOT MEASURED and does not fall back to building."
+        ),
+    )
     build_enabled: bool | None = Field(
         default=None,
         description="Override the service default for running build commands.",

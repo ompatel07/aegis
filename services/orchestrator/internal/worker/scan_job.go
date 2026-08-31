@@ -110,7 +110,7 @@ func (p *ScanProcessor) ProcessTask(ctx context.Context, task *asynq.Task) error
 
 	// ── Scan (parallel fan-out) ──────────────────────────────────────────────
 	p.stage(ctx, payload.ScanID, progress.StageScanning)
-	results := p.pipe.Run(ctx, checkout.Dir, payload.ScanID, det, payload.CustomRules)
+	results := p.pipe.Run(ctx, checkout.Dir, payload.ScanID, det, payload.CustomRules, payload.CIMode)
 
 	// ── Deep scan (opt-in) ───────────────────────────────────────────────────
 	// Runs after the fast fan-out; merged + deduped so the same vuln is not

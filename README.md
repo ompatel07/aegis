@@ -1,15 +1,22 @@
 # Aegis
 
-> Enterprise-grade automated code intelligence platform — code quality, security, and deployment testing in one privacy-first pipeline.
+> Enterprise-grade automated code intelligence platform — security and code quality in one privacy-first pipeline, without ever executing your code.
 
 Aegis ingests any codebase (app, website, automation script, API) and runs it through a
-**3-pillar analysis pipeline**, producing a unified, graded report.
+**two-pillar analysis pipeline** — Security and Code Quality — producing a unified,
+graded report. It **never builds or runs your code**, so it is safe to point at
+untrusted repositories.
 
 | Pillar | What it does | Competes with |
 | ------ | ------------ | ------------- |
-| **Quality** | AST-based smells, cyclomatic complexity, duplication, maintainability, docs/coverage | SonarQube |
 | **Security** | SAST (taint/dataflow), SCA (CVE), secrets detection, OWASP Top 10, IaC scanning | Snyk, Checkmarx |
-| **Deployment** | Build verification, smoke tests, env compatibility, container & dependency checks | *(unique)* |
+| **Code Quality** | AST-based smells, cyclomatic complexity, duplication, maintainability, docs/coverage | SonarQube |
+
+**Deployment testing is CI-only.** Verifying a build means running the customer's
+build (npm ci / mvn package / …), which would break the no-execute boundary, so it is
+not part of a web/API scan. It is available only in **CI mode**, where your own
+pipeline already built the workspace inside your trust boundary and Aegis merely
+inspects the artifacts — it never builds. See [`docs/ACCURACY.md`](docs/ACCURACY.md).
 
 ---
 

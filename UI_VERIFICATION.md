@@ -1,5 +1,10 @@
 # UI ↔ Backend Accuracy + Reports/Charts/Exports — Verification
 
+> **Superseded (Pass P3, 2026-08-31):** Aegis is now a **two-pillar** product —
+> Security + Code Quality. The scan view shows two pillar cards/tabs; the Deployment
+> card/tab appears only for CI-mode scans that measured it. This report predates that
+> decision; see [docs/ACCURACY.md](docs/ACCURACY.md).
+
 **Phase 2F pre-launch hardening, Pass 5 of 6.** Verifies that what the user sees in
 the dashboard exactly matches backend/DB truth, that all charts use real data, and
 that every export is valid + accurate + RBAC-scoped — then gives the user a working
@@ -15,7 +20,7 @@ Real data used throughout: a live scan of **`pallets/flask`** (138 findings) on 
 | Part | Verdict |
 |------|---------|
 | 1 — UI ↔ backend data accuracy | ✅ **PASS** (1 minor CONCERN: orphan policy text) |
-| 2 — Three pillars display clearly | ✅ **PASS** |
+| 2 — Pillars display clearly | ✅ **PASS** |
 | 3 — Charts + visualizations (real data only) | ✅ **PASS** |
 | 4 — Reports + exports | ✅ **PASS** for exec/SARIF/SBOM · ⚠️ **CONCERN**: compliance reports |
 | 5 — Let the user see the UI | ✅ **PASS** (working URL below) |
@@ -70,9 +75,9 @@ after the Phase-2D AI-code removal. **Fix:** delete the two AI-safety mentions i
 
 ---
 
-## Part 2 — Three pillars display clearly ✅ PASS
+## Part 2 — Pillars display clearly ✅ PASS
 
-The scan detail page shows all three pillars as score cards + a tabbed findings
+The scan detail page shows the pillars as score cards + a tabbed findings
 view, all from real backend fields:
 
 - **Security** — score 0, with `13 issues · 6 secrets` subtitle; findings tab lists
@@ -149,7 +154,7 @@ Then open the **"Flask (demo)"** project — it has **3 completed scans**:
 **Key screens to look at:**
 1. **Dashboard home** — projects + recent scans overview.
 2. **Project page** (Flask demo) — score-trend chart, scan history, policy/memory cards.
-3. **A scan's results** — 3 pillar score tiles + Security/Quality/Deployment finding tabs.
+3. **A scan's results** — pillar score tiles + Security/Quality finding tabs (Deployment only in CI mode).
 4. **A finding detail** — click any finding; open the SoR one to see source→sink→flow,
    "why exploitable", and the *Get AI fix suggestion* / triage actions.
 5. **Executive report** — from a completed scan → "Executive report" → *Save as PDF*.
@@ -185,7 +190,7 @@ with no proxy.
 | # | Part | Verdict |
 |---|------|---------|
 | 1 | UI ↔ backend accuracy | ✅ PASS — all 138 findings + scores API=DB exactly; SoR matches code; 1 orphan-text CONCERN |
-| 2 | Three pillars | ✅ PASS |
+| 2 | Pillars | ✅ PASS |
 | 3 | Charts | ✅ PASS — real data only |
 | 4 | Reports/exports | ✅ exec/SARIF/SBOM + RBAC · ⚠️ compliance not wired/deployed |
 | 5 | View the UI | ✅ working URL provided + honest env note |

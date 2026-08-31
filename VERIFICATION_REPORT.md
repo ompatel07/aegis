@@ -1,5 +1,9 @@
 # Aegis Phase 1 — Verification Report
 
+> **Superseded (Pass P3, 2026-08-31):** Aegis is now a **two-pillar** product —
+> Security + Code Quality; deployment testing is CI-only. This report predates that
+> decision; see [docs/ACCURACY.md](docs/ACCURACY.md).
+
 _Last updated: 2026-06-30 — full runtime verification (Docker now installed)._
 
 ## Environment
@@ -278,7 +282,7 @@ available for pixel-level confirmation.
 
 ✅ **Ready to proceed to Phase 2.**
 
-After fixing the Semgrep crash, the full 3-pillar pipeline is genuinely proven:
+After fixing the Semgrep crash, the full analysis pipeline is genuinely proven:
 **174 findings** across all four engines (semgrep 30, trivy 133, gitleaks 3,
 quality 8), distributed across every severity, with CWE/OWASP tags, file paths,
 line numbers, and rule IDs — on a fresh, from-scratch stack boot. All five real

@@ -52,10 +52,11 @@ export default function ExecutiveReportPage() {
           <div className={cn("text-5xl font-bold", gradeColor(scan.overall_grade))}>{scan.overall_grade ?? "—"}</div>
           <div className="text-xs text-muted-foreground">overall grade</div>
         </div>
-        <div className="grid flex-1 grid-cols-3 gap-3 text-center text-sm">
+        <div className={cn("grid flex-1 gap-3 text-center text-sm", scan.deployment_score != null ? "grid-cols-3" : "grid-cols-2")}>
           <Metric label="Security" v={scan.security_score} />
           <Metric label="Quality" v={scan.quality_score} />
-          <Metric label="Deployment" v={scan.deployment_score} />
+          {/* Two-pillar product; deployment shown only when measured (CI mode). */}
+          {scan.deployment_score != null ? <Metric label="Deployment (CI)" v={scan.deployment_score} /> : null}
         </div>
       </div>
 

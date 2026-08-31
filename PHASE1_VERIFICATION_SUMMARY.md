@@ -1,5 +1,9 @@
 # Aegis — Phase 1 Verification Summary
 
+> **Superseded (Pass P3, 2026-08-31):** Aegis is now a **two-pillar** product —
+> Security + Code Quality. Deployment testing is CI-only and never builds customer
+> code. This report predates that decision; see [docs/ACCURACY.md](docs/ACCURACY.md).
+
 **Date:** 2026-06-30
 **Scope:** Full compile-time + runtime verification of the Phase 1 stack
 **Verdict:** ✅ **Ready for Phase 2A** — pipeline proven end-to-end on a fresh stack; 6 real bugs found and fixed.
@@ -19,7 +23,7 @@ The entire Phase 1 platform was built, compiled, containerized, booted, and exer
 
 ## What was verified
 
-Aegis is a 3-pillar code intelligence platform (Quality · Security · Deployment) made of:
+Aegis is a code intelligence platform (Security + Code Quality; deployment CI-only) made of:
 
 | Service | Stack | Role |
 | --- | --- | --- |
@@ -164,7 +168,7 @@ f772c83  Aegis Phase 1: scaffold + verification pass
 
 ✅ **Ready to proceed to Phase 2A.**
 
-The full 3-pillar pipeline is proven on a fresh, from-scratch boot. Every compile/build/runtime failure encountered has been root-caused and fixed (no workarounds, no skipped tests, no silenced errors).
+The full analysis pipeline is proven on a fresh, from-scratch boot. Every compile/build/runtime failure encountered has been root-caused and fixed (no workarounds, no skipped tests, no silenced errors).
 
 ### Carry into Phase 2 (non-blocking)
 1. **Add a Semgrep smoke assertion to CI** — run the scanner against a tiny known-vulnerable fixture and assert `semgrep findings > 0`. This bug was invisible at the aggregate level; a guard prevents a future dependency bump from silently killing SAST again.

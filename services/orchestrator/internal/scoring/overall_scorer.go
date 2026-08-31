@@ -6,11 +6,18 @@ import (
 	"github.com/aegis-platform/orchestrator/internal/types"
 )
 
-// Pillar weights for the overall score (must sum to 1.0).
+// Pillar weights for the overall score.
+//
+// Aegis is a TWO-PILLAR product on the default (web/API) path: Security and Code
+// Quality. Their weights keep the original 0.40 : 0.35 security-to-quality ratio;
+// with deployment absent, OverallScore renormalizes them to 0.533 : 0.467
+// (0.40/0.75 : 0.35/0.75). Deployment (0.25) is offered ONLY in CI mode, where the
+// customer's own pipeline built the workspace; there the three weights sum to 1.0.
+// See docs/SCORING_CALIBRATION_C1.md (§ Two-pillar composition).
 const (
 	weightSecurity   = 0.40
 	weightQuality    = 0.35
-	weightDeployment = 0.25
+	weightDeployment = 0.25 // CI mode only; never contributes on the web/API path
 )
 
 // Per-step weights for the deployment score.

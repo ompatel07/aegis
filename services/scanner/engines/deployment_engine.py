@@ -38,7 +38,65 @@ log = get_logger("deployment")
 _COMMON_PORTS = (3000, 8080, 8000, 5000, 4000, 80)
 
 
+# Pre-built build artifacts, by ecosystem. Presence means the customer's own
+# pipeline already built the workspace; Aegis inspects them but never builds.
+_BUILD_ARTIFACT_DIRS = (
+    "node_modules", "dist", "build", ".next", "out",       # node
+    "target",                                              # java (maven/gradle), rust
+    "vendor",                                              # go, php (composer)
+    ".venv", "venv",                                       # python
+)
+_BUILD_ARTIFACT_GLOBS = ("*.jar", "*.war", "*.whl")
+
+
+def _detect_build_artifacts(root: str) -> list[str]:
+    """Return the names of build artifacts found at the repo root — evidence the
+    workspace was already built. Never executes anything."""
+    found: list[str] = []
+    try:
+        for name in _BUILD_ARTIFACT_DIRS:
+            if os.path.isdir(os.path.join(root, name)):
+                found.append(name + "/")
+        import glob as _glob
+        for pat in _BUILD_ARTIFACT_GLOBS:
+            if _glob.glob(os.path.join(root, "**", pat), recursive=True):
+                found.append(pat)
+    except OSError:
+        pass
+    return found
+
+
+def _ci_inspect(req: DeploymentRequest) -> EngineResult:
+    """CI mode: inspect a PRE-BUILT workspace. Aegis never builds — if no artifacts
+    are present, report NOT MEASURED (SKIPPED, no scored step → nil score) rather
+    than falling back to building. Runs zero subprocesses."""
+    report = DeploymentReport()
+    findings = _dockerfile_findings(req.path)  # static file analysis, no build
+    artifacts = _detect_build_artifacts(req.path)
+    if not artifacts:
+        report.steps.append(DeploymentStep(
+            name="ci-artifacts-missing", success=False,
+            output_tail="no build artifacts (node_modules/target/dist/…); Aegis does "
+                        "not build customer code — NOT MEASURED",
+        ))
+        return _result(report, findings, req, status=EngineStatus.SKIPPED)
+    # Artifacts present → the customer's pipeline built successfully. Record it as a
+    # passing `build` step so the deployment scorer reads it as build-verified.
+    report.build_attempted = True
+    report.build_succeeded = True
+    report.steps.append(DeploymentStep(
+        name="build", success=True,
+        output_tail="pre-built artifacts detected (customer CI): " + ", ".join(artifacts),
+    ))
+    return _result(report, findings, req, status=EngineStatus.COMPLETED)
+
+
 async def run(req: DeploymentRequest, settings: Settings) -> EngineResult:
+    # CI mode is inspection-only and never builds. This is the only path the Aegis
+    # orchestrator ever takes (it always sends ci_mode=true, build_enabled=false).
+    if req.ci_mode:
+        return _ci_inspect(req)
+
     build_enabled = (
         req.build_enabled if req.build_enabled is not None else settings.deployment_build_enabled
     )
