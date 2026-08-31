@@ -1,6 +1,9 @@
 package models
 
-import "time"
+import (
+	"encoding/json"
+	"time"
+)
 
 // Scan trigger + status enumerations (mirror DB CHECK constraints).
 const (
@@ -30,10 +33,15 @@ type Scan struct {
 	OverallScore    *int    `db:"overall_score" json:"overall_score,omitempty"`
 	OverallGrade    *string `db:"overall_grade" json:"overall_grade,omitempty"`
 
-	// SonarQube-style A–E ratings (P2c), derived from scores + finding severities.
+	// SonarQube-style A–E ratings (P2c). nil = NOT MEASURED (omitted from JSON; the
+	// web renders "Not measured", never a blank or a fabricated A).
 	ReliabilityRating     *string `db:"reliability_rating" json:"reliability_rating,omitempty"`
 	SecurityRating        *string `db:"security_rating" json:"security_rating,omitempty"`
 	MaintainabilityRating *string `db:"maintainability_rating" json:"maintainability_rating,omitempty"`
+
+	// Scan-level degradation (D1): [{engine, reason, coverage_lost}]. Non-empty means
+	// the scan is DEGRADED — engines ran without full coverage, or failed.
+	EnginesDegraded json.RawMessage `db:"engines_degraded" json:"engines_degraded"`
 
 	QualityIssuesTotal   int `db:"quality_issues_total" json:"quality_issues_total"`
 	SecurityIssuesTotal  int `db:"security_issues_total" json:"security_issues_total"`

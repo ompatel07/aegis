@@ -56,10 +56,10 @@ func SecurityRating(findings []types.Finding) string {
 // better) into A..E. Thresholds are documented in PER_ENGINE_ACCURACY.md.
 //
 //	A ≥ 90, B ≥ 80, C ≥ 70, D ≥ 50, else E.
+// NOT MEASURED (nil metrics) is decided by the caller (aggregator), which returns a
+// nil *string persisted as NULL — the rating column is CHAR(1) A..E, so "N/A" cannot
+// be stored. Here we only map a present score to a letter.
 func MaintainabilityRating(m *types.QualityMetrics) string {
-	if m == nil {
-		return "N/A" // NOT MEASURED — never a fabricated "A" (unknown-value audit, C1)
-	}
 	return scoreToRating(m.MaintainabilityScore)
 }
 

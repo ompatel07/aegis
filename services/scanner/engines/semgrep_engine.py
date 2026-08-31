@@ -364,12 +364,21 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
     # custom rule degrades to registry coverage rather than dropping all findings.
     # A genuine semgrep failure then still surfaces below (as a degraded engine).
     custom_applied = custom_dir is not None
+    degraded = False
+    degraded_reason: str | None = None
+    coverage_lost: str | None = None
     if custom_applied and not result.timed_out and result.returncode not in (0, 1):
         log.warning(
             "semgrep.custom_rules_failed_retrying",
             error=normalizer.truncate(result.stderr, 1000),
         )
         custom_applied = False
+        # DEGRADED, not clean: registry rules still ran, but the Aegis custom packs
+        # (taint, AI-code taint, IaC, reliability bug pack) did NOT. Surface it — do
+        # not report a successful SAST as if it had full coverage.
+        degraded = True
+        degraded_reason = "custom rule pack failed to load; retried with registry packs only"
+        coverage_lost = "Aegis custom taint, AI-code taint, IaC, and reliability bug-pack rules"
         result = await _semgrep(registry_configs)
 
     if result.timed_out:
@@ -424,6 +433,9 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
         duration_seconds=result.duration_seconds,
         scan_id=req.scan_id,
         rule_pack_version=rule_pack_version,
+        degraded=degraded,
+        degraded_reason=degraded_reason,
+        coverage_lost=coverage_lost,
     )
 
 

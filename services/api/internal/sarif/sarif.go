@@ -32,7 +32,21 @@ type Log struct {
 type Run struct {
 	Tool                     Tool             `json:"tool"`
 	Results                  []Result         `json:"results"`
+	Invocations              []Invocation     `json:"invocations,omitempty"`
 	VersionControlProvenance []VersionControl `json:"versionControlProvenance,omitempty"`
+}
+
+// Invocation carries scan-level execution status. executionSuccessful=false marks a
+// DEGRADED scan; each degraded/failed engine is a toolExecutionNotification (D1).
+type Invocation struct {
+	ExecutionSuccessful        bool           `json:"executionSuccessful"`
+	ToolExecutionNotifications []Notification `json:"toolExecutionNotifications,omitempty"`
+}
+
+type Notification struct {
+	Message    Message        `json:"message"`
+	Level      string         `json:"level"`
+	Properties map[string]any `json:"properties,omitempty"`
 }
 
 type Tool struct {
@@ -149,6 +163,30 @@ func Build(scan *models.Scan, findings []models.Finding, repoURL string) *Log {
 			}
 		}
 		run.VersionControlProvenance = []VersionControl{vc}
+	}
+
+	// Degradation (D1): a partial scan is executionSuccessful=false with a warning
+	// notification per degraded/failed engine — so a SARIF consumer never treats an
+	// incomplete scan as clean.
+	if scan != nil && len(scan.EnginesDegraded) > 0 {
+		var degraded []struct {
+			Engine       string `json:"engine"`
+			Reason       string `json:"reason"`
+			CoverageLost string `json:"coverage_lost"`
+		}
+		if err := json.Unmarshal(scan.EnginesDegraded, &degraded); err == nil && len(degraded) > 0 {
+			notes := make([]Notification, 0, len(degraded))
+			for _, d := range degraded {
+				notes = append(notes, Notification{
+					Level:   "warning",
+					Message: Message{Text: fmt.Sprintf("%s degraded: %s (coverage lost: %s)", d.Engine, d.Reason, d.CoverageLost)},
+					Properties: map[string]any{
+						"engine": d.Engine, "coverage_lost": d.CoverageLost,
+					},
+				})
+			}
+			run.Invocations = []Invocation{{ExecutionSuccessful: false, ToolExecutionNotifications: notes}}
+		}
 	}
 
 	return &Log{Schema: schemaURI, Version: "2.1.0", Runs: []Run{run}}

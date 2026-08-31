@@ -139,6 +139,7 @@ func (s *Store) SaveResults(ctx context.Context, scanID, projectID string, agg p
 			error_message = $15,
 			rule_pack_version = $16,
 			reliability_rating = $17, security_rating = $18, maintainability_rating = $19,
+			engines_degraded = $20,
 			completed_at = now(),
 			duration_seconds = GREATEST(0, EXTRACT(EPOCH FROM (now() - COALESCE(started_at, queued_at)))::int)
 		WHERE id = $1`
@@ -151,7 +152,8 @@ func (s *Store) SaveResults(ctx context.Context, scanID, projectID string, agg p
 		[]byte(agg.RawSemgrep), []byte(agg.RawTrivy),
 		[]byte(agg.RawGitleaks), []byte(agg.RawQuality),
 		errMsg, nullStr(agg.RulePackVersion),
-		nullStr(agg.ReliabilityRating), nullStr(agg.SecurityRating), nullStr(agg.MaintainabilityRating),
+		agg.ReliabilityRating, agg.SecurityRating, agg.MaintainabilityRating,
+		degradedJSON(agg.EnginesDegraded),
 	); err != nil {
 		return fmt.Errorf("update scan: %w", err)
 	}
@@ -247,6 +249,19 @@ func metadataJSON(m map[string]any) any {
 	b, err := json.Marshal(m)
 	if err != nil {
 		return nil
+	}
+	return b
+}
+
+// degradedJSON marshals the scan's degraded-engines list for the JSONB column,
+// defaulting to an empty array (never NULL — a scan always has a definite answer).
+func degradedJSON(d []types.DegradedEngine) []byte {
+	if len(d) == 0 {
+		return []byte("[]")
+	}
+	b, err := json.Marshal(d)
+	if err != nil {
+		return []byte("[]")
 	}
 	return b
 }

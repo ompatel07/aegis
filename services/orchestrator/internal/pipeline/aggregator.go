@@ -21,10 +21,15 @@ type Aggregated struct {
 	OverallScore    *int
 	OverallGrade    string
 
-	// SonarQube-style A–E ratings (P2c).
-	ReliabilityRating    string
-	SecurityRating       string
-	MaintainabilityRating string
+	// SonarQube-style A–E ratings (P2c). Pointers: nil = NOT MEASURED (the pillar's
+	// engines all failed), persisted as NULL — never a fabricated "A".
+	ReliabilityRating     *string
+	SecurityRating        *string
+	MaintainabilityRating *string
+
+	// Scan-level degradation (D1): engines that ran without full coverage or failed
+	// outright. A non-empty list means the scan is DEGRADED, not clean.
+	EnginesDegraded []types.DegradedEngine
 
 	QualityIssuesTotal   int
 	SecurityIssuesTotal  int
@@ -97,15 +102,57 @@ func Aggregate(results []*types.EngineResult) Aggregated {
 	}
 	agg.DeploymentScore = scoring.DeploymentScore(deployReport)
 
+	// ── Degradation + per-pillar "measured" (D1) ────────────────────────────────
+	// An engine "produced" results only when it completed. A pillar whose engines
+	// ALL failed is NOT MEASURED — its score AND rating are nil (NULL), never a
+	// fabricated clean A/100. Reliability's bug sources are semgrep + quality (ruff).
+	produced := func(name string) bool {
+		r := byEngine[name]
+		return r != nil && r.Status == "completed"
+	}
+	securityMeasured := produced("semgrep") || produced("trivy") || produced("gitleaks")
+	reliabilityMeasured := produced("semgrep") || produced("quality")
+
+	// Collect scan-level degradation: outright failures + coverage-losing engines.
+	coverageOf := map[string]string{
+		"semgrep": "SAST (taint + injection + reliability bugs)", "trivy": "SCA (dependency CVEs)",
+		"gitleaks": "secrets", "quality": "code quality + reliability bugs",
+		"deployment": "deployment checks", "joern": "deep dataflow", "codeql": "deep dataflow",
+	}
+	for _, r := range results {
+		if r == nil {
+			continue
+		}
+		switch {
+		case r.Status == "failed":
+			agg.EnginesDegraded = append(agg.EnginesDegraded, types.DegradedEngine{
+				Engine: r.Engine, Reason: firstNonEmpty(r.Error, "engine failed"),
+				CoverageLost: coverageOf[r.Engine]})
+		case r.Degraded:
+			agg.EnginesDegraded = append(agg.EnginesDegraded, types.DegradedEngine{
+				Engine: r.Engine, Reason: firstNonEmpty(r.DegradedReason, "ran with reduced coverage"),
+				CoverageLost: firstNonEmpty(r.CoverageLost, coverageOf[r.Engine])})
+		}
+	}
+
+	if !securityMeasured {
+		agg.SecurityScore = nil // engines all failed → not measured, not a clean 100
+	}
 	agg.OverallScore, agg.OverallGrade = scoring.OverallScore(
 		agg.SecurityScore, agg.QualityScore, agg.DeploymentScore,
 	)
 
-	// SonarQube-style A–E ratings (P2c): reliability/security from the worst
-	// bug/vulnerability severity, maintainability from the maintainability sub-score.
-	agg.ReliabilityRating = scoring.ReliabilityRating(agg.Findings)
-	agg.SecurityRating = scoring.SecurityRating(agg.Findings)
-	agg.MaintainabilityRating = scoring.MaintainabilityRating(qualityMetrics)
+	// Ratings — nil (NULL) when the producing pillar was not measured, so a
+	// half-failed scan never shows a fabricated A.
+	if securityMeasured {
+		agg.SecurityRating = strptr(scoring.SecurityRating(agg.Findings))
+	}
+	if reliabilityMeasured {
+		agg.ReliabilityRating = strptr(scoring.ReliabilityRating(agg.Findings))
+	}
+	if qualityMetrics != nil {
+		agg.MaintainabilityRating = strptr(scoring.MaintainabilityRating(qualityMetrics))
+	}
 
 	// Raw engine output (stored to scans.raw_*_output).
 	agg.RawSemgrep = rawOf(byEngine["semgrep"])
@@ -124,6 +171,15 @@ func rawOf(r *types.EngineResult) json.RawMessage {
 	b, err := json.Marshal(r.Raw)
 	if err != nil {
 		return json.RawMessage("null")
+	}
+	return b
+}
+
+func strptr(s string) *string { return &s }
+
+func firstNonEmpty(a, b string) string {
+	if a != "" {
+		return a
 	}
 	return b
 }

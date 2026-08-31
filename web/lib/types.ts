@@ -298,6 +298,11 @@ export interface Scan {
   duration_seconds?: number;
   error_message?: string;
   created_at: string;
+  reliability_rating?: Grade;
+  security_rating?: Grade;
+  maintainability_rating?: Grade;
+  // Non-empty ⇒ the scan is DEGRADED: engines ran without full coverage, or failed.
+  engines_degraded?: { engine: string; reason: string; coverage_lost: string }[];
 }
 
 export interface Finding {

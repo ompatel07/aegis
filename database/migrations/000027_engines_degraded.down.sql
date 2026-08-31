@@ -1,0 +1,3 @@
+BEGIN;
+ALTER TABLE scans DROP COLUMN IF EXISTS engines_degraded;
+COMMIT;

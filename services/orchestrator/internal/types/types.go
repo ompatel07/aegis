@@ -135,4 +135,18 @@ type EngineResult struct {
 	ScanID           string            `json:"scan_id"`
 	Error            string            `json:"error"`
 	RulePackVersion  string            `json:"rule_pack_version"`
+
+	// Degradation (D1): the engine ran but not at full coverage (e.g. a broken
+	// custom rule pack fell back to registry rules). Distinct from Status=failed.
+	Degraded       bool   `json:"degraded"`
+	DegradedReason string `json:"degraded_reason"`
+	CoverageLost   string `json:"coverage_lost"`
+}
+
+// DegradedEngine is one scan-level degradation: an engine that ran but lost
+// coverage, or failed outright. Surfaced so a partial scan is never read as clean.
+type DegradedEngine struct {
+	Engine       string `json:"engine"`
+	Reason       string `json:"reason"`
+	CoverageLost string `json:"coverage_lost"`
 }

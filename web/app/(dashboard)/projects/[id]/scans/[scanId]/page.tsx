@@ -75,6 +75,24 @@ export default function ScanDetailPage() {
         </Card>
       ) : null}
 
+      {scan.engines_degraded && scan.engines_degraded.length > 0 ? (
+        <Card className="border-amber-500/50 bg-amber-500/5">
+          <CardContent className="space-y-1 py-4 text-sm">
+            <p className="font-medium text-amber-700 dark:text-amber-500">
+              ⚠ Degraded scan — results are incomplete, not clean
+            </p>
+            <ul className="ml-4 list-disc text-muted-foreground">
+              {scan.engines_degraded.map((d, i) => (
+                <li key={i}>
+                  <span className="font-medium">{d.engine}</span>: {d.reason}
+                  {d.coverage_lost ? ` (lost: ${d.coverage_lost})` : ""}
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      ) : null}
+
       {!isDone && scan.status !== "failed" ? (
         <Card>
           <CardContent className="space-y-3 py-6 text-sm text-muted-foreground">
@@ -176,7 +194,11 @@ function ScoreCard({ title, score, subtitle }: { title: string; score?: number; 
         <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className={cn("text-3xl font-bold", scoreColor(score))}>{score ?? "—"}</div>
+        {score == null ? (
+          <div className="text-sm font-medium text-muted-foreground">Not measured</div>
+        ) : (
+          <div className={cn("text-3xl font-bold", scoreColor(score))}>{score}</div>
+        )}
         {subtitle ? <p className="mt-1 text-xs text-muted-foreground">{subtitle}</p> : null}
       </CardContent>
     </Card>

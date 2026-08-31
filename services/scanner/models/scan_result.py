@@ -194,6 +194,16 @@ class EngineResult(BaseModel):
     # Reproducible id of the rule set used (semgrep), recorded on the scan.
     rule_pack_version: str | None = None
 
+    # DEGRADATION (D1): the engine produced results but NOT its full coverage — a
+    # broken custom rule pack that fell back to registry rules, a partial run, etc.
+    # This is distinct from `status`: a DEGRADED engine still ran and returned
+    # findings, but silently trusting them as complete is the reflex we are killing.
+    # The orchestrator rolls these (plus outright FAILED engines) into a scan-level
+    # engines_degraded[] surfaced to the API / report / SARIF.
+    degraded: bool = False
+    degraded_reason: str | None = None   # what went wrong (no secrets)
+    coverage_lost: str | None = None     # which coverage the scan no longer has
+
     @model_serializer(mode="wrap")
     def _redact_on_serialize(self, handler):
         """THE egress chokepoint. Every serialization of an EngineResult — the

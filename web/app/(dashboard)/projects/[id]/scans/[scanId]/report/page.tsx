@@ -59,6 +59,24 @@ export default function ExecutiveReportPage() {
         </div>
       </div>
 
+      {scan.engines_degraded && scan.engines_degraded.length > 0 ? (
+        <Card className="border-amber-500/50 bg-amber-500/5">
+          <CardContent className="space-y-1 py-4 text-sm">
+            <p className="font-medium text-amber-700 dark:text-amber-500">
+              ⚠ Degraded scan — coverage is incomplete. Scores below reflect only what ran.
+            </p>
+            <ul className="ml-4 list-disc text-muted-foreground">
+              {scan.engines_degraded.map((d, i) => (
+                <li key={i}>
+                  <span className="font-medium">{d.engine}</span>: {d.reason}
+                  {d.coverage_lost ? ` (lost: ${d.coverage_lost})` : ""}
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      ) : null}
+
       <Card>
         <CardHeader><CardTitle>Executive summary</CardTitle></CardHeader>
         <CardContent><p className="leading-relaxed text-muted-foreground">{r.summary}</p></CardContent>
