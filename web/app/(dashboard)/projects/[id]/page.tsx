@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScanStatusBadge } from "@/components/dashboard/ScanStatusBadge";
+import { DegradedBadge } from "@/components/dashboard/DegradedBadge";
+import { GradeCell, ScoreCell } from "@/components/dashboard/ScanCells";
 import { TrendChart } from "@/components/dashboard/TrendChart";
 import { GitHubIntegrationCard } from "@/components/dashboard/GitHubIntegrationCard";
 import { CustomRulesCard } from "@/components/dashboard/CustomRulesCard";
@@ -105,7 +107,6 @@ export default function ProjectDetailPage() {
                   <TableHead>Overall</TableHead>
                   <TableHead>Security</TableHead>
                   <TableHead>Quality</TableHead>
-                  <TableHead>Deployment</TableHead>
                   <TableHead>Trigger</TableHead>
                   <TableHead>Duration</TableHead>
                   <TableHead>When</TableHead>
@@ -115,17 +116,15 @@ export default function ProjectDetailPage() {
                 {scans.map((s) => (
                   <TableRow key={s.id}>
                     <TableCell>
-                      <Link href={`/projects/${id}/scans/${s.id}`}>
+                      <Link href={`/projects/${id}/scans/${s.id}`} className="flex items-center gap-1.5">
                         <ScanStatusBadge status={s.status} />
+                        <DegradedBadge scan={s} />
                       </Link>
                     </TableCell>
-                    <TableCell className={cn("font-bold", gradeColor(s.overall_grade))}>
-                      {s.overall_grade ?? "—"}
-                    </TableCell>
-                    <TableCell className={scoreColor(s.overall_score)}>{s.overall_score ?? "—"}</TableCell>
-                    <TableCell className={scoreColor(s.security_score)}>{s.security_score ?? "—"}</TableCell>
-                    <TableCell className={scoreColor(s.quality_score)}>{s.quality_score ?? "—"}</TableCell>
-                    <TableCell className={scoreColor(s.deployment_score)}>{s.deployment_score ?? "—"}</TableCell>
+                    <TableCell><GradeCell scan={s} /></TableCell>
+                    <TableCell><ScoreCell score={s.overall_score} /></TableCell>
+                    <TableCell><ScoreCell score={s.security_score} /></TableCell>
+                    <TableCell><ScoreCell score={s.quality_score} /></TableCell>
                     <TableCell className="capitalize text-muted-foreground">{s.trigger}</TableCell>
                     <TableCell className="text-muted-foreground">{formatDuration(s.duration_seconds)}</TableCell>
                     <TableCell className="text-muted-foreground">{formatDate(s.created_at)}</TableCell>

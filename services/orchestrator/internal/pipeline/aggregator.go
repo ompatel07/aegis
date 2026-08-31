@@ -31,6 +31,11 @@ type Aggregated struct {
 	// outright. A non-empty list means the scan is DEGRADED, not clean.
 	EnginesDegraded []types.DegradedEngine
 
+	// Secret matches SUPPRESSED as definitively-not-a-secret (P1), summed across
+	// engines: {"placeholder": n, "expired_jwt": n}. Surfaced as "N filtered" so the
+	// filtering is auditable, not silent.
+	FilteredSecrets map[string]int
+
 	QualityIssuesTotal   int
 	SecurityIssuesTotal  int
 	SecretsFound         int
@@ -122,6 +127,16 @@ func Aggregate(results []*types.EngineResult) Aggregated {
 	for _, r := range results {
 		if r == nil {
 			continue
+		}
+		// Sum secret matches filtered as definitively-not-a-secret (P1), across engines.
+		for k, v := range r.FilteredSecrets {
+			if v <= 0 {
+				continue
+			}
+			if agg.FilteredSecrets == nil {
+				agg.FilteredSecrets = map[string]int{}
+			}
+			agg.FilteredSecrets[k] += v
 		}
 		switch {
 		case r.Status == "failed":

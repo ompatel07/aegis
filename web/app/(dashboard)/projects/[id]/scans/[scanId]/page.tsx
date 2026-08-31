@@ -7,12 +7,14 @@ import { useApi } from "@/lib/use-api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScanStatusBadge } from "@/components/dashboard/ScanStatusBadge";
+import { DegradedBadge } from "@/components/dashboard/DegradedBadge";
 import { PolicyResultCard } from "@/components/dashboard/PolicyResultCard";
 import { ScanProgress } from "@/components/dashboard/ScanProgress";
 import { ScanFeedback } from "@/components/dashboard/ScanFeedback";
 import { FindingsList } from "@/components/findings/FindingsList";
 import { Button } from "@/components/ui/button";
 import { cn, formatDate, formatDuration, gradeColor, scoreColor } from "@/lib/utils";
+import { ratingDisplay, filteredSecretsLabel } from "@/lib/display";
 import { Download, FileText } from "lucide-react";
 import { useState } from "react";
 
@@ -44,10 +46,13 @@ export default function ScanDetailPage() {
         <div className="mt-1 flex flex-wrap items-center gap-3">
           <h1 className="text-2xl font-bold">Scan results</h1>
           <ScanStatusBadge status={scan.status} />
+          <DegradedBadge scan={scan} />
           {scan.overall_grade ? (
             <span className={cn("text-3xl font-bold", gradeColor(scan.overall_grade))}>
               {scan.overall_grade}
             </span>
+          ) : isDone ? (
+            <span className="text-sm font-medium text-muted-foreground italic">Not measured</span>
           ) : null}
           {isDone ? (
             <span className="ml-auto flex items-center gap-2">
@@ -116,6 +121,26 @@ export default function ScanDetailPage() {
               <ScoreCard title="Deployment (CI)" score={scan.deployment_score} subtitle="pre-built workspace" />
             ) : null}
           </div>
+
+          {/* SonarQube-style A–E ratings (P2c). The LETTER is worst-severity (one
+              critical bug caps Reliability at E); the paired SCORE is the density.
+              Both shown so a single blocker isn't hidden behind a decent average.
+              A null rating is an explicit "Not measured", never a blank or an A. */}
+          <div className="grid gap-4 sm:grid-cols-3">
+            <RatingCard title="Reliability" rating={scan.reliability_rating} note="worst-severity bug" />
+            <RatingCard title="Security" rating={scan.security_rating} score={scan.security_score} note="worst-severity vuln · density score" />
+            <RatingCard title="Maintainability" rating={scan.maintainability_rating} note="tech-debt rating" />
+          </div>
+
+          {/* Filtered secrets are counted, not silent — placeholder/expired matches
+              P1 removed from findings are reported so they aren't indistinguishable
+              from missed ones. */}
+          {filteredSecretsLabel(scan.filtered_secrets) ? (
+            <p className="text-xs text-muted-foreground">
+              🛈 {filteredSecretsLabel(scan.filtered_secrets)}. These are excluded from the
+              secret count above and are not shown as findings.
+            </p>
+          ) : null}
 
           <PolicyResultCard scanId={scanId} />
 
@@ -208,6 +233,37 @@ function ScoreCard({ title, score, subtitle }: { title: string; score?: number; 
           <div className={cn("text-3xl font-bold", scoreColor(score))}>{score}</div>
         )}
         {subtitle ? <p className="mt-1 text-xs text-muted-foreground">{subtitle}</p> : null}
+      </CardContent>
+    </Card>
+  );
+}
+
+const RATING_CLASS: Record<string, string> = {
+  A: "text-emerald-600 dark:text-emerald-400",
+  B: "text-lime-600 dark:text-lime-400",
+  C: "text-amber-600 dark:text-amber-400",
+  D: "text-orange-600 dark:text-orange-400",
+  E: "text-red-600 dark:text-red-400",
+};
+
+// A–E rating card. null -> explicit "Not measured" (never a blank or a fabricated A).
+function RatingCard({ title, rating, score, note }: { title: string; rating?: string; score?: number; note?: string }) {
+  const r = ratingDisplay(rating);
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {!r.measured ? (
+          <div className="text-sm font-medium text-muted-foreground">Not measured</div>
+        ) : (
+          <div className="flex items-baseline gap-2">
+            <span className={cn("text-3xl font-bold", RATING_CLASS[r.text] ?? "text-foreground")}>{r.text}</span>
+            {score != null ? <span className={cn("text-lg font-semibold", scoreColor(score))}>{score}</span> : null}
+          </div>
+        )}
+        {note ? <p className="mt-1 text-xs text-muted-foreground">{note}</p> : null}
       </CardContent>
     </Card>
   );

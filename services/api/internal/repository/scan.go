@@ -22,7 +22,7 @@ const scanColumns = `
 	s.queued_at, s.started_at, s.completed_at, s.duration_seconds, s.error_message, s.created_at,
 	s.rule_pack_version, s.needs_reeval, s.reeval_reason, s.stage,
 	s.reliability_rating, s.security_rating, s.maintainability_rating,
-	s.engines_degraded`
+	s.engines_degraded, s.filtered_secrets`
 
 // ScanRepository handles persistence for scans.
 type ScanRepository struct {

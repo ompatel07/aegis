@@ -10,6 +10,7 @@ import {
   YAxis,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { isDegraded } from "@/lib/display";
 import type { Scan } from "@/lib/types";
 
 // Plots the pillar scores across a project's scan history (oldest → newest). Aegis
@@ -27,6 +28,9 @@ export function TrendChart({ scans }: { scans: Scan[] }) {
       Deployment: s.deployment_score ?? null,
     }));
   const showDeployment = data.some((d) => d.Deployment != null);
+  // A degraded scan's scores reflect incomplete coverage — don't let the trend line
+  // imply a clean run. Count them so a dip/spike isn't read as real movement (B3).
+  const degradedCount = scans.filter((s) => s.status === "completed" && isDegraded(s)).length;
 
   return (
     <Card>
@@ -54,6 +58,12 @@ export function TrendChart({ scans }: { scans: Scan[] }) {
             </LineChart>
           </ResponsiveContainer>
         )}
+        {degradedCount > 0 ? (
+          <p className="mt-2 text-xs text-amber-700 dark:text-amber-500">
+            ⚠ {degradedCount} of these scan{degradedCount === 1 ? " was" : "s were"} degraded (incomplete
+            coverage) — those points do not reflect a full scan.
+          </p>
+        ) : null}
       </CardContent>
     </Card>
   );

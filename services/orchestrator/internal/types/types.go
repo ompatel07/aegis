@@ -141,6 +141,11 @@ type EngineResult struct {
 	Degraded       bool   `json:"degraded"`
 	DegradedReason string `json:"degraded_reason"`
 	CoverageLost   string `json:"coverage_lost"`
+
+	// Secret precision (P1): counts of matches SUPPRESSED as definitively-not-a-secret
+	// (placeholder shape, expired JWT). Surfaced so the scan can report "N filtered"
+	// instead of silently dropping them. nil/empty when nothing was filtered.
+	FilteredSecrets map[string]int `json:"filtered_secrets"`
 }
 
 // DegradedEngine is one scan-level degradation: an engine that ran but lost

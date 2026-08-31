@@ -303,6 +303,8 @@ export interface Scan {
   maintainability_rating?: Grade;
   // Non-empty ⇒ the scan is DEGRADED: engines ran without full coverage, or failed.
   engines_degraded?: { engine: string; reason: string; coverage_lost: string }[];
+  // Secret matches suppressed as definitively-not-a-secret (P1). Surfaced as a count.
+  filtered_secrets?: { placeholder?: number; expired_jwt?: number };
 }
 
 export interface Finding {
@@ -342,7 +344,9 @@ export interface Finding {
   code_snippet?: string;
   snippet_start_line?: number;
   fingerprint?: string;
-  lifecycle_status?: "new" | "existing" | "reopened";
+  lifecycle_status?: "new" | "existing" | "reopened" | "resolved";
+  // SonarQube-style issue type (P2c): bug | vulnerability | code_smell.
+  issue_type?: "bug" | "vulnerability" | "code_smell";
   created_at: string;
 }
 

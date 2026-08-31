@@ -140,6 +140,7 @@ func (s *Store) SaveResults(ctx context.Context, scanID, projectID string, agg p
 			rule_pack_version = $16,
 			reliability_rating = $17, security_rating = $18, maintainability_rating = $19,
 			engines_degraded = $20,
+			filtered_secrets = $21,
 			completed_at = now(),
 			duration_seconds = GREATEST(0, EXTRACT(EPOCH FROM (now() - COALESCE(started_at, queued_at)))::int)
 		WHERE id = $1`
@@ -154,6 +155,7 @@ func (s *Store) SaveResults(ctx context.Context, scanID, projectID string, agg p
 		errMsg, nullStr(agg.RulePackVersion),
 		agg.ReliabilityRating, agg.SecurityRating, agg.MaintainabilityRating,
 		degradedJSON(agg.EnginesDegraded),
+		filteredSecretsJSON(agg.FilteredSecrets),
 	); err != nil {
 		return fmt.Errorf("update scan: %w", err)
 	}
@@ -262,6 +264,19 @@ func degradedJSON(d []types.DegradedEngine) []byte {
 	b, err := json.Marshal(d)
 	if err != nil {
 		return []byte("[]")
+	}
+	return b
+}
+
+// filteredSecretsJSON marshals the scan's filtered-secret counts for the JSONB
+// column, defaulting to an empty object (never NULL).
+func filteredSecretsJSON(m map[string]int) []byte {
+	if len(m) == 0 {
+		return []byte("{}")
+	}
+	b, err := json.Marshal(m)
+	if err != nil {
+		return []byte("{}")
 	}
 	return b
 }

@@ -44,6 +44,10 @@ type Scan struct {
 	// the scan is DEGRADED — engines ran without full coverage, or failed.
 	EnginesDegraded json.RawMessage `db:"engines_degraded" json:"engines_degraded"`
 
+	// Secret matches SUPPRESSED as definitively-not-a-secret (P1):
+	// {"placeholder": n, "expired_jwt": n}. Surfaced as "N filtered", never silent.
+	FilteredSecrets json.RawMessage `db:"filtered_secrets" json:"filtered_secrets"`
+
 	QualityIssuesTotal   int `db:"quality_issues_total" json:"quality_issues_total"`
 	SecurityIssuesTotal  int `db:"security_issues_total" json:"security_issues_total"`
 	SecretsFound         int `db:"secrets_found" json:"secrets_found"`
