@@ -11,7 +11,10 @@ positive. P1 splits them by what they DEFINITIVELY are:
                     SUPPRESSED from findings; counted in the returned stats.
   2. expired JWT  — the exp claim is in the past, so the token is definitively
                     unusable. SUPPRESSED from findings; counted.
-  3. test-fixture path — a real credential CAN be committed to a test file, so this
+  3. documentation path — a key in an API-doc example (.md/.mdx/.rst, docs/, …) is
+                    closer to a placeholder, but docs occasionally paste a real key
+                    by mistake. DOWN-RANKED to LOW + tagged `documentation` (P2).
+  4. test-fixture path — a real credential CAN be committed to a test file, so this
                     is only a prior, not proof. KEPT, capped at LOW and tagged
                     `secret_context=test-fixture` so a human still triages it. This
                     is the S1 behaviour, deliberately UNCHANGED.
@@ -68,6 +71,23 @@ _FIXTURE_PATH = re.compile(
 
 def _in_fixture_path(path: str | None) -> bool:
     return bool(path) and bool(_FIXTURE_PATH.search(path.replace("\\", "/")))
+
+
+# ── signal 1b: documentation path prior (P2) ─────────────────────────────────
+# A key in an API-doc example (`token: "sk_..."` in a .mdx) is closer to a
+# placeholder than to a fixture secret — V1 found ≥23 such generic-api-key matches
+# in documentation that the fixture prior missed. We DOWN-RANK (not suppress): docs
+# occasionally paste a real key by mistake, so a human should still see it at LOW.
+_DOC_PATH = re.compile(
+    r"(?ix)"
+    r"( \.md($|\.) | \.mdx($|\.) | \.rst($|\.) | \.adoc($|\.) | \.ipynb($|\.) "
+    r"| (^|/)(docs?|documentation|website|guide|guides|handbook|wiki)(/) "
+    r"| (^|/)[^/]*/docs?/ )"
+)
+
+
+def _in_doc_path(path: str | None) -> bool:
+    return bool(path) and bool(_DOC_PATH.search(path.replace("\\", "/")))
 
 
 # ── signal 2: placeholder shape ──────────────────────────────────────────────
@@ -245,9 +265,14 @@ def annotate(findings: list[Finding]) -> dict[str, int]:
                 stats["placeholder"] += 1
                 continue
 
+            # Documentation path: an API-doc example key is closer to a placeholder,
+            # but docs occasionally hold a real key by mistake → DOWN-RANK, not
+            # suppress (P2). Checked before the fixture prior so docs read as "docs".
+            if _in_doc_path(f.file_path):
+                _cap_low(f, "documentation", "secret sits in a documentation/example path")
             # Test-fixture path: only a prior — a real secret can live in a test file.
             # KEEP at LOW + tag so a human still triages it (S1 behaviour, unchanged).
-            if _in_fixture_path(f.file_path):
+            elif _in_fixture_path(f.file_path):
                 _cap_low(f, "test-fixture", "secret sits in a test/fixture/example path")
         except Exception as exc:  # noqa: BLE001 — one finding must not stop the rest
             log.debug("secret_context.classify_failed", rule_id=f.rule_id, error=str(exc))

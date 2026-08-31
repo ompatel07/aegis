@@ -133,6 +133,32 @@ def test_provider_key_with_placeholder_path_still_wins():
     assert stats["placeholder"] == 0
 
 
+# ── documentation-path prior (P2) -> LOW + tagged, not suppressed ────────────
+def test_secret_in_mdx_doc_downranked():
+    f = mk("generic-api-key", "apps/docs/content/docs/developers/api/recipients.mdx",
+           "a8f3k2mZ9qWx7Lp0RtBcYvN4hJ6dGe1", entropy=4.6)
+    lst = [f]
+    secret_context.annotate(lst)
+    assert lst == [f]                      # kept, not suppressed
+    assert f.severity == Severity.LOW
+    assert ctx(f) == "documentation"
+
+
+def test_secret_in_docs_dir_downranked():
+    f = mk("private-key", "documentation/self-hosting/email.md",
+           "a8f3k2mZ9qWx7Lp0RtBcYvN4hJ6dGe1", entropy=4.6)
+    secret_context.annotate([f])
+    assert f.severity == Severity.LOW
+    assert ctx(f) == "documentation"
+
+
+def test_provider_key_in_doc_still_wins():
+    f = mk("generic-api-key", "docs/api/example.mdx", "AKIA1234567890ABCDEF")
+    secret_context.annotate([f])
+    assert f.severity == Severity.CRITICAL
+    assert ctx(f) == "live-format"
+
+
 # ── path prior (non-jwt, non-placeholder) ────────────────────────────────────
 def test_random_secret_in_tests_dir_downranked_as_fixture():
     f = mk("generic-api-key", "tests/Support/Settings.php",

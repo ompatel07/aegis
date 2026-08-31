@@ -44,6 +44,15 @@ class TaintFixtures {
         out.println("<h1>Hello " + Encode.forHtml(name) + "</h1>");
     }
 
+    // P2 FP guard: writing user data to stdout/stderr is not XSS (no HTTP response,
+    // no browser). The bare $OUT.print/println matched System.out — the eladmin
+    // AliPayController FP.
+    void xssStdoutOk(HttpServletRequest req) {
+        String tradeNo = req.getParameter("trade_no");
+        // ok: aegis-java-xss
+        System.out.println("received trade_no " + tradeNo);
+    }
+
     // ── OS command injection ─────────────────────────────────────────────────
     void cmdBad(HttpServletRequest req) throws Exception {
         String host = req.getParameter("host");

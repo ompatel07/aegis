@@ -21,16 +21,23 @@ rules:
       technology: [go]
       references:
         - https://owasp.org/Top10/A03_2021-Injection/
+    # gin's context accessors (c.Query/Param/PostForm/DefaultQuery) take a
+    # string-LITERAL parameter name — c.Query("id"). Constraining the key to a
+    # literal is what makes these gin sources and NOT a match for any method that
+    # happens to be named .Query/.Param: url.Values.Query() (no args) and
+    # cascadia.Query(node, sel) (an HTML selector) both matched the bare
+    # `$C.Query(...)` and turned unrelated code into a phantom taint source — the
+    # root cause of the navidrome cascadia and pocketbase url.Query FPs (P2).
     pattern-sources: &request_sources
       - pattern-either:
           - pattern: $R.URL.Query().Get(...)
           - pattern: $R.FormValue(...)
           - pattern: $R.PostFormValue(...)
           - pattern: $R.Header.Get(...)
-          - pattern: $C.Query(...)
-          - pattern: $C.DefaultQuery(...)
-          - pattern: $C.Param(...)
-          - pattern: $C.PostForm(...)
+          - pattern: $C.Query("...")
+          - pattern: $C.DefaultQuery("...", ...)
+          - pattern: $C.Param("...")
+          - pattern: $C.PostForm("...")
           - pattern: mux.Vars($R)[...]
     pattern-sanitizers:
       - pattern-either:

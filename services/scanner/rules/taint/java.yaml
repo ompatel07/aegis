@@ -90,6 +90,11 @@ rules:
               - pattern: $OUT.write($S)
               - pattern: $OUT.print($S)
               - pattern: $OUT.println($S)
+          # The bare $OUT.print/write forms also match System.out / System.err —
+          # writing user data to stdout/stderr is not XSS (no HTTP response, no
+          # browser). Excluding them killed the eladmin AliPayController FP (P2).
+          - pattern-not: System.out.$M(...)
+          - pattern-not: System.err.$M(...)
           - focus-metavariable: $S
 
   # ── OS command injection ─────────────────────────────────────────────────────

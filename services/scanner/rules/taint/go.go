@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/gin-gonic/gin"
 	"github.com/go-ldap/ldap/v3"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -31,6 +32,26 @@ func sqliOk(db *sql.DB, r *http.Request) {
 	id := r.URL.Query().Get("id")
 	// ok: aegis-go-sql-injection
 	db.Query("SELECT * FROM users WHERE id = $1", id)
+}
+
+// P2 FP guard for the over-broad `$C.Query(...)` source. The bare pattern matched
+// any .Query method — url.Values.Query() and cascadia.Query(node, sel) included —
+// turning unrelated code into a phantom taint source (the pocketbase + navidrome
+// FPs). Our source model deliberately tracks NAMED params (url.Query().Get("key"),
+// gin c.Query("id")), not the raw encoded query string, so constraining the gin
+// accessor to a string-LITERAL key removes the phantom source without losing named
+// coverage.
+func sqliUrlQueryOk(db *sql.DB, r *http.Request) {
+	encoded := r.URL.Query().Encode()
+	// ok: aegis-go-sql-injection
+	db.Query("SELECT * FROM t WHERE x = " + encoded)
+}
+
+// gin's c.Query("key") (string-literal key) IS a real request source and must fire.
+func sqliGinBad(db *sql.DB, c *gin.Context) {
+	id := c.Query("id")
+	// ruleid: aegis-go-sql-injection
+	db.Query("SELECT * FROM users WHERE id = " + id)
 }
 
 // ── Cross-site scripting ─────────────────────────────────────────────────────
