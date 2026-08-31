@@ -1,7 +1,10 @@
-"""Secret down-ranking precision tests (S1).
+"""Secret precision tests (S1 + P1).
 
-Down-rank test-fixture / placeholder / expired secrets to LOW + tag, but NEVER
-down-rank a live-format provider credential, even in a test path.
+P1 splits the three S1 signals by what they definitively mean:
+  - placeholder shape / expired JWT -> SUPPRESSED (removed) + counted in stats.
+  - test-fixture path -> KEPT at LOW + tagged (may be a real secret in a test file).
+A live-format provider credential is NEVER suppressed or down-ranked, even in a
+test path — it wins over every other signal.
 """
 from __future__ import annotations
 
@@ -57,21 +60,26 @@ def test_pem_private_key_body_in_fixtures_stays_critical():
     assert f.severity == Severity.CRITICAL
 
 
-# ── JWT policy (corrected): expiry is an ADDITIONAL signal; the path prior
-#    applies to JWTs like any other secret ─────────────────────────────────────
-def test_expired_jwt_anywhere_downranked():
+# ── JWT policy: expired is decisive -> SUPPRESS; future/undecodable could be live
+def test_expired_jwt_anywhere_suppressed():
     # expired is decisive regardless of path (here: a non-fixture path)
     f = mk("jwt", "src/auth.go", "token=" + _jwt(-3600))
-    secret_context.annotate([f])
-    assert f.severity == Severity.LOW
-    assert ctx(f) == "expired"
+    lst = [f]
+    stats = secret_context.annotate(lst)
+    assert lst == []                      # removed from findings
+    assert stats["expired_jwt"] == 1      # counted
+    assert ctx(f) == "expired"            # tagged before removal
 
 
-def test_future_jwt_in_fixture_path_downranked():
+def test_future_jwt_in_fixture_path_kept_low():
+    # future JWT is NOT expired -> fixture-path prior applies -> KEPT at LOW.
     f = mk("jwt", "apis/backup_test.go", "token=" + _jwt(+3600))
-    secret_context.annotate([f])
+    lst = [f]
+    stats = secret_context.annotate(lst)
+    assert lst == [f]                     # kept
     assert f.severity == Severity.LOW
     assert ctx(f) == "test-fixture"
+    assert stats["expired_jwt"] == 0
 
 
 def test_future_jwt_outside_fixture_unchanged():
@@ -87,20 +95,42 @@ def test_malformed_jwt_outside_fixture_unchanged():
     assert f.severity == Severity.CRITICAL
 
 
-# ── placeholder shape ────────────────────────────────────────────────────────
-def test_placeholder_env_example_downranked():
+# ── placeholder shape -> SUPPRESSED + counted ────────────────────────────────
+def test_placeholder_env_example_suppressed():
     f = mk("aegis-db-connection-string", ".env.example",
            "postgresql://user:password@localhost:5432/db", entropy=2.75)
-    secret_context.annotate([f])
-    assert f.severity == Severity.LOW
+    lst = [f]
+    stats = secret_context.annotate(lst)
+    assert lst == []                      # removed from findings
+    assert stats["placeholder"] == 1      # counted
     assert ctx(f) == "placeholder"
 
 
-def test_your_api_key_placeholder_downranked():
+def test_your_api_key_placeholder_suppressed():
     f = mk("generic-api-key", "config/app.php", "your-api-key-here")
-    secret_context.annotate([f])
-    assert f.severity == Severity.LOW
-    assert ctx(f) == "placeholder"
+    lst = [f]
+    stats = secret_context.annotate(lst)
+    assert lst == []
+    assert stats["placeholder"] == 1
+
+
+def test_stats_returned_zero_when_nothing_filtered():
+    f = mk("generic-api-key", "src/config.py",
+           "a8f3k2mZ9qWx7Lp0RtBcYvN4hJ6dGe1", entropy=4.6)
+    stats = secret_context.annotate([f])
+    assert stats == {"placeholder": 0, "expired_jwt": 0}
+
+
+def test_provider_key_with_placeholder_path_still_wins():
+    # A real AWS key whose surrounding text also looks placeholder-y: provider wins,
+    # so it is KEPT at full severity, never suppressed.
+    f = mk("generic-api-key", ".env.example", "AKIA1234567890ABCDEF")
+    lst = [f]
+    stats = secret_context.annotate(lst)
+    assert lst == [f]
+    assert f.severity == Severity.CRITICAL
+    assert ctx(f) == "live-format"
+    assert stats["placeholder"] == 0
 
 
 # ── path prior (non-jwt, non-placeholder) ────────────────────────────────────
@@ -129,3 +159,18 @@ def test_real_looking_secret_in_src_unchanged():
     secret_context.annotate([f])
     assert f.severity == Severity.CRITICAL
     assert ctx(f) is None
+
+
+# ── enrich_all threads the suppression counts (the "N filtered" surface) ──────
+def test_enrich_all_threads_filtered_stats():
+    from enrichment import enricher
+
+    findings = [
+        mk("generic-api-key", "config/app.php", "your-api-key-here"),   # placeholder
+        mk("aws-access-token", "src/c.py", "AKIAIOSFODNN7REALKEY0"),     # provider, kept
+    ]
+    stats: dict = {}
+    enricher.enrich_all(findings, "", stats=stats)
+    assert [f.rule_id for f in findings] == ["aws-access-token"]  # placeholder removed
+    assert stats.get("placeholder") == 1
+    assert stats.get("expired_jwt") == 0

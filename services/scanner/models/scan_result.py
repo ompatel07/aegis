@@ -194,6 +194,11 @@ class EngineResult(BaseModel):
     # Reproducible id of the rule set used (semgrep), recorded on the scan.
     rule_pack_version: str | None = None
 
+    # Secret precision (P1): counts of findings SUPPRESSED as definitively-not-a-secret
+    # (placeholder shape, expired JWT) — kept so the scan can report "N filtered"
+    # instead of silently dropping them. None/empty when nothing was filtered.
+    filtered_secrets: dict[str, int] | None = None
+
     # DEGRADATION (D1): the engine produced results but NOT its full coverage — a
     # broken custom rule pack that fell back to registry rules, a partial run, etc.
     # This is distinct from `status`: a DEGRADED engine still ran and returned

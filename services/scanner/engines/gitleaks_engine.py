@@ -142,7 +142,8 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
     findings = _parse(raw_findings, req.path)
     from enrichment import enricher
 
-    enricher.enrich_all(findings, req.path)
+    filtered: dict[str, int] = {}
+    enricher.enrich_all(findings, req.path, stats=filtered)
     return EngineResult(
         engine=Engine.GITLEAKS,
         pillar=Pillar.SECURITY,
@@ -152,6 +153,7 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
         raw={"findings": raw_findings},
         duration_seconds=result.duration_seconds,
         scan_id=req.scan_id,
+        filtered_secrets={k: v for k, v in filtered.items() if v} or None,
     )
 
 

@@ -81,7 +81,7 @@ def test_rule_fixture_is_skipped(tmp_path):
     f = tmp_path / "e.py"
     f.write_text(
         "def broad(data):\n"
-        "    # ruleid: ai-code-broad-except-pass\n"
+        "    # ruleid: aegis-bug-broad-except-pass\n"
         "    try:\n        return data['k']\n    except Exception:\n        pass\n"
     )
     assert guard.check_file(f) == []

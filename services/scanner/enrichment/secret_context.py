@@ -1,28 +1,34 @@
-"""Down-rank test-fixture / placeholder / expired secrets (precision pass S1).
+"""Separate secret findings by what a signal actually MEANS (precision passes S1, P1).
 
 Validation V1 found ~500 of 630 secret findings were test fixtures, `.env.example`
 placeholders, or expired JWTs — none of them live credentials, yet all reported
-CRITICAL, which drowned the real ones and corrupted every downstream severity
-count.
+CRITICAL, which drowned the real ones and corrupted every downstream severity count.
+S1 down-ranked all three to LOW. But a down-ranked false positive is still a false
+positive. P1 splits them by what they DEFINITIVELY are:
 
-We DOWN-RANK, we do not hard-suppress: real credentials genuinely do get committed
-to test files, so a flagged secret in a fixture path stays in the report — capped
-at LOW and tagged with `secret_context` so a human still sees it, but it never sits
-in Top Risks. Three independent signals fire the down-rank:
+  1. placeholder  — the value is definitively NOT a credential (repeated char,
+                    changeme/your-*/xxx/<...>/${...}/example/dummy/…, entropy < 3.0).
+                    SUPPRESSED from findings; counted in the returned stats.
+  2. expired JWT  — the exp claim is in the past, so the token is definitively
+                    unusable. SUPPRESSED from findings; counted.
+  3. test-fixture path — a real credential CAN be committed to a test file, so this
+                    is only a prior, not proof. KEPT, capped at LOW and tagged
+                    `secret_context=test-fixture` so a human still triages it. This
+                    is the S1 behaviour, deliberately UNCHANGED.
 
-  1. path prior     — the file is a test / fixture / example / seed path
-  2. placeholder    — the value is obviously not a credential (repeated char,
-                      changeme/your-*/xxx/<...>/${...}/example/dummy/…, low entropy)
-  3. expired JWT    — for `jwt` findings, the exp claim is in the past, so the
-                      token cannot be live (this alone clears the pocketbase 404)
+`annotate` returns a stats dict — {"placeholder": n, "expired_jwt": n} — so the scan
+can report "N placeholder matches filtered / M expired JWTs filtered" instead of
+silently dropping them. Suppression is auditable, not invisible.
 
 MANDATORY OVERRIDE: a value matching a known live-format provider credential (AWS
-AKIA, GitHub ghp_, Stripe sk_live_, a real PEM key body, …) is NEVER down-ranked,
-in any path. An AWS key in testdata/ is a real leak.
+AKIA, GitHub ghp_, Stripe sk_live_, a real PEM key body, …) is NEVER suppressed or
+down-ranked, in any path — checked first, wins over every other signal. An AWS key
+in testdata/ is a real leak.
 
-JWTs are special: the exp check GOVERNS them. A JWT with a future/absent/undecodable
-exp is left at full severity even in a test path (it could be live); only an expired
-exp down-ranks it. The path/placeholder priors do not apply to JWT findings.
+JWTs: the exp check governs them. Expired ⇒ suppressed anywhere. A JWT with a
+future/absent/undecodable exp could be live, so it is treated like any other secret
+— the fixture-path prior can cap it to LOW, but outside a fixture path it stays at
+full severity.
 """
 from __future__ import annotations
 
@@ -167,15 +173,22 @@ def _lines_of(meta: dict) -> str:
     return str(v) if v else ""
 
 
+def _tag(f: Finding, context: str, reason: str) -> None:
+    """Tag a finding's context without changing severity — used for the suppressed
+    (placeholder / expired) findings, which are about to be removed but are tagged
+    first so a caller holding a reference can see why."""
+    if not isinstance(f.metadata, dict):
+        f.metadata = {}
+    f.metadata["secret_context"] = context
+    f.metadata["secret_context_reason"] = reason
+
+
 def _cap_low(f: Finding, context: str, reason: str) -> None:
     # SEVERITY_ORDER: lower rank = more severe (CRITICAL=0 … LOW=3). Cap only when
     # the finding is currently MORE severe than LOW.
     if SEVERITY_ORDER[f.severity] < SEVERITY_ORDER[Severity.LOW]:
         f.severity = Severity.LOW
-    if not isinstance(f.metadata, dict):
-        f.metadata = {}
-    f.metadata["secret_context"] = context
-    f.metadata["secret_context_reason"] = reason
+    _tag(f, context, reason)
 
 
 def _redact(value: str) -> str:
@@ -189,10 +202,17 @@ def _redact(value: str) -> str:
     return (v[:4] + "…[" + str(len(v)) + "c]") if len(v) > 8 else "***"
 
 
-def annotate(findings: list[Finding]) -> None:
-    """In-place: tag + down-rank fixture/placeholder/expired secrets; never touch a
-    live-format provider credential. For gitleaks findings the raw `match` is
-    re-redacted here after classification."""
+def annotate(findings: list[Finding]) -> dict[str, int]:
+    """Classify secret findings in place and return a stats dict of what was
+    SUPPRESSED — {"placeholder": n, "expired_jwt": n}.
+
+    Placeholder-shaped and expired-JWT findings are definitively not live
+    credentials, so they are removed from `findings` (mutated in place) and counted.
+    A test-fixture-path secret MIGHT be real, so it is kept, capped at LOW, and
+    tagged. A live-format provider credential is never touched — checked first."""
+    stats = {"placeholder": 0, "expired_jwt": 0}
+    suppressed: set[int] = set()  # id() of findings to drop after the loop
+
     for f in findings:
         if not _is_secret_finding(f):
             continue
@@ -201,7 +221,8 @@ def annotate(findings: list[Finding]) -> None:
         entropy = meta.get("entropy")
 
         try:
-            # mandatory override — a real provider credential is never down-ranked.
+            # mandatory override — a real provider credential wins over every other
+            # signal, in any path. Never suppressed, never down-ranked.
             prov = _provider_key(value)
             if prov:
                 if isinstance(f.metadata, dict):
@@ -210,22 +231,30 @@ def annotate(findings: list[Finding]) -> None:
                 continue
 
             rid = (f.rule_id or "").lower()
-            # Expired JWT: cannot be live, anywhere. Checked first so context reads
-            # "expired". Otherwise the path prior applies to JWTs like any other
-            # secret (a future-dated JWT in a fixture path is a test fixture; a
-            # future-dated JWT OUTSIDE a fixture path stays critical — JWTs have no
-            # live-format signature the way AKIA/ghp_ do, so we down-rank, not
-            # suppress, and accept that residual risk).
+            # Expired JWT: definitively unusable (exp in the past) → SUPPRESS anywhere.
             if "jwt" in rid and _jwt_exp_status(value) == "expired":
-                _cap_low(f, "expired", "JWT exp claim is in the past — cannot be live")
+                _tag(f, "expired", "JWT exp claim is in the past — cannot be live")
+                suppressed.add(id(f))
+                stats["expired_jwt"] += 1
                 continue
 
+            # Placeholder shape: definitively not a credential → SUPPRESS.
             if _is_placeholder(value, entropy):
-                _cap_low(f, "placeholder", "value has placeholder shape / low entropy")
-            elif _in_fixture_path(f.file_path):
+                _tag(f, "placeholder", "value has placeholder shape / low entropy")
+                suppressed.add(id(f))
+                stats["placeholder"] += 1
+                continue
+
+            # Test-fixture path: only a prior — a real secret can live in a test file.
+            # KEEP at LOW + tag so a human still triages it (S1 behaviour, unchanged).
+            if _in_fixture_path(f.file_path):
                 _cap_low(f, "test-fixture", "secret sits in a test/fixture/example path")
         except Exception as exc:  # noqa: BLE001 — one finding must not stop the rest
             log.debug("secret_context.classify_failed", rule_id=f.rule_id, error=str(exc))
         # NOTE: no redaction here. The plaintext value stays on the in-memory finding
         # (match / code_snippet) and is scrubbed at the single egress chokepoint
         # (EngineResult serialization -> enrichment.egress).
+
+    if suppressed:
+        findings[:] = [f for f in findings if id(f) not in suppressed]
+    return stats

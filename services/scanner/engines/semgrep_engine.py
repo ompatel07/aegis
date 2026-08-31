@@ -62,13 +62,6 @@ _CUSTOM_RULES_DIR = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "rules", "taint"
 )
 
-# Aegis's AI-generated-code failure-mode rules (Phase 2C TASK 3b): patterns LLMs
-# get wrong (missing authz, weak validation, deprecated crypto, insecure random,
-# JWT-without-verify, broad except, SQL concat with ORM present, …). Always-on.
-_AI_CODE_RULES_DIR = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "rules", "ai_code_taint"
-)
-
 # Aegis IaC rules (Phase 2E Task 2): docker-compose misconfigurations — the one
 # IaC surface Trivy's misconfig scanner doesn't cover. Always-on; path-scoped to
 # compose files so they never fire on ordinary YAML.
@@ -340,10 +333,9 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
     if project_rules_dir:
         registry_configs = registry_configs + [project_rules_dir]
 
-    ai_code_dir = _bundled_rules_dir(_AI_CODE_RULES_DIR)
     iac_dir = _bundled_rules_dir(_IAC_RULES_DIR)
     quality_dir = _bundled_rules_dir(_QUALITY_RULES_DIR)
-    bundled = (([custom_dir] if custom_dir else []) + ([ai_code_dir] if ai_code_dir else [])
+    bundled = (([custom_dir] if custom_dir else [])
                + ([iac_dir] if iac_dir else []) + ([quality_dir] if quality_dir else []))
     configs = registry_configs + bundled
     rule_pack_version = _rule_pack_version(configs, req.custom_rules)
@@ -412,7 +404,8 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
     findings = _parse(raw, req.path)
     from enrichment import enricher
 
-    enricher.enrich_all(findings, req.path)
+    filtered_secrets: dict[str, int] = {}
+    enricher.enrich_all(findings, req.path, stats=filtered_secrets)
     custom_count = sum(1 for f in findings if f.rule_id.startswith("aegis-"))
     log.info(
         "semgrep.completed",
@@ -436,6 +429,7 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
         degraded=degraded,
         degraded_reason=degraded_reason,
         coverage_lost=coverage_lost,
+        filtered_secrets={k: v for k, v in filtered_secrets.items() if v} or None,
     )
 
 
@@ -525,11 +519,9 @@ def _parse(raw: dict, root: str) -> list[Finding]:
         # Normalize both to their stable rule id; keep registry ids canonical.
         is_project = "aegis-project-rules-" in check_id
         is_aegis = rule_short.startswith("aegis-")
-        is_ai_code = rule_short.startswith("ai-code-")  # bundled AI-failure-mode pack
-        rule_id = rule_short if (is_project or is_aegis or is_ai_code) else check_id
+        rule_id = rule_short if (is_project or is_aegis) else check_id
         ruleset = (
             "project-custom" if is_project
-            else "ai-code" if is_ai_code
             else "aegis-custom" if is_aegis
             else "registry"
         )

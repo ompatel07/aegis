@@ -41,7 +41,7 @@ async def catalog() -> list[CatalogRule]:
                 doc = yaml.safe_load(fh) or {}
         except (OSError, yaml.YAMLError):
             continue
-        pack = os.path.basename(os.path.dirname(path))  # taint | ai_code_taint
+        pack = os.path.basename(os.path.dirname(path))  # e.g. taint | quality | iac
         for r in doc.get("rules", []):
             meta = r.get("metadata", {}) or {}
             out.append(CatalogRule(

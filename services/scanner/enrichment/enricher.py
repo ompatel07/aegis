@@ -69,12 +69,16 @@ def _load() -> dict:
     return _templates
 
 
-def enrich_all(findings: list[Finding], root: str = "") -> list[Finding]:
+def enrich_all(findings: list[Finding], root: str = "", stats: dict | None = None) -> list[Finding]:
     """Enrich every finding in place; returns the same list for convenience.
 
     `root` is the scan's repo root — when given, every finding gets an inline
     code_snippet (P1c) and a stable lifecycle fingerprint (P1a). Both are
-    best-effort and never fail a scan."""
+    best-effort and never fail a scan.
+
+    `stats`, if given, is updated with the secret-filter counts (see
+    secret_context.annotate) — {"placeholder": n, "expired_jwt": n} — so the engine
+    can surface "N placeholder / M expired-JWT matches filtered" on its result."""
     templates = _load()
     vendored = _vendored_asset_paths(findings, root)
     for f in findings:
@@ -86,13 +90,17 @@ def enrich_all(findings: list[Finding], root: str = "") -> list[Finding]:
         _tag_ownership(f, vendored)
         _classify_issue_type(f)
     _attach_snippets(findings, root)
-    # Down-rank test-fixture / placeholder / expired secrets (precision S1). Runs
-    # after snippets so the bcrypt fallback value is populated; never suppresses,
-    # only caps at LOW + tags. A live-format provider credential is left untouched.
+    # Secret precision (S1/P1): SUPPRESS placeholder + expired-JWT findings (they are
+    # definitively not credentials), KEEP test-fixture-path secrets at LOW + tagged.
+    # Runs after snippets so the bcrypt fallback value is populated. A live-format
+    # provider credential is left untouched. The suppression counts flow to `stats`.
     try:
         from enrichment import secret_context
 
-        secret_context.annotate(findings)
+        filtered = secret_context.annotate(findings)
+        if stats is not None and filtered:
+            for k, v in filtered.items():
+                stats[k] = stats.get(k, 0) + v
     except Exception as exc:  # noqa: BLE001 — a tagging pass must never fail a scan
         log.debug("enrichment.secret_context_failed", error=str(exc))
     _score_false_positives(findings)
@@ -336,24 +344,7 @@ def _candidate_keys(f: Finding) -> list[str]:
             keys.append(f"taint:{cls}")
     if rid.startswith("quality/"):
         keys.append(rid)
-    if rid.startswith("ai-code-"):
-        keys.append(f"ai-code:{_ai_code_mode(rid)}")
-        keys.append("ai-code:default")
     return keys
-
-
-def _ai_code_mode(rid: str) -> str:
-    """Map an ai-code-* rule id to its failure-mode template key."""
-    s = rid[len("ai-code-"):]
-    if s.endswith("-js"):
-        s = s[:-3]
-    aliases = {
-        "weak-crypto": "crypto", "insecure-random": "random",
-        "broad-except-pass": "exception", "empty-catch": "exception",
-        "jwt-no-verify": "jwt", "sql-string-build": "sql", "sql-concat": "sql",
-        "hardcoded-secret-default": "secret", "hardcoded-secret": "secret",
-    }
-    return aliases.get(s, s)
 
 
 def _taint_class(rid: str) -> str | None:
