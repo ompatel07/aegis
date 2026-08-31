@@ -97,6 +97,147 @@ function OwnershipBadge({ metadata }: { metadata?: Record<string, unknown> }) {
   );
 }
 
+// CISA KEV — a real-world exploit campaign is using this vuln. The strongest triage
+// signal; it already sorts first and suppresses the likely-FP badge, but had no
+// visible marker until now (P4a).
+function KEVBadge({ metadata }: { metadata?: Record<string, unknown> }) {
+  if (metadata?.kev !== true) return null;
+  return (
+    <Badge
+      className="border-red-600/50 bg-red-600/15 text-red-700 dark:text-red-400"
+      title="CISA KEV — a real-world exploit campaign is actively using this vulnerability"
+    >
+      <ShieldAlert className="mr-1 h-3 w-3" /> actively exploited
+    </Badge>
+  );
+}
+
+const ISSUE_TYPE: Record<string, { label: string; cls: string }> = {
+  bug: { label: "bug", cls: "border-red-500/40 bg-red-500/15 text-red-600 dark:text-red-400" },
+  vulnerability: { label: "vulnerability", cls: "border-orange-500/40 bg-orange-500/15 text-orange-600 dark:text-orange-400" },
+  code_smell: { label: "code smell", cls: "border-slate-400/40 bg-slate-400/15 text-slate-500" },
+};
+function IssueTypeBadge({ issueType }: { issueType?: string }) {
+  const m = issueType ? ISSUE_TYPE[issueType] : undefined;
+  if (!m) return null;
+  return <Badge className={m.cls}>{m.label}</Badge>;
+}
+
+const SECRET_CTX: Record<string, string> = {
+  "test-fixture": "test fixture",
+  placeholder: "placeholder",
+  expired: "expired JWT",
+  documentation: "documentation",
+  "live-format": "live-format key",
+};
+// Explains WHY a secret finding is down-ranked (or why it is NOT — live-format).
+function SecretContextBadge({ metadata }: { metadata?: Record<string, unknown> }) {
+  const ctx = metadata?.secret_context as string | undefined;
+  if (!ctx) return null;
+  const reason = metadata?.secret_context_reason as string | undefined;
+  const live = ctx === "live-format";
+  return (
+    <Badge
+      className={live ? "border-red-500/40 bg-red-500/15 text-red-600 dark:text-red-400" : "border-slate-400/40 bg-slate-400/15 text-slate-500"}
+      title={reason ? `Why this severity: ${reason}` : SECRET_CTX[ctx] ?? ctx}
+    >
+      {SECRET_CTX[ctx] ?? ctx}
+    </Badge>
+  );
+}
+
+// Lifecycle vs the project's prior scans. "new" has its own badge; "existing" is the
+// default and shows nothing — only the notable transitions (reopened/resolved) badge.
+function LifecycleBadge({ status }: { status?: string }) {
+  if (!status || status === "new" || status === "existing") return null;
+  return (
+    <Badge className="border-purple-400/40 bg-purple-400/15 text-purple-600 dark:text-purple-400" title="Lifecycle vs previous scans of this project">
+      {status}
+    </Badge>
+  );
+}
+
+// Line-numbered snippet. The value is already redacted at the scanner egress
+// chokepoint (secrets → masked), so this path renders it verbatim and never
+// re-derives a plaintext secret.
+function CodeSnippet({ code, startLine }: { code?: string; startLine?: number }) {
+  if (!code) return null;
+  const lines = code.replace(/\n$/, "").split("\n");
+  return (
+    <div>
+      <p className="mb-1 flex items-center gap-1 font-medium">
+        <FileCode2 className="h-4 w-4" /> Code
+      </p>
+      <pre className="overflow-x-auto rounded-md bg-muted p-3 text-xs leading-relaxed">
+        <code>
+          {lines.map((ln, i) => (
+            <div key={i} className="flex">
+              <span className="mr-3 w-8 shrink-0 select-none text-right text-muted-foreground/50">
+                {startLine != null ? startLine + i : i + 1}
+              </span>
+              <span className="whitespace-pre">{ln || " "}</span>
+            </div>
+          ))}
+        </code>
+      </pre>
+    </div>
+  );
+}
+
+// SCA intelligence: EPSS exploit-probability + the transitive dependency path (how a
+// bundled CVE reached the project).
+function ScaIntel({ metadata }: { metadata?: Record<string, unknown> }) {
+  const epss = metadata?.epss_score as number | undefined;
+  const epssPct = metadata?.epss_percentile as number | undefined;
+  const depPath = metadata?.dependency_path as string[] | undefined;
+  const introduced = metadata?.introduced_through as string | undefined;
+  const transitive = metadata?.is_transitive === true;
+  if (epss == null && (!depPath || depPath.length === 0) && !introduced) return null;
+  return (
+    <div className="space-y-2">
+      {epss != null ? (
+        <DetailRow
+          label="EPSS"
+          value={`${(epss * 100).toFixed(1)}% exploit probability (30-day)${epssPct != null ? ` · ${Math.round(epssPct * 100)}th pct` : ""}`}
+        />
+      ) : null}
+      {introduced ? (
+        <DetailRow label={transitive ? "Transitive via" : "Introduced via"} value={introduced} />
+      ) : null}
+      {depPath && depPath.length > 0 ? (
+        <div className="flex items-start gap-3">
+          <span className="w-32 shrink-0 font-medium">Dependency path</span>
+          <span className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
+            {depPath.map((p, i) => (
+              <span key={i} className="flex items-center gap-1">
+                {i > 0 ? <span className="opacity-50">›</span> : null}
+                <code className="rounded bg-muted px-1 py-0.5">{p}</code>
+              </span>
+            ))}
+          </span>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+// Explains, in the dialog, WHY a secret finding sits at its severity — the S1/P1
+// down-rank reason, or that it is a confirmed live-format credential.
+function SecretContextDetail({ metadata }: { metadata?: Record<string, unknown> }) {
+  const ctx = metadata?.secret_context as string | undefined;
+  if (!ctx) return null;
+  const reason = metadata?.secret_context_reason as string | undefined;
+  const live = ctx === "live-format";
+  return (
+    <div className={`rounded-md border p-2.5 text-xs ${live ? "border-red-500/30 bg-red-500/10" : "border-border bg-muted/40"}`}>
+      <p className="font-medium">
+        {live ? "Confirmed live-format credential — not down-ranked" : `Down-ranked: ${SECRET_CTX[ctx] ?? ctx}`}
+      </p>
+      {reason ? <p className="mt-0.5 text-muted-foreground">{reason}</p> : null}
+    </div>
+  );
+}
+
 export function FindingCard({ finding, onUpdated }: { finding: Finding; onUpdated?: () => void }) {
   const api = useApi();
   const toast = useToast();
@@ -146,12 +287,16 @@ export function FindingCard({ finding, onUpdated }: { finding: Finding; onUpdate
           <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
+              <KEVBadge metadata={finding.metadata} />
               <RiskBadge risk={finding.risk_level} />
               <SeverityBadge severity={finding.severity} />
+              <IssueTypeBadge issueType={finding.issue_type} />
               <Badge className="border-border bg-secondary text-secondary-foreground">{finding.engine}</Badge>
               <NewBadge finding={finding} />
+              <LifecycleBadge status={finding.lifecycle_status} />
               <OwnershipBadge metadata={finding.metadata} />
               <ReachabilityBadge metadata={finding.metadata} />
+              <SecretContextBadge metadata={finding.metadata} />
               <LikelyFPBadge
                 p={finding.false_positive_probability}
                 severity={finding.severity}
@@ -175,10 +320,14 @@ export function FindingCard({ finding, onUpdated }: { finding: Finding; onUpdate
       <Dialog open={open} onClose={() => setOpen(false)} className="max-w-2xl">
         <DialogHeader>
           <div className="flex flex-wrap items-center gap-2">
+            <KEVBadge metadata={finding.metadata} />
             <RiskBadge risk={finding.risk_level} />
             <SeverityBadge severity={finding.severity} />
+            <IssueTypeBadge issueType={finding.issue_type} />
             <Badge className="border-border bg-secondary text-secondary-foreground">{finding.engine}</Badge>
+            <LifecycleBadge status={finding.lifecycle_status} />
             <OwnershipBadge metadata={finding.metadata} />
+            <SecretContextBadge metadata={finding.metadata} />
             <EffortBadge effort={finding.estimated_effort} />
           </div>
           <DialogTitle>{heading}</DialogTitle>
@@ -198,8 +347,11 @@ export function FindingCard({ finding, onUpdated }: { finding: Finding; onUpdate
           {finding.cve_id ? <DetailRow label="CVE" value={finding.cve_id} /> : null}
           {finding.owasp_category ? <DetailRow label="OWASP" value={finding.owasp_category} /> : null}
 
+          <CodeSnippet code={finding.code_snippet} startLine={finding.snippet_start_line} />
+          <SecretContextDetail metadata={finding.metadata} />
           <StepsToReproduceSection data={finding.context_metadata} />
           <ReachabilityDetail metadata={finding.metadata} />
+          <ScaIntel metadata={finding.metadata} />
           <ContextMetadata data={finding.context_metadata} />
 
           {finding.remediation_action ? (

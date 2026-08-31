@@ -70,8 +70,8 @@ func (r *FindingRepository) ListByScan(
 	listQ := fmt.Sprintf(`
 		SELECT * FROM findings
 		WHERE %s
-		ORDER BY %s, %s, COALESCE(false_positive_probability, 0) ASC, file_path, line_start NULLS LAST, COALESCE(fingerprint, '')
-		LIMIT $%d OFFSET $%d`, clause, kevFirstSQL, severityRankSQL, idx, idx+1)
+		ORDER BY %s, %s, %s, %s, COALESCE(false_positive_probability, 0) ASC, file_path, line_start NULLS LAST, COALESCE(fingerprint, '')
+		LIMIT $%d OFFSET $%d`, clause, kevFirstSQL, severityRankSQL, reachableFirstSQL, newFirstSQL, idx, idx+1)
 	args = append(args, limit, offset)
 
 	findings := []models.Finding{}
@@ -87,8 +87,8 @@ func (r *FindingRepository) AllByScan(ctx context.Context, scanID string) ([]mod
 	q := fmt.Sprintf(`
 		SELECT * FROM findings
 		WHERE scan_id = $1
-		ORDER BY %s, %s, COALESCE(false_positive_probability, 0) ASC, file_path, line_start NULLS LAST, COALESCE(fingerprint, '')
-		LIMIT 50000`, kevFirstSQL, severityRankSQL)
+		ORDER BY %s, %s, %s, %s, COALESCE(false_positive_probability, 0) ASC, file_path, line_start NULLS LAST, COALESCE(fingerprint, '')
+		LIMIT 50000`, kevFirstSQL, severityRankSQL, reachableFirstSQL, newFirstSQL)
 	findings := []models.Finding{}
 	if err := r.db.SelectContext(ctx, &findings, q, scanID); err != nil {
 		return nil, err
@@ -179,6 +179,15 @@ const severityRankSQL = `
 // above every non-KEV finding regardless of CVSS band — the strongest triage
 // signal leads. Display ordering only; detection/severity are untouched.
 const kevFirstSQL = `CASE WHEN COALESCE(metadata->>'kev', '') = 'true' THEN 0 ELSE 1 END`
+
+// reachableFirstSQL: within a severity band, a reachable finding (user input can hit
+// it) outranks an unreachable one — reachability is the SCA differentiator, so it is
+// part of the sort, not just a badge. See docs/UI_DATA_AUDIT.md § ordering.
+const reachableFirstSQL = `CASE WHEN COALESCE(metadata->>'reachable', '') = 'true' THEN 0 ELSE 1 END`
+
+// newFirstSQL: a regression introduced since the last scan ranks above pre-existing
+// debt of equal severity/reachability — it is the cheap fix still in this PR.
+const newFirstSQL = `CASE WHEN is_new THEN 0 ELSE 1 END`
 
 // GetByIDForUser loads a finding, enforcing ownership via scan → project → user.
 // RoleInFindingOrg returns the caller's role in the org that owns the finding
