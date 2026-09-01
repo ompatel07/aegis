@@ -74,6 +74,28 @@ export function isCleanPresentable(
   return scanSummaryState(scan) === "graded";
 }
 
+// The engines that feed each pillar's score/rating (mirrors the orchestrator's
+// per-pillar confidence in aggregator.go).
+const PILLAR_ENGINES: Record<string, string[]> = {
+  security: ["semgrep", "trivy", "gitleaks"],
+  reliability: ["semgrep", "quality"],
+  maintainability: ["quality"],
+  quality: ["quality"],
+};
+
+// Why a pillar reads "Not measured" — the degraded/failed engine's reason, so the
+// UI shows the REASON (C3), not the method that never ran. null when we have none.
+export function notMeasuredReason(
+  scan: Pick<Scan, "engines_degraded">,
+  pillar: "security" | "reliability" | "maintainability" | "quality",
+): string | null {
+  const engines = PILLAR_ENGINES[pillar] ?? [];
+  for (const d of scan.engines_degraded ?? []) {
+    if (engines.includes(d.engine)) return `${d.engine}: ${d.reason}`;
+  }
+  return null;
+}
+
 // filtered_secrets -> a human sentence, or null when nothing was filtered. Silent
 // filtering is indistinguishable from missing them, so a non-zero count is stated.
 export function filteredSecretsLabel(
@@ -87,4 +109,11 @@ export function filteredSecretsLabel(
   return `${parts.join(" and ")} secret match${
     (filtered.placeholder ?? 0) + (filtered.expired_jwt ?? 0) === 1 ? "" : "es"
   } filtered (definitively not credentials)`;
+}
+
+export function filteredSecretsTotal(
+  filtered?: { placeholder?: number; expired_jwt?: number } | null,
+): number {
+  if (!filtered) return 0;
+  return (filtered.placeholder ?? 0) + (filtered.expired_jwt ?? 0);
 }

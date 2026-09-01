@@ -14,8 +14,8 @@ import { ScanFeedback } from "@/components/dashboard/ScanFeedback";
 import { FindingsList } from "@/components/findings/FindingsList";
 import { Button } from "@/components/ui/button";
 import { cn, formatDate, formatDuration, gradeColor, scoreColor } from "@/lib/utils";
-import { ratingDisplay, filteredSecretsLabel } from "@/lib/display";
-import { Download, FileText } from "lucide-react";
+import { ratingDisplay, filteredSecretsLabel, filteredSecretsTotal, notMeasuredReason } from "@/lib/display";
+import { Download, FileText, HelpCircle } from "lucide-react";
 import { useState } from "react";
 
 export default function ScanDetailPage() {
@@ -115,7 +115,16 @@ export default function ScanDetailPage() {
               "not measured" slot on a web scan. */}
           <div className={cn("grid gap-4 sm:grid-cols-2", scan.deployment_score != null ? "lg:grid-cols-4" : "lg:grid-cols-3")}>
             <ScoreCard title="Overall" score={scan.overall_score} />
-            <ScoreCard title="Security" score={scan.security_score} subtitle={`${scan.security_issues_total} issues · ${scan.secrets_found} secrets`} />
+            <ScoreCard
+              title="Security"
+              score={scan.security_score}
+              subtitle={`${scan.security_issues_total} issues · ${scan.secrets_found} secrets`}
+              footnote={
+                filteredSecretsTotal(scan.filtered_secrets) > 0
+                  ? filteredSecretsLabel(scan.filtered_secrets) ?? undefined
+                  : undefined
+              }
+            />
             <ScoreCard title="Quality" score={scan.quality_score} subtitle={`${scan.quality_issues_total} issues`} />
             {scan.deployment_score != null ? (
               <ScoreCard title="Deployment (CI)" score={scan.deployment_score} subtitle="pre-built workspace" />
@@ -123,24 +132,15 @@ export default function ScanDetailPage() {
           </div>
 
           {/* SonarQube-style A–E ratings (P2c). The LETTER is worst-severity (one
-              critical bug caps Reliability at E); the paired SCORE is the density.
-              Both shown so a single blocker isn't hidden behind a decent average.
-              A null rating is an explicit "Not measured", never a blank or an A. */}
+              critical bug caps Reliability at E); Security also shows its density
+              score. A null rating is an explicit, weighted "Not measured" with the
+              REASON it could not be measured — never a blank, an A, or method jargon
+              captioning a measurement that never ran. */}
           <div className="grid gap-4 sm:grid-cols-3">
-            <RatingCard title="Reliability" rating={scan.reliability_rating} note="worst-severity bug" />
-            <RatingCard title="Security" rating={scan.security_rating} score={scan.security_score} note="worst-severity vuln · density score" />
-            <RatingCard title="Maintainability" rating={scan.maintainability_rating} note="tech-debt rating" />
+            <RatingCard title="Reliability" rating={scan.reliability_rating} reason={notMeasuredReason(scan, "reliability")} />
+            <RatingCard title="Security" rating={scan.security_rating} score={scan.security_score} reason={notMeasuredReason(scan, "security")} />
+            <RatingCard title="Maintainability" rating={scan.maintainability_rating} reason={notMeasuredReason(scan, "maintainability")} />
           </div>
-
-          {/* Filtered secrets are counted, not silent — placeholder/expired matches
-              P1 removed from findings are reported so they aren't indistinguishable
-              from missed ones. */}
-          {filteredSecretsLabel(scan.filtered_secrets) ? (
-            <p className="text-xs text-muted-foreground">
-              🛈 {filteredSecretsLabel(scan.filtered_secrets)}. These are excluded from the
-              secret count above and are not shown as findings.
-            </p>
-          ) : null}
 
           <PolicyResultCard scanId={scanId} />
 
@@ -220,7 +220,22 @@ function ExportSarifButton({ scanId }: { scanId: string }) {
   );
 }
 
-function ScoreCard({ title, score, subtitle }: { title: string; score?: number; subtitle?: string }) {
+// A weighted "Not measured" — an unresolved gap, not a calm absence (C2).
+function NotMeasuredBlock({ reason }: { reason?: string }) {
+  return (
+    <div>
+      <div className="flex items-center gap-1.5 text-xl font-bold text-amber-700 dark:text-amber-400">
+        <HelpCircle className="h-5 w-5" />
+        Not measured
+      </div>
+      <p className="mt-1 text-xs text-amber-700/80 dark:text-amber-400/80">
+        {reason ?? "no confident measurement for this scan"}
+      </p>
+    </div>
+  );
+}
+
+function ScoreCard({ title, score, subtitle, footnote }: { title: string; score?: number; subtitle?: string; footnote?: string }) {
   return (
     <Card>
       <CardHeader className="pb-2">
@@ -228,11 +243,16 @@ function ScoreCard({ title, score, subtitle }: { title: string; score?: number; 
       </CardHeader>
       <CardContent>
         {score == null ? (
-          <div className="text-sm font-medium text-muted-foreground">Not measured</div>
+          <NotMeasuredBlock />
         ) : (
-          <div className={cn("text-3xl font-bold", scoreColor(score))}>{score}</div>
+          <div className={cn("text-3xl font-bold tabular-nums", scoreColor(score))}>{score}</div>
         )}
         {subtitle ? <p className="mt-1 text-xs text-muted-foreground">{subtitle}</p> : null}
+        {footnote ? (
+          <p className="mt-1 text-xs text-muted-foreground" title="Filtered secrets — definitively not credentials, excluded from the count">
+            🛈 {footnote}
+          </p>
+        ) : null}
       </CardContent>
     </Card>
   );
@@ -246,8 +266,10 @@ const RATING_CLASS: Record<string, string> = {
   E: "text-red-600 dark:text-red-400",
 };
 
-// A–E rating card. null -> explicit "Not measured" (never a blank or a fabricated A).
-function RatingCard({ title, rating, score, note }: { title: string; rating?: string; score?: number; note?: string }) {
+// A–E rating card. Measured → the letter (+ Security's density score), no method
+// jargon (C3). null → a weighted "Not measured" with the REASON it could not be
+// measured (C2/C3), never a blank, an A, or a caption for a method that never ran.
+function RatingCard({ title, rating, score, reason }: { title: string; rating?: string; score?: number; reason?: string | null }) {
   const r = ratingDisplay(rating);
   return (
     <Card>
@@ -256,14 +278,13 @@ function RatingCard({ title, rating, score, note }: { title: string; rating?: st
       </CardHeader>
       <CardContent>
         {!r.measured ? (
-          <div className="text-sm font-medium text-muted-foreground">Not measured</div>
+          <NotMeasuredBlock reason={reason ?? undefined} />
         ) : (
           <div className="flex items-baseline gap-2">
             <span className={cn("text-3xl font-bold", RATING_CLASS[r.text] ?? "text-foreground")}>{r.text}</span>
-            {score != null ? <span className={cn("text-lg font-semibold", scoreColor(score))}>{score}</span> : null}
+            {score != null ? <span className={cn("text-lg font-semibold tabular-nums", scoreColor(score))}>{score}</span> : null}
           </div>
         )}
-        {note ? <p className="mt-1 text-xs text-muted-foreground">{note}</p> : null}
       </CardContent>
     </Card>
   );

@@ -7,8 +7,7 @@ import { useApi } from "@/lib/use-api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ScanStatusBadge } from "@/components/dashboard/ScanStatusBadge";
-import { DegradedBadge } from "@/components/dashboard/DegradedBadge";
+import { ScanOutcomeBadge } from "@/components/dashboard/ScanOutcomeBadge";
 import { GradeCell, ScoreCell } from "@/components/dashboard/ScanCells";
 import { TrendChart } from "@/components/dashboard/TrendChart";
 import { GitHubIntegrationCard } from "@/components/dashboard/GitHubIntegrationCard";
@@ -116,9 +115,8 @@ export default function ProjectDetailPage() {
                 {scans.map((s) => (
                   <TableRow key={s.id}>
                     <TableCell>
-                      <Link href={`/projects/${id}/scans/${s.id}`} className="flex items-center gap-1.5">
-                        <ScanStatusBadge status={s.status} />
-                        <DegradedBadge scan={s} />
+                      <Link href={`/projects/${id}/scans/${s.id}`} className="inline-flex items-center gap-1.5">
+                        <ScanOutcomeBadge scan={s} />
                       </Link>
                     </TableCell>
                     <TableCell><GradeCell scan={s} /></TableCell>

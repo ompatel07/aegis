@@ -4,8 +4,7 @@ import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { useApi } from "@/lib/use-api";
 import { MetricCard } from "@/components/dashboard/MetricCard";
-import { ScanStatusBadge } from "@/components/dashboard/ScanStatusBadge";
-import { DegradedBadge } from "@/components/dashboard/DegradedBadge";
+import { ScanOutcomeBadge } from "@/components/dashboard/ScanOutcomeBadge";
 import { GradeCell, ScoreCell } from "@/components/dashboard/ScanCells";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -118,10 +117,7 @@ export default function OverviewPage() {
                       </Link>
                     </TableCell>
                     <TableCell>
-                      <span className="flex items-center gap-1.5">
-                        <ScanStatusBadge status={s.status} />
-                        <DegradedBadge scan={s} />
-                      </span>
+                      <ScanOutcomeBadge scan={s} />
                     </TableCell>
                     <TableCell><GradeCell scan={s} /></TableCell>
                     <TableCell><ScoreCell score={s.security_score} /></TableCell>

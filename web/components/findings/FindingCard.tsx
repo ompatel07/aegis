@@ -9,6 +9,7 @@ import { SeverityBadge } from "./SeverityBadge";
 import { ReachabilityBadge, ReachabilityDetail } from "./ReachabilityBadge";
 import { useApi } from "@/lib/use-api";
 import { useToast } from "@/lib/use-toast";
+import { cn } from "@/lib/utils";
 import type { Finding, StepsToReproduce, SoRNode } from "@/lib/types";
 import { ArrowDown, Check, Clock, Copy, FileCode2, Package, ShieldAlert, Sparkles, Wrench, Route } from "lucide-react";
 
@@ -277,14 +278,35 @@ export function FindingCard({ finding, onUpdated }: { finding: Finding; onUpdate
     }
   }
 
+  // Priority must read at a glance, not only from list position (C5): a severity
+  // stripe (colour AND width) plus a recessed treatment (opacity + muted ground) for
+  // down-ranked / low / suppressed findings, so a KEV critical and a down-ranked LOW
+  // placeholder never carry the same visual weight even when both are on screen.
+  const kev = finding.metadata?.kev === true;
+  const secretCtx = finding.metadata?.secret_context as string | undefined;
+  const downRanked = !!secretCtx && secretCtx !== "live-format";
+  const recessed = downRanked || finding.is_suppressed || finding.severity === "low" || finding.severity === "info";
+  const stripe =
+    kev || finding.severity === "critical"
+      ? "border-l-4 border-l-red-500"
+      : finding.severity === "high"
+        ? "border-l-4 border-l-orange-500"
+        : finding.severity === "medium"
+          ? "border-l-[3px] border-l-amber-500"
+          : "border-l-[3px] border-l-border";
+
   return (
     <>
       <Card
-        className="cursor-pointer transition-colors hover:bg-muted/40"
+        className={cn(
+          "cursor-pointer transition-colors hover:bg-muted/40",
+          stripe,
+          recessed && "bg-muted/20 opacity-75 hover:opacity-100",
+        )}
         onClick={() => setOpen(true)}
       >
         <CardContent className="flex items-start gap-3 p-4">
-          <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+          <ShieldAlert className={cn("mt-0.5 h-4 w-4 shrink-0", kev ? "text-red-600 dark:text-red-400" : "text-muted-foreground")} />
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
               <KEVBadge metadata={finding.metadata} />
