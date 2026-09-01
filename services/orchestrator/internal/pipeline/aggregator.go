@@ -107,17 +107,6 @@ func Aggregate(results []*types.EngineResult) Aggregated {
 	}
 	agg.DeploymentScore = scoring.DeploymentScore(deployReport)
 
-	// ── Degradation + per-pillar "measured" (D1) ────────────────────────────────
-	// An engine "produced" results only when it completed. A pillar whose engines
-	// ALL failed is NOT MEASURED — its score AND rating are nil (NULL), never a
-	// fabricated clean A/100. Reliability's bug sources are semgrep + quality (ruff).
-	produced := func(name string) bool {
-		r := byEngine[name]
-		return r != nil && r.Status == "completed"
-	}
-	securityMeasured := produced("semgrep") || produced("trivy") || produced("gitleaks")
-	reliabilityMeasured := produced("semgrep") || produced("quality")
-
 	// Collect scan-level degradation: outright failures + coverage-losing engines.
 	coverageOf := map[string]string{
 		"semgrep": "SAST (taint + injection + reliability bugs)", "trivy": "SCA (dependency CVEs)",
@@ -150,22 +139,54 @@ func Aggregate(results []*types.EngineResult) Aggregated {
 		}
 	}
 
-	if !securityMeasured {
-		agg.SecurityScore = nil // engines all failed → not measured, not a clean 100
+	// ── Per-pillar CONFIDENCE (P4b A) ───────────────────────────────────────────
+	// A degraded or failed engine feeding a pillar does not merely make its score
+	// unreliable — it INFLATES it: a missing engine produces fewer findings, and
+	// fewer findings read as "cleaner". So a pillar is confidently measured ONLY when
+	// EVERY engine feeding it ran to full coverage; if any is failed/degraded the
+	// pillar is NOT MEASURED (nil → NULL → "Not measured"), never scored on what ran.
+	// Contract reused from b845240 (deployment): nil pillars renormalize out of the
+	// overall. This replaces D1's "partial coverage still scores" — that erred toward
+	// clean, the exact defect we are killing.
+	degradedEngine := map[string]bool{}
+	for _, d := range agg.EnginesDegraded {
+		degradedEngine[d.Engine] = true
+	}
+	confident := func(engines ...string) bool {
+		for _, e := range engines {
+			if degradedEngine[e] {
+				return false
+			}
+		}
+		return true
+	}
+	securityConfident := confident("semgrep", "trivy", "gitleaks")
+	qualityConfident := confident("quality")
+	reliabilityConfident := confident("semgrep", "quality") // reliability bugs from both
+
+	if !securityConfident {
+		agg.SecurityScore = nil // a degraded security engine inflates the score → not measured
+	}
+	if !qualityConfident {
+		agg.QualityScore = nil
+	}
+	if !confident("deployment") {
+		agg.DeploymentScore = nil
 	}
 	agg.OverallScore, agg.OverallGrade = scoring.OverallScore(
 		agg.SecurityScore, agg.QualityScore, agg.DeploymentScore,
 	)
 
-	// Ratings — nil (NULL) when the producing pillar was not measured, so a
-	// half-failed scan never shows a fabricated A.
-	if securityMeasured {
+	// Ratings — nil (NULL) when the pillar is not confidently measured, so a
+	// degraded scan never shows a fabricated A (a worst-severity letter derived from
+	// an incomplete finding set understates risk exactly as the score does).
+	if securityConfident {
 		agg.SecurityRating = strptr(scoring.SecurityRating(agg.Findings))
 	}
-	if reliabilityMeasured {
+	if reliabilityConfident {
 		agg.ReliabilityRating = strptr(scoring.ReliabilityRating(agg.Findings))
 	}
-	if qualityMetrics != nil {
+	if qualityConfident && qualityMetrics != nil {
 		agg.MaintainabilityRating = strptr(scoring.MaintainabilityRating(qualityMetrics))
 	}
 

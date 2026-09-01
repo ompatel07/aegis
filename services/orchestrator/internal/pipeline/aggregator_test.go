@@ -60,16 +60,84 @@ func TestAggregateAllSecurityEnginesFailed_NotMeasured(t *testing.T) {
 	}
 }
 
-// A pillar with at least one completed engine IS measured (partial coverage still
-// scores what ran).
-func TestAggregatePartialSecurityMeasured(t *testing.T) {
+// A pillar fed by ANY failed/degraded engine is NOT confidently measured (P4b A).
+// Partial coverage does not "score what ran" — a missing security engine drops
+// findings and INFLATES the score, so the pillar is nil, not a plausible number.
+func TestAggregatePartialSecurityNotConfident(t *testing.T) {
 	agg := Aggregate([]*types.EngineResult{
 		er("semgrep", "failed"), er("trivy", "completed"), er("gitleaks", "failed"),
 	})
-	if agg.SecurityRating == nil {
-		t.Fatalf("SecurityRating = nil, want measured (trivy completed)")
+	if agg.SecurityScore != nil {
+		t.Errorf("SecurityScore = %d, want nil (semgrep+gitleaks failed → not confident)", *agg.SecurityScore)
+	}
+	if agg.SecurityRating != nil {
+		t.Errorf("SecurityRating = %v, want nil (not confident, never a fabricated letter)", *agg.SecurityRating)
 	}
 	if len(agg.EnginesDegraded) != 2 { // semgrep + gitleaks failed
 		t.Fatalf("EnginesDegraded = %d, want 2", len(agg.EnginesDegraded))
+	}
+}
+
+// A DEGRADED engine (Status=completed, Degraded=true) also breaks confidence — a
+// custom-pack fallback runs registry-only, missing the Aegis bug/taint findings.
+func TestAggregateDegradedEngineBreaksConfidence(t *testing.T) {
+	semDeg := er("semgrep", "completed")
+	semDeg.Degraded = true
+	semDeg.DegradedReason = "custom rule pack failed to load"
+	q := er("quality", "completed")
+	q.QualityMetrics = &types.QualityMetrics{ComplexityScore: 80, MaintainabilityScore: 70, TotalCodeLines: 10000}
+	agg := Aggregate([]*types.EngineResult{semDeg, er("trivy", "completed"), er("gitleaks", "completed"), q})
+	if agg.SecurityScore != nil {
+		t.Errorf("SecurityScore = %d, want nil (semgrep degraded)", *agg.SecurityScore)
+	}
+	if agg.SecurityRating != nil || agg.ReliabilityRating != nil {
+		t.Errorf("ratings should be nil when semgrep is degraded (sec=%v rel=%v)", agg.SecurityRating, agg.ReliabilityRating)
+	}
+	// quality was NOT degraded → still measured.
+	if agg.QualityScore == nil {
+		t.Errorf("QualityScore = nil, want measured (quality engine fine)")
+	}
+}
+
+func secFinding(sev string) types.Finding {
+	return types.Finding{Pillar: "security", Engine: "semgrep", Severity: sev, IssueType: "vulnerability"}
+}
+
+// THE regression guard (A5): a scan with a timed-out SAST engine must NOT produce a
+// confident security score, and must never score HIGHER than the same fixture
+// scanned fully. Degradation drops findings, and fewer findings inflate the score —
+// so a naive "score what ran" scores the degraded set ABOVE the full set. Assert the
+// inflation direction directly, then assert the fix returns nil instead of it.
+func TestDegradedSecurityNeverOutscoresComplete(t *testing.T) {
+	loc := func() *types.EngineResult {
+		q := er("quality", "completed")
+		q.QualityMetrics = &types.QualityMetrics{ComplexityScore: 80, MaintainabilityScore: 70, TotalCodeLines: 10000}
+		return q
+	}
+	// FULL: semgrep found 4 criticals, trivy 1 — high density → lower score.
+	semFull := er("semgrep", "completed")
+	semFull.Findings = []types.Finding{secFinding("critical"), secFinding("critical"), secFinding("critical"), secFinding("critical")}
+	trivy := er("trivy", "completed")
+	trivy.Findings = []types.Finding{secFinding("critical")}
+	full := Aggregate([]*types.EngineResult{semFull, trivy, er("gitleaks", "completed"), loc()})
+
+	// NAIVE partial (the OLD behaviour): semgrep "completed" but empty — only trivy's
+	// 1 critical scored → lower density → HIGHER score. This is the inflation.
+	naive := Aggregate([]*types.EngineResult{er("semgrep", "completed"), trivy, er("gitleaks", "completed"), loc()})
+
+	if full.SecurityScore == nil || naive.SecurityScore == nil {
+		t.Fatal("expected measured scores for the full and naive-partial cases")
+	}
+	if !(*naive.SecurityScore > *full.SecurityScore) {
+		t.Fatalf("inflation direction wrong: naive-partial %d should exceed full %d", *naive.SecurityScore, *full.SecurityScore)
+	}
+
+	// THE FIX: semgrep timed out (failed) → security is NOT measured, so it cannot
+	// carry the inflated number, and a degraded scan never outscores a complete one.
+	semFailed := er("semgrep", "failed")
+	semFailed.Error = "semgrep timed out after 600s"
+	degraded := Aggregate([]*types.EngineResult{semFailed, trivy, er("gitleaks", "completed"), loc()})
+	if degraded.SecurityScore != nil {
+		t.Fatalf("degraded SecurityScore = %d, want nil — a timed-out SAST must not carry a confident (inflated) score", *degraded.SecurityScore)
 	}
 }

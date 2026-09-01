@@ -17,8 +17,11 @@ import type { Scan } from "@/lib/types";
 // is a two-pillar product (Security + Code Quality); the Deployment line is drawn
 // only if any scan in the history measured it (CI mode).
 export function TrendChart({ scans }: { scans: Scan[] }) {
+  // A degraded scan's scores reflect incomplete coverage (a missing engine inflates
+  // the pillar), so its point is NOT comparable to a full scan — exclude it from the
+  // plotted line entirely, don't just caption it (P4b A4). The DATA matches the note.
   const data = [...scans]
-    .filter((s) => s.status === "completed")
+    .filter((s) => s.status === "completed" && !isDegraded(s))
     .reverse()
     .map((s, i) => ({
       name: `#${i + 1}`,
@@ -28,8 +31,6 @@ export function TrendChart({ scans }: { scans: Scan[] }) {
       Deployment: s.deployment_score ?? null,
     }));
   const showDeployment = data.some((d) => d.Deployment != null);
-  // A degraded scan's scores reflect incomplete coverage — don't let the trend line
-  // imply a clean run. Count them so a dip/spike isn't read as real movement (B3).
   const degradedCount = scans.filter((s) => s.status === "completed" && isDegraded(s)).length;
 
   return (
@@ -60,8 +61,8 @@ export function TrendChart({ scans }: { scans: Scan[] }) {
         )}
         {degradedCount > 0 ? (
           <p className="mt-2 text-xs text-amber-700 dark:text-amber-500">
-            ⚠ {degradedCount} of these scan{degradedCount === 1 ? " was" : "s were"} degraded (incomplete
-            coverage) — those points do not reflect a full scan.
+            ⚠ {degradedCount} degraded scan{degradedCount === 1 ? " is" : "s are"} excluded from this
+            trend (incomplete coverage — not comparable to a full scan).
           </p>
         ) : null}
       </CardContent>
