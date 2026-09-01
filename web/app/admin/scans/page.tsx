@@ -53,7 +53,9 @@ export default function AdminScansPage() {
                       ) : null}
                     </TableCell>
                     <TableCell><StatusBadge status={s.status} /></TableCell>
-                    <TableCell className="font-bold">{s.overall_grade ?? "—"}</TableCell>
+                    <TableCell className="font-bold">
+                      {s.overall_grade ?? <span className="text-xs font-medium text-amber-700 dark:text-amber-400">Not measured</span>}
+                    </TableCell>
                     <TableCell className="text-muted-foreground">{formatDuration(s.duration_seconds)}</TableCell>
                     <TableCell className="text-muted-foreground">{formatDate(s.created_at)}</TableCell>
                   </TableRow>

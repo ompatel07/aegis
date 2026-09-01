@@ -14,7 +14,8 @@ import { ScanFeedback } from "@/components/dashboard/ScanFeedback";
 import { FindingsList } from "@/components/findings/FindingsList";
 import { Button } from "@/components/ui/button";
 import { cn, formatDate, formatDuration, gradeColor, scoreColor } from "@/lib/utils";
-import { ratingDisplay, filteredSecretsLabel, filteredSecretsTotal, notMeasuredReason } from "@/lib/display";
+import { ratingDisplay, filteredSecretsLabel, filteredSecretsTotal, notMeasuredReason, overallState, partialQualifier } from "@/lib/display";
+import type { Scan } from "@/lib/types";
 import { Download, FileText, HelpCircle } from "lucide-react";
 import { useState } from "react";
 
@@ -47,13 +48,25 @@ export default function ScanDetailPage() {
           <h1 className="text-2xl font-bold">Scan results</h1>
           <ScanStatusBadge status={scan.status} />
           <DegradedBadge scan={scan} />
-          {scan.overall_grade ? (
-            <span className={cn("text-3xl font-bold", gradeColor(scan.overall_grade))}>
-              {scan.overall_grade}
-            </span>
-          ) : isDone ? (
-            <span className="text-sm font-medium text-muted-foreground italic">Not measured</span>
-          ) : null}
+          {(() => {
+            const st = overallState(scan);
+            if (st === "full") {
+              return <span className={cn("text-3xl font-bold", gradeColor(scan.overall_grade))}>{scan.overall_grade}</span>;
+            }
+            if (st === "partial") {
+              return (
+                <span className="flex items-baseline gap-1.5 text-2xl font-bold text-amber-700 dark:text-amber-400">
+                  {scan.overall_grade}
+                  <span className="text-sm font-medium">· {partialQualifier(scan)}</span>
+                </span>
+              );
+            }
+            return isDone ? (
+              <span className="flex items-center gap-1 text-base font-semibold text-amber-700 dark:text-amber-400">
+                <HelpCircle className="h-4 w-4" /> Not measured
+              </span>
+            ) : null;
+          })()}
           {isDone ? (
             <span className="ml-auto flex items-center gap-2">
               <Link
@@ -114,7 +127,7 @@ export default function ScanDetailPage() {
               card/tab appear only when it was actually measured — never as a
               "not measured" slot on a web scan. */}
           <div className={cn("grid gap-4 sm:grid-cols-2", scan.deployment_score != null ? "lg:grid-cols-4" : "lg:grid-cols-3")}>
-            <ScoreCard title="Overall" score={scan.overall_score} />
+            <OverallCard scan={scan} />
             <ScoreCard
               title="Security"
               score={scan.security_score}
@@ -232,6 +245,37 @@ function NotMeasuredBlock({ reason }: { reason?: string }) {
         {reason ?? "no confident measurement for this scan"}
       </p>
     </div>
+  );
+}
+
+// The OVERALL tile. A partial overall (computed from a subset of pillars) shows the
+// score WITH its qualifier ("74 · Quality only") in amber — never a bare green
+// number that reads as comparable to a full result.
+function OverallCard({ scan }: { scan: Scan }) {
+  const st = overallState(scan);
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-medium text-muted-foreground">Overall</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {st === "not-measured" ? (
+          <NotMeasuredBlock />
+        ) : st === "partial" ? (
+          <div>
+            <div className="flex items-baseline gap-2 text-3xl font-bold text-amber-700 dark:text-amber-400">
+              <span className="tabular-nums">{scan.overall_score ?? scan.overall_grade}</span>
+              <span className="text-base font-semibold">· {partialQualifier(scan)}</span>
+            </div>
+            <p className="mt-1 text-xs text-amber-700/80 dark:text-amber-400/80">
+              measured pillars only — not comparable to a full scan
+            </p>
+          </div>
+        ) : (
+          <div className={cn("text-3xl font-bold tabular-nums", scoreColor(scan.overall_score))}>{scan.overall_score}</div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

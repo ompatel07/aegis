@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SeverityBadge } from "@/components/findings/SeverityBadge";
 import { cn, formatDate, gradeColor } from "@/lib/utils";
+import { overallState, partialQualifier } from "@/lib/display";
 import { Download, FileText } from "lucide-react";
 
 export default function ExecutiveReportPage() {
@@ -49,7 +50,21 @@ export default function ExecutiveReportPage() {
 
       <div className="flex items-center gap-6">
         <div className="text-center">
-          <div className={cn("text-5xl font-bold", gradeColor(scan.overall_grade))}>{scan.overall_grade ?? "—"}</div>
+          {(() => {
+            const st = overallState(scan);
+            if (st === "full") {
+              return <div className={cn("text-5xl font-bold", gradeColor(scan.overall_grade))}>{scan.overall_grade}</div>;
+            }
+            if (st === "partial") {
+              return (
+                <div className="text-3xl font-bold text-amber-700 dark:text-amber-400">
+                  {scan.overall_grade}
+                  <span className="ml-1 text-base font-medium">· {partialQualifier(scan)}</span>
+                </div>
+              );
+            }
+            return <div className="text-2xl font-bold text-amber-700 dark:text-amber-400">Not measured</div>;
+          })()}
           <div className="text-xs text-muted-foreground">overall grade</div>
         </div>
         <div className={cn("grid flex-1 gap-3 text-center text-sm", scan.deployment_score != null ? "grid-cols-3" : "grid-cols-2")}>
@@ -222,7 +237,11 @@ function ComplianceReportCard({ scanId }: { scanId: string }) {
 function Metric({ label, v }: { label: string; v?: number }) {
   return (
     <div>
-      <div className="text-2xl font-bold">{v ?? "—"}</div>
+      {v == null ? (
+        <div className="text-sm font-semibold text-amber-700 dark:text-amber-400">Not measured</div>
+      ) : (
+        <div className="text-2xl font-bold tabular-nums">{v}</div>
+      )}
       <div className="text-xs text-muted-foreground">{label}</div>
     </div>
   );

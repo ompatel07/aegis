@@ -10,18 +10,19 @@ import {
   YAxis,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { isDegraded } from "@/lib/display";
+import { overallState } from "@/lib/display";
 import type { Scan } from "@/lib/types";
 
 // Plots the pillar scores across a project's scan history (oldest → newest). Aegis
 // is a two-pillar product (Security + Code Quality); the Deployment line is drawn
 // only if any scan in the history measured it (CI mode).
 export function TrendChart({ scans }: { scans: Scan[] }) {
-  // A degraded scan's scores reflect incomplete coverage (a missing engine inflates
-  // the pillar), so its point is NOT comparable to a full scan — exclude it from the
-  // plotted line entirely, don't just caption it (P4b A4). The DATA matches the note.
+  // Only a FULLY-measured overall is comparable across scans. A degraded or partial
+  // overall (computed from a subset of pillars — a missing engine inflates the score)
+  // is NOT a comparable point, so it is excluded from the plotted line entirely, not
+  // just captioned (A4 + follow-up). The DATA matches the note.
   const data = [...scans]
-    .filter((s) => s.status === "completed" && !isDegraded(s))
+    .filter((s) => s.status === "completed" && overallState(s) === "full")
     .reverse()
     .map((s, i) => ({
       name: `#${i + 1}`,
@@ -31,7 +32,7 @@ export function TrendChart({ scans }: { scans: Scan[] }) {
       Deployment: s.deployment_score ?? null,
     }));
   const showDeployment = data.some((d) => d.Deployment != null);
-  const degradedCount = scans.filter((s) => s.status === "completed" && isDegraded(s)).length;
+  const excludedCount = scans.filter((s) => s.status === "completed" && overallState(s) !== "full").length;
 
   return (
     <Card>
@@ -59,10 +60,10 @@ export function TrendChart({ scans }: { scans: Scan[] }) {
             </LineChart>
           </ResponsiveContainer>
         )}
-        {degradedCount > 0 ? (
+        {excludedCount > 0 ? (
           <p className="mt-2 text-xs text-amber-700 dark:text-amber-500">
-            ⚠ {degradedCount} degraded scan{degradedCount === 1 ? " is" : "s are"} excluded from this
-            trend (incomplete coverage — not comparable to a full scan).
+            ⚠ {excludedCount} scan{excludedCount === 1 ? " is" : "s are"} excluded from this trend
+            (degraded or partially-measured — not comparable to a full scan).
           </p>
         ) : null}
       </CardContent>

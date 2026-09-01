@@ -10,6 +10,8 @@ import {
   scoreDisplay,
   scanSummaryState,
   isCleanPresentable,
+  overallState,
+  partialQualifier,
   NOT_MEASURED,
 } from "./display.ts";
 
@@ -70,6 +72,23 @@ test("a completed scan with a null grade is not-measured, not clean", () => {
   const noGrade = { status: "completed" as const, overall_grade: undefined, engines_degraded: [] };
   assert.equal(scanSummaryState(noGrade), "not-measured");
   assert.equal(isCleanPresentable(noGrade), false);
+});
+
+// Follow-up: a partially-measured scan's grade must never render as a bare letter or
+// bare number, and must not be styled as a passing/green value. The grade cell keys
+// entirely off overallState — "partial" forces the amber, qualifier-bearing branch;
+// only "full" reaches the coloured (green-capable) bare grade — so asserting the
+// state is asserting the render.
+test("a partially-measured overall is 'partial', never 'full'", () => {
+  const partial = { overall_grade: "C" as const, security_score: undefined, quality_score: 74 };
+  assert.equal(overallState(partial), "partial"); // -> amber qualifier branch, not bare/green
+  assert.notEqual(overallState(partial), "full"); // -> never the coloured bare-grade branch
+  assert.equal(partialQualifier(partial), "Quality only"); // qualifier travels with the number
+});
+
+test("a fully-measured overall is 'full'; a null-grade overall is 'not-measured'", () => {
+  assert.equal(overallState({ overall_grade: "B" as const, security_score: 80, quality_score: 74 }), "full");
+  assert.equal(overallState({ overall_grade: undefined, security_score: undefined, quality_score: undefined }), "not-measured");
 });
 
 test("failed outranks degradation and grade", () => {

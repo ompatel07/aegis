@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScanOutcomeBadge } from "@/components/dashboard/ScanOutcomeBadge";
-import { GradeCell, ScoreCell } from "@/components/dashboard/ScanCells";
+import { GradeCell, ScoreCell, OverallScoreCell } from "@/components/dashboard/ScanCells";
 import { TrendChart } from "@/components/dashboard/TrendChart";
 import { GitHubIntegrationCard } from "@/components/dashboard/GitHubIntegrationCard";
 import { CustomRulesCard } from "@/components/dashboard/CustomRulesCard";
@@ -120,7 +120,7 @@ export default function ProjectDetailPage() {
                       </Link>
                     </TableCell>
                     <TableCell><GradeCell scan={s} /></TableCell>
-                    <TableCell><ScoreCell score={s.overall_score} /></TableCell>
+                    <TableCell><OverallScoreCell scan={s} /></TableCell>
                     <TableCell><ScoreCell score={s.security_score} /></TableCell>
                     <TableCell><ScoreCell score={s.quality_score} /></TableCell>
                     <TableCell className="capitalize text-muted-foreground">{s.trigger}</TableCell>

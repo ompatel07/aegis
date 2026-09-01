@@ -66,6 +66,34 @@ export function scanSummaryState(
   return "graded";
 }
 
+// The OVERALL's measurement state. An overall computed from a SUBSET of pillars
+// (e.g. quality only, because a degraded/failed security engine was excluded) is NOT
+// comparable to one computed from all pillars, so it must never render as a bare
+// grade — the qualifier is mandatory and travels with the number everywhere.
+export type OverallState = "not-measured" | "partial" | "full";
+
+export function overallState(
+  scan: Pick<Scan, "overall_grade" | "security_score" | "quality_score">,
+): OverallState {
+  if (scan.overall_grade == null) return "not-measured";
+  // security + quality are the two offered pillars; either being nil while an overall
+  // exists means the overall was renormalized over a subset (partial).
+  if (scan.security_score == null || scan.quality_score == null) return "partial";
+  return "full";
+}
+
+// The qualifier that must accompany a partial overall — names which pillar carried
+// it when it is only one, else "partial".
+export function partialQualifier(
+  scan: Pick<Scan, "security_score" | "quality_score">,
+): string {
+  const sec = scan.security_score != null;
+  const qual = scan.quality_score != null;
+  if (qual && !sec) return "Quality only";
+  if (sec && !qual) return "Security only";
+  return "partial";
+}
+
 // True only when a scan is safe to present as a finished, fully-covered result.
 // If this is false, a green/graded-looking summary is a bug.
 export function isCleanPresentable(
