@@ -48,7 +48,7 @@ func sampleFindings() []models.Finding {
 
 func TestBuildValidatesAgainstSarif210Schema(t *testing.T) {
 	scan := &models.Scan{Branch: strp("main"), CommitSHA: strp("abc123def456")}
-	log := Build(scan, sampleFindings(), "https://github.com/acme/app")
+	log := Build(scan, sampleFindings(), "https://github.com/acme/app", false)
 
 	data, err := json.Marshal(log)
 	if err != nil {
@@ -78,7 +78,7 @@ func TestBuildValidatesAgainstSarif210Schema(t *testing.T) {
 }
 
 func TestBuildStructure(t *testing.T) {
-	log := Build(nil, sampleFindings(), "")
+	log := Build(nil, sampleFindings(), "", false)
 
 	if log.Version != "2.1.0" {
 		t.Fatalf("version = %q, want 2.1.0", log.Version)

@@ -291,7 +291,7 @@ func (s *ScanService) ExportSARIF(ctx context.Context, scanID, userID string) (*
 	if err != nil {
 		return nil, err
 	}
-	findings, err := s.findings.AllByScan(ctx, scanID)
+	findings, truncated, err := s.findings.AllByScanCapped(ctx, scanID)
 	if err != nil {
 		return nil, err
 	}
@@ -299,7 +299,7 @@ func (s *ScanService) ExportSARIF(ctx context.Context, scanID, userID string) (*
 	if project, perr := s.projects.GetByID(ctx, scan.ProjectID); perr == nil && project.RepoURL != nil {
 		repoURL = *project.RepoURL
 	}
-	return sarif.Build(scan, findings, repoURL), nil
+	return sarif.Build(scan, findings, repoURL, truncated), nil
 }
 
 // ListFindings returns filtered findings for a scan the user owns.

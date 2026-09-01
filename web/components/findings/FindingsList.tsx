@@ -10,16 +10,13 @@ import { cn } from "@/lib/utils";
 import { useApi } from "@/lib/use-api";
 import { useToast } from "@/lib/use-toast";
 import type { Pillar, Severity } from "@/lib/types";
+// Default triage order lives in one place (lib/findingOrder) and is parity-tested
+// against the Go SQL ordering so pagination and the rendered order can't drift.
+import { compareFindings } from "@/lib/findingOrder";
 import { FindingCard } from "./FindingCard";
 import { CheckCheck, ChevronDown, ChevronRight, Package, ShieldCheck } from "lucide-react";
 
 const SEVERITIES: (Severity | "all")[] = ["all", "critical", "high", "medium", "low", "info"];
-const SEV_RANK: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3, info: 4 };
-// CISA-KEV = actively exploited: the strongest triage signal, sorted above all else.
-const isKEV = (f: { metadata?: Record<string, unknown> | null }) => f.metadata?.kev === true;
-// Reachable: user input can actually hit this — our SCA differentiator, so it sorts,
-// not just badges (see docs/UI_DATA_AUDIT.md § ordering).
-const isReachable = (f: { metadata?: Record<string, unknown> | null }) => f.metadata?.reachable === true;
 
 type SortKey = "severity" | "file" | "rule" | "fp";
 
@@ -45,6 +42,11 @@ export function FindingsList({ scanId, pillar }: { scanId: string; pillar: Pilla
   const [severity, setSeverity] = useState<Severity | "all">("all");
   const [engine, setEngine] = useState<string>("all");
   const [newOnly, setNewOnly] = useState(false);
+  // hideSuppressed hides ONLY user-suppressed findings (an explicit triage action,
+  // is_suppressed=true) — a sensible default. It does NOT touch S1's down-ranked
+  // secrets: those are severity=LOW + a secret_context tag, never is_suppressed, so
+  // they stay visible (below the fold, one filter from focus). S1's down-rank-over-
+  // suppress decision is therefore intact at the presentation layer (P4b B3).
   const [hideSuppressed, setHideSuppressed] = useState(true);
   const [sort, setSort] = useState<SortKey>("severity");
   // Code ownership: lead with the user's own app code; bundled/vendored library
@@ -75,18 +77,10 @@ export function FindingsList({ scanId, pillar }: { scanId: string; pillar: Pilla
         case "file": return (a.file_path + a.line_start).localeCompare(b.file_path + b.line_start);
         case "rule": return a.rule_id.localeCompare(b.rule_id);
         case "fp": return (b.false_positive_probability ?? 0) - (a.false_positive_probability ?? 0);
-        // Default triage order (matches the API SQL, so pagination + client agree):
-        // KEV → severity band → reachable → new-since-last-scan → likely-FP down →
-        // stable fingerprint. Defended in docs/UI_DATA_AUDIT.md § ordering.
-        default: {
-          if (isKEV(a) !== isKEV(b)) return isKEV(a) ? -1 : 1;
-          if (SEV_RANK[a.severity] !== SEV_RANK[b.severity]) return SEV_RANK[a.severity] - SEV_RANK[b.severity];
-          if (isReachable(a) !== isReachable(b)) return isReachable(a) ? -1 : 1;
-          if (!!a.is_new !== !!b.is_new) return a.is_new ? -1 : 1;
-          const fpDelta = (a.false_positive_probability ?? 0) - (b.false_positive_probability ?? 0);
-          if (fpDelta !== 0) return fpDelta;
-          return (a.fingerprint ?? "").localeCompare(b.fingerprint ?? "");
-        }
+        // Default triage order (KEV → severity → reachable → new → FP-down →
+        // fingerprint) — one shared comparator, parity-tested against the API SQL.
+        default:
+          return compareFindings(a, b);
       }
     });
     return list;

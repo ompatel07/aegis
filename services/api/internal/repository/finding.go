@@ -70,8 +70,8 @@ func (r *FindingRepository) ListByScan(
 	listQ := fmt.Sprintf(`
 		SELECT * FROM findings
 		WHERE %s
-		ORDER BY %s, %s, %s, %s, COALESCE(false_positive_probability, 0) ASC, file_path, line_start NULLS LAST, COALESCE(fingerprint, '')
-		LIMIT $%d OFFSET $%d`, clause, kevFirstSQL, severityRankSQL, reachableFirstSQL, newFirstSQL, idx, idx+1)
+		ORDER BY `+orderByFindings+`
+		LIMIT $%d OFFSET $%d`, clause, idx, idx+1)
 	args = append(args, limit, offset)
 
 	findings := []models.Finding{}
@@ -84,16 +84,25 @@ func (r *FindingRepository) ListByScan(
 // AllByScan returns every finding for a scan, unpaginated — for exports (SARIF).
 // Capped defensively so a pathological scan can't stream unbounded rows.
 func (r *FindingRepository) AllByScan(ctx context.Context, scanID string) ([]models.Finding, error) {
-	q := fmt.Sprintf(`
-		SELECT * FROM findings
-		WHERE scan_id = $1
-		ORDER BY %s, %s, %s, %s, COALESCE(false_positive_probability, 0) ASC, file_path, line_start NULLS LAST, COALESCE(fingerprint, '')
-		LIMIT 50000`, kevFirstSQL, severityRankSQL, reachableFirstSQL, newFirstSQL)
-	findings := []models.Finding{}
-	if err := r.db.SelectContext(ctx, &findings, q, scanID); err != nil {
-		return nil, err
+	findings, _, err := r.AllByScanCapped(ctx, scanID)
+	return findings, err
+}
+
+// AllByScanCapped is AllByScan plus an explicit TRUNCATED flag. It fetches one row
+// past the cap so it can tell a complete result from a truncated one, then trims to
+// the cap. A truncated export must be surfaced (e.g. a SARIF notification), never
+// returned as a complete-looking list — the clones[:60] / silent-truncation defect.
+func (r *FindingRepository) AllByScanCapped(ctx context.Context, scanID string) (findings []models.Finding, truncated bool, err error) {
+	q := `SELECT * FROM findings WHERE scan_id = $1 ORDER BY ` + orderByFindings + ` LIMIT $2`
+	findings = []models.Finding{}
+	if err = r.db.SelectContext(ctx, &findings, q, scanID, findingExportCap+1); err != nil {
+		return nil, false, err
 	}
-	return findings, nil
+	if len(findings) > findingExportCap {
+		findings = findings[:findingExportCap]
+		truncated = true
+	}
+	return findings, truncated, nil
 }
 
 // ProjectContextForFinding resolves the owning project's id, AI-fix flag, and
@@ -188,6 +197,19 @@ const reachableFirstSQL = `CASE WHEN COALESCE(metadata->>'reachable', '') = 'tru
 // newFirstSQL: a regression introduced since the last scan ranks above pre-existing
 // debt of equal severity/reachability — it is the cheap fix still in this PR.
 const newFirstSQL = `CASE WHEN is_new THEN 0 ELSE 1 END`
+
+// orderByFindings is the ONE canonical finding order, used by both the paginated
+// list and the export: KEV → severity → reachable → new → likely-FP down → stable
+// file/line/fingerprint. The web comparator (web/lib/findingOrder.ts) must reproduce
+// this exactly or pagination and the rendered order drift; both are parity-tested
+// (finding_order_test.go, findingOrder.test.ts) against the same fixture.
+const orderByFindings = kevFirstSQL + `, ` + severityRankSQL + `, ` + reachableFirstSQL + `, ` + newFirstSQL +
+	`, COALESCE(false_positive_probability, 0) ASC, file_path, line_start NULLS LAST, COALESCE(fingerprint, '')`
+
+// findingExportCap bounds an unpaginated export so a pathological scan cannot stream
+// unbounded rows. Hitting it is a TRUNCATION and must be surfaced, never returned as
+// a complete-looking list (the clones[:60] defect class).
+const findingExportCap = 50000
 
 // GetByIDForUser loads a finding, enforcing ownership via scan → project → user.
 // RoleInFindingOrg returns the caller's role in the org that owns the finding

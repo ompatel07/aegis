@@ -131,7 +131,7 @@ type VersionControl struct {
 // ── Builder ───────────────────────────────────────────────────────────────────
 
 // Build assembles a SARIF log from a scan's findings. `repoURL` may be empty.
-func Build(scan *models.Scan, findings []models.Finding, repoURL string) *Log {
+func Build(scan *models.Scan, findings []models.Finding, repoURL string, truncated bool) *Log {
 	ruleIndex := map[string]int{}
 	rules := make([]Rule, 0)
 	results := make([]Result, 0, len(findings))
@@ -187,6 +187,20 @@ func Build(scan *models.Scan, findings []models.Finding, repoURL string) *Log {
 			}
 			run.Invocations = []Invocation{{ExecutionSuccessful: false, ToolExecutionNotifications: notes}}
 		}
+	}
+
+	// Truncation (P4b B2): an export capped at findingExportCap is NOT complete —
+	// surface it as a warning rather than returning a complete-looking SARIF.
+	if truncated {
+		note := Notification{
+			Level:   "warning",
+			Message: Message{Text: fmt.Sprintf("Findings truncated to the first %d — this export is incomplete.", len(findings))},
+		}
+		if len(run.Invocations) == 0 {
+			run.Invocations = []Invocation{{ExecutionSuccessful: false}}
+		}
+		run.Invocations[0].ExecutionSuccessful = false
+		run.Invocations[0].ToolExecutionNotifications = append(run.Invocations[0].ToolExecutionNotifications, note)
 	}
 
 	return &Log{Schema: schemaURI, Version: "2.1.0", Runs: []Run{run}}
