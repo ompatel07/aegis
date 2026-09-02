@@ -22,6 +22,8 @@ rules:
       references:
         - https://owasp.org/Top10/A03_2021-Injection/
     pattern-sources: &request_sources
+      # Servlet API — javax/jakarta.servlet.HttpServletRequest. Plenty of Java is
+      # still servlet-based, so these stay.
       - pattern-either:
           - pattern: $REQ.getParameter(...)
           - pattern: $REQ.getParameterValues(...)
@@ -29,6 +31,37 @@ rules:
           - pattern: $REQ.getHeaders(...)
           - pattern: $REQ.getQueryString()
           - pattern: $REQ.getCookies()
+      # Spring MVC annotated controller parameters. WebGoat and most modern Java
+      # apps take input via @RequestParam / @PathVariable / … — there is no
+      # getParameter() call to match, which is why this pack was INERT on every Java
+      # repo before T3. Semgrep OSS cannot bind a bare annotated parameter as a
+      # source (the parenthesised-parameter pattern fails to parse for Java); it CAN
+      # when the whole method is matched and the parameter is the focus. @X(...)
+      # matches both @X and @X("name"). BOUNDARY: semgrep OSS taint is
+      # INTRAPROCEDURAL — only a source→sink flow WITHIN one method fires. A handler
+      # that passes the value to a helper (WebGoat SqlInjectionLesson5b, SSRFTask2)
+      # is a real miss of the engine, not a defect of these patterns.
+      - patterns:
+          - pattern-either:
+              - pattern: |
+                  $RT $M(..., @RequestParam(...) $T $SRC, ...) { ... }
+              - pattern: |
+                  $RT $M(..., @PathVariable(...) $T $SRC, ...) { ... }
+              - pattern: |
+                  $RT $M(..., @RequestHeader(...) $T $SRC, ...) { ... }
+              - pattern: |
+                  $RT $M(..., @CookieValue(...) $T $SRC, ...) { ... }
+              - pattern: |
+                  $RT $M(..., @ModelAttribute(...) $T $SRC, ...) { ... }
+              - pattern: |
+                  $RT $M(..., @RequestBody(...) $T $SRC, ...) { ... }
+          - focus-metavariable: $SRC
+      # Spring WebFlux request accessors (ServerHttpRequest / ServerRequest).
+      - pattern-either:
+          - pattern: $REQ.getQueryParams().get(...)
+          - pattern: $REQ.getQueryParams().getFirst(...)
+          - pattern: $REQ.queryParam(...)
+          - pattern: $REQ.pathVariable(...)
     pattern-sanitizers:
       - pattern-either:
           # Real-world SQL defenses: ESAPI SQL codec encoding + numeric coercion
@@ -43,7 +76,12 @@ rules:
               - pattern: $STMT.executeQuery($SQL)
               - pattern: $STMT.execute($SQL)
               - pattern: $STMT.executeUpdate($SQL)
-              - pattern: $CONN.prepareStatement($SQL)
+              - pattern: $STMT.executeLargeUpdate($SQL)
+              # WebGoat's SqlInjectionLesson5b uses the 3-arg prepareStatement
+              # (query, resultSetType, concurrency); the 1-arg form missed it. The
+              # ($SQL, ...) ellipsis covers 1-arg and every multi-arg overload.
+              - pattern: $CONN.prepareStatement($SQL, ...)
+              - pattern: $CONN.prepareCall($SQL, ...)
           - focus-metavariable: $SQL
 
   # ── Cross-site scripting ─────────────────────────────────────────────────────
@@ -84,17 +122,24 @@ rules:
     pattern-sinks:
       - patterns:
           - pattern-either:
+              # Direct: resp.getWriter().println(userData).
               - pattern: $RESP.getWriter().write($S)
               - pattern: $RESP.getWriter().print($S)
               - pattern: $RESP.getWriter().println($S)
-              - pattern: $OUT.write($S)
-              - pattern: $OUT.print($S)
-              - pattern: $OUT.println($S)
-          # The bare $OUT.print/write forms also match System.out / System.err —
-          # writing user data to stdout/stderr is not XSS (no HTTP response, no
-          # browser). Excluding them killed the eladmin AliPayController FP (P2).
-          - pattern-not: System.out.$M(...)
-          - pattern-not: System.err.$M(...)
+              # Via a local writer — but ONLY one obtained from the HTTP response.
+              # Requiring the getWriter() origin is what makes this XSS and not
+              # "wrote user data somewhere": it excludes a PrintWriter over a FILE
+              # (WebGoat Ping.java logs to new PrintWriter(logFile) — on disk, not a
+              # browser — a T3 FP) and System.out/err (the eladmin AliPayController
+              # FP, P2), neither of which is an HTTP response.
+              - patterns:
+                  - pattern-either:
+                      - pattern: $OUT.write($S)
+                      - pattern: $OUT.print($S)
+                      - pattern: $OUT.println($S)
+                  - pattern-inside: |
+                      $W $OUT = $RESP.getWriter();
+                      ...
           - focus-metavariable: $S
 
   # ── OS command injection ─────────────────────────────────────────────────────
@@ -163,11 +208,18 @@ rules:
     pattern-sinks:
       - patterns:
           - pattern-either:
+              # new URL(u) is built to be FETCHED (WebGoat JKU: new URL(jku) that a
+              # JwkProvider then loads). URI.create(u) is NOT a fetch — it only parses
+              # a string, and is used for redirect Location headers (booklore
+              # OidcAuthController setLocation(URI.create(redirectUrl))) and URL
+              # parsing. Matching it flagged open-redirects and even fixed-host
+              # proxies as SSRF — T3 FPs — so it is deliberately excluded. KNOWN GAP:
+              # a fetch via a pre-parsed URI (RestTemplate/WebClient/HttpClient) is
+              # not modelled; adding those sinks needs its own 0-FP pass.
               - pattern: new java.net.URL($U)
               - pattern: new URL($U)
-              - pattern: java.net.URI.create($U)
-              - pattern: URI.create($U)
               - pattern: new HttpGet($U)
+              - pattern: new HttpPost($U)
           - focus-metavariable: $U
 
   # ── Path traversal ───────────────────────────────────────────────────────────
@@ -200,13 +252,28 @@ rules:
           - pattern: ESAPI.validator().getValidFileName(...)
           - pattern: $F.getCanonicalPath()
           - pattern: $P.normalize()
+          # Spring's own path cleaner, and a filename verifier that strips "..".
+          # eladmin's FileUtil.verifyFilename() removes `\/:*?"<>|`, leading/trailing
+          # dots and every `..` run before the path reaches new File(...) — a real
+          # defense; flagging it was a T3 FP.
+          - pattern: org.springframework.util.StringUtils.cleanPath(...)
+          - pattern: StringUtils.cleanPath(...)
+          - pattern: verifyFilename(...)
+          - pattern: $X.verifyFilename(...)
     pattern-sinks:
       - patterns:
           - pattern-either:
               - pattern: new java.io.File($P)
               - pattern: new File($P)
+              # WebGoat's ProfileUploadRetrieval builds new File(baseDir, id + ".jpg")
+              # — the 2-arg constructor. The 1-arg form missed it. Focus stays on the
+              # child ($P); a tainted base dir with a literal child is not traversal.
+              - pattern: new java.io.File($D, $P)
+              - pattern: new File($D, $P)
               - pattern: new FileInputStream($P)
               - pattern: new FileReader($P)
+              - pattern: new FileOutputStream($P)
+              - pattern: new FileWriter($P)
               - pattern: Paths.get($P, ...)
               - pattern: java.nio.file.Paths.get($P, ...)
           - focus-metavariable: $P
@@ -248,6 +315,23 @@ rules:
               - pattern: $COLL.deleteMany($Q)
               - pattern: $COLL.updateOne($Q, ...)
           - focus-metavariable: $Q
+          # $Q must be a Mongo query DOCUMENT, not a JPA/service/enum find(id). $COLL
+          # cannot be type-resolved (no classpath — customer code is never built), so
+          # a bare $COLL.find($Q) also matches Spring-Data, service, and enum methods
+          # named find: eladmin's genConfigService.find(tableName) and
+          # CodeBiEnum.find(codeBi) are NOT MongoDB — the broad-method FP, same class
+          # as the gin $C.Query bug. Require the query to be built as a Mongo document.
+          - metavariable-pattern:
+              metavariable: $Q
+              patterns:
+                - pattern-either:
+                    - pattern: Document.parse(...)
+                    - pattern: org.bson.Document.parse(...)
+                    - pattern: new Document(...)
+                    - pattern: new org.bson.Document(...)
+                    - pattern: BasicDBObject.parse(...)
+                    - pattern: new BasicDBObject(...)
+                    - pattern: com.mongodb.util.JSON.parse(...)
 
   # ── LDAP injection ───────────────────────────────────────────────────────────
   - id: aegis-java-ldap-injection
