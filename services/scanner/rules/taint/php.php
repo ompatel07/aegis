@@ -101,6 +101,24 @@ function path_ok() {
     return file_get_contents("/var/data/" . $safe);
 }
 
+function path_write_bad() {
+    $name = $_GET["name"];
+    // ruleid: aegis-php-path-traversal
+    file_put_contents("/var/uploads/" . $name, "data");
+}
+
+function upload_bad() {
+    $dest = "/var/uploads/" . $_POST["name"];
+    // ruleid: aegis-php-path-traversal
+    move_uploaded_file($_FILES["f"]["tmp_name"], $dest);
+}
+
+function upload_ok() {
+    $dest = "/var/uploads/" . basename($_POST["name"]);
+    // ok: aegis-php-path-traversal
+    move_uploaded_file($_FILES["f"]["tmp_name"], $dest);
+}
+
 // ── LDAP injection ───────────────────────────────────────────────────────────
 function ldap_bad($conn) {
     $user = $_GET["user"];

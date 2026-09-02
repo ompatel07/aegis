@@ -235,6 +235,11 @@ rules:
               - pattern: readfile($P)
               - pattern: file($P, ...)
               - pattern: unlink($P)
+              # Write-path sinks: a tainted destination is write-anywhere (drop a
+              # web shell). basename()/realpath() above still sanitize (DVWA's upload
+              # basename()s the name, so it stays clean).
+              - pattern: file_put_contents($P, ...)
+              - pattern: move_uploaded_file($TMP, $P)
           - focus-metavariable: $P
 
   # ── LDAP injection ───────────────────────────────────────────────────────────
