@@ -48,6 +48,11 @@ type Scan struct {
 	// {"placeholder": n, "expired_jwt": n}. Surfaced as "N filtered", never silent.
 	FilteredSecrets json.RawMessage `db:"filtered_secrets" json:"filtered_secrets"`
 
+	// Bundled/minified third-party JS/TS files EXCLUDED from SAST (T2):
+	// {"files": n, "bytes": n, "reasons": {...}, "sample": [...]}. Surfaced as
+	// "N bundled files excluded from SAST", never silent. NULL when none excluded.
+	ExcludedBundled json.RawMessage `db:"excluded_bundled" json:"excluded_bundled,omitempty"`
+
 	QualityIssuesTotal   int `db:"quality_issues_total" json:"quality_issues_total"`
 	SecurityIssuesTotal  int `db:"security_issues_total" json:"security_issues_total"`
 	SecretsFound         int `db:"secrets_found" json:"secrets_found"`

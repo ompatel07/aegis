@@ -305,6 +305,14 @@ export interface Scan {
   engines_degraded?: { engine: string; reason: string; coverage_lost: string }[];
   // Secret matches suppressed as definitively-not-a-secret (P1). Surfaced as a count.
   filtered_secrets?: { placeholder?: number; expired_jwt?: number };
+  // Bundled/minified third-party JS/TS excluded from SAST (T2). SCA + vendored
+  // fingerprinting still scan these files; surfaced so the exclusion is never silent.
+  excluded_bundled?: {
+    files: number;
+    bytes: number;
+    reasons?: Record<string, number>;
+    sample?: string[];
+  };
 }
 
 export interface Finding {

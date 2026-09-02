@@ -14,7 +14,7 @@ import { ScanFeedback } from "@/components/dashboard/ScanFeedback";
 import { FindingsList } from "@/components/findings/FindingsList";
 import { Button } from "@/components/ui/button";
 import { cn, formatDate, formatDuration, gradeColor, scoreColor } from "@/lib/utils";
-import { ratingDisplay, filteredSecretsLabel, filteredSecretsTotal, notMeasuredReason, overallState, partialQualifier } from "@/lib/display";
+import { ratingDisplay, filteredSecretsLabel, filteredSecretsTotal, excludedBundledLabel, notMeasuredReason, overallState, partialQualifier } from "@/lib/display";
 import type { Scan } from "@/lib/types";
 import { Download, FileText, HelpCircle } from "lucide-react";
 import { useState } from "react";
@@ -107,6 +107,37 @@ export default function ScanDetailPage() {
                 </li>
               ))}
             </ul>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {scan.excluded_bundled && scan.excluded_bundled.files > 0 ? (
+        <Card className="border-muted bg-muted/30">
+          <CardContent className="space-y-1 py-4 text-sm">
+            <p className="font-medium text-foreground">
+              {excludedBundledLabel(scan.excluded_bundled)}
+            </p>
+            <p className="text-muted-foreground">
+              Third-party bundled/minified assets are not the customer&apos;s own code;
+              their SAST findings are noise and one large file can stall the scan. This is
+              not lost coverage — dependency CVEs are still found by SCA and vendored-library
+              fingerprinting.
+            </p>
+            {scan.excluded_bundled.sample && scan.excluded_bundled.sample.length > 0 ? (
+              <details className="mt-1">
+                <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
+                  Excluded files
+                  {scan.excluded_bundled.files > scan.excluded_bundled.sample.length
+                    ? ` (showing ${scan.excluded_bundled.sample.length} of ${scan.excluded_bundled.files})`
+                    : ""}
+                </summary>
+                <ul className="ml-4 mt-1 list-disc font-mono text-xs text-muted-foreground">
+                  {scan.excluded_bundled.sample.map((f, i) => (
+                    <li key={i}>{f}</li>
+                  ))}
+                </ul>
+              </details>
+            ) : null}
           </CardContent>
         </Card>
       ) : null}

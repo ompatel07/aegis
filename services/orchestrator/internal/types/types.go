@@ -146,6 +146,20 @@ type EngineResult struct {
 	// (placeholder shape, expired JWT). Surfaced so the scan can report "N filtered"
 	// instead of silently dropping them. nil/empty when nothing was filtered.
 	FilteredSecrets map[string]int `json:"filtered_secrets"`
+
+	// Bundled/minified third-party JS/TS EXCLUDED from SAST (T2). Surfaced so the
+	// exclusion is visible, never a silent skip. SCA + vendored fingerprinting still
+	// scan these files. nil when nothing was excluded.
+	ExcludedBundled *ExcludedBundled `json:"excluded_bundled"`
+}
+
+// ExcludedBundled summarizes the bundled/minified third-party JS/TS files that SAST
+// skipped (T2): count, total bytes, per-reason counts, and a capped sample of paths.
+type ExcludedBundled struct {
+	Files   int            `json:"files"`
+	Bytes   int64          `json:"bytes"`
+	Reasons map[string]int `json:"reasons"`
+	Sample  []string       `json:"sample"`
 }
 
 // DegradedEngine is one scan-level degradation: an engine that ran but lost

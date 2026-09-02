@@ -141,6 +141,7 @@ func (s *Store) SaveResults(ctx context.Context, scanID, projectID string, agg p
 			reliability_rating = $17, security_rating = $18, maintainability_rating = $19,
 			engines_degraded = $20,
 			filtered_secrets = $21,
+			excluded_bundled = $22,
 			completed_at = now(),
 			duration_seconds = GREATEST(0, EXTRACT(EPOCH FROM (now() - COALESCE(started_at, queued_at)))::int)
 		WHERE id = $1`
@@ -156,6 +157,7 @@ func (s *Store) SaveResults(ctx context.Context, scanID, projectID string, agg p
 		agg.ReliabilityRating, agg.SecurityRating, agg.MaintainabilityRating,
 		degradedJSON(agg.EnginesDegraded),
 		filteredSecretsJSON(agg.FilteredSecrets),
+		excludedBundledJSON(agg.ExcludedBundled),
 	); err != nil {
 		return fmt.Errorf("update scan: %w", err)
 	}
@@ -277,6 +279,19 @@ func filteredSecretsJSON(m map[string]int) []byte {
 	b, err := json.Marshal(m)
 	if err != nil {
 		return []byte("{}")
+	}
+	return b
+}
+
+// excludedBundledJSON marshals the SAST bundled-asset exclusion summary (T2) for the
+// JSONB column, defaulting to NULL (nothing excluded) so the UI can tell "none" apart.
+func excludedBundledJSON(e *types.ExcludedBundled) any {
+	if e == nil || e.Files == 0 {
+		return nil
+	}
+	b, err := json.Marshal(e)
+	if err != nil {
+		return nil
 	}
 	return b
 }

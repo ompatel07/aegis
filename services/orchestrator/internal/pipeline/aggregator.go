@@ -36,6 +36,10 @@ type Aggregated struct {
 	// filtering is auditable, not silent.
 	FilteredSecrets map[string]int
 
+	// Bundled/minified third-party JS/TS files EXCLUDED from SAST (T2). Surfaced so
+	// the exclusion is visible, never silent. Only semgrep emits this. nil when none.
+	ExcludedBundled *types.ExcludedBundled
+
 	QualityIssuesTotal   int
 	SecurityIssuesTotal  int
 	SecretsFound         int
@@ -126,6 +130,11 @@ func Aggregate(results []*types.EngineResult) Aggregated {
 				agg.FilteredSecrets = map[string]int{}
 			}
 			agg.FilteredSecrets[k] += v
+		}
+		// Bundled/minified JS/TS excluded from SAST (T2). Only semgrep emits this, so
+		// carry it through as-is; surfaced so the exclusion is never silent.
+		if r.ExcludedBundled != nil && r.ExcludedBundled.Files > 0 {
+			agg.ExcludedBundled = r.ExcludedBundled
 		}
 		switch {
 		case r.Status == "failed":

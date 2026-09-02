@@ -12,6 +12,7 @@ import {
   isCleanPresentable,
   overallState,
   partialQualifier,
+  excludedBundledLabel,
   NOT_MEASURED,
 } from "./display.ts";
 
@@ -99,4 +100,25 @@ test("failed outranks degradation and grade", () => {
   };
   assert.equal(scanSummaryState(failed), "failed");
   assert.equal(isCleanPresentable(failed), false);
+});
+
+// T2 — a bundled-asset exclusion is NEVER silent: any non-zero count yields a label
+// that states the count, the size, and that the files are still scanned by SCA.
+test("excluded bundled: no exclusion renders nothing (null)", () => {
+  assert.equal(excludedBundledLabel(null), null);
+  assert.equal(excludedBundledLabel(undefined), null);
+  assert.equal(excludedBundledLabel({ files: 0, bytes: 0 }), null);
+});
+
+test("excluded bundled: a non-zero count is always surfaced with size + SCA note", () => {
+  const label = excludedBundledLabel({ files: 10, bytes: 2288686 });
+  assert.ok(label && label.includes("10 bundled/minified files"), `got: ${label}`);
+  assert.ok(label!.includes("2.2 MB"), `size not shown: ${label}`);
+  assert.ok(/SCA|fingerprint/i.test(label!), `SCA coverage not stated: ${label}`);
+});
+
+test("excluded bundled: singular file + KB rounding for small sizes", () => {
+  const label = excludedBundledLabel({ files: 1, bytes: 95 * 1024 });
+  assert.ok(label && label.includes("1 bundled/minified file "), `singular: ${label}`);
+  assert.ok(label!.includes("95 KB"), `KB size: ${label}`);
 });

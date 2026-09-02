@@ -145,3 +145,18 @@ export function filteredSecretsTotal(
   if (!filtered) return 0;
   return (filtered.placeholder ?? 0) + (filtered.expired_jwt ?? 0);
 }
+
+// excluded_bundled -> a human sentence, or null when nothing was excluded. Bundled /
+// minified third-party JS/TS is skipped by SAST (its findings are third-party noise
+// and it can stall the scanner), but SCA + vendored fingerprinting still scan it — so
+// this is stated, never silent. NOT a degradation: no OWNED-code coverage is lost.
+export function excludedBundledLabel(
+  excluded?: { files: number; bytes: number } | null,
+): string | null {
+  if (!excluded || excluded.files <= 0) return null;
+  const mb = excluded.bytes / (1024 * 1024);
+  const size = mb >= 0.1 ? `${mb.toFixed(1)} MB` : `${Math.round(excluded.bytes / 1024)} KB`;
+  return `${excluded.files} bundled/minified file${
+    excluded.files === 1 ? "" : "s"
+  } excluded from SAST (${size}) — still scanned by SCA + vendored fingerprinting`;
+}
