@@ -31,7 +31,7 @@ from models.scan_result import (
     SeveritySummary,
 )
 from enrichment import steps_to_reproduce
-from utils import language_detector, normalizer
+from utils import bundled_assets, language_detector, normalizer
 from utils.sandbox import binary_available, run_command
 
 log = get_logger("semgrep")
@@ -282,7 +282,8 @@ _DEFAULT_EXCLUDE_RULES = [
 ]
 
 
-def _build_args(settings: Settings, configs: list[str], path: str) -> list[str]:
+def _build_args(settings: Settings, configs: list[str], path: str,
+                extra_excludes: list[str] = ()) -> list[str]:
     """Assemble the semgrep CLI invocation for the given config list."""
     args = [settings.semgrep_bin, "scan", "--json", "--quiet", "--metrics", "off",
             "--disable-version-check", "--timeout", "60", "--max-target-bytes", "2000000",
@@ -294,6 +295,12 @@ def _build_args(settings: Settings, configs: list[str], path: str) -> list[str]:
         args += ["--config", cfg]
     for d in _DEFAULT_EXCLUDE_DIRS:
         args += ["--exclude", d]
+    # Bundled/minified third-party JS/TS assets (T1): excluded from SAST ONLY. These
+    # are third-party code (SAST findings in them are noise) and one 720KB file cost
+    # 239s under p/nodejsscan — the timeout root cause. SCA + vendored-fingerprinting
+    # still scan them for real CVEs. See utils.bundled_assets.
+    for f in extra_excludes:
+        args += ["--exclude", f]
     # Recall-safe defaults, then the opt-in high-precision profile (Track 2d/2f).
     for rule in _DEFAULT_EXCLUDE_RULES + settings.semgrep_exclude_rule_list:
         args += ["--exclude-rule", rule]
@@ -340,10 +347,26 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
     configs = registry_configs + bundled
     rule_pack_version = _rule_pack_version(configs, req.custom_rules)
 
+    # T1 fix: exclude bundled/minified third-party JS/TS from SAST (one 720KB library
+    # cost 239s under p/nodejsscan). SAST-only — SCA + vendored-fingerprinting still
+    # scan these files. Counted + surfaced (never a silent skip): see excluded_bundled.
+    asset_skip = set(_WALK_SKIP) | set(_DEFAULT_EXCLUDE_DIRS)
+    if os.getenv("AEGIS_DISABLE_BUNDLED_EXCLUDE") == "1":
+        asset_paths, asset_bytes, asset_reasons = [], 0, {}
+    else:
+        asset_paths, asset_bytes, asset_reasons = bundled_assets.find_bundled(req.path, asset_skip)
+    if asset_paths:
+        log.info("semgrep.bundled_assets_excluded", count=len(asset_paths),
+                 bytes=asset_bytes, reasons=asset_reasons)
+    excluded_bundled = ({
+        "files": len(asset_paths), "bytes": asset_bytes, "reasons": asset_reasons,
+        "sample": sorted(asset_paths)[:25],
+    } if asset_paths else None)
+
     async def _semgrep(cfgs: list[str]):
         # Semgrep exits 0 (no findings) or 1 (findings present); >=2 is an error.
         return await run_command(
-            _build_args(settings, cfgs, req.path),
+            _build_args(settings, cfgs, req.path, extra_excludes=asset_paths),
             cwd=req.path, timeout=settings.semgrep_timeout_seconds,
             allowed_returncodes=(0, 1),
             env={"SEMGREP_RULES_CACHE_DIR": settings.semgrep_rules_cache},
@@ -430,6 +453,7 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
         degraded_reason=degraded_reason,
         coverage_lost=coverage_lost,
         filtered_secrets={k: v for k, v in filtered_secrets.items() if v} or None,
+        excluded_bundled=excluded_bundled,
     )
 
 

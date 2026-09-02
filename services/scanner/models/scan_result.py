@@ -199,6 +199,11 @@ class EngineResult(BaseModel):
     # instead of silently dropping them. None/empty when nothing was filtered.
     filtered_secrets: dict[str, int] | None = None
 
+    # Bundled/minified third-party JS/TS EXCLUDED from SAST (T2): {files, bytes,
+    # reasons, sample}. Surfaced so the exclusion is visible, never a silent skip.
+    # SCA + vendored-fingerprinting still scan these files. None when none excluded.
+    excluded_bundled: dict | None = None
+
     # DEGRADATION (D1): the engine produced results but NOT its full coverage — a
     # broken custom rule pack that fell back to registry rules, a partial run, etc.
     # This is distinct from `status`: a DEGRADED engine still ran and returned
