@@ -397,18 +397,25 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
         result = await _semgrep(registry_configs)
 
     if result.timed_out:
-        return EngineResult.failed(
+        # Carry excluded_bundled even on timeout: the exclusion still APPLIED, and
+        # seeing "N files excluded, still timed out" is the diagnostic that the
+        # remaining cost is elsewhere (e.g. a large PHP/TS source tree, not bundles).
+        failed = EngineResult.failed(
             Engine.SEMGREP, Pillar.SECURITY,
             f"semgrep timed out after {settings.semgrep_timeout_seconds}s",
             scan_id=req.scan_id, duration_seconds=result.duration_seconds,
         )
+        failed.excluded_bundled = excluded_bundled
+        return failed
 
     if result.returncode not in (0, 1):
-        return EngineResult.failed(
+        failed = EngineResult.failed(
             Engine.SEMGREP, Pillar.SECURITY,
             normalizer.truncate(result.stderr, 2000) or "semgrep failed",
             scan_id=req.scan_id, duration_seconds=result.duration_seconds,
         )
+        failed.excluded_bundled = excluded_bundled
+        return failed
 
     try:
         raw = json.loads(result.stdout) if result.stdout.strip() else {"results": []}
