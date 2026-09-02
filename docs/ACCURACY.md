@@ -163,6 +163,33 @@ The 180 actionable SAST findings also include **82 "secret-shaped" registry rule
 (`node_secret`, `detected-bcrypt-hash`, …) overlapping the secrets pillar, and **91
 other community rules**; these were not exhaustively triaged.
 
+### Per-language marginal value of the custom taint packs (V2 §4 + T3)
+
+The custom `aegis-*` taint packs are **additive** over the Semgrep registry (registry
+rules fire regardless), so their marginal value **is exactly the `aegis-*` finding set**.
+Measured per language:
+
+| language | custom taint pack? | marginal value over registry | evidence |
+|---|---|---|---|
+| **PHP** | yes | **real** — +31 on DVWA, +14 librenms, +7 FreshRSS | V2 §4 |
+| **JS/TS** | yes | **real** — +55 on juice-shop, +3 NodeGoat (the SSJI) | V2 §4 |
+| **Java** | yes | **inert until T3** — 0 on WebGoat (T2); **+6 after T3** (Spring sources), all TP / 0-FP, +0 on eladmin & booklore after 0-FP triage | T2 (0) → T3 (6) |
+| **Python** | yes (8 `aegis-py-*` rules) | **zero measured** — 0 on redash (all detection was registry) | V2 §4 redash |
+| **Ruby** | no pack | zero by design | V2 §4 chatwoot, mastodon |
+| **C#** | no pack | zero by design | V2 §4 jellyfin, nopCommerce |
+
+**The honest position.** On **Ruby, C#, and Python**, our **detection is the Semgrep
+registry** — the custom packs add nothing there (none exist for Ruby/C#; the Python pack
+fired zero on the one Python repo measured). What Aegis adds on those languages is
+**enrichment** — reachability, KEV/EPSS, lifecycle/fingerprint tracking, ownership,
+honest-state surfacing — not extra detection. An unqualified "our rules find more" is
+false for those four; it is true and measured only for PHP and JS/TS, and now — modestly
+and **intraprocedurally only** — for Java. Before T3 the Java pack had been inert on every
+Java repo ever scanned (a servlet-only source that never matched Spring controllers); T3
+made it fire on WebGoat's same-method flows (SQLi ×3, path-traversal ×2, SSRF ×1, all true
+positives), while cross-method flows remain a registry-covered miss (semgrep OSS taint is
+intraprocedural). See `SAST_TIMEOUT_FIX_T2.md` / the T3 commits.
+
 ---
 
 ## SCA (trivy)
