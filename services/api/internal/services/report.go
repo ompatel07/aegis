@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"path"
+	"strconv"
 	"strings"
 	"time"
 
@@ -149,7 +150,7 @@ func (s *ReportService) Compliance(ctx context.Context, scanID, userID, framewor
 		"framework": framework,
 		"scan_meta": map[string]any{
 			"scan_id": scan.ID, "project": project.Name,
-			"grade": derefStr(scan.OverallGrade), "commit": derefStr(scan.CommitSHA),
+			"grade": gradeText(scan.OverallGrade), "commit": derefStr(scan.CommitSHA),
 			"generated_at": scan.CreatedAt,
 		},
 		"findings": fs,
@@ -238,10 +239,16 @@ func (s *ReportService) trend(ctx context.Context, projectID string, scan *model
 	t := &Trend{
 		PreviousGrade: derefStr(prev.OverallGrade),
 		CurrentGrade:  derefStr(scan.OverallGrade),
-		OverallDelta:  derefIntP(scan.OverallScore) - derefIntP(prev.OverallScore),
-		SecurityDelta: derefIntP(scan.SecurityScore) - derefIntP(prev.SecurityScore),
 	}
+	// A delta is only meaningful when BOTH sides were measured. Subtracting through a
+	// nil-as-zero invents a movement that never happened (an unmeasured previous scan
+	// would read as a full-score improvement).
+	overallDelta, overallOK := scoreDelta(scan.OverallScore, prev.OverallScore)
+	securityDelta, _ := scoreDelta(scan.SecurityScore, prev.SecurityScore)
+	t.OverallDelta, t.SecurityDelta = overallDelta, securityDelta
 	switch {
+	case !overallOK:
+		t.Note = "Overall score cannot be compared with the previous scan — it was not measured in one of them."
 	case t.OverallDelta > 0:
 		t.Note = fmt.Sprintf("Overall score improved by %d points since the previous scan.", t.OverallDelta)
 	case t.OverallDelta < 0:
@@ -302,21 +309,19 @@ func priorities(findings []models.Finding) []string {
 }
 
 func templateSummary(project string, scan *models.Scan, findings []models.Finding) string {
-	grade := derefStr(scan.OverallGrade)
 	return fmt.Sprintf(
-		"Project %q scored an overall grade of %s (security %d, quality %d, deployment %d). "+
+		"Project %q scored an overall grade of %s (%s). "+
 			"The scan surfaced %d security issue(s), %d secret(s), and %d vulnerable dependency(ies). "+
 			"See the prioritized risks below for the recommended order of remediation.",
-		project, orDash(grade), derefIntP(scan.SecurityScore), derefIntP(scan.QualityScore),
-		derefIntP(scan.DeploymentScore), scan.SecurityIssuesTotal, scan.SecretsFound, scan.VulnerabilitiesFound,
+		project, gradeText(scan.OverallGrade), pillarText(scan),
+		scan.SecurityIssuesTotal, scan.SecretsFound, scan.VulnerabilitiesFound,
 	)
 }
 
 func metadataDigest(project string, scan *models.Scan, findings []models.Finding) string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "Project: %s\nOverall grade: %s (security %d, quality %d, deployment %d)\n",
-		project, orDash(derefStr(scan.OverallGrade)), derefIntP(scan.SecurityScore),
-		derefIntP(scan.QualityScore), derefIntP(scan.DeploymentScore))
+	fmt.Fprintf(&b, "Project: %s\nOverall grade: %s (%s)\n",
+		project, gradeText(scan.OverallGrade), pillarText(scan))
 	fmt.Fprintf(&b, "Security issues: %d, secrets: %d, vulnerable deps: %d\n",
 		scan.SecurityIssuesTotal, scan.SecretsFound, scan.VulnerabilitiesFound)
 	b.WriteString("\nTop findings (title | severity):\n")
@@ -333,16 +338,51 @@ func derefStr(s *string) string {
 	return *s
 }
 
-func derefIntP(i *int) int {
-	if i == nil {
-		return 0
+// NotMeasured is what a nil score/grade renders as in any customer-facing artifact.
+// A pillar that was never measured is a FACT, not a zero: F1 caught the executive report
+// printing "deployment 0" for a pillar that only runs in CI mode, which is the same
+// fabricated-value defect removed from the scorer (ab8b4ef), the API, the DB and the UI.
+const NotMeasured = "not measured"
+
+// scoreText renders a score, or "not measured" when it is nil — never 0.
+func scoreText(v *int) string {
+	if v == nil {
+		return NotMeasured
 	}
-	return *i
+	return strconv.Itoa(*v)
 }
 
-func orDash(s string) string {
-	if s == "" {
-		return "—"
+// gradeText renders a grade, or "not measured" when absent — never a bare dash, which
+// reads as a value rather than an absence.
+func gradeText(g *string) string {
+	if g == nil || *g == "" {
+		return NotMeasured
 	}
-	return s
+	return *g
 }
+
+// pillarText names the pillars honestly. Security and quality are always stated (their
+// absence is itself the news); deployment is OMITTED when nil, because it only runs in
+// CI mode against a pre-built workspace — this is the two-pillar product (b845240), so
+// its absence is the normal case, not a missing measurement.
+func pillarText(scan *models.Scan) string {
+	parts := []string{
+		"security " + scoreText(scan.SecurityScore),
+		"quality " + scoreText(scan.QualityScore),
+	}
+	if scan.DeploymentScore != nil {
+		parts = append(parts, "deployment "+scoreText(scan.DeploymentScore))
+	}
+	return strings.Join(parts, ", ")
+}
+
+// scoreDelta returns the difference and whether it is meaningful. It is meaningful only
+// when both sides were measured.
+func scoreDelta(cur, prev *int) (int, bool) {
+	if cur == nil || prev == nil {
+		return 0, false
+	}
+	return *cur - *prev, true
+}
+
+

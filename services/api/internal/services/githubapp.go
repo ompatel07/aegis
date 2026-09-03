@@ -261,15 +261,15 @@ func ghCheckTitle(passed, hasPolicy bool) string {
 
 func buildCheckSummary(scan *models.Scan, findings []models.Finding) string {
 	c := severityCounts(findings)
-	return fmt.Sprintf("Aegis scanned this change. Grade **%s** (security %d, quality %d, deployment %d).\n\n"+
+	return fmt.Sprintf("Aegis scanned this change. Grade **%s** (%s).\n\n"+
 		"Findings — critical: %d, high: %d, medium: %d, low: %d.",
-		orDash(derefStr(scan.OverallGrade)), derefIntP(scan.SecurityScore), derefIntP(scan.QualityScore),
-		derefIntP(scan.DeploymentScore), c["critical"], c["high"], c["medium"], c["low"])
+		gradeText(scan.OverallGrade), pillarText(scan),
+		c["critical"], c["high"], c["medium"], c["low"])
 }
 
-// buildComment renders the single PR comment: severity summary, top 5 findings,
-// an AI-generated-code section, and a dashboard link. A hidden marker lets the
-// updater find/replace the same comment (belt-and-suspenders alongside the id).
+// buildComment renders the single PR comment: severity summary, top 5 findings and a
+// dashboard link. A hidden marker lets the updater find/replace the same comment
+// (belt-and-suspenders alongside the id).
 func buildComment(dashURL string, scan *models.Scan, findings []models.Finding, passed, hasPolicy bool) string {
 	c := severityCounts(findings)
 	var b strings.Builder
@@ -282,7 +282,7 @@ func buildComment(dashURL string, scan *models.Scan, findings []models.Finding, 
 			gate = "❌ **Aegis quality gate failed**"
 		}
 	}
-	fmt.Fprintf(&b, "%s — grade **%s**\n\n", gate, orDash(derefStr(scan.OverallGrade)))
+	fmt.Fprintf(&b, "%s — grade **%s**\n\n", gate, gradeText(scan.OverallGrade))
 	fmt.Fprintf(&b, "| Critical | High | Medium | Low |\n|--:|--:|--:|--:|\n| %d | %d | %d | %d |\n\n",
 		c["critical"], c["high"], c["medium"], c["low"])
 

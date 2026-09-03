@@ -150,13 +150,17 @@ func evaluatePolicy(cfg models.PolicyConfig, scan *models.Scan, findings []model
 		pass := !sevAtLeast(newWorst, cfg.BlockNewSeverity)
 		add("block_new_severity", pass, fmt.Sprintf("worst NEW finding: %s (gate: block new %s+)", orNone(newWorst), cfg.BlockNewSeverity))
 	}
+	// An unmeasured pillar FAILS the gate (fail closed — we cannot certify what we did
+	// not measure) but the reason must say so rather than claim a score of 0.
 	if cfg.MinSecurityScore != nil {
-		v := derefIntP(scan.SecurityScore)
-		add("min_security_score", v >= *cfg.MinSecurityScore, fmt.Sprintf("security score %d (min %d)", v, *cfg.MinSecurityScore))
+		pass := scan.SecurityScore != nil && *scan.SecurityScore >= *cfg.MinSecurityScore
+		add("min_security_score", pass,
+			fmt.Sprintf("security score %s (min %d)", scoreText(scan.SecurityScore), *cfg.MinSecurityScore))
 	}
 	if cfg.MinQualityScore != nil {
-		v := derefIntP(scan.QualityScore)
-		add("min_quality_score", v >= *cfg.MinQualityScore, fmt.Sprintf("quality score %d (min %d)", v, *cfg.MinQualityScore))
+		pass := scan.QualityScore != nil && *scan.QualityScore >= *cfg.MinQualityScore
+		add("min_quality_score", pass,
+			fmt.Sprintf("quality score %s (min %d)", scoreText(scan.QualityScore), *cfg.MinQualityScore))
 	}
 
 	passed := true
