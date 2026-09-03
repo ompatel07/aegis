@@ -2,6 +2,7 @@
 
 Proof — not assumption — that Aegis's "updates daily with new vulnerabilities"
 and "learns from feedback" claims are truthful. Verified against the actual code
+(see the Pass F1 re-test in Track 2e.6: learning is MANUAL, not automatic)
 and live runs. Honest gaps documented.
 
 ---
@@ -104,12 +105,23 @@ continuous loop**:
   (updated live on every dismissal, surfaced via project-memory for priority
   sorting/display) — but it does not feed the ML `P(fp)` score.
 
-**Verdict.** The FP classifier **genuinely learns from feedback and respects the
-metadata-only privacy invariant** — both proven live. To make "learns from your
-feedback" true *automatically*, wire: (1) a feedback→JSONL exporter, (2) a
-scheduled retrain job, and optionally (3) fold `project_rule_stats.fp_rate` into
-scoring for true per-team personalization. Until then it is an accurate *manual*
-capability, not an automated loop.
+**Verdict.** The FP classifier **can learn from feedback when retrained by hand**, and
+it **respects the metadata-only privacy invariant** — both proven live. It does **not**
+learn automatically. To make "learns from your feedback" true *automatically*, wire:
+(1) a feedback→JSONL exporter, (2) a scheduled retrain job, and optionally (3) fold
+`project_rule_stats.fp_rate` into scoring for true per-team personalization. Until then
+it is a *manual* capability, not an automated loop.
+
+> **Pass F1 re-test (2026-09-03, HEAD `9ca2614`) — the product path, not the harness.**
+> Three findings were marked false-positive through the real API and a full rescan was
+> run. The probabilities came back byte-identical: `0.0026 → 0.0026`, `0.0093 → 0.0093`,
+> `0.0014 → 0.0014`. That is exactly the gap documented above, observed end to end — the
+> shift in this section comes from a **manual `ml.train` run in
+> `benchmarks/verification/fp_loop_test.py`**, never from the running product. Feedback
+> *is* consumed on a different path: `UpsertRuleStats` wrote all three marks to
+> `project_rule_stats.fp_rate` (`fp_rate 1.000`), which feeds the project-memory surface.
+> Until the exporter and retrain job exist, **no document may state that the classifier
+> learns from feedback automatically.** See `docs/ACCURACY.md` CORRECTION 7.
 
 ---
 

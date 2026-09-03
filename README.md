@@ -65,20 +65,27 @@ inspects the artifacts — it never builds. See [`docs/ACCURACY.md`](docs/ACCURA
 
 ---
 
-## Privacy-first AI strategy
+## Privacy posture
 
-Aegis is layered so enterprises can adopt it without source code ever leaving their infrastructure:
+Aegis is **self-hosted**, and **your source code never leaves your infrastructure**.
 
-| Layer | What runs | Data exposure |
-| ----- | --------- | ------------- |
-| **1 — Deterministic scanners** | Semgrep + Trivy + Gitleaks in isolated containers | None — fully local |
-| **2 — Local FP filter** | ML classifier on scan *metadata* (rule type, file type, AST depth) | None — no source |
-| **3 — Local severity scorer** | Reachability/exploitability via call-graph metadata | None — no source |
-| **4 — AI fix suggestions** | *Opt-in.* Sends only the 10–30 vulnerable lines + issue type to an LLM | Snippet-level, audited |
-| **5 — AI report generation** | *Opt-in.* Plain-English summary from findings JSON | Findings JSON only |
+- **Your code is never executed.** Analysis is static only — Aegis never builds the
+  repository, never installs its dependencies and never runs it. This is an
+  architectural boundary, not a setting.
+- **Source stays local.** The scanners (Semgrep, Trivy, Gitleaks, radon/lizard) run in
+  your own containers. The local false-positive classifier and the reachability scorer
+  read finding *metadata* only — rule id, engine, severity, file-path shape, LOC bucket,
+  language — never file contents.
+- **Secrets are redacted at the egress boundary** before a finding is persisted or
+  returned, so a detected credential is never stored or transmitted in plaintext.
+- **AI is opt-in per project and off by default** (`ai_fix_enabled` defaults to `false`).
+  With it switched on, fix suggestions send the vulnerable snippet plus the issue type,
+  and report generation sends findings metadata only. Both are audited.
 
-Layers 1–3 are the default and ship in Phase 1. Layers 4–5 are opt-in and gated behind
-explicit per-project configuration with a full audit log.
+There is **no configurable "privacy level" or tiered privacy ladder** — the guarantees
+above are properties of the architecture and apply to every deployment. An earlier
+version of this README described a five-layer privacy ladder; no such graded control was
+ever implemented, and it is recorded in `docs/ACCURACY.md` CORRECTIONS 6.
 
 ---
 

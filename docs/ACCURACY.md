@@ -244,7 +244,10 @@ number exists.
 | **Reachability accuracy** (is a "reachable" CVE truly reachable?) | **NOT MEASURED** | Trivy/our reachability sets a `reachable` flag; its precision/recall against ground truth has not been measured. On V1, 135/185 actionable SCA were transitive+not-reachable, but "not-reachable" itself is unverified |
 | **KEV flagging** | **not measured** | we tag CVEs present in CISA KEV; the tag's correctness (list freshness, id match) has no measured accuracy — it inherits the KEV feed's |
 | **EPSS scores** | **passthrough, not ours** | EPSS is attached from FIRST's model; we do not compute or validate it. Not an Aegis accuracy claim |
-| **Lifecycle / fingerprint tracking** (same finding across scans) | **verified, functional** (not a rate) | stable-fingerprint enrichment; correctness across real re-scans over time is not measured |
+| **Lifecycle / fingerprint tracking** (same finding across scans) | **verified, functional** (not a rate) | stable-fingerprint enrichment; F1 exercised New→Existing→Resolved→Reopened plus a 20-line shift with unchanged fingerprints on a purpose-built repo |
+| **ML false-positive filter — safety** | **verified, functional** (not a rate) | advisory only: `false_positive_probability` appears solely in `ORDER BY` (API) and the web sort comparator — no `WHERE` filters on it. F1 marked 3 criticals as FP: all stayed visible and stayed `critical` |
+| **ML false-positive filter — learning from your feedback** | **NOT automatic — manual retrain only** | see CORRECTION 7. Feedback updates `project_rule_stats.fp_rate` (live, feeds project memory), but nothing changes the model's `P(fp)` without a manual `ml.train` run |
+| **Privacy guarantees** (self-hosted, source never leaves, AI opt-in) | **verified, functional** (not a rate) | code never executed (architectural); ML features metadata-only; secrets redacted at the egress chokepoint (18 tests + observed in Postgres on real repos); `ai_fix_enabled` defaults false. There is **no** graded privacy ladder — CORRECTION 6 |
 
 None of the "not measured" rows should be cited as an accuracy claim anywhere until
 a number with corpus + date + commit exists here.
@@ -293,3 +296,30 @@ the numbers above trustworthy.
    sources/sinks (74 fired on trusted `outline` DB migrations alone). Deleted in P1;
    real coverage is retained by the taint pack (`rules/taint/`, real sources+sinks),
    the registry security-audit pack, and gitleaks.
+
+6. **A five-layer "privacy ladder" (L1–L5) was described in the README but never
+   existed.** Pass F1 grepped the whole repository — Go, Python, SQL, TypeScript, config
+   and docs — for any graded privacy or data-sharing control and found nothing: no
+   privacy-level setting, no tiering, no code path that varies data exposure by level.
+   What is real, and is what the README now says, is narrower and checkable: Aegis is
+   self-hosted, it never executes the scanned code, source never leaves the customer's
+   infrastructure, the ML features are metadata-only, secrets are redacted at the egress
+   boundary, and AI is opt-in per project and off by default. A claimed capability that
+   was never implemented belongs here rather than in a feature list.
+
+7. **"Learns from your feedback" is a manual capability, not an automated loop, and the
+   headline probability shift was never the product's runtime behaviour.** The
+   0.035 → 0.995 shift recorded in `INTELLIGENCE_VERIFICATION.md` (and the earlier
+   0.03 → 0.51) was produced by feeding feedback events to `ml.train` **by hand** in a
+   verification harness. F1 tested the product path instead — marked 3 findings as false
+   positives through the API, then ran a full rescan — and the probabilities came back
+   byte-identical (0.0026 → 0.0026, 0.0093 → 0.0093, 0.0014 → 0.0014). This did **not**
+   regress: commit `023c88d` documented the gap at the time ("the loop is NOT automated
+   end-to-end … the global model ships trained on the seed only"). Two things are true
+   and worth separating: feedback **is** consumed — `UpsertRuleStats` writes
+   `project_rule_stats.fp_rate` live, and F1's three marks landed there with
+   `fp_rate 1.000`, feeding the project-memory surface — but it does **not** reach the ML
+   score, because there is no feedback→JSONL export and no scheduled retrain job. Until
+   those are wired, no doc may claim the classifier learns from feedback automatically.
+   The *safety* property is separate and does hold: the score can only re-rank, never
+   hide (capability table above).
