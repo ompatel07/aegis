@@ -30,9 +30,9 @@ func TestGhConclusionMapping(t *testing.T) {
 
 func TestBuildCommentContents(t *testing.T) {
 	scan := &models.Scan{OverallGrade: sp2("D"), SecurityScore: ip(20), QualityScore: ip(60),
-		DeploymentScore: ip(100), AIGeneratedPct: fp2(30)}
+		DeploymentScore: ip(100)}
 	findings := []models.Finding{
-		{Severity: "critical", Title: "SQLi", TitleHuman: sp2("SQL injection"), FilePath: "app/x.js", LineStart: ip(10), IsNew: true, InAIGeneratedCode: true},
+		{Severity: "critical", Title: "SQLi", TitleHuman: sp2("SQL injection"), FilePath: "app/x.js", LineStart: ip(10), IsNew: true},
 		{Severity: "low", Title: "nit", FilePath: "y.js"},
 	}
 	md := buildComment("http://localhost/projects/p/scans/s", scan, findings, false, true)
@@ -44,8 +44,8 @@ func TestBuildCommentContents(t *testing.T) {
 		"SQL injection",                       // top finding uses title_human
 		"app/x.js:10",                         // location
 		"🆕",                                    // new-finding marker
-		"AI-generated code",                   // AI section
-		"2.7",                                 // density callout
+		// The AI-generated-code section and its density callout were removed with the
+		// Phase 2C AI fields; nothing on models.Scan/Finding renders them any more.
 		"View the full report",                // dashboard link
 	} {
 		if !strings.Contains(md, want) {

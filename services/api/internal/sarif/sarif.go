@@ -174,7 +174,7 @@ func Build(scan *models.Scan, findings []models.Finding, repoURL string, truncat
 			Reason       string `json:"reason"`
 			CoverageLost string `json:"coverage_lost"`
 		}
-		if err := json.Unmarshal(scan.EnginesDegraded, &degraded); err == nil && len(degraded) > 0 {
+		if err := json.Unmarshal([]byte(scan.EnginesDegraded), &degraded); err == nil && len(degraded) > 0 {
 			notes := make([]Notification, 0, len(degraded))
 			for _, d := range degraded {
 				notes = append(notes, Notification{

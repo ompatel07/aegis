@@ -1,7 +1,6 @@
 package models
 
 import (
-	"encoding/json"
 	"time"
 )
 
@@ -40,18 +39,26 @@ type Scan struct {
 	SecurityRating        *string `db:"security_rating" json:"security_rating,omitempty"`
 	MaintainabilityRating *string `db:"maintainability_rating" json:"maintainability_rating,omitempty"`
 
+	// Every jsonb column below is typed JSONB, not json.RawMessage: JSONB implements
+	// sql.Scanner and tolerates SQL NULL. json.RawMessage does NOT, which is what broke
+	// the whole scan-read API in T2 (see the excluded_bundled note). Even the two
+	// NOT NULL columns use it, so dropping a NOT NULL later cannot resurrect that bug.
+
 	// Scan-level degradation (D1): [{engine, reason, coverage_lost}]. Non-empty means
 	// the scan is DEGRADED — engines ran without full coverage, or failed.
-	EnginesDegraded json.RawMessage `db:"engines_degraded" json:"engines_degraded"`
+	EnginesDegraded JSONB `db:"engines_degraded" json:"engines_degraded"`
 
 	// Secret matches SUPPRESSED as definitively-not-a-secret (P1):
 	// {"placeholder": n, "expired_jwt": n}. Surfaced as "N filtered", never silent.
-	FilteredSecrets json.RawMessage `db:"filtered_secrets" json:"filtered_secrets"`
+	FilteredSecrets JSONB `db:"filtered_secrets" json:"filtered_secrets"`
 
 	// Bundled/minified third-party JS/TS files EXCLUDED from SAST (T2):
 	// {"files": n, "bytes": n, "reasons": {...}, "sample": [...]}. Surfaced as
-	// "N bundled files excluded from SAST", never silent. NULL when none excluded.
-	ExcludedBundled json.RawMessage `db:"excluded_bundled" json:"excluded_bundled,omitempty"`
+	// "N bundled files excluded from SAST", never silent.
+	// DELIBERATELY NULLABLE: NULL means "nothing was excluded", which is a different
+	// fact from an empty exclusion — the honest-states distinction. It is preserved
+	// here rather than flattened to NOT NULL DEFAULT '{}' just to dodge a scan error.
+	ExcludedBundled JSONB `db:"excluded_bundled" json:"excluded_bundled,omitempty"`
 
 	QualityIssuesTotal   int `db:"quality_issues_total" json:"quality_issues_total"`
 	SecurityIssuesTotal  int `db:"security_issues_total" json:"security_issues_total"`
