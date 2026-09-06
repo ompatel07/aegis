@@ -94,16 +94,25 @@ OWASP Benchmark v1.2, 2,740 cases):
 | CodeQL | 0.970 | 0.682 | 0.744 | 0.288 | *Sifting the Noise*, Table 2 |
 | base Semgrep (default rules) | 0.904 | 0.748 | 0.694 | 0.156 | *Sifting the Noise*, Table 2 |
 
-**Aegis leads on both F1 (0.775 vs 0.744) and Youden (0.459 vs 0.288), and has by
-far the lowest FPR (0.425 vs 0.682).** The comparative claim holds under the metric
-that *disfavours* us, so it stays. Note our Java taint rules roughly halve base
-Semgrep's FPR (0.748 → 0.425) — that FPR gap is the value the custom rules add.
+**On this benchmark Aegis leads on both F1 (0.775 vs 0.744) and Youden (0.459 vs 0.288),
+and has by far the lowest FPR (0.425 vs 0.682)** — i.e. on synthetic Java taint, Aegis is the
+more *precise* tool while CodeQL is the more *complete* one (TPR 0.970 vs 0.884). That
+recall gap is the one that reproduced on real code in F2. Note our Java taint rules roughly
+halve base Semgrep's FPR (0.748 → 0.425) — that FPR gap is the value the custom rules add.
 
-**Limitation — this is a cross-study comparison, not a same-harness head-to-head.**
-> **Pass F2 (2026-09-03) attempted to replace this with a same-harness CodeQL run and could
-> not: the host ran out of disk (207 MB free on `C:`; the CodeQL bundle needs >2 GB
-> extracted). Recorded as NOT RUN in `docs/COMPETITIVE_F2.md`. This caveat therefore
-> stands, and the "beats CodeQL" framing must keep carrying it.**
+**Limitation — this is a cross-study comparison on SYNTHETIC JAVA, and a same-harness
+run on real code now contradicts the framing it was used to support.**
+> **Pass F2 (2026-09-06) ran CodeQL CLI 2.26.4 on the same checkouts as Aegis and found the
+> opposite result on real JavaScript.** Against NodeGoat's documented, source-verified
+> vulnerabilities, **CodeQL recalled 6/7 (86 %) and Aegis 4/7 (57 %)** — Aegis missed the
+> flagship `$where` NoSQL injection and a planted ReDoS. **The "beats CodeQL" framing is
+> therefore withdrawn** (see CORRECTION 8 and `docs/COMPETITIVE_F2.md` §B.2). The table below
+> is retained because it is a real, correctly-cited benchmark result, but it measures
+> *synthetic Java taint under the Youden metric* and must not be generalised into an
+> overall "we beat CodeQL" claim. The same pass also found the reverse on Python (Aegis
+> caught dvpwa's documented SQLi, CodeQL missed it) and that **CodeQL cannot scan PHP at
+> all** — so the honest summary is "CodeQL is deeper where it runs; Aegis runs in more
+> places", not that either tool wins outright.
 Aegis's TPR/FPR were measured on our own harness; CodeQL's and base Semgrep's are
 taken from Xiong & Zhang, *Sifting the Noise* (arXiv:2601.22952, Table 2). The
 paper's figures were verified against the source (CodeQL FPR 0.682 matches their
@@ -251,7 +260,7 @@ number exists.
 | **Lifecycle / fingerprint tracking** (same finding across scans) | **verified, functional** (not a rate) | stable-fingerprint enrichment; F1 exercised New→Existing→Resolved→Reopened plus a 20-line shift with unchanged fingerprints on a purpose-built repo |
 | **ML false-positive filter — safety** | **verified, functional** (not a rate) | advisory only: `false_positive_probability` appears solely in `ORDER BY` (API) and the web sort comparator — no `WHERE` filters on it. F1 marked 3 criticals as FP: all stayed visible and stayed `critical` |
 | **ML false-positive filter — learning from your feedback** | **NOT automatic — manual retrain only** | see CORRECTION 7. Feedback updates `project_rule_stats.fp_rate` (live, feeds project memory), but nothing changes the model's `P(fp)` without a manual `ml.train` run |
-| **"Competes with SonarQube on quality"** | **NOT RUN — no evidence** | deferred three times; F2 could not run SonarQube CE on this box (3.744 GiB Docker ceiling, 207 MB host disk free). See `docs/COMPETITIVE_F2.md`. Do not make this claim until a head-to-head exists |
+| **"Competes with SonarQube on quality"** | **NOT RUN — no evidence** | deferred three times. F2 (2026-09-06) got SonarQube CE 9.9.8 to `status:UP` at 1.53 GiB, but the scanner could not complete on a **3.744 GiB** Docker VM (analysis exceeded 10 min reading across a Windows named volume, then the engine died). Recorded NOT RUN in `docs/COMPETITIVE_F2.md` §A. Needs ≥ 8 GiB. Do not make this claim until a head-to-head exists |
 | **Marginal value over registry-only Semgrep** | **verified, per language** | F2 re-confirmed V2 §4 on the F1 corpus post-T3: DVWA +31 (27% of its SAST), NodeGoat +3, dvpwa 0, spring-petclinic 0 |
 | **Privacy guarantees** (self-hosted, source never leaves, AI opt-in) | **verified, functional** (not a rate) | code never executed (architectural); ML features metadata-only; secrets redacted at the egress chokepoint (18 tests + observed in Postgres on real repos); `ai_fix_enabled` defaults false. There is **no** graded privacy ladder — CORRECTION 6 |
 
@@ -285,8 +294,9 @@ the numbers above trustworthy.
    canonical score is the Youden index (TPR − FPR); F1 flatters our high-recall /
    high-FPR profile. Both are now published side-by-side. Rechecked against an
    independent source (*Sifting the Noise*, arXiv:2601.22952), Aegis leads CodeQL on
-   **both** F1 (0.775 vs 0.744) and Youden (0.459 vs 0.288), so the comparative claim
-   holds — but it should never again be stated on F1 alone.
+   **both** F1 (0.775 vs 0.744) and Youden (0.459 vs 0.288) *on that synthetic Java
+   benchmark* — but it should never again be stated on F1 alone, and, per CORRECTION 8,
+   it must no longer be generalised into an overall "beats CodeQL" claim.
 
 4. **`_best_cvss` used `max()` across CVSS sources for the entire life of the SCA
    engine.** Every prior validation's SCA **severity** was therefore inflated (on V1,
@@ -329,3 +339,20 @@ the numbers above trustworthy.
    those are wired, no doc may claim the classifier learns from feedback automatically.
    The *safety* property is separate and does hold: the score can only re-rank, never
    hide (capability table above).
+
+8. **"Beats CodeQL" was a cross-study claim on synthetic Java, and it does not survive a
+   same-harness run on real code.** F2 (2026-09-06) ran **CodeQL CLI 2.26.4** against the
+   *same checkouts* Aegis scanned, using the broader `security-extended` suites. On
+   **NodeGoat**, scored against vulnerabilities the project plants deliberately and that
+   were verified by reading the source, **CodeQL recalled 6/7 (86 %) and Aegis 4/7 (57 %)**.
+   Aegis missed the flagship `$where` NoSQL injection (`allocations-dao.js:78`) and a
+   planted nested-quantifier ReDoS (`profile.js:59`); hand-triage of CodeQL's unique
+   findings found them mostly true positives. **The overall "beats CodeQL" framing is
+   withdrawn.** What survives is narrower and still true: on the OWASP synthetic-Java
+   benchmark Aegis is the more precise tool (FPR 0.425 vs 0.682); on **Python**, Aegis
+   caught dvpwa's documented SQL injection and **CodeQL missed it** (confirmed not an
+   extraction failure — the file is in CodeQL's database with 0 extraction errors); and
+   **CodeQL cannot scan PHP at all**, so it had nothing to say about the 13.8k-LOC PHP app
+   in the corpus. The defensible claim is *"CodeQL is deeper where it runs; Aegis runs in
+   more places and adds the SCA/secrets/IaC/prioritisation layer CodeQL has no equivalent
+   for"* — a breadth-and-workflow claim, not a depth claim. See `docs/COMPETITIVE_F2.md`.

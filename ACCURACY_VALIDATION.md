@@ -12,7 +12,7 @@ tuned to a benchmark (the Track 2d / Consul-Vault discipline).
 
 | Engine | Metric | Result | Bar / comparison | Status |
 | --- | --- | --- | --- | --- |
-| **SAST** (Semgrep + Aegis taint) | F1 / recall (OWASP Benchmark v1.2) | **0.775 / 88.4%** | CodeQL F1 0.744 | ✅ beats CodeQL |
+| **SAST** (Semgrep + Aegis taint) | F1 / recall (OWASP Benchmark v1.2) | **0.775 / 88.4%** | CodeQL F1 0.744 | ⚠ leads **on this synthetic-Java benchmark only** — a same-harness run on real code went the other way (F2: CodeQL 6/7 vs Aegis 4/7 on NodeGoat). See ACCURACY.md CORRECTION 8 |
 | **SAST** real-world precision | strict FP rate, 6 repos (manual) | **~0% (was ~22%)** | recall held 88.4% | ✅ tuned, recall-safe |
 | **SCA** (Trivy) | dependency-CVE true-positive rate | **40/40 = 100%** | OSV package-precise | ✅ zero FPs |
 | **Secrets** (Gitleaks) | precision / recall (planted corpus) | **1.00 / 0.92** | 0 FP incl. allowlist | ✅ perfect precision |
@@ -26,9 +26,12 @@ tuned to a benchmark (the Track 2d / Consul-Vault discipline).
 Across **all seven engines** in the shipping (no-Joern) configuration, every
 accuracy claim is backed by a real run:
 
-- **SAST is best-in-class on the neutral benchmark** — F1 **0.775** beats CodeQL's
+- **SAST leads on the neutral synthetic benchmark** — F1 **0.775** vs CodeQL's
   0.744 at **88.4% recall**, and its **real-world false-positive rate was measured,
   found at ~22%, and tuned to ~0% without losing a single point of benchmark recall.**
+  ⚠ **Do not read this as "best-in-class" overall.** F2 (2026-09-06) ran CodeQL on the
+  same real checkouts and CodeQL recalled **6/7 vs Aegis's 4/7** on NodeGoat's documented
+  vulnerabilities. See `docs/ACCURACY.md` CORRECTION 8 and `docs/COMPETITIVE_F2.md`.
 - **SCA, secrets, quality, and deployment are effectively exact** — 100%
   OSV-verified dependency CVEs, perfect secret-scanning precision (0 FP on
   adversarial decoys), integer-exact complexity/duplication metrics, and real
@@ -89,9 +92,11 @@ Harness: [`benchmarks/owasp/`](benchmarks/owasp/) (`scan.py` + `score.py`).
 | xpathi | 14 | 13 | 1 | 7 | 93% | small n |
 | trustbound | 43 | 18 | 40 | 25 | 52% | **weakest recall** |
 
-**Verdict: ✅ PASS.** Aegis's shipping SAST **beats CodeQL on F1 (0.775 vs 0.744)**
-with **88.4% recall** — best-in-class for a self-hosted, privacy-preserving
-scanner. Confirmed unchanged after shelving Joern.
+**Verdict: ✅ PASS (benchmark only).** Aegis's shipping SAST leads CodeQL on F1
+(0.775 vs 0.744) with **88.4% recall** *on OWASP Benchmark v1.2, a synthetic Java corpus*.
+Confirmed unchanged after shelving Joern. ⚠ This is **not** a general "beats CodeQL"
+result: on real code (F2, same harness) CodeQL out-recalled Aegis 6/7 vs 4/7 on NodeGoat.
+See `docs/ACCURACY.md` CORRECTION 8.
 
 **Honest limitations (already characterized in Track 2d, not re-litigated here):**
 - **FPR is 42%** — a deliberate **recall-first** posture correct for a security

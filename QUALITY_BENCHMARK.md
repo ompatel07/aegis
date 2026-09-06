@@ -218,7 +218,9 @@ loss. Excluding the audit tier collapses FPR to **11.3%** but halves recall — 
 fundamental recall/precision trade, not a rule bug.
 
 **Honest conclusion.** For a security **gate**, recall-first is correct, and the
-default already beats CodeQL (F1 0.775 vs 0.744). The high-precision profile is
+default leads CodeQL on this benchmark's F1 (0.775 vs 0.744) — though on real code a
+same-harness F2 run had CodeQL ahead on recall (6/7 vs 4/7 on NodeGoat); see
+`docs/ACCURACY.md` CORRECTION 8. The high-precision profile is
 now available for triage-first teams. Meaningfully closing the trade (high recall
 *and* low FP) would require taint sources tuned to each application's
 request-wrapper conventions — deliberately **not** overfit to the Benchmark's
