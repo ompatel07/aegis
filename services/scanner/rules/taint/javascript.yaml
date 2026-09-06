@@ -382,3 +382,79 @@ rules:
           - pattern: vm.runInThisContext($X, ...)
           - pattern: vm.runInContext($X, ...)
           - pattern: vm.runInNewContext($X, ...)
+
+  # ── MongoDB $where code injection (G1/A1) ────────────────────────────────────
+  # NOT a taint rule on purpose. In the real-world shape (NodeGoat
+  # allocations-dao.js:78) the DAO receives `threshold` as a plain function
+  # parameter and the matching `req.query` lives in a DIFFERENT file, so no
+  # intra-file taint engine — semgrep OSS or Opengrep --taint-intrafile — can
+  # connect them. What IS local, and is decisive on its own, is the construct:
+  # $where hands its argument to the database as JavaScript, so building it by
+  # interpolation/concatenation is an injection sink regardless of provenance.
+  - id: aegis-js-nosql-where-injection
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      A MongoDB $where clause is built from an interpolated or concatenated
+      string. $where is evaluated as JavaScript by the database, so any value
+      that reaches it is executed server-side — an attacker can hang the
+      database ("0';while(true){}'") or subvert the query ("1'; return 1 == '1").
+      Use typed query operators ($eq/$gt/$lt) instead; a $where clause should
+      never be assembled from a variable.
+    metadata:
+      cwe:
+        - "CWE-943: Improper Neutralization of Special Elements in Data Query Logic"
+      owasp:
+        - "A03:2021 - Injection"
+      category: security
+      subcategory: [vuln]
+      confidence: HIGH
+      likelihood: HIGH
+      impact: HIGH
+      technology: [javascript, typescript, node, mongodb]
+      references:
+        - https://www.mongodb.com/docs/manual/reference/operator/query/where/
+    patterns:
+      - pattern-either:
+          - pattern: "{..., $where: `...`, ...}"
+          - pattern: "{..., $where: $A + $B, ...}"
+          - pattern: "{..., \"$where\": `...`, ...}"
+          - pattern: "{..., \"$where\": $A + $B, ...}"
+      # A $where built from a constant carries no injection risk.
+      - pattern-not: "{..., $where: \"...\", ...}"
+      - pattern-not: "{..., \"$where\": \"...\", ...}"
+
+  # ── Catastrophic-backtracking regex / ReDoS (G1/A2) ──────────────────────────
+  # A nested quantifier — (X+)+ , (X*)*, (X+)* , (X*)+ — is redundant (it matches
+  # exactly what (X+) matches) AND makes the matcher backtrack exponentially, so
+  # its presence is itself the defect; no taint is required to justify flagging
+  # it. NodeGoat profile.js:59 (/([0-9]+)+\#/, tested against req.body) is the
+  # canonical case, and it is what CodeQL's js/redos caught and we missed (F2).
+  - id: aegis-js-redos-nested-quantifier
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: >-
+      This regular expression contains a nested quantifier ((X+)+ / (X*)* and
+      friends), which causes catastrophic backtracking: a crafted input makes
+      matching take exponential time and pins the event loop, denying service.
+      The inner quantifier is also redundant — (X+)+ matches exactly what (X+)
+      matches — so removing the outer one is behaviour-preserving.
+    metadata:
+      cwe:
+        - "CWE-1333: Inefficient Regular Expression Complexity"
+      owasp:
+        - "A05:2021 - Security Misconfiguration"
+      category: security
+      subcategory: [vuln]
+      confidence: HIGH
+      likelihood: MEDIUM
+      impact: MEDIUM
+      technology: [javascript, typescript]
+      references:
+        - https://owasp.org/www-community/attacks/Regular_expression_Denial_of_Service_-_ReDoS
+    patterns:
+      - pattern: $RE
+      - metavariable-regex:
+          metavariable: $RE
+          # a group whose last element is quantified, immediately re-quantified
+          regex: ^/.*\([^()]*[+*]\)[+*].*/[gimsuy]*$

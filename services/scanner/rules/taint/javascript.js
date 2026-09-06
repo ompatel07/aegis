@@ -130,6 +130,64 @@ function reactXssOk() {
   return <script dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />;
 }
 
+// ── MongoDB $where code injection (G1/A1) ────────────────────────────────────
+// Real shape from NodeGoat allocations-dao.js:78 — the DAO gets `threshold` as a
+// plain parameter (the req.query lives in another file), so this is deliberately
+// NOT taint-based; the interpolated $where is decisive on its own.
+function whereBad(threshold, parsedUserId, allocationsCol) {
+  const searchCriteria = () => {
+    // ruleid: aegis-js-nosql-where-injection
+    return { $where: `this.userId == ${parsedUserId} && this.stocks > '${threshold}'` };
+  };
+  return allocationsCol.find(searchCriteria());
+}
+
+function whereConcatBad(threshold, coll) {
+  // ruleid: aegis-js-nosql-where-injection
+  return coll.find({ $where: "this.stocks > " + threshold });
+}
+
+function whereOk(coll) {
+  // a constant $where carries no injection risk
+  // ok: aegis-js-nosql-where-injection
+  return coll.find({ $where: "this.qty > 5" });
+}
+
+function whereTypedOk(threshold, coll) {
+  // the correct fix: a typed operator, not $where
+  // ok: aegis-js-nosql-where-injection
+  return coll.find({ stocks: { $gt: parseInt(threshold, 10) } });
+}
+
+// ── Catastrophic-backtracking regex / ReDoS (G1/A2) ──────────────────────────
+// Real shape from NodeGoat profile.js:59.
+function redosBad(req) {
+  const { bankRouting } = req.body;
+  // ruleid: aegis-js-redos-nested-quantifier
+  const regexPattern = /([0-9]+)+\#/;
+  return regexPattern.test(bankRouting);
+}
+
+function redosStarBad(x) {
+  // ruleid: aegis-js-redos-nested-quantifier
+  const re = /(a*)*b/;
+  return re.test(x);
+}
+
+function redosOk(req) {
+  const { bankRouting } = req.body;
+  // the documented fix: drop the outer quantifier
+  // ok: aegis-js-redos-nested-quantifier
+  const regexPattern = /([0-9]+)\#/;
+  return regexPattern.test(bankRouting);
+}
+
+function redosPlainOk(x) {
+  // ok: aegis-js-redos-nested-quantifier
+  const re = /^[a-z0-9_-]{3,16}$/;
+  return re.test(x);
+}
+
 module.exports = {
   sqliBad, sqliOk, xssBad, xssOk, cmdBad, cmdOk, ssrfBad, ssrfOk,
   pathBad, pathOk, nosqlBad, nosqlOk, ldapBad, ldapOk, codeBad, codeOk,
