@@ -1,0 +1,143 @@
+pinned_at: '2026-09-07'
+registry: https://semgrep.dev/c/
+refresh_cadence: monthly, reviewed — see scripts/vendor_rules.py docstring
+exclude_prefixes:
+- trailofbits.
+exclude_ids: []
+packs:
+- pack: p/owasp-top-ten
+  source: https://semgrep.dev/c/p/owasp-top-ten
+  file: vendor/owasp-top-ten.yaml
+  sha256: 00b8081e1b91e1fd2c0216137f4e1ce143715c67c67fd689dfa58ad1c9bbc402
+  rules: 560
+  excluded: 0
+  licenses:
+    Semgrep Rules License v1.0. For more details, visit semgrep.dev/legal/rules-license: 560
+- pack: p/r2c-security-audit
+  source: https://semgrep.dev/c/p/r2c-security-audit
+  file: vendor/r2c-security-audit.yaml
+  sha256: ad0239509f03a9dcfdc316eb656db28f70967a1be5e7635a07b9ae6370a48033
+  rules: 225
+  excluded: 0
+  licenses:
+    Semgrep Rules License v1.0. For more details, visit semgrep.dev/legal/rules-license: 225
+- pack: p/default
+  source: https://semgrep.dev/c/p/default
+  file: vendor/default.yaml
+  sha256: ac1517490e4416d34550cc638e67f5cda4500006781c5f181cddd5f740b00c87
+  rules: 1056
+  excluded: 18
+  licenses:
+    Semgrep Rules License v1.0. For more details, visit semgrep.dev/legal/rules-license: 1056
+- pack: p/secrets
+  source: https://semgrep.dev/c/p/secrets
+  file: vendor/secrets.yaml
+  sha256: e14395ccfc5f0b1db438bbe8b134255c7c6a879c464b44f1bd0ce3a73e40be10
+  rules: 52
+  excluded: 0
+  licenses:
+    Semgrep Rules License v1.0. For more details, visit semgrep.dev/legal/rules-license: 52
+- pack: p/supply-chain
+  source: https://semgrep.dev/c/p/supply-chain
+  file: vendor/supply-chain.yaml
+  sha256: 1b03ddb50e376e7efb3191e0cf05aa139dba479eb3451aca9cca0f378add8b53
+  rules: 1
+  excluded: 0
+  licenses:
+    Semgrep Rules License v1.0. For more details, visit semgrep.dev/legal/rules-license: 1
+- pack: p/cwe-top-25
+  source: https://semgrep.dev/c/p/cwe-top-25
+  file: vendor/cwe-top-25.yaml
+  sha256: 238fb6c709fbc7d02262bdbbb20280de55910b17c688b4f44f5ad638c1fc555b
+  rules: 216
+  excluded: 0
+  licenses:
+    Semgrep Rules License v1.0. For more details, visit semgrep.dev/legal/rules-license: 216
+- pack: p/python
+  source: https://semgrep.dev/c/p/python
+  file: vendor/python.yaml
+  sha256: 22789f735ac9b1ef8e743860ee4c8e579b199c0f23ba2a7f680711c301597969
+  rules: 151
+  excluded: 0
+  licenses:
+    Semgrep Rules License v1.0. For more details, visit semgrep.dev/legal/rules-license: 151
+- pack: p/javascript
+  source: https://semgrep.dev/c/p/javascript
+  file: vendor/javascript.yaml
+  sha256: df648770d7a7c34ffebeedd4183ea54fbcef1c074b70c4cb97784016177a3cf7
+  rules: 74
+  excluded: 0
+  licenses:
+    Semgrep Rules License v1.0. For more details, visit semgrep.dev/legal/rules-license: 74
+- pack: p/typescript
+  source: https://semgrep.dev/c/p/typescript
+  file: vendor/typescript.yaml
+  sha256: df648770d7a7c34ffebeedd4183ea54fbcef1c074b70c4cb97784016177a3cf7
+  rules: 74
+  excluded: 0
+  licenses:
+    Semgrep Rules License v1.0. For more details, visit semgrep.dev/legal/rules-license: 74
+- pack: p/nodejsscan
+  source: https://semgrep.dev/c/p/nodejsscan
+  file: vendor/nodejsscan.yaml
+  sha256: 56d355f1772f430cd303817f1c4e1bae2ea7e307ec7aeaa70de2068f55970bdf
+  rules: 114
+  excluded: 0
+  licenses:
+    LGPL-3.0-or-later: 114
+- pack: p/java
+  source: https://semgrep.dev/c/p/java
+  file: vendor/java.yaml
+  sha256: 3f04d86083f5141c82ef5917d831890afb19bc8983ec9b6faad6b58c29369f07
+  rules: 60
+  excluded: 0
+  licenses:
+    Semgrep Rules License v1.0. For more details, visit semgrep.dev/legal/rules-license: 60
+- pack: p/golang
+  source: https://semgrep.dev/c/p/golang
+  file: vendor/golang.yaml
+  sha256: feecafb684da934833a435e86c32ed476b54191e639f8f95ea020221651af4da
+  rules: 42
+  excluded: 0
+  licenses:
+    Semgrep Rules License v1.0. For more details, visit semgrep.dev/legal/rules-license: 42
+- pack: p/ruby
+  source: https://semgrep.dev/c/p/ruby
+  file: vendor/ruby.yaml
+  sha256: f98739ea76f28c15c8e6c5d11328053727271716d99c8aa54f83b4bc8019f553
+  rules: 45
+  excluded: 0
+  licenses:
+    Semgrep Rules License v1.0. For more details, visit semgrep.dev/legal/rules-license: 45
+- pack: p/php
+  source: https://semgrep.dev/c/p/php
+  file: vendor/php.yaml
+  sha256: a903b36826447102285c465ab32547e0a3d00d2e336b73a4cf359592d11e3c8d
+  rules: 24
+  excluded: 0
+  licenses:
+    Semgrep Rules License v1.0. For more details, visit semgrep.dev/legal/rules-license: 24
+- pack: p/csharp
+  source: https://semgrep.dev/c/p/csharp
+  file: vendor/csharp.yaml
+  sha256: c509c093b6ae6b5c50d31c3748567290ef68b9a417aac191827c403f46ca4893
+  rules: 27
+  excluded: 0
+  licenses:
+    Semgrep Rules License v1.0. For more details, visit semgrep.dev/legal/rules-license: 27
+- pack: p/dockerfile
+  source: https://semgrep.dev/c/p/dockerfile
+  file: vendor/dockerfile.yaml
+  sha256: c74fecda42511f8e05a39327c29a9246faa7b838403dd9e2ea91bf2632581333
+  rules: 7
+  excluded: 0
+  licenses:
+    Semgrep Rules License v1.0. For more details, visit semgrep.dev/legal/rules-license: 7
+- pack: p/terraform
+  source: https://semgrep.dev/c/p/terraform
+  file: vendor/terraform.yaml
+  sha256: 57e3f6788565037f50c5658a7e6b23cb5c135cf5763713cdbdc5ccd53714db96
+  rules: 63
+  excluded: 0
+  licenses:
+    Semgrep Rules License v1.0. For more details, visit semgrep.dev/legal/rules-license: 63

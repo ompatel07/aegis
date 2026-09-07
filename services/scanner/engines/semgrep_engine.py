@@ -10,7 +10,6 @@ capability. Each ships with positive + sanitized-negative tests (`semgrep
 """
 from __future__ import annotations
 
-import datetime
 import hashlib
 import json
 import os
@@ -78,6 +77,27 @@ _QUALITY_RULES_DIR = os.path.join(
 )
 
 
+# Pinned, vendored registry packs (G2). We no longer live-fetch `p/...` on every scan:
+# a live fetch means the registry can change a customer's results between two scans of
+# unchanged code, it makes rule_pack_version unpinnable, and it leaves our licence
+# exposure undocumented. `scripts/vendor_rules.py` pins the packs into rules/vendor/
+# with a manifest recording each pack's sha256 and licence mix.
+_VENDOR_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "rules", "vendor")
+
+
+def _vendored(pack: str) -> str:
+    """Resolve a `p/<pack>` shortcut to its pinned local copy.
+
+    Falls back to the registry shortcut (and says so) if the vendored file is absent,
+    so a partial checkout degrades to the old behaviour rather than losing coverage.
+    """
+    path = os.path.join(_VENDOR_DIR, pack.replace("p/", "").replace("/", "_") + ".yaml")
+    if os.path.isfile(path):
+        return path
+    log.warning("semgrep.vendored_pack_missing", pack=pack, expected=path)
+    return pack
+
+
 def _select_configs(settings: Settings, languages: list[str], project_types: list[str]) -> list[str]:
     """Build the ordered, de-duplicated `--config` list for this scan."""
     configs: list[str] = list(settings.semgrep_base_config_list)
@@ -92,7 +112,7 @@ def _select_configs(settings: Settings, languages: list[str], project_types: lis
         if c not in seen:
             seen.add(c)
             ordered.append(c)
-    return ordered
+    return [_vendored(c) if c.startswith("p/") else c for c in ordered]
 
 
 def _write_project_rules(rules: list[str] | None) -> str | None:
@@ -110,16 +130,70 @@ def _write_project_rules(rules: list[str] | None) -> str | None:
         return None
 
 
+def _rule_content_hash(config: str) -> bytes:
+    """Bytes identifying a single --config entry BY CONTENT, never by path."""
+    h = hashlib.sha256()
+    if os.path.isdir(config):
+        for fn in sorted(os.listdir(config)):
+            if fn.endswith((".yaml", ".yml")):
+                h.update(fn.encode())
+                with open(os.path.join(config, fn), "rb") as fh:
+                    h.update(fh.read())
+    elif os.path.isfile(config):
+        with open(config, "rb") as fh:
+            h.update(fh.read())
+    else:
+        # A registry shortcut we could not vendor: its name is the only identity we have.
+        h.update(config.encode())
+    return h.digest()
+
+
 def _rule_pack_version(configs: list[str], custom_rules: list[str] | None) -> str:
-    """A reproducible id for the rule set used: date + hash of the config set.
-    Recorded on the scan so re-scans can surface rule-pack changes."""
+    """A reproducible id for the rule set actually used.
+
+    Hashes rule CONTENT, never filesystem paths. The previous version hashed the
+    config strings, so the per-scan augmented-taint temp dir — a `mkdtemp` path that
+    differs every run — changed the id between two byte-identical scans (F1 row 1b),
+    making every re-scan look like a rule-pack change. Content hashing also means a
+    silently-updated pack DOES change the id, which is the point of recording it.
+
+    The date component comes from the pinned manifest, not `now()`: a wall-clock date
+    would break reproducibility across midnight for an unchanged rule set.
+    """
     h = hashlib.sha256()
     for c in sorted(configs):
-        h.update(c.encode())
+        h.update(_rule_content_hash(c))
     for r in custom_rules or []:
         h.update(r.encode())
-    date = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d")
-    return f"rp-{date}-{h.hexdigest()[:10]}"
+    return f"rp-{_manifest_pinned_at()}-{h.hexdigest()[:10]}"
+
+
+def _manifest_pinned_at() -> str:
+    """Pin date from the vendored rule manifest; 'unpinned' when it is absent."""
+    path = os.path.join(os.path.dirname(_VENDOR_DIR), "manifest.yaml")
+    try:
+        import yaml
+
+        with open(path, encoding="utf-8") as fh:
+            return str((yaml.safe_load(fh) or {}).get("pinned_at", "unpinned")).replace("-", "")
+    except Exception:  # noqa: BLE001 - the id must never fail a scan
+        return "unpinned"
+
+
+def _canonical_check_id(check_id: str) -> str:
+    """Strip the vendored-path prefix semgrep prepends to locally-loaded rules.
+
+    Loading a pack from a file makes semgrep derive the rule id from that path, so
+    `php.lang.security.exec-use.exec-use` becomes
+    `app.rules.vendor.php.lang.security.exec-use.exec-use`. Left alone, pinning the
+    packs (G2) would silently rewrite every registry rule id — which changes finding
+    fingerprints, so an unchanged codebase would report its entire backlog as NEW and
+    break lifecycle continuity. Normalising here keeps ids identical to the live-fetch
+    form, so the pin is invisible to everything downstream.
+    """
+    marker = "rules.vendor."
+    idx = check_id.find(marker)
+    return check_id[idx + len(marker):] if idx != -1 else check_id
 
 
 def _bundled_rules_dir(path: str) -> str | None:
@@ -302,8 +376,15 @@ def _build_args(settings: Settings, configs: list[str], path: str,
     for f in extra_excludes:
         args += ["--exclude", f]
     # Recall-safe defaults, then the opt-in high-precision profile (Track 2d/2f).
+    # --exclude-rule matches the rule id EXACTLY. Pinned packs load from a file, so
+    # semgrep prefixes their ids with the vendor path (app.rules.vendor.php.lang...),
+    # which silently stopped every exclusion from matching — one suppressed rule came
+    # back on the first pinned scan. Emit both spellings so the list keeps working
+    # whether a pack is vendored or fetched live.
+    _vendor_prefix = _VENDOR_DIR.strip("/\\").replace("\\", ".").replace("/", ".") + "."
     for rule in _DEFAULT_EXCLUDE_RULES + settings.semgrep_exclude_rule_list:
         args += ["--exclude-rule", rule]
+        args += ["--exclude-rule", _vendor_prefix + rule]
     args.append(path)
     return args
 
@@ -525,7 +606,7 @@ def _parse(raw: dict, root: str) -> list[Finding]:
         start = item.get("start", {}) or {}
         end = item.get("end", {}) or {}
 
-        check_id = item.get("check_id", "unknown-rule")
+        check_id = _canonical_check_id(item.get("check_id", "unknown-rule"))
         rule_short = check_id.rsplit(".", 1)[-1]
 
         # Precision: the registry missing-integrity (SRI) rule fires on ANY external

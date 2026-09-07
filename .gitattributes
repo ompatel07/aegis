@@ -1,0 +1,5 @@
+
+# G2: vendored rule packs are hashed byte-for-byte in rules/manifest.yaml.
+# Line-ending translation would invalidate every sha256 on checkout, so pin them to LF.
+services/scanner/rules/vendor/*.yaml -text
+services/scanner/rules/manifest.yaml -text
