@@ -187,13 +187,17 @@ Measured per language:
 | **PHP** | yes | **real** — +31 on DVWA, +14 librenms, +7 FreshRSS | V2 §4 |
 | **JS/TS** | yes | **real** — +55 on juice-shop, +3 NodeGoat (the SSJI) | V2 §4 |
 | **Java** | yes | **inert until T3** — 0 on WebGoat (T2); **+6 after T3** (Spring sources), all TP / 0-FP, +0 on eladmin & booklore after 0-FP triage | T2 (0) → T3 (6) |
-| **Python** | yes (8 `aegis-py-*` rules) | **zero measured** — 0 on redash (all detection was registry) | V2 §4 redash |
+| **Python** | yes — 8 taint rules **+ 4 pattern rules (H1)** | **was zero, now real** — the 8 taint rules still fire 0; the 4 H1 pattern rules give **+13 on redash** (12 SQL-string-construction, 1 TLS-verification-disabled), **+2 on dvpwa**, **+2 on django-nV**. **17 findings, 17 hand-triaged TP, 0 FP** | V2 §4 (0) → **H1 (13 on redash)** |
 | **Ruby** | no pack | zero by design | V2 §4 chatwoot, mastodon |
 | **C#** | no pack | zero by design | V2 §4 jellyfin, nopCommerce |
 
-**The honest position.** On **Ruby, C#, and Python**, our **detection is the Semgrep
-registry** — the custom packs add nothing there (none exist for Ruby/C#; the Python pack
-fired zero on the one Python repo measured). What Aegis adds on those languages is
+**The honest position.** On **Ruby and C#**, our **detection is the Semgrep registry** —
+the custom packs add nothing there (none exist for either). **Python was in that group
+until H1** and no longer is: four pattern rules now produce 13 findings on redash where we
+previously produced zero, all true positives. That is real but partial — it recovers about
+**14 % of the ~95 true positives** G3 measured us losing on Python if the Semgrep-licensed
+rules went away, because the H1 rules are deliberately narrower than the registry's. What
+Aegis adds on the remaining registry-dependent languages is
 **enrichment** — reachability, KEV/EPSS, lifecycle/fingerprint tracking, ownership,
 honest-state surfacing — not extra detection. An unqualified "our rules find more" is
 false for those four; it is true and measured only for PHP and JS/TS, and now — modestly

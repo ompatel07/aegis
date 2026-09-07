@@ -28,7 +28,7 @@ def validate_url(url):
 # ── SQL injection ────────────────────────────────────────────────────────────
 def sqli_bad(cur):
     user_id = request.args.get("id")
-    # ruleid: aegis-py-sql-injection
+    # ruleid: aegis-py-sql-injection, aegis-py-sql-string-construction
     cur.execute("SELECT * FROM users WHERE id = " + user_id)
 
 
@@ -40,7 +40,13 @@ def sqli_ok(cur):
 
 def sqli_ok_cast(cur):
     user_id = int(request.args.get("id"))
+    # The int() cast makes the VALUE safe, so the taint rule correctly stays
+    # quiet. The construct is still string-built SQL, so the H1 construct rule
+    # does fire — deliberately, and consistent with its own message. We do NOT
+    # suppress on a str() operand: str(request.args.get("id")) is a no-op, so
+    # excluding it would create false negatives on genuinely injectable code.
     # ok: aegis-py-sql-injection
+    # ruleid: aegis-py-sql-string-construction
     cur.execute("SELECT * FROM users WHERE id = " + str(user_id))
 
 
@@ -60,13 +66,13 @@ def xss_ok():
 # ── OS command injection ─────────────────────────────────────────────────────
 def cmd_bad_system():
     host = request.args.get("host")
-    # ruleid: aegis-py-command-injection
+    # ruleid: aegis-py-command-injection, aegis-py-shell-command-construction
     os.system("ping -c 1 " + host)
 
 
 def cmd_bad_shell():
     host = request.args.get("host")
-    # ruleid: aegis-py-command-injection
+    # ruleid: aegis-py-command-injection, aegis-py-shell-command-construction
     subprocess.call("nslookup " + host, shell=True)
 
 
@@ -145,3 +151,117 @@ def code_ok():
     expr = request.args.get("expr")
     # ok: aegis-py-code-injection
     return ast.literal_eval(expr)
+
+
+# ══ H1 Python security pack ═════════════════════════════════════════════════
+# Fixtures written for these rules specifically. Shapes are drawn from the code
+# we actually scanned during the H1 0-FP triage (dvpwa, django-nV, redash,
+# requests, flask); nothing here is copied from any other project's test suite.
+import hashlib
+from hashlib import md5, sha1
+
+
+# ── SQL assembled by string formatting (B608 behaviour) ─────────────────────
+def sql_fmt_inline_bad(cur, name):
+    # ruleid: aegis-py-sql-string-construction
+    cur.execute("insert into files ('name') values ('%s')" % name)
+
+
+def sql_fstring_bad(con, extension):
+    # ruleid: aegis-py-sql-string-construction
+    con.execute(f'CREATE EXTENSION IF NOT EXISTS "{extension}"')
+
+
+def sql_assign_then_execute_bad(cur, student):
+    # ruleid: aegis-py-sql-string-construction
+    q = "INSERT INTO students (name) VALUES ('%(name)s')" % {"name": student}
+    cur.execute(q)
+
+
+def sql_bind_params_ok(cur, name):
+    # the correct form: the value travels as a bound parameter, never as syntax
+    # ok: aegis-py-sql-string-construction
+    cur.execute("insert into files (name) values (%s)", (name,))
+
+
+def sql_static_ok(cur):
+    # ok: aegis-py-sql-string-construction
+    cur.execute("SELECT id, name FROM students")
+
+
+def sql_not_actually_sql_ok(n):
+    # a log line that merely contains a SQL-ish word must not match: the rule
+    # requires real statement structure (verb plus its clause)
+    # ok: aegis-py-sql-string-construction
+    msg = "update finished for %s records" % n
+    return msg
+
+
+# ── OS command assembled for a shell (B602/B605 behaviour) ──────────────────
+def shell_concat_bad(src, dst):
+    # ruleid: aegis-py-shell-command-construction
+    os.system("mv " + src + " " + dst)
+
+
+def shell_fstring_bad(host):
+    # ruleid: aegis-py-shell-command-construction
+    subprocess.call(f"ping -c 1 {host}", shell=True)
+
+
+def shell_argv_ok(src, dst):
+    # no shell, and the values are argv entries — they cannot become syntax
+    # ok: aegis-py-shell-command-construction
+    subprocess.run(["mv", src, dst])
+
+
+def shell_constant_ok():
+    # a fixed command has no injection point
+    # ok: aegis-py-shell-command-construction
+    os.system("systemctl restart nginx")
+
+
+# ── Weak hash over a credential (B303/B324 behaviour, credential-scoped) ────
+def weak_hash_password_bad(password, stored):
+    # ruleid: aegis-py-weak-hash-credential
+    return stored == md5(password.encode("utf-8")).hexdigest()
+
+
+def weak_hash_secret_bad(api_secret):
+    # ruleid: aegis-py-weak-hash-credential
+    return hashlib.sha1(api_secret).hexdigest()
+
+
+def weak_hash_cache_key_ok(url):
+    # MD5 over a cache key is not a credential problem and must stay silent —
+    # this is the distinction the rule exists to make
+    # ok: aegis-py-weak-hash-credential
+    return hashlib.md5(url.encode("utf-8")).hexdigest()
+
+
+def weak_hash_declared_nonsecurity_ok(password):
+    # an explicit non-security declaration is respected
+    # ok: aegis-py-weak-hash-credential
+    return hashlib.md5(password, usedforsecurity=False).hexdigest()
+
+
+def strong_hash_password_ok(password, salt):
+    # ok: aegis-py-weak-hash-credential
+    return hashlib.scrypt(password.encode("utf-8"), salt=salt, n=16384, r=8, p=1)
+
+
+# ── TLS verification disabled (B501 behaviour) ──────────────────────────────
+def tls_off_bad(url, payload, auth):
+    # ruleid: aegis-py-tls-verification-disabled
+    return requests.post(url, payload, auth=auth, verify=False)
+
+
+def tls_default_ok(url, payload):
+    # ok: aegis-py-tls-verification-disabled
+    return requests.post(url, payload)
+
+
+def tls_private_ca_ok(url):
+    # a private CA is configured by pointing verify at its bundle, not by
+    # switching verification off
+    # ok: aegis-py-tls-verification-disabled
+    return requests.get(url, verify="/etc/ssl/certs/internal-ca.pem")
