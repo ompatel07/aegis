@@ -136,3 +136,43 @@ for p in ["p/owasp-top-ten","p/r2c-security-audit","p/default","p/secrets","p/su
     print(p, len(doc["rules"]), dict(lic))
 PY
 ```
+
+---
+
+## UPDATE — Pass G2 (2026-09-07): the picture has changed materially
+
+Three facts in this document were superseded by G2 (`docs/RULE_SOVEREIGNTY_G2.md`). The licence
+*question* is unchanged and still for counsel; the *exposure* is now smaller and measurable.
+
+**1. We no longer live-fetch. The rules are pinned and vendored.**
+`scripts/vendor_rules.py` pins all 17 packs into `services/scanner/rules/vendor/` with a manifest
+recording each pack's sha256, rule count and licence histogram. Question 2 below ("does fetching at
+scan time rather than redistributing change the analysis?") now has a concrete answer for counsel to
+work from: **we hold a pinned local copy**, refreshed monthly under review. That is a different — and
+more clearly bounded — posture than an unreviewed per-scan download, and counsel should be told
+which one they are advising on.
+
+**2. The 18 AGPL-3.0 rules are gone.**
+Question 3 asked what obligations they create *given we cannot exclude them via the `p/` shortcut*.
+Vendoring removed that constraint: they are dropped at pin time
+(`EXCLUDE_PREFIXES = ("trailofbits.",)`), taking `p/default` from 1,074 to 1,056 rules. **The
+question is now moot** unless we choose to re-include them.
+
+**3. Two counts, both true — use the right one.**
+This document counts **per-pack rule instances** (2,677 under the Semgrep licence), which is what the
+manifest ships. G2's index counts **distinct rule ids** (1,142 under the Semgrep licence), because
+packs overlap heavily — `p/default` re-includes much of `p/owasp-top-ten`. For "how many distinct
+rules do we depend on", the distinct number is the honest one.
+
+**4. What our findings actually depend on** (G2 Part A, 1,810 findings across V2 + F1):
+**83.5 %** come from Semgrep-licensed rules — but **ground-truth recall is identical without them**
+(NodeGoat 6/7, DVWA 3/6, WebGoat 6/6 in both configurations). They supply breadth and volume, not
+the documented-vulnerability detection our recall claims rest on. That distinction matters
+commercially and should be stated to counsel alongside the percentage.
+
+**5. Opengrep does not change the picture — now confirmed, not assumed.**
+The open item above ("we did not evaluate any Opengrep-native rule set") is closed: the
+`opengrep/opengrep-rules` repository is **archived with 6 stars**. There is no alternative ecosystem
+there. Separately, **Brakeman — the obvious open-source answer for Ruby, our single largest exposure
+at 45 % of all findings — is published under the Brakeman Public Use License (Synopsys, Inc.), which
+states that commercial use requires a paid licence.** It is not an escape route.
