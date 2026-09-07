@@ -190,14 +190,27 @@ Measured per language:
 | **Python** | yes — 8 taint rules **+ 4 pattern rules (H1)** | **was zero, now real** — the 8 taint rules still fire 0; the 4 H1 pattern rules give **+13 on redash** (12 SQL-string-construction, 1 TLS-verification-disabled), **+2 on dvpwa**, **+2 on django-nV**. **17 findings, 17 hand-triaged TP, 0 FP** | V2 §4 (0) → **H1 (13 on redash)** |
 | **Ruby** | no pack | zero by design | V2 §4 chatwoot, mastodon |
 | **C#** | no pack | zero by design | V2 §4 jellyfin, nopCommerce |
+| **(none — language-independent)** | yes — 3 `aegis-cicd-*` pattern rules (H2) | **real, and orthogonal to language** — **32 findings across 6 of the 11 corpus repos**, 32 hand-triaged TP / **0 FP**: 31 third-party actions on movable refs, 1 `curl \| sh` (plus 2 on this repository, both since fixed). Fires on Ruby (chatwoot), C# (jellyfin corpus), Java (petclinic, WebGoat), PHP (DVWA), JS/TS (juice-shop) and Python (redash) repos alike — including the two languages where we otherwise add **nothing** | H2 |
 
-**The honest position.** On **Ruby and C#**, our **detection is the Semgrep registry** —
-the custom packs add nothing there (none exist for either). **Python was in that group
-until H1** and no longer is: four pattern rules now produce 13 findings on redash where we
-previously produced zero, all true positives. That is real but partial — it recovers about
-**14 % of the ~95 true positives** G3 measured us losing on Python if the Semgrep-licensed
-rules went away, because the H1 rules are deliberately narrower than the registry's. What
-Aegis adds on the remaining registry-dependent languages is
+**The last row does not have a language, and that is the point.** Every other row in this
+table answers "what do our rules add *for a repo written in X*". The `aegis-cicd-*` pack
+answers a different question, so it does not fit the shape: it reads the **pipeline
+definition**, which is YAML in every repository regardless of what the application is
+written in. It is therefore the only detection we own that yields on **Ruby and C#** repos
+— the two languages where the row above it reads "zero by design" — and it is the only row
+whose coverage does not decay as a customer's language mix moves away from PHP and JS/TS.
+It is also narrower than it looks: it covers **GitHub Actions only**, because Trivy already
+covers Dockerfile, Terraform and Kubernetes (measured: 7 + 82 findings on juice-shop, and
+**0** targeting `.github/workflows`), and duplicating Trivy would be worse than a gap.
+
+**The honest position.** On **Ruby and C#**, our **language-specific detection is the
+Semgrep registry** — the custom taint packs add nothing there (none exist for either), and
+what we now add on those repos is the CI/CD pack, not application-code analysis. **Python
+was in that group until H1** and no longer is: four pattern rules now produce 13 findings
+on redash where we previously produced zero, all true positives. That is real but partial —
+it recovers about **17 % of the ~76 true positives** G3 measured us losing on Python if the
+Semgrep-licensed rules went away, because the H1 rules are deliberately narrower than the
+registry's. What Aegis adds on the remaining registry-dependent languages is
 **enrichment** — reachability, KEV/EPSS, lifecycle/fingerprint tracking, ownership,
 honest-state surfacing — not extra detection. An unqualified "our rules find more" is
 false for those four; it is true and measured only for PHP and JS/TS, and now — modestly

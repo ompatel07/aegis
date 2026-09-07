@@ -68,6 +68,15 @@ _IAC_RULES_DIR = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "rules", "iac"
 )
 
+# Aegis CI/CD supply-chain rules (H2): aegis-cicd-* patterns over GitHub Actions
+# workflow definitions. Always-on and language-independent -- the pipeline is the
+# one surface every repo has regardless of what it is written in. Path-scoped to
+# .github/workflows so they never fire on ordinary YAML, and deliberately scoped
+# away from Dockerfile/Terraform/Kubernetes, which Trivy already covers.
+_CICD_RULES_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "rules", "cicd"
+)
+
 # Aegis reliability-bug rules (Q1): aegis-bug-* patterns that assert "your code is
 # wrong" on a real grammar. They carry metadata.pillar=quality so _parse routes
 # them to the QUALITY pillar (not security), where the enricher tags them
@@ -422,9 +431,11 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
         registry_configs = registry_configs + [project_rules_dir]
 
     iac_dir = _bundled_rules_dir(_IAC_RULES_DIR)
+    cicd_dir = _bundled_rules_dir(_CICD_RULES_DIR)
     quality_dir = _bundled_rules_dir(_QUALITY_RULES_DIR)
     bundled = (([custom_dir] if custom_dir else [])
-               + ([iac_dir] if iac_dir else []) + ([quality_dir] if quality_dir else []))
+               + ([iac_dir] if iac_dir else []) + ([cicd_dir] if cicd_dir else [])
+               + ([quality_dir] if quality_dir else []))
     configs = registry_configs + bundled
     rule_pack_version = _rule_pack_version(configs, req.custom_rules)
 

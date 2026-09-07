@@ -1,0 +1,143 @@
+# Fixtures for the aegis-cicd-* pack. This file lives under a .github/workflows
+# path because every rule in the pack is path-scoped to one — a fixture stored
+# anywhere else would silently match nothing and the test would pass vacuously.
+#
+# Shapes here are written for these rules. The negative cases are the ones that
+# matter: they encode the distinctions the H2 triage established, where the
+# registry rules we are replacing reported findings that were not real.
+name: aegis-cicd fixtures
+
+on:
+  pull_request_target:
+    types: [opened, edited]
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      version:
+        type: string
+
+jobs:
+  script-injection:
+    runs-on: ubuntu-latest
+    steps:
+      # Free text, settable by any GitHub user, expanded into the script body.
+      - name: pr title into a shell
+        # ruleid: aegis-cicd-workflow-script-injection
+        run: echo "Reviewing ${{ github.event.pull_request.title }}"
+
+      - name: branch name into a shell
+        # ruleid: aegis-cicd-workflow-script-injection
+        run: |
+          slug=$(echo ${{ github.head_ref }} | tr '/' '-')
+          docker build -t "app:$slug" .
+
+      - name: comment body into a shell
+        # ruleid: aegis-cicd-workflow-script-injection
+        run: ./scripts/triage.sh "${{ github.event.comment.body }}"
+
+      - name: commit message into a shell
+        # ruleid: aegis-cicd-workflow-script-injection
+        run: echo "${{ github.event.head_commit.message }}" >> changelog.md
+
+      # ── negatives ───────────────────────────────────────────────────────────
+      # The fix: the value arrives as an environment variable, so the shell
+      # receives it as data and never parses it as syntax.
+      - name: bound to env is the correct form
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        # ok: aegis-cicd-workflow-script-injection
+        run: echo "Reviewing $TITLE"
+
+      # Structurally constrained fields cannot carry shell syntax. GitHub
+      # guarantees these shapes, so flagging them is a false positive — this is
+      # the distinction that separated 0 real findings from 17 reported ones.
+      - name: a PR number is an integer
+        # ok: aegis-cicd-workflow-script-injection
+        run: gh pr view ${{ github.event.pull_request.number }}
+
+      - name: a head sha is hex
+        # ok: aegis-cicd-workflow-script-injection
+        run: git checkout ${{ github.event.pull_request.head.sha }}
+
+      - name: a server-generated API url
+        # ok: aegis-cicd-workflow-script-injection
+        run: curl -s "${{ github.event.issue.comments_url }}" > comments.json
+
+      # Untrusted text used outside a run: block is not script injection. It may
+      # be a different problem (cache poisoning), but it is not this one.
+      - name: head_ref in a cache key, not a script
+        uses: actions/cache@v4
+        with:
+          path: tmp/cache
+          # ok: aegis-cicd-workflow-script-injection
+          key: assets-${{ github.head_ref }}
+
+  remote-script:
+    runs-on: ubuntu-latest
+    steps:
+      - name: piped straight to a shell
+        # ruleid: aegis-cicd-curl-pipe-shell
+        run: curl https://example.test/install.sh | sh
+
+      - name: piped to bash under sudo
+        # ruleid: aegis-cicd-curl-pipe-shell
+        run: wget -qO- https://example.test/setup | sudo bash
+
+      # ── negatives ───────────────────────────────────────────────────────────
+      # Downloaded, verified against a known digest, and only then executed.
+      - name: download then verify then run
+        # ok: aegis-cicd-curl-pipe-shell
+        run: |
+          curl -fsSL -o install.sh https://example.test/install.sh
+          echo "9f2c...e1  install.sh" | sha256sum -c -
+          sh install.sh
+
+      # A pipeline that ends in a text tool is not code execution.
+      - name: curl piped to a parser
+        # ok: aegis-cicd-curl-pipe-shell
+        run: curl -s https://example.test/api | jq -r '.version'
+
+  action-refs:
+    runs-on: ubuntu-latest
+    steps:
+      # Third party, movable ref: the owner can repoint this at any time.
+      - name: third-party major tag
+        # ruleid: aegis-cicd-action-unpinned-ref
+        uses: example-org/setup-tool@v4
+
+      - name: third-party branch
+        # ruleid: aegis-cicd-action-unpinned-ref
+        uses: example-org/deploy-action@main
+
+      - name: third-party exact version tag is still a movable pointer
+        # ruleid: aegis-cicd-action-unpinned-ref
+        uses: example-org/release-action@1.2.3
+
+      # ── negatives ───────────────────────────────────────────────────────────
+      # The fix: an immutable commit SHA, with the human-readable version kept
+      # in a comment so upgrades remain reviewable.
+      - name: pinned to a full commit sha
+        # ok: aegis-cicd-action-unpinned-ref
+        uses: example-org/setup-tool@0273be72a0bbd58fcd71d0d6c02c209b50d1e5e1 # v4.1.2
+
+      # First-party publishers are out of scope by decision, not by oversight —
+      # see the rule comment. A repo named actions-something is NOT first party
+      # and must still be reported.
+      - name: first-party is excluded
+        # ok: aegis-cicd-action-unpinned-ref
+        uses: actions/checkout@v4
+
+      - name: an org that merely starts with the same letters is not first party
+        # ruleid: aegis-cicd-action-unpinned-ref
+        uses: actions-rs/toolchain@v1
+
+      # A local action is our own code in our own repo — there is no third-party
+      # ref to pin.
+      - name: local composite action
+        # ok: aegis-cicd-action-unpinned-ref
+        uses: ./.github/actions/setup
+
+      - name: reusable workflow in this repo
+        # ok: aegis-cicd-action-unpinned-ref
+        uses: ./.github/workflows/build.yml
