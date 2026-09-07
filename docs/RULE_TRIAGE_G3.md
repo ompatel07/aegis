@@ -7,7 +7,7 @@ G2 showed that stripping every Semgrep-licensed rule leaves ground-truth recall 
 as stated.** The documented lists are narrow — 7, 6 and 6 vulnerabilities — so "no documented vuln
 lost" says nothing about the 1,387 findings that vanish. This pass triages them.
 
-**Headline: the dropped findings are ~61 % true positives, but only ~32 % are exploitable
+**Headline: the dropped findings are ~55 % true positives, but only ~23 % are exploitable
 vulnerabilities, and the value is distributed almost inversely to the volume.**
 
 ---
@@ -50,20 +50,20 @@ locally; `—` elsewhere.
 | 18 | PHP | `eval-detected` | librenms `overlib_mini.js:165` | **FP** | — | — | H | Same vendored library |
 | 19 | PHP | `dependabot-missing-cooldown` | FreshRSS `.github/dependabot.yml:22` | **FP** | — | — | H | A dependabot config preference, not a security finding |
 | 20 | JS/TS | `express-sequelize-injection` | juice-shop `routes/search.ts:23` | **TP** | **vuln** | yes | H | **Verified**: repo's own `vuln-code-snippet vuln-line` annotation. Covered by our rules |
-| 21 | JS/TS | `run-shell-injection` | juice-shop `update-challenges-www.yml:27` | **TP** | **vuln** | — | H | `${{ github.ref_name }}` into a `run:` block = GHA script injection |
+| 21 | JS/TS | `run-shell-injection` | juice-shop `update-challenges-www.yml:27` | **TP** ¹ | advisory | — | H | `${{ github.ref_name }}` into a `run:` block. Real construct, but on this trigger `ref_name` is a tag or branch in the repo itself — it takes write access to set, so it is hardening, not an outsider-exploitable bug. Downgraded 2026-09-08 |
 | 22 | JS/TS | `code-string-concat` | NodeGoat `contributions.js:32` | **TP** | **vuln** | yes | H | Documented SSJI. Covered by `aegis-js-code-injection` |
 | 23 | JS/TS | `gha-curl-pipe-shell` | juice-shop `ci.yml:359` | **TP** | advisory | — | H | `curl \| sh` in CI — supply-chain exposure |
 | 24 | JS/TS | `remote-property-injection` | juice-shop `routes/currentUser.ts:31` | **TP** | **vuln** | **no** | M | `baseUser[field]` with request-controlled `field`. **Genuinely lost** |
 | 25 | JS/TS | `code-string-concat` | NodeGoat `contributions.js:33` | **TP** | **vuln** | yes | H | Same SSJI, adjacent line. Covered |
 | 26 | JS/TS | `plaintext-http-link` | NodeGoat `tutorial/a2.html:209` | **FP** | — | — | H | An `http://` hyperlink inside a tutorial page |
 | 27 | JS/TS | `github-actions-mutable-action-tag` | NodeGoat `lint.yml:16` | **TP** | advisory | — | H | `actions/checkout@v2` unpinned — supply-chain hygiene |
-| 28 | Python | `run-shell-injection` | redash `preview-image.yml:136` | **TP** | **vuln** | — | H | `github.event.inputs` interpolated into a `run:` block |
+| 28 | Python | `run-shell-injection` | redash `preview-image.yml:136` | **TP** ¹ | advisory | — | H | `github.event.inputs.dockerRepository` interpolated into a `run:` block. The input is a `workflow_dispatch` `choice` restricted to `preview`/`redash`, and dispatching needs write access. Downgraded 2026-09-08 |
 | 29 | Python | `run-shell-injection` | redash `periodic-snapshot.yml:33` | **TP** | advisory | — | M | Uses secrets + git config; injection path less clear |
-| 30 | Python | `nan-injection` | redash `authentication/__init__.py:81` | **TP** | **vuln** | — | H | `float(request.args['expires'])` accepts `"nan"`; NaN comparisons are always False → **expiry check bypass** |
+| 30 | Python | `nan-injection` | redash `authentication/__init__.py:81` | **FP** ¹ | — | — | H | `float(request.args['expires'])` does accept `"nan"`, but the guard is `time.time() < expires <= time.time()+3600`. Every NaN comparison is False, so the check fails **closed** — the request is rejected, not admitted. Corrected 2026-09-08; see note below |
 | 31 | Python | `sqlalchemy-execute-raw-query` | redash `snowflake.py:170` | **TP** | **vuln** | — | M | `"USE {}".format(config['database'])` — data-source config is admin-supplied |
 | 32 | Python | `python-logger-credential-disclosure` | redash `authentication.py:38` | **FP** | — | — | M | Logs user_id/org identifiers, not credentials |
 | 33 | Python | `formatted-sql-query` | redash `cli/database.py:43` | **TP** | advisory | — | M | f-string `CREATE EXTENSION` from settings; CLI + admin-controlled |
-| 34 | C# | `run-shell-injection` | jellyfin `ci-compat.yml:57` | **TP** | **vuln** | — | H | `${{ github.head_ref }}` — PR branch names are attacker-controlled |
+| 34 | C# | `run-shell-injection` | jellyfin `ci-compat.yml:57` | **FP** ¹ | — | — | H | PR branch names *are* attacker-controlled, but this workflow already binds `${{ github.head_ref }}` to `env: HEAD_REF` and the script uses `$HEAD_REF` — the exact remediation our own rule recommends. The expressions actually inside the `run:` block are `base.repo.full_name` and `base_ref`. Corrected 2026-09-08 |
 | 35 | C# | `detected-generic-api-key` | jellyfin `TmdbUtils.cs:34` | **TP** | **vuln** | — | H | Hardcoded TMDB API key as a public `const` in source |
 | 36 | C# | `csharp-sqli` | jellyfin `SqliteExtensions.cs:267` | **UNC** | — | — | M | `command.CommandText = sql` in a generic helper; verdict depends on callers. Repo not held locally |
 | 37 | C# | `unsafe-path-combine` | jellyfin `PluginManager.cs:377` | **UNC** | — | — | M | `Path.Combine` on a plugin path; depends on manifest trust. Repo not held locally |
@@ -71,17 +71,50 @@ locally; `—` elsewhere.
 | 39 | Java | `run-as-non-root` | petclinic `k8s/petclinic.yml:30` | **TP** | advisory | no | H | K8s container without `runAsNonRoot` |
 | 40 | Java | `no-sudo-in-dockerfile` | petclinic `.devcontainer/Dockerfile:10` | **TP** | advisory | no | M | `sudo` in a Dockerfile; devcontainer only, not shipped |
 
+> ¹ **Corrections, 2026-09-08.** Four rows were revised after later passes re-read the code they
+> refer to. Writing our own rules for the same classes is what exposed them: a rule forces you to
+> state the exploit condition precisely, and three of these did not survive that.
+>
+> * **Item 30** (H1, Python rules) — published as an exploitable vulnerability. Wrong: NaN makes the
+>   bounds check **fail closed**, denying a valid token rather than admitting an invalid one.
+> * **Item 34** (H2, CI/CD rules) — published as an exploitable vulnerability. Wrong: jellyfin
+>   already binds `${{ github.head_ref }}` to `env:` and uses `$HEAD_REF` in the script, which is
+>   precisely the remediation. The rule fired on hardened code.
+> * **Items 21 and 28** (H2) — still true positives, but downgraded from *vuln* to *advisory*:
+>   both interpolate a value that takes **write access** to set (a tag name; a `choice`-constrained
+>   `workflow_dispatch` input), so neither is exploitable by an outsider.
+>
+> | figure | as first published | corrected |
+> |---|--:|--:|
+> | TP | 23 / 40 | **21 / 40** |
+> | FP | 15 / 40 | **17 / 40** |
+> | TP rate (excl. uncertain) | 61 % | **55 %** |
+> | Exploitable-vulnerability rate | 32 % | **23 %** |
+> | Extrapolated true findings lost | ~840 | **~767** |
+> | Extrapolated vulnerabilities lost | ~451 | **~312** |
+>
+> Every figure these rows feed has been restated in place — the per-language table, the executive
+> paragraph and the gate — rather than corrected only in the later document, so no stale number is
+> left standing in the report that carries the licensing argument.
+>
+> The direction of the conclusion is unchanged, and moves *against* our own convenience in one
+> sense and for it in another: the Semgrep-licensed rules lose less value than we credited them
+> with (~312 rather than ~451 real vulnerabilities), because a meaningful share of what looked like
+> critical CI/CD findings turned out to be hardened code or write-access-gated hygiene. H2 §2
+> records the same result measured directly: of the four *critical* CI/CD rule families in the loss
+> set, two produced no true positive at that severity anywhere in an 11-repository corpus.
+
 ### Rates
 
 | metric | value |
 |---|--:|
-| **TP** | **23 / 40 (58 %)** — 13 vuln + 10 advisory |
-| **FP** | 15 / 40 (38 %) |
+| **TP** | **21 / 40 (53 %)** — 9 vuln + 12 advisory |
+| **FP** | 17 / 40 (43 %) |
 | **UNC** | 2 / 40 (5 %) |
-| **TP rate** (excluding uncertain) | **61 %** |
-| **Exploitable-vulnerability rate** | **32 %** (13/40) |
+| **TP rate** (excluding uncertain) | **55 %** |
+| **Exploitable-vulnerability rate** | **23 %** (9/40) |
 
-**Of the 13 sampled exploitable vulnerabilities, 4 are still caught by a surviving rule of ours**
+**Of the 9 sampled exploitable vulnerabilities, 4 are still caught by a surviving rule of ours**
 (DVWA cmdi, juice-shop SQLi, NodeGoat SSJI ×2). Only **3 were confirmed genuinely lost** with no
 surviving coverage — DVWA `bac` SQLi, juice-shop property injection, petclinic actuator exposure.
 The rest sit in repos not held locally, so overlap could not be checked.
@@ -125,11 +158,11 @@ Extrapolating each language's sampled TP and vuln rate to its full lost volume:
 |---|--:|--:|--:|--:|--:|--:|---|---|
 | **Ruby** | **785** | 10 | **20 %** | **0 %** | ~157 | **~0** | none | Mostly *not worth replacing*. Dominated by one obsolete rule (`attr_accessible`, removed in Rails 4) and `check-unscoped-find` (148). Real Rails taint (mass assignment, `html_safe`, unscoped find with genuine IDOR) would be new work with **no usable prior art** — Brakeman is commercially restricted (G2 Part D) |
 | **PHP** | 357 | 9 | 44 % | 22 % | ~159 | ~79 | `aegis-php-*` (15.6 % of PHP findings) | Extend the existing pack: file ops, deserialisation, LDAP, header injection. `exec-use`/`unlink-use` are advisory-grade and cheap to reproduce |
-| **JS/TS** | 106 | 8 | **88 %** | **62 %** | ~93 | ~66 | strongest (ours + LGPL njsscan) | Highest precision of any language. Specific gaps: sequelize/ORM injection, remote property injection, GHA injection |
-| **Python** | 114 | 6 | **83 %** | 50 % | ~95 | ~57 | **none** | **Best value-per-effort.** High TP rate, zero coverage of our own, and Bandit (Apache-2.0) is a legally clean specification to reimplement. Notable classes: NaN injection, raw SQLAlchemy execute, f-string SQL |
+| **JS/TS** | 106 | 8 | **88 %** | 50 % | ~93 | ~53 | strongest (ours + LGPL njsscan) | Highest precision of any language. Specific gaps: sequelize/ORM injection, remote property injection, GHA injection |
+| **Python** | 114 | 6 | 67 % | 17 % | ~76 | ~19 | **none** | **Best value-per-effort.** High TP rate, zero coverage of our own, and Bandit (Apache-2.0) is a legally clean specification to reimplement. Notable classes: raw SQLAlchemy execute, f-string SQL, shell-built commands (NaN injection was withdrawn on re-triage — see note in §1) |
 | **Java** | 16 | 3 | 100 % | 33 % | ~16 | ~5 | `aegis-java-*` (T3) | Small observed volume, but Spring misconfiguration (actuator exposure) is a class our taint pack does not cover at all |
-| **C#** | 9 | 4 | 100 %* | 50 % | ~9 | ~4 | none | *2 of 4 undecidable. Lowest volume; revisit if a C# customer appears |
-| **TOTAL** | **1,387** | 40 | 61 % | 32 % | **~840** | **~451** | | |
+| **C#** | 9 | 4 | 50 %* | 25 % | ~5 | ~2 | none | *2 of 4 undecidable. Lowest volume; revisit if a C# customer appears |
+| **TOTAL** | **1,387** | 40 | 55 % | 23 % | **~767** | **~312** | | |
 
 > **Read the estimates as order-of-magnitude, not precision.** Per-language samples are 3–10 items;
 > Java (n=3) and C# (n=4) cannot support a percentage. Ruby's "~0 vulns" means *none observed in 10*,
@@ -161,13 +194,13 @@ volume — was mis-ranked by exactly this bias. Corrected below.
 
 | G2 rank | **G3 rank** | language | why it moved |
 |:--:|:--:|---|---|
-| 2 | **1** | **Python** | 83 % TP, ~57 est. vulns, **zero** coverage of our own, and Bandit is a free legal specification. Best value-per-effort |
-| 6 | **2** | **JS/TS** | Highest precision (88 %) and 62 % vuln rate. We are strongest here, but the residual gaps are real vulnerabilities, not noise |
+| 2 | **1** | **Python** | 67 % TP, ~19 est. vulns after the item-30 correction, **zero** coverage of our own, and Bandit is a free legal specification. Still first on value-per-effort — the estimate fell but the cost of entry is the lowest of any language. **Delivered in H1** (4 rules) |
+| 6 | **2** | **JS/TS** | Highest precision (88 %) and a 50 % vuln rate. We are strongest here, but the residual gaps are real vulnerabilities, not noise |
 | 4 | **3** | **PHP** | Largest *real* TP volume after Ruby's discount (~159), and we already have a pack to extend |
 | 1 | **4** | **Java** | 100 % TP but only 16 observed findings. Pack exists; Spring misconfiguration is a genuine uncovered class. Market importance keeps it here |
 | 5 | **5** | **C#** | Unchanged — lowest volume, half the sample undecidable |
 | 3 | **6** | **Ruby** | **Biggest drop.** 57 % of lost volume but 20 % TP and no exploitable vulns observed; dominated by an obsolete rule. Replacing it would largely reproduce noise, and Brakeman is unusable |
-| — | **cross-cutting** | **CI/CD + container rules** | **New entry, arguably first.** 9 TP / 0 FP in the sample, fires in all six languages, ~200+ findings. Language-independent and cheap |
+| — | **cross-cutting** | **CI/CD + container rules** | **New entry.** Restated 2026-09-08: 9 TP / **2** FP in the sample, and **all nine true positives are advisory-grade — none is an exploitable vulnerability**. Still worth doing because it is language-independent and cheap, but not "arguably first": H2 measured the critical end of this family directly and found two of its four rule families produce no true positive at that severity across 11 repositories. **Delivered in H2** (3 rules) |
 
 ---
 
@@ -179,14 +212,14 @@ volume — was mis-ranked by exactly this bias. Corrected below.
 > currently detect** on our ground-truth corpora — removing all 2,677 Semgrep-licensed rules changes
 > ground-truth recall not at all (NodeGoat 6/7, DVWA 3/6, WebGoat 6/6 either way). What those rules
 > supply is **breadth**: 1,387 additional findings across a 15-repository corpus, of which hand-triage
-> of a 40-item weighted sample indicates roughly **61 % are true positives and roughly 32 % are
-> exploitable vulnerabilities** — an estimated ~840 true findings and ~451 real vulnerabilities we
+> of a 40-item weighted sample indicates roughly **55 % are true positives and roughly 23 % are
+> exploitable vulnerabilities** — an estimated ~767 true findings and ~312 real vulnerabilities we
 > would no longer report. That loss is real and would be visible to customers, but it is **not
 > evenly distributed and not what our detection claims rest on**: the largest single block (Ruby,
 > 57 % of the total) triaged at only 20 % true-positive with no exploitable vulnerabilities observed
 > and is dominated by a rule that checks for an API Rails removed in 2013, while a meaningful share
 > of the genuine vulnerabilities in the remainder are **already caught by our own rules at the same
-> code location** (4 of the 13 sampled vulnerabilities). Our honest position is therefore that these
+> code location** (4 of the 9 sampled vulnerabilities). Our honest position is therefore that these
 > rules currently provide substantial *coverage breadth and report completeness* that we would need
 > months of rule-writing to reproduce, that we could continue to detect the vulnerability classes we
 > today claim and demonstrate without them, and that we have not yet written our own rules for
@@ -198,8 +231,8 @@ volume — was mis-ranked by exactly this bias. Corrected below.
 
 | requirement | status |
 |---|---|
-| 40-item triage table with confidences | ✅ above — 23 TP / 15 FP / 2 UNC, each with basis and confidence |
-| TP rate reported | ✅ 61 % (excl. uncertain); 32 % exploitable-vulnerability rate |
+| 40-item triage table with confidences | ✅ above — 21 TP / 17 FP / 2 UNC, each with basis and confidence (items 21/28/30/34 corrected 2026-09-08) |
+| TP rate reported | ✅ 55 % (excl. uncertain); 23 % exploitable-vulnerability rate |
 | per-pack TP rates | ✅ `p/default` = 73 % of losses at 56 % TP; small language packs high-precision/low-volume |
 | re-ranked replacement roadmap | ✅ Ruby 3 → 6; Python → 1; CI/CD rules added as a cross-cutting entry |
 | corpus-weighting sanity check | ✅ Ruby = 57 % of losses from 2/15 repos, 339k LOC — composition, not market importance |
