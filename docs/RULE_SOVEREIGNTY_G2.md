@@ -224,3 +224,27 @@ Pinned vendored packs vs the live-fetch baseline, plus `rule_pack_version` stabi
 Pinning is behaviour-identical to live fetch — *after* the two regressions above were fixed. Ids
 differ per repo because different language packs load, which is the field working as intended;
 dvpwa and django-nV share an id because both resolve to the same Python + IaC pack set.
+
+---
+
+## UPDATE — Pass G3 (2026-09-07): the dropped findings were triaged, and Part C is re-ranked
+
+G2's headline ("strip the Semgrep-licensed rules and ground-truth recall is unchanged") was true but
+**not usable as stated** — the documented lists are only 7/6/6 vulnerabilities, so they could not
+establish that the 1,387 dropped findings were worthless. `docs/RULE_TRIAGE_G3.md` hand-triaged a
+40-item weighted sample:
+
+- **61 % true positives, 32 % exploitable vulnerabilities.** Extrapolated: ~840 real findings and
+  ~451 real vulnerabilities lost across the corpus. That is a genuine loss, and G2's framing
+  understated it.
+- **But 4 of the 13 sampled vulnerabilities are already caught by our own rules at the same
+  location**, so "finding lost" over-counts "vulnerability lost".
+- **`p/default` alone is 73 % of the loss** at a 56 % TP rate — the one pack that matters.
+
+**Part C's ranking above is superseded.** It ranked Ruby third largely on volume; G3 shows Ruby is
+57 % of the lost findings from just **2 of 15 repos** (339k LOC of Rails), triages at only **20 % TP
+with no exploitable vulnerabilities observed**, and is dominated by `model-attributes-attr-accessible`
+— a rule checking for an API **Rails removed in 2013**. Ruby drops to last. Python rises to first
+(83 % TP, zero coverage of our own, and Bandit is a free legal specification). A new cross-cutting
+entry — **CI/CD and container rules**, 9 TP / 0 FP in the sample and firing in all six languages —
+arguably outranks every per-language item. See G3 §3–4 for the corrected table.
