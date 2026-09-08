@@ -24,6 +24,12 @@ class ComplianceRequest(BaseModel):
     framework: str
     scan_meta: dict = {}
     findings: list[dict] = []
+    # J3: findings that were open and are now proven fixed by a later scan. These
+    # are evidence FOR a control and never count against it.
+    remediated: list[dict] = []
+    # False when the lifecycle store could not be read, so an empty list is
+    # rendered as "history unavailable" rather than "nothing was ever fixed".
+    remediation_available: bool = True
 
 
 class ComplianceResponse(BaseModel):
@@ -37,6 +43,7 @@ class ComplianceResponse(BaseModel):
     # with the score or a caller will show a percentage against the wrong total.
     controls_assessed: int = 0
     controls_not_assessed: int = 0
+    findings_remediated: int = 0
     html: str
     error: str | None = None
 
@@ -60,7 +67,10 @@ async def generate(req: ComplianceRequest) -> ComplianceResponse:
         )
     try:
         fw = compliance_report.load_framework(req.framework)
-        rep = compliance_report.build_report(req.scan_meta, req.findings, fw)
+        rep = compliance_report.build_report(
+            req.scan_meta, req.findings, fw,
+            remediated=req.remediated, remediation_available=req.remediation_available,
+        )
         html = compliance_report.render_html(rep)
     except Exception as exc:  # noqa: BLE001 — report generation is best-effort
         log.exception("compliance.error", framework=req.framework)
@@ -76,5 +86,6 @@ async def generate(req: ComplianceRequest) -> ComplianceResponse:
         controls_in_scope=s["controls_in_scope"],
         controls_assessed=s["controls_assessed"],
         controls_not_assessed=s["controls_not_assessed"],
+        findings_remediated=s["findings_remediated"],
         html=html,
     )

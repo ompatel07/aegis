@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"time"
 )
 
 // ── Baseline view ─────────────────────────────────────────────────────────────
@@ -121,4 +122,51 @@ func (r *ProjectRepository) Lifecycle(ctx context.Context, projectID string) (*L
 		return nil, err
 	}
 	return out, nil
+}
+
+// RemediationEvidence is one vulnerability that was found and later proven fixed:
+// the shape an auditor actually consumes. Aegis holds every element already —
+// what it lacked before J3 was any path from the lifecycle table into the
+// compliance report.
+type RemediationEvidence struct {
+	Fingerprint   string  `db:"fingerprint" json:"fingerprint"`
+	RuleID        *string `db:"rule_id" json:"rule_id,omitempty"`
+	Engine        *string `db:"engine" json:"engine,omitempty"`
+	Severity      *string `db:"severity" json:"severity,omitempty"`
+	FilePath      *string `db:"file_path" json:"file_path,omitempty"`
+	Title         *string `db:"title" json:"title,omitempty"`
+	CWEID         *string `db:"cwe_id" json:"cwe_id,omitempty"`
+	OWASPCategory *string `db:"owasp_category" json:"owasp_category,omitempty"`
+	// Scan identity at each end of the finding's life, so the claim is auditable
+	// back to a specific scan rather than only to a date.
+	FirstSeenScanID *string    `db:"first_seen_scan_id" json:"first_seen_scan_id,omitempty"`
+	ResolvedScanID  *string    `db:"resolved_scan_id" json:"resolved_scan_id,omitempty"`
+	FirstSeenAt     time.Time  `db:"first_seen_at" json:"first_seen_at"`
+	ResolvedAt      time.Time  `db:"resolved_at" json:"resolved_at"`
+	TimesSeen       int        `db:"times_seen" json:"times_seen"`
+}
+
+// RemediationEvidenceFor returns the project's resolved findings with the CWE /
+// OWASP category needed to attribute each to a control.
+//
+// project_finding_states does not carry cwe_id or owasp_category, so those are
+// recovered by joining back to the finding row from the last scan that saw it —
+// that row is the authoritative record of what the finding was. A resolved
+// finding is by definition absent from the current scan, which is exactly why a
+// point-in-time findings query can never produce this evidence.
+func (r *ProjectRepository) RemediationEvidenceFor(ctx context.Context, projectID string) ([]RemediationEvidence, error) {
+	out := []RemediationEvidence{}
+	err := r.db.SelectContext(ctx, &out, `
+		SELECT s.fingerprint, s.rule_id, s.engine, s.severity, s.file_path, s.title,
+		       f.cwe_id, f.owasp_category,
+		       s.first_seen_scan_id, s.resolved_scan_id,
+		       s.first_seen_at, s.updated_at AS resolved_at, s.times_seen
+		  FROM project_finding_states s
+		  LEFT JOIN findings f
+		         ON f.fingerprint = s.fingerprint
+		        AND f.scan_id = s.last_seen_scan_id
+		 WHERE s.project_id = $1 AND s.status = 'resolved'
+		 ORDER BY s.updated_at DESC
+		 LIMIT 500`, projectID)
+	return out, err
 }

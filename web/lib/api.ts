@@ -359,7 +359,21 @@ export function createApi(token?: string) {
     // Generates a compliance report (findings mapped to a framework's controls).
     getComplianceReport: (scanId: string, framework: string) =>
       http
-        .get<ApiSuccess<{ framework: string; score_pct: number; controls_needs_attention: number; controls_in_scope: number; html: string }>>(
+        .get<
+          ApiSuccess<{
+            framework: string;
+            score_pct: number;
+            controls_needs_attention: number;
+            controls_in_scope: number;
+            // J1/J2/J3: score_pct is over assessed controls; not-assessed ones are
+            // excluded rather than counted as passes, and findings_remediated is the
+            // closed half of the ledger an auditor actually reads.
+            controls_assessed: number;
+            controls_not_assessed: number;
+            findings_remediated: number;
+            html: string;
+          }>
+        >(
           `/scans/${scanId}/report/compliance`,
           { params: { framework } },
         )

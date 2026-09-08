@@ -177,7 +177,18 @@ function ComplianceReportCard({ scanId }: { scanId: string }) {
   const [framework, setFramework] = useState("soc2");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
-  const [result, setResult] = useState<{ score_pct: number; controls_needs_attention: number; controls_in_scope: number; html: string } | null>(null);
+  const [result, setResult] = useState<{
+    score_pct: number;
+    controls_needs_attention: number;
+    controls_in_scope: number;
+    // J1/J2: the score is computed over ASSESSED controls, not all in-scope ones —
+    // controls we cannot evidence are excluded rather than counted as passes. The
+    // denominator has to match the number or the summary misstates coverage.
+    controls_assessed?: number;
+    controls_not_assessed?: number;
+    findings_remediated?: number;
+    html: string;
+  } | null>(null);
 
   async function generate() {
     setBusy(true);
@@ -221,11 +232,25 @@ function ComplianceReportCard({ scanId }: { scanId: string }) {
         {result ? (
           <div className="space-y-2">
             <p className="text-sm">
-              <span className="font-medium">Compliance score: {result.score_pct}%</span>{" "}
+              <span className="font-medium">
+                {result.score_pct}% of assessed controls have no findings
+              </span>{" "}
               <span className="text-muted-foreground">
-                ({result.controls_needs_attention} of {result.controls_in_scope} in-scope controls need attention)
+                ({result.controls_needs_attention} of {result.controls_assessed ?? result.controls_in_scope} assessed
+                controls need attention
+                {result.controls_not_assessed
+                  ? `; ${result.controls_not_assessed} not assessed and excluded from this figure`
+                  : ""}
+                )
               </span>
             </p>
+            {result.findings_remediated ? (
+              <p className="text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">{result.findings_remediated}</span>{" "}
+                finding(s) previously open on this project are now proven closed by a later scan — listed
+                under Remediation evidence in the report below.
+              </p>
+            ) : null}
             <iframe title="compliance-report" className="h-[420px] w-full rounded-md border bg-white" srcDoc={result.html} />
           </div>
         ) : null}

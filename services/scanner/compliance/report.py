@@ -60,6 +60,10 @@ class ControlResult:
     # and excluded from the score entirely.
     assessable: bool = True
     not_assessed_reason: str = ""
+    # J3: findings that were open against this control and are now proven fixed by
+    # a later scan. They are evidence FOR the control, never against it, so they
+    # are kept separate from `findings` and never touch `status`.
+    remediated: list[dict] = field(default_factory=list)
 
     @property
     def status(self) -> str:
@@ -103,7 +107,8 @@ def load_framework(name: str) -> dict:
         return yaml.safe_load(fh)
 
 
-def map_findings(findings: list[dict], framework: dict) -> list[ControlResult]:
+def map_findings(findings: list[dict], framework: dict,
+                 remediated: list[dict] | None = None) -> list[ControlResult]:
     """Attribute each finding to AT MOST ONE control.
 
     Before J1 this attributed a finding to *every* control whose evidence matched,
@@ -155,6 +160,18 @@ def map_findings(findings: list[dict], framework: dict) -> list[ControlResult]:
             target = by_cwe.get(ck) or by_owasp.get(ok)
         if target is not None:
             target.findings.append(f)
+
+    # Remediated findings are attributed by the same precedence rule, into a
+    # separate bucket. A control's status is driven by OPEN findings only: a
+    # weakness that was fixed is not a failure, it is the proof an auditor wants.
+    for f in remediated or []:
+        ck, ok = _cwe_key(f.get("cwe_id")), _owasp_key(f.get("owasp_category"))
+        if f.get("cve_id"):
+            target = by_owasp.get(ok) or by_cwe.get(ck)
+        else:
+            target = by_cwe.get(ck) or by_owasp.get(ok)
+        if target is not None:
+            target.remediated.append(f)
     return results
 
 
@@ -180,8 +197,10 @@ def attribution_conflicts(framework: dict) -> dict[str, list[str]]:
     return {k: v for k, v in seen.items() if len(v) > 1}
 
 
-def build_report(scan_meta: dict, findings: list[dict], framework: dict) -> dict:
-    controls = map_findings(findings, framework)
+def build_report(scan_meta: dict, findings: list[dict], framework: dict,
+                 remediated: list[dict] | None = None,
+                 remediation_available: bool = True) -> dict:
+    controls = map_findings(findings, framework, remediated)
     in_scope = [c for c in controls if c.in_scope]
     assessed = [c for c in in_scope if c.assessable]
     needs = [c for c in assessed if c.status == "needs-attention"]
@@ -221,9 +240,15 @@ def build_report(scan_meta: dict, findings: list[dict], framework: dict) -> dict
             "controls_external": len(external),
             "coverage_pct": coverage,
             "compliance_score_pct": score,
+            # J3: the closed half of the ledger. An auditor reads open-vs-closed;
+            # a report that can only show the open half is a snapshot, not evidence.
+            "findings_remediated": sum(len(c.remediated) for c in controls),
+            "controls_with_remediation": sum(1 for c in controls if c.remediated),
+            "remediation_available": bool(remediation_available),
         },
         "controls": controls,
         "timeline": timeline,
+        "remediation_available": bool(remediation_available),
     }
 
 
@@ -236,7 +261,10 @@ DISCLAIMER = (
     "-- it is not a statement that the control was tested and operates effectively. "
     "Controls marked \"not assessed\" are in scope for the framework but cannot be "
     "evidenced by scanning a repository, and are excluded from the percentage above "
-    "rather than counted as passes."
+    "rather than counted as passes. "
+    "A control's status reflects OPEN findings only: a vulnerability that was found "
+    "and later proven fixed appears under Remediation evidence and never counts "
+    "against the control."
 )
 
 
@@ -278,9 +306,54 @@ def _render_scope(report: dict) -> str:
     )
 
 
+def _fmt_date(value: object) -> str:
+    text = str(value or "")
+    return text[:10] if len(text) >= 10 else text
+
+
+def _render_remediation(report: dict) -> str:
+    """The closed half of the ledger.
+
+    An auditor does not verify every guideline in a standard; what they consume is
+    open versus closed -- this vulnerability appeared, it was remediated, and a
+    later scan proves it closed. Before J3 the compliance report could not express
+    that at all: a resolved finding is absent from the current scan, so a
+    point-in-time findings query only ever produced the open half."""
+    if not report.get("remediation_available", True):
+        return ('<p class="muted"><b>Remediation history unavailable.</b> The finding-lifecycle '
+                'store could not be read for this project, so this section is empty because the '
+                'history could not be retrieved &mdash; not because nothing was fixed.</p>')
+    rows = []
+    for c in report["controls"]:
+        for f in c.remediated:
+            opened, closed = _fmt_date(f.get("first_seen_at")), _fmt_date(f.get("resolved_at"))
+            rows.append(
+                f"<tr><td><b>{html.escape(c.id)}</b></td>"
+                f"<td>[{html.escape(str(f.get('severity','?')))}] "
+                f"{html.escape(str(f.get('title') or f.get('rule_id') or ''))[:160]}</td>"
+                f"<td><code>{html.escape(str(f.get('file_path','')))}</code></td>"
+                f"<td>{html.escape(opened)}</td><td>{html.escape(closed)}</td>"
+                f"<td><code>{html.escape(str(f.get('resolved_scan_id',''))[:8])}</code></td></tr>"
+            )
+    if not rows:
+        return ('<p class="muted">No findings have been observed opening and then closing on this '
+                'project yet. This is expected on a first scan: remediation evidence accumulates '
+                'as findings are fixed and later scans confirm they are gone.</p>')
+    su = report["summary"]
+    return (
+        f'<p><b>{su["findings_remediated"]}</b> finding(s) across '
+        f'<b>{su["controls_with_remediation"]}</b> control(s) were open on this project and are '
+        f'now absent from a later scan. Each row is a closed item: what it was, when it was first '
+        f'seen, and the scan that proved it gone.</p>'
+        '<table><tr><th>Control</th><th>Finding</th><th>Location</th><th>First seen</th>'
+        '<th>Confirmed fixed</th><th>By scan</th></tr>' + "".join(rows) + '</table>'
+    )
+
+
 def render_html(report: dict) -> str:
     s = report["summary"]
     scope_html = _render_scope(report)
+    remediation_html = _render_remediation(report)
     rows = []
     for c in report["controls"]:
         badge = {"no-findings": "#16a34a", "needs-attention": "#dc2626",
@@ -321,6 +394,7 @@ def render_html(report: dict) -> str:
  <span class="kpi"><b>{s['compliance_score_pct']}%</b>assessed controls with no findings</span>
  <span class="kpi"><b>{s['controls_needs_attention']}</b>need attention</span>
  <span class="kpi"><b>{s['controls_no_findings']}</b>no findings</span>
+ <span class="kpi"><b>{s['findings_remediated']}</b>findings proven closed</span>
  <span class="kpi"><b>{s['controls_not_assessed']}</b>not assessed</span>
  <span class="kpi"><b>{s['controls_external']}</b>external evidence</span>
  <span class="kpi"><b>{s['coverage_pct']}%</b>of the framework assessed</span>
@@ -328,7 +402,9 @@ def render_html(report: dict) -> str:
 {scope_html}
 <h2>Findings by control</h2>
 <table><tr><th>Control</th><th>Status</th><th>Open</th><th>Open findings</th></tr>{''.join(rows)}</table>
-<h2>Remediation timeline</h2>
+<h2>Remediation evidence &mdash; vulnerabilities proven closed</h2>
+{remediation_html}
+<h2>Remediation timeline &mdash; open findings, by SLA</h2>
 {('<table><tr><th>Control</th><th>Worst severity</th><th>Open</th><th>Due by (SLA)</th></tr>'+tl+'</table>') if tl else '<p class="muted">No open findings against in-scope controls.</p>'}
 <div class="disc"><b>Disclaimer.</b> {html.escape(DISCLAIMER)}</div>
 </body></html>"""

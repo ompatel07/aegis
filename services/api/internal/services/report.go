@@ -120,6 +120,10 @@ type ComplianceReport struct {
 	// need the denominator that actually produced the percentage.
 	ControlsAssessed    int `json:"controls_assessed"`
 	ControlsNotAssessed int `json:"controls_not_assessed"`
+	// J3: the closed half of the ledger -- findings that were open on this project
+	// and are now proven fixed by a later scan. Dropping it here made the field
+	// null in the API while the scanner was computing it correctly.
+	FindingsRemediated int `json:"findings_remediated"`
 	HTML                   string `json:"html"`
 	Error                  string `json:"error,omitempty"`
 }
@@ -149,8 +153,44 @@ func (s *ReportService) Compliance(ctx context.Context, scanID, userID, framewor
 			"cwe_id": derefStr(f.CWEID), "owasp_category": derefStr(f.OWASPCategory),
 			"file_path": f.FilePath, "engine": f.Engine, "pillar": f.Pillar,
 			"is_false_positive": f.IsFalsePositive, "is_suppressed": f.IsSuppressed,
+			// J3: lifecycle state travels with the finding so a report can tell a
+			// newly-introduced weakness from one that has been open for months,
+			// and a regression (reopened) from a first sighting.
+			"lifecycle_status": derefStr(f.LifecycleStatus),
+			"fingerprint":      derefStr(f.Fingerprint),
 		})
 	}
+
+	// J3: what an auditor consumes is OPEN vs CLOSED -- a vulnerability appeared,
+	// it was remediated, and a later scan proves it closed. A scan's findings can
+	// only ever show the open half: a resolved finding is by definition absent
+	// from the current scan. The closed half lives in project_finding_states and
+	// was never reaching the report, so every compliance report we produced was a
+	// point-in-time snapshot with no remediation history at all.
+	remediated := []map[string]any{}
+	remediationAvailable := true
+	if ev, evErr := s.projects.RemediationEvidenceFor(ctx, scan.ProjectID); evErr == nil {
+		for i := range ev {
+			e := &ev[i]
+			remediated = append(remediated, map[string]any{
+				"rule_id": derefStr(e.RuleID), "severity": derefStr(e.Severity),
+				"title": derefStr(e.Title), "file_path": derefStr(e.FilePath),
+				"cwe_id": derefStr(e.CWEID), "owasp_category": derefStr(e.OWASPCategory),
+				"engine": derefStr(e.Engine), "fingerprint": e.Fingerprint,
+				"first_seen_scan_id": derefStr(e.FirstSeenScanID),
+				"resolved_scan_id":   derefStr(e.ResolvedScanID),
+				"first_seen_at":      e.FirstSeenAt,
+				"resolved_at":        e.ResolvedAt,
+				"times_seen":         e.TimesSeen,
+			})
+		}
+	} else {
+		// Never fail the whole report over the evidence half -- but never present a
+		// missing history as an empty one either. The report renders this as
+		// "remediation history unavailable", not as "nothing was ever fixed".
+		remediationAvailable = false
+	}
+
 	payload, _ := json.Marshal(map[string]any{
 		"framework": framework,
 		"scan_meta": map[string]any{
@@ -158,7 +198,9 @@ func (s *ReportService) Compliance(ctx context.Context, scanID, userID, framewor
 			"grade": gradeText(scan.OverallGrade), "commit": derefStr(scan.CommitSHA),
 			"generated_at": scan.CreatedAt,
 		},
-		"findings": fs,
+		"findings":               fs,
+		"remediated":             remediated,
+		"remediation_available":  remediationAvailable,
 	})
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.scannerURL+"/report/compliance", bytes.NewReader(payload))
 	if err != nil {
