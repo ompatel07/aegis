@@ -2,70 +2,99 @@ framework: NIST Cybersecurity Framework
 version: "2.0"
 authority: NIST
 description: >
-  Evidence toward CSF 2.0 subcategories, addressed by static application,
-  dependency, secret, and configuration analysis. Format: Function.Category-nn.
+  Evidence toward CSF 2.0 subcategories addressed by static application,
+  dependency, secret and configuration analysis. Format: Function.Category-nn.
+  CSF 2.0 has 106 subcategories; the seven below are the ones a repository scan
+  can speak to.
+# ── J1 mapping-accuracy rules ────────────────────────────────────────────────
+# Evidence keys are mutually exclusive across in-scope controls (see soc2.yaml).
+# Verification note: CSF 2.0 is published openly by NIST (NIST.CSWP.29).
+# Subcategory identifiers and outcome statements below were checked against the
+# public Core.
 controls:
   - id: "PR.AA-01"
-    name: Identities and credentials are managed (no hard-coded secrets)
+    name: Identities and credentials for authorized users, services and hardware are managed
     function: PROTECT
     evidence:
       owasp: ["A07:2021"]
-      cwe: ["CWE-798", "CWE-259", "CWE-321", "CWE-522"]
+      cwe: ["CWE-798", "CWE-259", "CWE-321", "CWE-522", "CWE-287", "CWE-306"]
       pillars: ["security"]
+
   - id: "PR.AA-05"
-    name: Access permissions enforced with least privilege
+    name: Access permissions, entitlements and authorizations are defined and enforced, incorporating least privilege
     function: PROTECT
     evidence:
+      # J1 fix: CWE-732 removed (also under PR.PS-01, and it fires on
+      # filesystem/container permissions rather than application authorization).
       owasp: ["A01:2021"]
-      cwe: ["CWE-284", "CWE-862", "CWE-863", "CWE-732"]
+      cwe: ["CWE-284", "CWE-285", "CWE-862", "CWE-863", "CWE-639", "CWE-352", "CWE-601",
+            "CWE-269", "CWE-266"]
       pillars: ["security"]
+
   - id: "PR.DS-01"
-    name: Data-at-rest is protected (encryption)
+    name: The confidentiality, integrity and availability of data-at-rest are protected
     function: PROTECT
     evidence:
-      owasp: ["A02:2021"]
-      cwe: ["CWE-311", "CWE-312", "CWE-327"]
+      # J1 fix: PR.DS-01 and PR.DS-02 both carried A02:2021, so every crypto
+      # finding failed both. A02 now sits with the in-transit subcategory, which
+      # is where most of our crypto findings (CWE-319, CWE-295) actually land.
+      cwe: ["CWE-311", "CWE-312", "CWE-327", "CWE-328", "CWE-916"]
       pillars: ["security"]
+
   - id: "PR.DS-02"
-    name: Data-in-transit is protected
+    name: The confidentiality, integrity and availability of data-in-transit are protected
     function: PROTECT
     evidence:
       owasp: ["A02:2021"]
       cwe: ["CWE-319", "CWE-295", "CWE-326"]
       pillars: ["security"]
+
   - id: "PR.PS-01"
-    name: Configuration management (secure baselines)
+    name: Configuration management practices are established and applied
     function: PROTECT
     evidence:
+      # J1 fix: PR.PS-01 and DE.CM-09 both carried A05:2021 (185
+      # double-attributions). Configuration findings belong here; DE.CM-09 is a
+      # monitoring outcome and is now not-assessed.
       owasp: ["A05:2021"]
-      cwe: ["CWE-16", "CWE-1188", "CWE-732"]
+      cwe: ["CWE-16", "CWE-1188", "CWE-732", "CWE-489", "CWE-2"]
       pillars: ["deployment", "security"]
+
   - id: "PR.PS-06"
-    name: Secure software development practices (injection, XSS, SSRF)
+    name: Secure software development practices are integrated and their performance is monitored
     function: PROTECT
     evidence:
       owasp: ["A03:2021", "A10:2021", "A08:2021"]
-      cwe: ["CWE-89", "CWE-79", "CWE-78", "CWE-918", "CWE-502"]
+      cwe: ["CWE-89", "CWE-79", "CWE-78", "CWE-918", "CWE-502", "CWE-611", "CWE-94",
+            "CWE-95", "CWE-1321", "CWE-1336", "CWE-22", "CWE-23", "CWE-20", "CWE-116",
+            "CWE-1284", "CWE-943", "CWE-90", "CWE-643", "CWE-706", "CWE-704", "CWE-915",
+            "CWE-829", "CWE-494", "CWE-353", "CWE-1357", "CWE-345"]
       pillars: ["security"]
+
   - id: "ID.RA-01"
-    name: Vulnerabilities in assets are identified and recorded
+    name: Vulnerabilities in assets are identified, validated and recorded
     function: IDENTIFY
     evidence:
       owasp: ["A06:2021"]
       cwe: ["CWE-937", "CWE-1035", "CWE-1104"]
       pillars: ["security"]
+
   - id: "DE.CM-09"
-    name: Computing hardware/software & runtime environments are monitored
+    name: Computing hardware and software, runtime environments and their data are monitored to find potentially adverse events
     function: DETECT
-    evidence:
-      owasp: ["A05:2021", "A09:2021"]
-      cwe: ["CWE-778", "CWE-532"]
-      pillars: ["security", "deployment"]
+    # J1 fix: previously mapped A05:2021 + A09:2021 and CWE-778/CWE-532, which
+    # made configuration findings fail a *monitoring* outcome. DE.CM-09 is about
+    # monitoring in operation, which a repository scan cannot evidence.
+    aegis_scope: not-assessed
+    not_assessed_reason: >-
+      Requires evidence that runtime environments are monitored for adverse
+      events. Aegis inspects a checkout, not a running estate.
+
   - id: "GV.x"
     name: Govern — organizational policy, roles, risk strategy
     function: GOVERN
     aegis_scope: out-of-scope
   - id: "RS.x / RC.x"
-    name: Respond & Recover (IR, backups, restoration)
+    name: Respond & Recover (incident response, backups, restoration)
     function: RESPOND
     aegis_scope: out-of-scope

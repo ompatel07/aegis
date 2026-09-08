@@ -1,66 +1,101 @@
 framework: ISO/IEC 27001
-version: "2022"
+version: "2022 (Annex A controls)"
 authority: ISO/IEC
 description: >
   Evidence toward the technical Annex A controls (2022 revision) reachable by
-  static application, dependency, secret, and configuration analysis.
+  static application, dependency, secret and configuration analysis. Annex A has
+  93 controls; the nine below are the ones a repository scan can speak to.
+# ── J1 mapping-accuracy rules ────────────────────────────────────────────────
+# Evidence keys are mutually exclusive across in-scope controls (see soc2.yaml).
+# Verification note: ISO/IEC 27001:2022 is a paywalled standard. Control
+# numbering and titles below were checked against the publicly published Annex A
+# control list; the full normative text was NOT read during J1.
 controls:
   - id: "A.8.2"
     name: Privileged access rights
     evidence:
-      owasp: ["A01:2021"]
-      cwe: ["CWE-269", "CWE-266", "CWE-732"]
+      # J1 fix: CWE-732 removed (it also sat under A.8.9, and in practice fires
+      # on filesystem/container permissions, not privileged-access management).
+      cwe: ["CWE-269", "CWE-266"]
       pillars: ["security"]
+
   - id: "A.8.3"
     name: Information access restriction
     evidence:
       owasp: ["A01:2021"]
-      cwe: ["CWE-284", "CWE-862", "CWE-863", "CWE-639"]
+      cwe: ["CWE-284", "CWE-285", "CWE-862", "CWE-863", "CWE-639", "CWE-352", "CWE-601"]
       pillars: ["security"]
+
   - id: "A.8.5"
     name: Secure authentication
     evidence:
       owasp: ["A07:2021"]
-      cwe: ["CWE-287", "CWE-306", "CWE-522", "CWE-798"]
+      cwe: ["CWE-287", "CWE-306", "CWE-798", "CWE-259", "CWE-321", "CWE-522"]
       pillars: ["security"]
+
   - id: "A.8.8"
     name: Management of technical vulnerabilities
     evidence:
       owasp: ["A06:2021"]
       cwe: ["CWE-937", "CWE-1035", "CWE-1104"]
       pillars: ["security"]
+
   - id: "A.8.9"
-    name: Configuration management / secure configuration
+    name: Configuration management
     evidence:
       owasp: ["A05:2021"]
-      cwe: ["CWE-16", "CWE-1188", "CWE-732"]
+      cwe: ["CWE-16", "CWE-1188", "CWE-732", "CWE-489", "CWE-2"]
       pillars: ["deployment", "security"]
+
   - id: "A.8.24"
     name: Use of cryptography
     evidence:
       owasp: ["A02:2021"]
-      cwe: ["CWE-311", "CWE-319", "CWE-326", "CWE-327", "CWE-328"]
+      cwe: ["CWE-311", "CWE-312", "CWE-319", "CWE-326", "CWE-327", "CWE-328", "CWE-295", "CWE-916"]
       pillars: ["security"]
+
   - id: "A.8.25"
     name: Secure development life cycle
-    evidence:
-      owasp: ["A04:2021"]
-      cwe: ["CWE-1173", "CWE-710"]
-      pillars: ["security"]
+    # J1: previously mapped CWE-1173 and CWE-710 plus A04:2021. Both CWEs are
+    # never emitted by any engine we run, and A04 duplicated A.8.28. The control
+    # is about having a defined secure-SDLC, which a scan cannot evidence.
+    aegis_scope: not-assessed
+    not_assessed_reason: >-
+      Requires evidence that rules for secure development are established and
+      applied across the lifecycle — a process control, not a code property.
+
   - id: "A.8.26"
-    name: Application security requirements (injection, XSS, SSRF, deserialization)
+    name: Application security requirements
     evidence:
-      owasp: ["A03:2021", "A08:2021", "A10:2021"]
-      cwe: ["CWE-89", "CWE-79", "CWE-78", "CWE-918", "CWE-502", "CWE-611"]
+      owasp: ["A03:2021", "A10:2021"]
+      cwe: ["CWE-89", "CWE-79", "CWE-78", "CWE-918", "CWE-502", "CWE-611", "CWE-94",
+            "CWE-95", "CWE-1321", "CWE-1336", "CWE-22", "CWE-23", "CWE-943",
+            "CWE-90", "CWE-643", "CWE-706", "CWE-704", "CWE-915"]
       pillars: ["security"]
+
   - id: "A.8.28"
     name: Secure coding
     evidence:
-      owasp: ["A03:2021", "A04:2021"]
-      cwe: ["CWE-20", "CWE-116", "CWE-798"]
+      # J1 fix: A.8.26 and A.8.28 shared A03:2021 (513 double-attributions) and
+      # A.8.28 shared CWE-798 with A.8.5 (283 more). A.8.26 now carries the
+      # injection/deserialization weakness classes; A.8.28 keeps input-validation
+      # and output-encoding hygiene, which is what "secure coding" adds beyond
+      # the requirements control.
+      cwe: ["CWE-20", "CWE-116", "CWE-1284"]
       pillars: ["security"]
+
+  - id: "A.8.16"
+    name: Monitoring activities
+    aegis_scope: not-assessed
+    not_assessed_reason: >-
+      Requires evidence that networks, systems and applications are monitored for
+      anomalous behaviour — a runtime property.
+
   - id: "A.5.x"
     name: Organizational controls (policies, roles, supplier relationships)
+    aegis_scope: out-of-scope
+  - id: "A.6.x"
+    name: People controls (screening, awareness, disciplinary process)
     aegis_scope: out-of-scope
   - id: "A.7.x"
     name: Physical controls

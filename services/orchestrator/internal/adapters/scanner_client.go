@@ -115,23 +115,28 @@ type sbomRequest struct {
 	Path   string `json:"path"`
 	ScanID string `json:"scan_id"`
 	Format string `json:"format"`
+	// Names the SBOM after the repository rather than our checkout directory.
+	// Without it Trivy embeds the local path, which leaks it into a customer
+	// artifact and makes the SPDX document fail validation (J1).
+	RepoURL string `json:"repo_url,omitempty"`
 }
 
 type sbomResponse struct {
 	Format     string `json:"format"`
 	Content    string `json:"content"`
 	Components int    `json:"components"`
+	Empty      bool   `json:"empty"`
 	Error      string `json:"error"`
 }
 
 // SBOM generates a Software Bill of Materials (format = cyclonedx | spdx) from the
 // checked-out repo. Returns the document text + component count.
-func (s *ScannerClient) SBOM(ctx context.Context, path, scanID, format string) (string, int, error) {
+func (s *ScannerClient) SBOM(ctx context.Context, path, scanID, format, repoURL string) (string, int, error) {
 	var out sbomResponse
 	resp, err := s.client.R().
 		SetContext(ctx).
 		SetHeader("Content-Type", "application/json").
-		SetBody(sbomRequest{Path: path, ScanID: scanID, Format: format}).
+		SetBody(sbomRequest{Path: path, ScanID: scanID, Format: format, RepoURL: repoURL}).
 		SetResult(&out).
 		Post("/sbom")
 	if err != nil {

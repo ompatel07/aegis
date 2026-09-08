@@ -31,6 +31,12 @@ class ComplianceResponse(BaseModel):
     score_pct: int
     controls_needs_attention: int
     controls_in_scope: int
+    # J1: score_pct is computed over ASSESSED controls, not all in-scope ones.
+    # Controls we cannot evidence (runtime monitoring, change approval) are
+    # excluded rather than counted as passes, so the denominator has to travel
+    # with the score or a caller will show a percentage against the wrong total.
+    controls_assessed: int = 0
+    controls_not_assessed: int = 0
     html: str
     error: str | None = None
 
@@ -68,5 +74,7 @@ async def generate(req: ComplianceRequest) -> ComplianceResponse:
         score_pct=s["compliance_score_pct"],
         controls_needs_attention=s["controls_needs_attention"],
         controls_in_scope=s["controls_in_scope"],
+        controls_assessed=s["controls_assessed"],
+        controls_not_assessed=s["controls_not_assessed"],
         html=html,
     )

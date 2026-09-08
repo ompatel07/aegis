@@ -1,64 +1,117 @@
 framework: SOC 2
-version: "2017 Trust Services Criteria"
+version: "2017 Trust Services Criteria (with 2022 revised points of focus)"
 authority: AICPA
 description: >
-  Technical evidence Aegis can provide toward the Common Criteria (security)
-  and related TSC. Aegis evidences code/configuration controls; organizational
-  and physical controls require external evidence.
+  Technical evidence Aegis can provide toward the Common Criteria (security).
+  Aegis evidences code/configuration weaknesses only; organizational, process and
+  physical controls require external evidence and are marked accordingly.
+# ── J1 mapping-accuracy rules ────────────────────────────────────────────────
+# 1. Evidence keys are MUTUALLY EXCLUSIVE across in-scope controls. No CWE and no
+#    OWASP category appears under two controls, so one finding can never fail two
+#    controls and inflate both the evidence and the failure count. Enforced by
+#    tests/test_compliance_mappings.py.
+# 2. `aegis_scope: not-assessed` means the criterion is real and in scope for a
+#    SOC 2 audit, but static analysis cannot produce evidence either way. It is
+#    excluded from the score rather than silently counted as a pass.
+# 3. Verification note: the AICPA Trust Services Criteria is a copyrighted
+#    document behind an account wall. Criterion numbering and titles below were
+#    checked against the publicly published criteria list; the full normative
+#    text was NOT re-read verbatim during J1. See docs/COMPLIANCE_ACCURACY_J1.md.
 controls:
   - id: CC6.1
-    name: Logical access — least privilege & access controls
+    name: Logical access security over protected information assets
     evidence:
       owasp: ["A01:2021"]
-      cwe: ["CWE-284", "CWE-285", "CWE-639", "CWE-862", "CWE-863"]
+      cwe: ["CWE-284", "CWE-285", "CWE-862", "CWE-863", "CWE-639", "CWE-352", "CWE-601"]
       pillars: ["security"]
+
   - id: CC6.2
-    name: Authentication of users prior to access
+    name: User registration and authorization prior to issuing credentials; credential protection
     evidence:
       owasp: ["A07:2021"]
-      cwe: ["CWE-287", "CWE-306", "CWE-522", "CWE-798"]
+      # Hard-coded and weakly protected credentials sit here rather than under
+      # CC8.1. CC8.1 is change management; a secret in source is an
+      # authentication weakness, not a change-control failure (J1 fix).
+      cwe: ["CWE-287", "CWE-306", "CWE-798", "CWE-259", "CWE-321", "CWE-522"]
       pillars: ["security"]
+
   - id: CC6.3
-    name: Role-based access enforcement
+    name: Access to data, software and functions based on roles, least privilege and segregation of duties
     evidence:
-      owasp: ["A01:2021"]
-      cwe: ["CWE-269", "CWE-266", "CWE-732"]
+      # CWE-732 was removed here (J1). It is "Incorrect Permission Assignment for
+      # a Critical Resource", which in practice fires on filesystem and container
+      # permissions -- so it dragged container-hardening findings into a
+      # role-based-access criterion (the F1 CC6.3 defect). Those findings now
+      # evidence CC7.1, where configuration belongs.
+      cwe: ["CWE-269", "CWE-266"]
       pillars: ["security"]
+
   - id: CC6.6
-    name: Protection against external threats (injection, SSRF, XSS)
+    name: Logical access measures against threats from sources outside the system boundaries
     evidence:
       owasp: ["A03:2021", "A10:2021"]
-      cwe: ["CWE-89", "CWE-79", "CWE-78", "CWE-918", "CWE-611"]
+      cwe: ["CWE-89", "CWE-79", "CWE-78", "CWE-918", "CWE-611", "CWE-22", "CWE-23",
+            "CWE-94", "CWE-95", "CWE-502", "CWE-1321", "CWE-1336", "CWE-943",
+            "CWE-90", "CWE-643", "CWE-20", "CWE-1284", "CWE-116", "CWE-706",
+            "CWE-704", "CWE-915"]
       pillars: ["security"]
+
   - id: CC6.7
-    name: Encryption of data in transit and at rest
+    name: Restricts the transmission, movement and removal of information; encryption
     evidence:
       owasp: ["A02:2021"]
-      cwe: ["CWE-311", "CWE-319", "CWE-326", "CWE-327", "CWE-328"]
+      cwe: ["CWE-311", "CWE-312", "CWE-319", "CWE-326", "CWE-327", "CWE-328", "CWE-295", "CWE-916"]
       pillars: ["security"]
+
   - id: CC6.8
-    name: Prevention/detection of unauthorized or malicious software
+    name: Prevent or detect and act upon the introduction of unauthorized or malicious software
     evidence:
-      owasp: ["A06:2021", "A08:2021"]
-      cwe: ["CWE-1104", "CWE-937", "CWE-829"]
+      # J1 fix: A06:2021 and CWE-937/1035/1104 were removed from this control.
+      # They denote *known-vulnerable* dependencies, which is CC7.1's subject
+      # (vulnerability detection), not the introduction of unauthorized or
+      # malicious software. Sharing them made every dependency CVE fail both
+      # controls -- 1,975 double-attributions across our corpus (the F1
+      # CC6.8/CC7.1 defect). What remains is genuine software-integrity
+      # evidence: unpinned/untrusted components and unverified downloads.
+      owasp: ["A08:2021"]
+      cwe: ["CWE-829", "CWE-494", "CWE-353", "CWE-1357", "CWE-345"]
       pillars: ["security"]
+
   - id: CC7.1
-    name: Vulnerability detection & monitoring
+    name: >-
+      Detection and monitoring to identify (1) configuration changes that introduce
+      new vulnerabilities and (2) susceptibilities to newly discovered vulnerabilities
     evidence:
-      owasp: ["A06:2021"]
-      cwe: ["CWE-1035", "CWE-937"]
-      pillars: ["security"]
+      # Both limbs of the criterion: dependency vulnerabilities AND insecure
+      # configuration. The configuration evidence moved here from the old CC7.2
+      # entry, which was misnamed (see below).
+      owasp: ["A06:2021", "A05:2021"]
+      cwe: ["CWE-937", "CWE-1035", "CWE-1104", "CWE-16", "CWE-1188", "CWE-732", "CWE-489"]
+      pillars: ["security", "deployment"]
+
   - id: CC7.2
-    name: Secure configuration / hardening of deployment
-    evidence:
-      owasp: ["A05:2021"]
-      cwe: ["CWE-16", "CWE-2", "CWE-732", "CWE-1188"]
-      pillars: ["deployment", "security"]
+    name: Monitors system components for anomalies indicative of malicious acts, natural disasters and errors
+    # J1 fix: this entry previously read "Secure configuration / hardening of
+    # deployment", which is not what CC7.2 says -- that is CC7.1's first limb,
+    # and its evidence has moved there. The actual criterion is about ongoing
+    # runtime monitoring, which a static scan cannot evidence in either
+    # direction, so it is not assessed rather than reported as passing.
+    aegis_scope: not-assessed
+    not_assessed_reason: >-
+      Requires evidence of runtime monitoring and alerting. Static analysis of a
+      repository cannot show whether monitoring operates.
+
   - id: CC8.1
-    name: Secrets and credentials not hard-coded (change management)
-    evidence:
-      cwe: ["CWE-798", "CWE-259", "CWE-321"]
-      pillars: ["security"]
+    name: Authorizes, designs, develops, configures, documents, tests, approves and implements changes
+    # J1 fix: this entry previously mapped hard-coded-secret CWEs to change
+    # management. A secret committed to source is an authentication weakness
+    # (now CC6.2), not evidence about the change-management process. Aegis
+    # cannot evidence approval workflows or release governance.
+    aegis_scope: not-assessed
+    not_assessed_reason: >-
+      Change authorization, testing and approval are process controls evidenced
+      by ticketing, review and release records, not by scanning a checkout.
+
   # Out of scope for static analysis — need external evidence.
   - id: CC1.x
     name: Control environment (governance, HR, ethics)

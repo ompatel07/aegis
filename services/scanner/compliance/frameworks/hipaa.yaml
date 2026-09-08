@@ -4,43 +4,100 @@ authority: U.S. HHS
 description: >
   Evidence toward the HIPAA Technical Safeguards (§164.312). Administrative
   (§164.308) and Physical (§164.310) safeguards require external evidence.
+# ── J1 mapping-accuracy rules ────────────────────────────────────────────────
+# Evidence keys are mutually exclusive across in-scope controls (see soc2.yaml).
+# Verification note: unlike SOC 2/ISO/PCI, this text is US federal regulation and
+# is public. Every control name below was checked verbatim against 45 CFR 164.312
+# during J1. Standard and implementation-specification names are quoted from the
+# regulation rather than paraphrased.
 controls:
   - id: "164.312(a)(1)"
-    name: Access control — unique user identification & least privilege
+    name: Access control
+    # "Implement technical policies and procedures for electronic information
+    # systems that maintain ePHI to allow access only to those persons or
+    # software programs that have been granted access rights."
     evidence:
       owasp: ["A01:2021"]
-      cwe: ["CWE-284", "CWE-285", "CWE-862", "CWE-863", "CWE-639"]
+      cwe: ["CWE-284", "CWE-285", "CWE-862", "CWE-863", "CWE-639", "CWE-352", "CWE-601", "CWE-22", "CWE-23"]
       pillars: ["security"]
+
   - id: "164.312(a)(2)(iv)"
-    name: Encryption and decryption of ePHI at rest
+    name: Encryption and decryption
+    # "Implement a mechanism to encrypt and decrypt ePHI." — at rest.
     evidence:
       owasp: ["A02:2021"]
-      cwe: ["CWE-311", "CWE-312", "CWE-327", "CWE-326"]
+      cwe: ["CWE-311", "CWE-312", "CWE-327", "CWE-328", "CWE-916"]
       pillars: ["security"]
+
   - id: "164.312(c)(1)"
-    name: Integrity — protect ePHI from improper alteration
+    name: Integrity
+    # "Implement policies and procedures to protect ePHI from improper
+    # alteration or destruction."
     evidence:
-      owasp: ["A08:2021", "A03:2021"]
-      cwe: ["CWE-502", "CWE-345", "CWE-89"]
+      owasp: ["A03:2021", "A08:2021"]
+      cwe: ["CWE-89", "CWE-79", "CWE-78", "CWE-94", "CWE-95", "CWE-502", "CWE-611",
+            "CWE-918", "CWE-1321", "CWE-915", "CWE-345", "CWE-353", "CWE-829",
+            "CWE-494", "CWE-1357", "CWE-20", "CWE-943", "CWE-706", "CWE-704"]
       pillars: ["security"]
+
   - id: "164.312(d)"
     name: Person or entity authentication
+    # "Implement procedures to verify that a person or entity seeking access to
+    # ePHI is the one claimed."
     evidence:
       owasp: ["A07:2021"]
-      cwe: ["CWE-287", "CWE-306", "CWE-798", "CWE-522"]
+      cwe: ["CWE-287", "CWE-306", "CWE-798", "CWE-259", "CWE-321", "CWE-522"]
       pillars: ["security"]
+
   - id: "164.312(e)(1)"
-    name: Transmission security — encrypt ePHI in transit
+    name: Transmission security
+    # "Implement technical security measures to guard against unauthorized access
+    # to ePHI that is being transmitted over an electronic communications
+    # network." Includes its encryption implementation specification at
+    # (e)(2)(ii) — see the note below.
     evidence:
-      owasp: ["A02:2021"]
       cwe: ["CWE-319", "CWE-295", "CWE-326"]
       pillars: ["security"]
-  - id: "164.312(e)(2)(ii)"
-    name: Guard against unauthorized access during transmission (SSRF/redirect)
-    evidence:
-      owasp: ["A10:2021", "A01:2021"]
-      cwe: ["CWE-918", "CWE-601"]
-      pillars: ["security"]
+
+  # ── J1 correction ───────────────────────────────────────────────────────────
+  # This framework previously carried a control:
+  #
+  #   id:   164.312(e)(2)(ii)
+  #   name: "Guard against unauthorized access during transmission (SSRF/redirect)"
+  #   cwe:  [CWE-918, CWE-601]   owasp: [A10:2021, A01:2021]
+  #
+  # Both the name and the evidence were wrong. Checked against 45 CFR 164.312,
+  # (e)(2)(ii) is "Encryption" — "Implement a mechanism to encrypt ePHI whenever
+  # deemed appropriate". The name we used was a paraphrase of (e)(1) Transmission
+  # Security, and SSRF and open redirect are not encryption findings.
+  #
+  # It is also an *implementation specification under* (e)(1), not a sibling
+  # control, so scoring it separately double-counted transmission findings (114
+  # double-attributions with 164.312(a)(1) across our corpus). It has been
+  # removed; its subject is evidenced by (e)(1) above. SSRF and open-redirect
+  # findings now sit under (c)(1) Integrity and (a)(1) Access control
+  # respectively, where they actually belong.
+  #
+  # (e)(2)(i) Integrity Controls — "ensure that electronically transmitted ePHI
+  # is not improperly modified without detection" — is listed below as
+  # not-assessed: it concerns transmitted-data integrity mechanisms, which a
+  # repository scan cannot evidence.
+  - id: "164.312(e)(2)(i)"
+    name: Integrity controls (transmission)
+    aegis_scope: not-assessed
+    not_assessed_reason: >-
+      Requires evidence that transmitted ePHI cannot be modified without
+      detection — a property of the deployed transport and its integrity
+      mechanisms, not of source code.
+
+  - id: "164.312(b)"
+    name: Audit controls
+    aegis_scope: not-assessed
+    not_assessed_reason: >-
+      Requires evidence that hardware, software or procedural mechanisms record
+      and examine activity in systems containing ePHI. Aegis cannot observe
+      whether audit logging operates in the deployed system.
+
   - id: "164.308"
     name: Administrative safeguards (risk analysis, workforce, training)
     aegis_scope: out-of-scope

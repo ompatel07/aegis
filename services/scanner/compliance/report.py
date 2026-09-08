@@ -53,13 +53,25 @@ class ControlResult:
     name: str
     in_scope: bool
     findings: list[dict] = field(default_factory=list)
+    # J1: a control can be in the framework and genuinely in scope for an audit
+    # while being something a repository scan cannot evidence either way (runtime
+    # monitoring, change-approval workflow, patch installation). Reporting those
+    # as "passing" claims an assurance we never produced, so they are called out
+    # and excluded from the score entirely.
+    assessable: bool = True
+    not_assessed_reason: str = ""
 
     @property
     def status(self) -> str:
         if not self.in_scope:
             return "requires-external-evidence"
+        if not self.assessable:
+            return "not-assessed"
         open_ = [f for f in self.findings if _is_open(f)]
-        return "needs-attention" if open_ else "passing"
+        # "no-findings", not "passing": we found no failing evidence, which is
+        # not the same as having verified the control operates. The wording
+        # matters because this document is read by auditors.
+        return "needs-attention" if open_ else "no-findings"
 
     @property
     def open_count(self) -> int:
@@ -92,30 +104,89 @@ def load_framework(name: str) -> dict:
 
 
 def map_findings(findings: list[dict], framework: dict) -> list[ControlResult]:
-    """Attribute each finding to every control whose evidence matches its
-    CWE or OWASP category."""
+    """Attribute each finding to AT MOST ONE control.
+
+    Before J1 this attributed a finding to *every* control whose evidence matched,
+    so one dependency CVE could fail two controls at once and inflate both the
+    failure count and the remediation timeline."""
     results: list[ControlResult] = []
     for ctrl in framework.get("controls", []):
-        in_scope = ctrl.get("aegis_scope") != "out-of-scope"
-        cr = ControlResult(id=str(ctrl["id"]), name=ctrl["name"], in_scope=in_scope)
-        ev = ctrl.get("evidence", {}) or {}
-        cwes = {c.upper() for c in ev.get("cwe", [])}
-        owasps = {o.upper() for o in ev.get("owasp", [])}
-        if in_scope:
-            for f in findings:
-                if _is_generated_output(f):
-                    continue  # build artifacts don't drive the compliance grade
-                if (_cwe_key(f.get("cwe_id")) in cwes) or (_owasp_key(f.get("owasp_category")) in owasps):
-                    cr.findings.append(f)
+        scope = ctrl.get("aegis_scope")
+        in_scope = scope != "out-of-scope"
+        assessable = scope != "not-assessed"
+        cr = ControlResult(
+            id=str(ctrl["id"]), name=ctrl["name"], in_scope=in_scope,
+            assessable=assessable,
+            not_assessed_reason=str(ctrl.get("not_assessed_reason") or "").strip(),
+        )
         results.append(cr)
+
+    # ── single attribution ───────────────────────────────────────────────────
+    # Each finding is attributed to AT MOST ONE control. Evidence keys are already
+    # mutually exclusive within a framework, but a finding carries both a CWE and
+    # an OWASP category and those can point at different controls, so a
+    # precedence rule is still needed (J1).
+    by_cwe: dict[str, ControlResult] = {}
+    by_owasp: dict[str, ControlResult] = {}
+    for cr, ctrl in zip(results, framework.get("controls", [])):
+        if not (cr.in_scope and cr.assessable):
+            continue
+        ev = ctrl.get("evidence", {}) or {}
+        for c in ev.get("cwe", []):
+            by_cwe.setdefault(c.upper(), cr)
+        for o in ev.get("owasp", []):
+            by_owasp.setdefault(o.upper(), cr)
+
+    for f in findings:
+        if _is_generated_output(f):
+            continue  # build artifacts don't drive the compliance grade
+        ck, ok = _cwe_key(f.get("cwe_id")), _owasp_key(f.get("owasp_category"))
+        # A dependency vulnerability is evidence about *vulnerability management*,
+        # not about how the customer writes code. Such a finding carries the
+        # upstream bug's CWE (prototype pollution, say), which would otherwise
+        # attribute a third party's defect to the customer's secure-coding
+        # control. The OWASP category (A06 Vulnerable and Outdated Components) is
+        # the one that describes the customer's actual obligation, so for anything
+        # carrying a CVE the category wins.
+        if f.get("cve_id"):
+            target = by_owasp.get(ok) or by_cwe.get(ck)
+        else:
+            # Otherwise the CWE is the more specific statement of the weakness.
+            target = by_cwe.get(ck) or by_owasp.get(ok)
+        if target is not None:
+            target.findings.append(f)
     return results
+
+
+def attribution_conflicts(framework: dict) -> dict[str, list[str]]:
+    """Evidence keys claimed by more than one assessable control.
+
+    Compliance evidence must attribute a finding to exactly one control. When two
+    controls share a CWE or an OWASP category, a single finding fails both, which
+    inflates the failure count and the remediation timeline at the same time --
+    the defect F1 found in SOC 2 CC6.8/CC7.1 (1,975 double-attributions across our
+    corpus) and the largest of which was PCI 6.3.1/6.3.3 (1,942).
+
+    Returns {evidence_key: [control ids]} for every key claimed twice. An empty
+    dict is the invariant; tests/test_compliance_mappings.py enforces it for every
+    framework we ship."""
+    seen: dict[str, list[str]] = {}
+    for ctrl in framework.get("controls", []):
+        if ctrl.get("aegis_scope") in ("out-of-scope", "not-assessed"):
+            continue
+        ev = ctrl.get("evidence", {}) or {}
+        for key in [c.upper() for c in ev.get("cwe", [])] + [o.upper() for o in ev.get("owasp", [])]:
+            seen.setdefault(key, []).append(str(ctrl["id"]))
+    return {k: v for k, v in seen.items() if len(v) > 1}
 
 
 def build_report(scan_meta: dict, findings: list[dict], framework: dict) -> dict:
     controls = map_findings(findings, framework)
     in_scope = [c for c in controls if c.in_scope]
-    needs = [c for c in in_scope if c.status == "needs-attention"]
-    passing = [c for c in in_scope if c.status == "passing"]
+    assessed = [c for c in in_scope if c.assessable]
+    needs = [c for c in assessed if c.status == "needs-attention"]
+    passing = [c for c in assessed if c.status == "no-findings"]
+    not_assessed = [c for c in in_scope if not c.assessable]
     external = [c for c in controls if not c.in_scope]
 
     # Remediation timeline: worst finding severity per failing control → SLA.
@@ -129,8 +200,11 @@ def build_report(scan_meta: dict, findings: list[dict], framework: dict) -> dict
                          "open_findings": c.open_count, "due_by": due.isoformat()})
     timeline.sort(key=lambda t: t["due_by"])
 
-    coverage = round(100 * len(in_scope) / len(controls)) if controls else 0
-    score = round(100 * len(passing) / len(in_scope)) if in_scope else 0
+    # Coverage is the share of the framework we can speak to at all, and the
+    # score is computed over ASSESSED controls only. Counting a control we cannot
+    # evidence as a pass is how an automated report overstates assurance (J1).
+    coverage = round(100 * len(assessed) / len(controls)) if controls else 0
+    score = round(100 * len(passing) / len(assessed)) if assessed else 0
     return {
         "framework": framework.get("framework"),
         "version": framework.get("version"),
@@ -139,8 +213,10 @@ def build_report(scan_meta: dict, findings: list[dict], framework: dict) -> dict
         "summary": {
             "controls_total": len(controls),
             "controls_in_scope": len(in_scope),
-            "controls_passing": len(passing),
+            "controls_assessed": len(assessed),
+            "controls_no_findings": len(passing),
             "controls_needs_attention": len(needs),
+            "controls_not_assessed": len(not_assessed),
             "controls_external": len(external),
             "coverage_pct": coverage,
             "compliance_score_pct": score,
@@ -154,7 +230,12 @@ DISCLAIMER = (
     "This report is automated technical evidence produced by static analysis. It "
     "covers code/configuration controls only and is NOT a certification or a "
     "substitute for assessment by a qualified auditor. Control scope and evidence "
-    "must be independently validated before any formal attestation."
+    "must be independently validated before any formal attestation. "
+    "\"No findings\" means this scan produced no failing evidence for that control "
+    "-- it is not a statement that the control was tested and operates effectively. "
+    "Controls marked \"not assessed\" are in scope for the framework but cannot be "
+    "evidenced by scanning a repository, and are excluded from the percentage above "
+    "rather than counted as passes."
 )
 
 
@@ -162,18 +243,22 @@ def render_html(report: dict) -> str:
     s = report["summary"]
     rows = []
     for c in report["controls"]:
-        badge = {"passing": "#16a34a", "needs-attention": "#dc2626",
+        badge = {"no-findings": "#16a34a", "needs-attention": "#dc2626",
+                 "not-assessed": "#b45309",
                  "requires-external-evidence": "#6b7280"}[c.status]
         fnd = "".join(
             f"<li>[{html.escape(f.get('severity','?'))}] {html.escape(f.get('title', f.get('rule_id','')))} "
             f"<code>{html.escape(f.get('file_path',''))}</code></li>"
             for f in c.findings if _is_open(f)
         )
+        detail = "<ul>" + fnd + "</ul>" if fnd else "&mdash;"
+        if c.status == "not-assessed" and c.not_assessed_reason:
+            detail = f"<i>{html.escape(c.not_assessed_reason)}</i>"
         rows.append(
             f"<tr><td><b>{html.escape(c.id)}</b><br>{html.escape(c.name)}</td>"
             f"<td style='color:{badge}'><b>{c.status.replace('-',' ')}</b></td>"
-            f"<td>{c.open_count}</td>"
-            f"<td>{'<ul>'+fnd+'</ul>' if fnd else '&mdash;'}</td></tr>"
+            f"<td>{c.open_count if c.assessable else '&mdash;'}</td>"
+            f"<td>{detail}</td></tr>"
         )
     tl = "".join(
         f"<tr><td>{html.escape(t['control'])}</td><td>{t['worst_severity']}</td>"
@@ -193,11 +278,12 @@ def render_html(report: dict) -> str:
 <p class="muted">{html.escape(str(report['version']))} &middot; generated {report['generated_at']}
  &middot; project {html.escape(str(report['scan'].get('project','')))} &middot; grade {html.escape(str(report['scan'].get('grade','')))}</p>
 <div>
- <span class="kpi"><b>{s['compliance_score_pct']}%</b>in-scope passing</span>
+ <span class="kpi"><b>{s['compliance_score_pct']}%</b>assessed controls with no findings</span>
  <span class="kpi"><b>{s['controls_needs_attention']}</b>need attention</span>
- <span class="kpi"><b>{s['controls_passing']}</b>passing</span>
+ <span class="kpi"><b>{s['controls_no_findings']}</b>no findings</span>
+ <span class="kpi"><b>{s['controls_not_assessed']}</b>not assessed</span>
  <span class="kpi"><b>{s['controls_external']}</b>external evidence</span>
- <span class="kpi"><b>{s['coverage_pct']}%</b>control coverage</span>
+ <span class="kpi"><b>{s['coverage_pct']}%</b>of the framework assessed</span>
 </div>
 <h2>Findings by control</h2>
 <table><tr><th>Control</th><th>Status</th><th>Open</th><th>Open findings</th></tr>{''.join(rows)}</table>
@@ -233,8 +319,9 @@ def main() -> None:
         Path(args.out).write_bytes(pdf)
     else:
         Path(args.out).write_text(html_str, encoding="utf-8")
-    print(f"wrote {args.out} — score {report['summary']['compliance_score_pct']}% "
-          f"({report['summary']['controls_needs_attention']} controls need attention)")
+    su = report["summary"]
+    print(f"wrote {args.out} — {su['compliance_score_pct']}% of assessed controls have no findings "
+          f"({su['controls_needs_attention']} need attention, {su['controls_not_assessed']} not assessed)")
 
 
 if __name__ == "__main__":

@@ -2,97 +2,131 @@ framework: OWASP ASVS
 version: "4.0.3"
 authority: OWASP
 description: >
-  Application Security Verification Standard. ASVS chapters map almost directly
-  to Aegis findings; `level` is the lowest ASVS level at which the requirement
-  applies (1 = all apps, 2 = most apps, 3 = high-assurance).
+  Application Security Verification Standard. ASVS chapters map more directly to
+  Aegis findings than any other framework we ship, because ASVS is written about
+  application weaknesses rather than organizational process. `level` is the
+  lowest ASVS level at which the requirement applies (1 = all apps, 2 = most,
+  3 = high-assurance).
+# ── J1 mapping-accuracy rules ────────────────────────────────────────────────
+# Evidence keys are mutually exclusive across in-scope controls (see soc2.yaml).
+# Verification note: ASVS 4.0.3 is published openly by OWASP under CC BY-SA.
+# Chapter and section titles below were checked against the public standard.
+#
+# Before J1 the three input-handling sections V5.1, V5.2 and V5.3 all carried
+# A03:2021, so a single SQL-injection finding failed all three -- 513
+# triple-attributions across our corpus. A03 now sits only with V5.3 (injection
+# prevention); V5.1 keeps input-validation weaknesses and V5.2 keeps the
+# sanitization classes that are not injection-into-an-interpreter.
 controls:
   - id: "V2.1"
-    name: Authentication — no default/hard-coded credentials
+    name: Password security requirements
     level: 1
     evidence:
       owasp: ["A07:2021"]
-      cwe: ["CWE-798", "CWE-259", "CWE-287", "CWE-306"]
+      cwe: ["CWE-798", "CWE-259", "CWE-321", "CWE-287", "CWE-306", "CWE-522", "CWE-916"]
       pillars: ["security"]
+
   - id: "V3.x"
-    name: Session management — secure tokens, no fixation
+    name: Session management
     level: 1
-    evidence:
-      owasp: ["A07:2021"]
-      cwe: ["CWE-384", "CWE-613", "CWE-522"]
-      pillars: ["security"]
+    # J1: previously shared A07:2021 with V2.1 and mapped CWE-384/613/522, none
+    # of which any engine we run emits. Session fixation and token lifetime are
+    # runtime/behavioural properties we do not currently detect.
+    aegis_scope: not-assessed
+    not_assessed_reason: >-
+      No engine we run emits session-management weaknesses (fixation, token
+      lifetime, secure cookie attributes) on real code today.
+
   - id: "V4.1"
-    name: Access control — enforce least privilege, deny by default
+    name: General access control design
     level: 1
     evidence:
       owasp: ["A01:2021"]
-      cwe: ["CWE-284", "CWE-285", "CWE-862", "CWE-863", "CWE-639"]
+      cwe: ["CWE-284", "CWE-285", "CWE-862", "CWE-863", "CWE-639", "CWE-352",
+            "CWE-601", "CWE-269", "CWE-266"]
       pillars: ["security"]
+
   - id: "V5.1"
     name: Input validation
     level: 1
     evidence:
-      owasp: ["A03:2021"]
-      cwe: ["CWE-20", "CWE-1284"]
+      cwe: ["CWE-20", "CWE-1284", "CWE-1321", "CWE-915", "CWE-704"]
       pillars: ["security"]
+
   - id: "V5.2"
-    name: Sanitization & sandboxing (XSS, SSRF, template injection)
+    name: Sanitization and sandboxing
     level: 1
     evidence:
-      owasp: ["A03:2021", "A10:2021"]
-      cwe: ["CWE-79", "CWE-918", "CWE-1336", "CWE-116"]
+      owasp: ["A10:2021"]
+      cwe: ["CWE-79", "CWE-918", "CWE-1336", "CWE-116", "CWE-706"]
       pillars: ["security"]
+
   - id: "V5.3"
-    name: Output encoding & injection prevention (SQLi, cmd, LDAP, XPath)
+    name: Output encoding and injection prevention
     level: 1
     evidence:
       owasp: ["A03:2021"]
-      cwe: ["CWE-89", "CWE-78", "CWE-90", "CWE-643", "CWE-943"]
+      cwe: ["CWE-89", "CWE-78", "CWE-90", "CWE-643", "CWE-943", "CWE-94", "CWE-95"]
       pillars: ["security"]
+
   - id: "V5.5"
     name: Deserialization prevention
     level: 1
     evidence:
-      owasp: ["A08:2021"]
       cwe: ["CWE-502", "CWE-611"]
       pillars: ["security"]
+
   - id: "V6.2"
-    name: Cryptographic algorithms — strong, non-deprecated
+    name: Algorithms
     level: 1
     evidence:
-      owasp: ["A02:2021"]
-      cwe: ["CWE-327", "CWE-326", "CWE-328", "CWE-916"]
+      cwe: ["CWE-327", "CWE-328", "CWE-311", "CWE-312", "CWE-326"]
       pillars: ["security"]
+
   - id: "V7.x"
-    name: Error handling & logging (no sensitive data leakage)
+    name: Error handling and logging
     level: 2
-    evidence:
-      owasp: ["A09:2021"]
-      cwe: ["CWE-209", "CWE-532", "CWE-778"]
-      pillars: ["security"]
+    # J1: mapped A09:2021 and CWE-209/532/778. A09 is never emitted by our
+    # engines and the CWEs are dead. Log-content review is also a data-handling
+    # question we do not answer.
+    aegis_scope: not-assessed
+    not_assessed_reason: >-
+      No engine we run emits log-injection or sensitive-data-in-logs findings on
+      real code today.
+
   - id: "V9.1"
-    name: Communications — TLS everywhere, valid certs
+    name: Client communication security
     level: 1
     evidence:
+      # J1 fix: V6.2 and V9.1 both carried A02:2021. A02 sits here, with the
+      # transport findings (CWE-319/295) that dominate it; V6.2 keeps the
+      # algorithm-strength CWEs.
       owasp: ["A02:2021"]
       cwe: ["CWE-319", "CWE-295"]
       pillars: ["security"]
+
   - id: "V10.3"
-    name: Deployed application integrity (no known-vulnerable dependencies)
+    name: Deployed application integrity
     level: 1
     evidence:
-      owasp: ["A06:2021"]
-      cwe: ["CWE-1104", "CWE-937"]
+      owasp: ["A06:2021", "A08:2021"]
+      cwe: ["CWE-937", "CWE-1035", "CWE-1104", "CWE-829", "CWE-494", "CWE-353",
+            "CWE-1357", "CWE-345"]
       pillars: ["security"]
+
   - id: "V12.x"
-    name: File & resources — path traversal, unrestricted upload
+    name: Files and resources
     level: 1
     evidence:
-      cwe: ["CWE-22", "CWE-434", "CWE-73"]
+      # J1 fix: V10.3 and V12.x shared CWE-1104/937 (234 double-attributions).
+      # Dependency integrity is V10.3; V12 is about file handling.
+      cwe: ["CWE-22", "CWE-23", "CWE-434", "CWE-73"]
       pillars: ["security"]
+
   - id: "V14.1"
-    name: Build & deploy — secure configuration, no debug in prod
+    name: Build and deploy
     level: 1
     evidence:
       owasp: ["A05:2021"]
-      cwe: ["CWE-16", "CWE-489", "CWE-1188"]
+      cwe: ["CWE-16", "CWE-489", "CWE-1188", "CWE-732", "CWE-2"]
       pillars: ["deployment", "security"]

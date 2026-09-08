@@ -115,6 +115,11 @@ type ComplianceReport struct {
 	ScorePct               int    `json:"score_pct"`
 	ControlsNeedsAttention int    `json:"controls_needs_attention"`
 	ControlsInScope        int    `json:"controls_in_scope"`
+	// ScorePct is computed over assessed controls only (J1). Controls Aegis
+	// cannot evidence are excluded rather than counted as passes, so callers
+	// need the denominator that actually produced the percentage.
+	ControlsAssessed    int `json:"controls_assessed"`
+	ControlsNotAssessed int `json:"controls_not_assessed"`
 	HTML                   string `json:"html"`
 	Error                  string `json:"error,omitempty"`
 }

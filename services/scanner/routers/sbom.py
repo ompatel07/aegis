@@ -12,6 +12,7 @@ from pydantic import BaseModel
 
 from config import Settings, get_settings
 from logging_config import get_logger
+from utils import sbom_sanitize
 from utils.sandbox import binary_available, run_command
 
 router = APIRouter(prefix="/sbom", tags=["sbom"])
@@ -25,12 +26,21 @@ class SBOMRequest(BaseModel):
     path: str
     scan_id: str | None = None
     format: str = "cyclonedx"  # cyclonedx | spdx
+    # The repository this checkout came from. Used to name the SBOM: without it
+    # Trivy names the document after our internal checkout path, which leaks the
+    # path and makes the SPDX document invalid (J1 Part A).
+    repo_url: str | None = None
 
 
 class SBOMResponse(BaseModel):
     format: str
     content: str          # the SBOM document (JSON text)
     components: int        # number of components/packages catalogued
+    # True when the document is well-formed but catalogues nothing -- almost
+    # always a manifest with no lockfile (e.g. package.json without
+    # package-lock.json). Surfaced rather than stored as a silent success, so a
+    # customer is never handed an empty SBOM that looks complete.
+    empty: bool = False
     error: str | None = None
 
 
@@ -67,9 +77,22 @@ async def generate_sbom(req: SBOMRequest, settings: Settings = Depends(get_setti
 
     try:
         doc = json.loads(result.stdout)
-        components = _count_components(fmt, doc)
     except json.JSONDecodeError:
         return SBOMResponse(format=fmt, content="", components=0, error="sbom output was not valid JSON")
 
-    log.info("sbom.done", scan_id=req.scan_id, format=fmt, components=components)
-    return SBOMResponse(format=fmt, content=result.stdout, components=components)
+    # Strip the internal checkout path Trivy embeds and record the SBOM author.
+    # Without this the SPDX document fails the official validator on every
+    # package and carries our directory layout into a customer artifact.
+    doc = sbom_sanitize.sanitize(fmt, doc, req.repo_url)
+    components = _count_components(fmt, doc)
+    content = json.dumps(doc, separators=(",", ":"))
+
+    # A lockfile-less manifest yields a schema-valid document with nothing in it.
+    # That is a real gap in the answer, not a successful scan, so say so.
+    empty = components == 0
+    if empty:
+        log.warning("sbom.empty", scan_id=req.scan_id, format=fmt,
+                    detail="no resolved dependencies -- manifest present without a lockfile?")
+
+    log.info("sbom.done", scan_id=req.scan_id, format=fmt, components=components, empty=empty)
+    return SBOMResponse(format=fmt, content=content, components=components, empty=empty)

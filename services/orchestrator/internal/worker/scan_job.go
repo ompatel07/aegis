@@ -137,8 +137,8 @@ func (p *ScanProcessor) ProcessTask(ctx context.Context, task *asynq.Task) error
 	}
 
 	// SBOM (CycloneDX + SPDX) from the checkout — best-effort, never fails the scan.
-	cdx := p.pipe.GenerateSBOM(ctx, checkout.Dir, payload.ScanID, "cyclonedx")
-	spdx := p.pipe.GenerateSBOM(ctx, checkout.Dir, payload.ScanID, "spdx")
+	cdx := p.pipe.GenerateSBOM(ctx, checkout.Dir, payload.ScanID, "cyclonedx", payload.RepoURL)
+	spdx := p.pipe.GenerateSBOM(ctx, checkout.Dir, payload.ScanID, "spdx", payload.RepoURL)
 	if cdx != "" || spdx != "" {
 		if err := p.store.SaveSBOMs(ctx, payload.ScanID, cdx, spdx); err != nil {
 			log.Warn().Err(err).Msg("persist sbom failed (non-fatal)")

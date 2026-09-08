@@ -2,64 +2,102 @@ framework: PCI-DSS
 version: "4.0"
 authority: PCI Security Standards Council
 description: >
-  Evidence toward the technical PCI-DSS 4.0 requirements reachable by static
-  code, dependency, secret, and configuration analysis.
+  Evidence toward a small number of the technical PCI-DSS 4.0 requirements that
+  static code, dependency, secret and configuration analysis can speak to. This
+  is NOT a PCI assessment: PCI DSS 4.0 has 12 requirements and several hundred
+  sub-requirements, and validation requires a QSA or a formal SAQ.
+# ── J1 mapping-accuracy rules ────────────────────────────────────────────────
+# Evidence keys are mutually exclusive across in-scope controls (see soc2.yaml).
+# Verification note: PCI DSS 4.0 is a copyrighted standard distributed under the
+# SSC's terms of use. Requirement numbering and titles below were checked against
+# the publicly published requirement summary; the full normative text was NOT
+# re-read verbatim during J1. Treat the wording here as our paraphrase.
 controls:
   - id: "2.2"
-    name: Secure configuration standards for system components
+    name: System components are configured and managed securely
     evidence:
       owasp: ["A05:2021"]
-      cwe: ["CWE-16", "CWE-1188", "CWE-732"]
+      cwe: ["CWE-16", "CWE-1188", "CWE-732", "CWE-489", "CWE-2"]
       pillars: ["deployment", "security"]
+
   - id: "3.5"
-    name: Protection of stored account data (strong cryptography)
+    name: Primary account number is secured wherever it is stored
     evidence:
-      owasp: ["A02:2021"]
-      cwe: ["CWE-311", "CWE-312", "CWE-327", "CWE-326"]
+      # At-rest protection. In-transit lives at 4.2; the two shared A02:2021 and
+      # CWE-326 before J1, so every crypto finding failed both.
+      cwe: ["CWE-311", "CWE-312", "CWE-327", "CWE-328", "CWE-916"]
       pillars: ["security"]
+
   - id: "4.2"
-    name: Strong cryptography for cardholder data in transit
+    name: PAN is protected with strong cryptography during transmission over open networks
     evidence:
       owasp: ["A02:2021"]
       cwe: ["CWE-319", "CWE-295", "CWE-326"]
       pillars: ["security"]
+
   - id: "6.2.4"
-    name: Secure coding — injection, XSS, and common software attacks
+    name: Software engineering techniques prevent or mitigate common software attacks
     evidence:
-      owasp: ["A03:2021"]
-      cwe: ["CWE-89", "CWE-79", "CWE-78", "CWE-90", "CWE-943", "CWE-611"]
+      owasp: ["A03:2021", "A10:2021"]
+      cwe: ["CWE-89", "CWE-79", "CWE-78", "CWE-90", "CWE-943", "CWE-611", "CWE-918",
+            "CWE-502", "CWE-94", "CWE-95", "CWE-1321", "CWE-1336", "CWE-22", "CWE-23",
+            "CWE-20", "CWE-1284", "CWE-116", "CWE-643", "CWE-706", "CWE-704", "CWE-915"]
       pillars: ["security"]
+
   - id: "6.3.1"
-    name: Identify & rank vulnerabilities in bespoke and 3rd-party software
+    name: Security vulnerabilities are identified and managed
     evidence:
+      # J1 fix: 6.3.1 and 6.3.3 both carried A06:2021 and CWE-937, so every
+      # dependency CVE failed both -- 1,942 double-attributions across our
+      # corpus, the largest single defect in any framework we ship. 6.3.1 is
+      # *identification*; 6.3.3 is *installing the patches*, which we cannot
+      # observe, so it is now not-assessed.
       owasp: ["A06:2021"]
       cwe: ["CWE-937", "CWE-1035", "CWE-1104"]
       pillars: ["security"]
+
   - id: "6.3.3"
-    name: Security vulnerabilities remediated (severity-ranked)
-    evidence:
-      owasp: ["A06:2021", "A03:2021"]
-      cwe: ["CWE-937"]
-      pillars: ["security"]
+    name: All system components are protected from known vulnerabilities by installing applicable security patches
+    aegis_scope: not-assessed
+    not_assessed_reason: >-
+      Requires evidence that patches were installed within the required window on
+      deployed components. Aegis observes which vulnerable versions are declared
+      in a repository (reported under 6.3.1), not the patch state of running
+      systems or the remediation timeline.
+
   - id: "6.4.1"
-    name: Address common web vulnerabilities (SSRF, deserialization, access)
-    evidence:
-      owasp: ["A01:2021", "A08:2021", "A10:2021"]
-      cwe: ["CWE-918", "CWE-502", "CWE-639"]
-      pillars: ["security"]
+    name: Public-facing web applications are protected against attacks
+    aegis_scope: not-assessed
+    not_assessed_reason: >-
+      Satisfied by an automated technical solution that detects and prevents
+      web-based attacks in front of the application (WAF or equivalent), or by
+      periodic manual review. Neither is evidenced by scanning source; the
+      underlying weakness classes are reported under 6.2.4.
+
   - id: "8.3.1"
-    name: Strong authentication; no hard-coded/default credentials
+    name: Strong authentication for users and administrators
     evidence:
       owasp: ["A07:2021"]
-      cwe: ["CWE-798", "CWE-259", "CWE-287", "CWE-306"]
+      cwe: ["CWE-287", "CWE-306"]
       pillars: ["security"]
+
   - id: "8.6.1"
-    name: Credentials for accounts/apps not hard-coded
+    name: Accounts used by systems or applications are managed; credentials are not hard-coded
     evidence:
-      cwe: ["CWE-798", "CWE-321", "CWE-259"]
+      # J1 fix: 8.3.1 and 8.6.1 shared CWE-798 and CWE-259. Hard-coded
+      # credentials belong to 8.6.1 (application/system account management);
+      # 8.3.1 keeps the authentication-strength weaknesses.
+      cwe: ["CWE-798", "CWE-259", "CWE-321", "CWE-522"]
       pillars: ["security"]
+
+  - id: "1.x"
+    name: Network security controls (firewalls, segmentation)
+    aegis_scope: out-of-scope
   - id: "9.x"
     name: Physical access to cardholder data
+    aegis_scope: out-of-scope
+  - id: "10.x"
+    name: Logging and monitoring of access to system components
     aegis_scope: out-of-scope
   - id: "12.x"
     name: Information security policy & program management

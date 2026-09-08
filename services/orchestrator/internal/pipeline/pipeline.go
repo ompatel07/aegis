@@ -28,8 +28,8 @@ func New(scanner, deep *adapters.ScannerClient, log zerolog.Logger) *Pipeline {
 
 // GenerateSBOM produces a Software Bill of Materials (cyclonedx | spdx) from the
 // checkout. Best-effort: a failure never fails the scan (returns empty + logs).
-func (p *Pipeline) GenerateSBOM(ctx context.Context, dir, scanID, format string) string {
-	content, components, err := p.scanner.SBOM(ctx, dir, scanID, format)
+func (p *Pipeline) GenerateSBOM(ctx context.Context, dir, scanID, format, repoURL string) string {
+	content, components, err := p.scanner.SBOM(ctx, dir, scanID, format, repoURL)
 	if err != nil {
 		p.log.Warn().Err(err).Str("scan_id", scanID).Str("format", format).Msg("sbom generation failed")
 		return ""
