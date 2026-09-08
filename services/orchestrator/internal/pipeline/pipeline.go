@@ -34,6 +34,16 @@ func (p *Pipeline) GenerateSBOM(ctx context.Context, dir, scanID, format, repoUR
 		p.log.Warn().Err(err).Str("scan_id", scanID).Str("format", format).Msg("sbom generation failed")
 		return ""
 	}
+	// J2: a manifest with no lockfile yields a schema-valid document cataloguing
+	// nothing (juice-shop has package.json but no package-lock.json). Storing it
+	// would hand a customer an empty inventory that looks like a complete one.
+	// Returning empty makes the read path report "no SBOM generated", which is
+	// the honest state and one the API already models.
+	if components == 0 {
+		p.log.Warn().Str("scan_id", scanID).Str("format", format).
+			Msg("sbom catalogued no components (manifest without a lockfile?); not stored")
+		return ""
+	}
 	p.log.Info().Str("scan_id", scanID).Str("format", format).Int("components", components).Msg("sbom generated")
 	return content
 }

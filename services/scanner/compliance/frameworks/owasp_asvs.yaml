@@ -17,13 +17,23 @@ description: >
 # triple-attributions across our corpus. A03 now sits only with V5.3 (injection
 # prevention); V5.1 keeps input-validation weaknesses and V5.2 keeps the
 # sanitization classes that are not injection-into-an-interpreter.
+# ── J2 scope declaration ─────────────────────────────────────────────────────
+# Stated here rather than only in a document, so the claim travels with the
+# mapping and appears on the generated report itself.
+scope:
+  standard_total: "286 requirements across 14 chapters"
+  reachable_by_static_analysis: 13
+  claim: headline
+  verification: normative-text
+  note: >-
+    ASVS is written about application weaknesses, so it is the framework our findings map to most directly.
 controls:
   - id: "V2.1"
     name: Password security requirements
     level: 1
     evidence:
       owasp: ["A07:2021"]
-      cwe: ["CWE-798", "CWE-259", "CWE-321", "CWE-287", "CWE-306", "CWE-522", "CWE-916"]
+      cwe: ["CWE-798", "CWE-321", "CWE-287", "CWE-306", "CWE-522", "CWE-916"]
       pillars: ["security"]
 
   - id: "V3.x"
@@ -43,7 +53,7 @@ controls:
     evidence:
       owasp: ["A01:2021"]
       cwe: ["CWE-284", "CWE-285", "CWE-862", "CWE-863", "CWE-639", "CWE-352",
-            "CWE-601", "CWE-269", "CWE-266"]
+            "CWE-601", "CWE-269"]
       pillars: ["security"]
 
   - id: "V5.1"
@@ -80,7 +90,7 @@ controls:
     name: Algorithms
     level: 1
     evidence:
-      cwe: ["CWE-327", "CWE-328", "CWE-311", "CWE-312", "CWE-326"]
+      cwe: ["CWE-327", "CWE-328", "CWE-311", "CWE-326"]
       pillars: ["security"]
 
   - id: "V7.x"
@@ -110,7 +120,7 @@ controls:
     level: 1
     evidence:
       owasp: ["A06:2021", "A08:2021"]
-      cwe: ["CWE-937", "CWE-1035", "CWE-1104", "CWE-829", "CWE-494", "CWE-353",
+      cwe: ["CWE-1104", "CWE-829", "CWE-494", "CWE-353",
             "CWE-1357", "CWE-345"]
       pillars: ["security"]
 
@@ -120,7 +130,7 @@ controls:
     evidence:
       # J1 fix: V10.3 and V12.x shared CWE-1104/937 (234 double-attributions).
       # Dependency integrity is V10.3; V12 is about file handling.
-      cwe: ["CWE-22", "CWE-23", "CWE-434", "CWE-73"]
+      cwe: ["CWE-22", "CWE-23", "CWE-73"]
       pillars: ["security"]
 
   - id: "V14.1"
@@ -128,5 +138,5 @@ controls:
     level: 1
     evidence:
       owasp: ["A05:2021"]
-      cwe: ["CWE-16", "CWE-489", "CWE-1188", "CWE-732", "CWE-2"]
+      cwe: ["CWE-16", "CWE-489", "CWE-732"]
       pillars: ["deployment", "security"]

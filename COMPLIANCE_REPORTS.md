@@ -8,12 +8,12 @@ each framework's controls via CWE and OWASP category.
 
 | Framework | Version | Mapping file |
 | --- | --- | --- |
-| SOC 2 | 2017 Trust Services Criteria | [`compliance/frameworks/soc2.yaml`](compliance/frameworks/soc2.yaml) |
-| PCI-DSS | 4.0 | [`compliance/frameworks/pci_dss.yaml`](compliance/frameworks/pci_dss.yaml) |
-| HIPAA Security Rule | 45 CFR §164.312 | [`compliance/frameworks/hipaa.yaml`](compliance/frameworks/hipaa.yaml) |
-| ISO/IEC 27001 | 2022 Annex A | [`compliance/frameworks/iso27001.yaml`](compliance/frameworks/iso27001.yaml) |
-| OWASP ASVS | 4.0.3 (L1/L2/L3) | [`compliance/frameworks/owasp_asvs.yaml`](compliance/frameworks/owasp_asvs.yaml) |
-| NIST CSF | 2.0 | [`compliance/frameworks/nist_csf.yaml`](compliance/frameworks/nist_csf.yaml) |
+| SOC 2 | 2017 Trust Services Criteria | [`services/scanner/compliance/frameworks/soc2.yaml`](services/scanner/compliance/frameworks/soc2.yaml) |
+| PCI-DSS | 4.0 | [`services/scanner/compliance/frameworks/pci_dss.yaml`](services/scanner/compliance/frameworks/pci_dss.yaml) |
+| HIPAA Security Rule | 45 CFR §164.312 | [`services/scanner/compliance/frameworks/hipaa.yaml`](services/scanner/compliance/frameworks/hipaa.yaml) |
+| ISO/IEC 27001 | 2022 Annex A | [`services/scanner/compliance/frameworks/iso27001.yaml`](services/scanner/compliance/frameworks/iso27001.yaml) |
+| OWASP ASVS | 4.0.3 (L1/L2/L3) | [`services/scanner/compliance/frameworks/owasp_asvs.yaml`](services/scanner/compliance/frameworks/owasp_asvs.yaml) |
+| NIST CSF | 2.0 | [`services/scanner/compliance/frameworks/nist_csf.yaml`](services/scanner/compliance/frameworks/nist_csf.yaml) |
 
 Mapping methodology + honest-scope statement: [`compliance/README.md`](compliance/README.md).
 

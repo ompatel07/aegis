@@ -11,13 +11,23 @@ description: >
 # Verification note: CSF 2.0 is published openly by NIST (NIST.CSWP.29).
 # Subcategory identifiers and outcome statements below were checked against the
 # public Core.
+# ── J2 scope declaration ─────────────────────────────────────────────────────
+# Stated here rather than only in a document, so the claim travels with the
+# mapping and appears on the generated report itself.
+scope:
+  standard_total: "106 subcategories across 6 functions"
+  reachable_by_static_analysis: 8
+  claim: supporting-evidence
+  verification: normative-text
+  note: >-
+    Scoped to PROTECT and IDENTIFY subcategories about code and configuration. GOVERN, RESPOND and RECOVER are organizational and out of scope.
 controls:
   - id: "PR.AA-01"
     name: Identities and credentials for authorized users, services and hardware are managed
     function: PROTECT
     evidence:
       owasp: ["A07:2021"]
-      cwe: ["CWE-798", "CWE-259", "CWE-321", "CWE-522", "CWE-287", "CWE-306"]
+      cwe: ["CWE-798", "CWE-321", "CWE-522", "CWE-287", "CWE-306"]
       pillars: ["security"]
 
   - id: "PR.AA-05"
@@ -28,7 +38,7 @@ controls:
       # filesystem/container permissions rather than application authorization).
       owasp: ["A01:2021"]
       cwe: ["CWE-284", "CWE-285", "CWE-862", "CWE-863", "CWE-639", "CWE-352", "CWE-601",
-            "CWE-269", "CWE-266"]
+            "CWE-269"]
       pillars: ["security"]
 
   - id: "PR.DS-01"
@@ -38,7 +48,7 @@ controls:
       # J1 fix: PR.DS-01 and PR.DS-02 both carried A02:2021, so every crypto
       # finding failed both. A02 now sits with the in-transit subcategory, which
       # is where most of our crypto findings (CWE-319, CWE-295) actually land.
-      cwe: ["CWE-311", "CWE-312", "CWE-327", "CWE-328", "CWE-916"]
+      cwe: ["CWE-311", "CWE-327", "CWE-328", "CWE-916"]
       pillars: ["security"]
 
   - id: "PR.DS-02"
@@ -57,7 +67,7 @@ controls:
       # double-attributions). Configuration findings belong here; DE.CM-09 is a
       # monitoring outcome and is now not-assessed.
       owasp: ["A05:2021"]
-      cwe: ["CWE-16", "CWE-1188", "CWE-732", "CWE-489", "CWE-2"]
+      cwe: ["CWE-16", "CWE-732", "CWE-489"]
       pillars: ["deployment", "security"]
 
   - id: "PR.PS-06"
@@ -76,7 +86,7 @@ controls:
     function: IDENTIFY
     evidence:
       owasp: ["A06:2021"]
-      cwe: ["CWE-937", "CWE-1035", "CWE-1104"]
+      cwe: ["CWE-1104"]
       pillars: ["security"]
 
   - id: "DE.CM-09"

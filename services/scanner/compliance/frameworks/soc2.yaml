@@ -17,6 +17,18 @@ description: >
 #    document behind an account wall. Criterion numbering and titles below were
 #    checked against the publicly published criteria list; the full normative
 #    text was NOT re-read verbatim during J1. See docs/COMPLIANCE_ACCURACY_J1.md.
+# ── J2 scope declaration ─────────────────────────────────────────────────────
+# Stated here rather than only in a document, so the claim travels with the
+# mapping and appears on the generated report itself.
+scope:
+  standard_total: "33 Common Criteria (CC1.1-CC9.2)"
+  reachable_by_static_analysis: 9
+  claim: headline
+  verification: numbering-and-titles
+  note: >-
+    The security Common Criteria are the relevant set; the availability,
+    confidentiality, processing-integrity and privacy criteria are not addressed
+    at all.
 controls:
   - id: CC6.1
     name: Logical access security over protected information assets
@@ -32,7 +44,7 @@ controls:
       # Hard-coded and weakly protected credentials sit here rather than under
       # CC8.1. CC8.1 is change management; a secret in source is an
       # authentication weakness, not a change-control failure (J1 fix).
-      cwe: ["CWE-287", "CWE-306", "CWE-798", "CWE-259", "CWE-321", "CWE-522"]
+      cwe: ["CWE-287", "CWE-306", "CWE-798", "CWE-321", "CWE-522"]
       pillars: ["security"]
 
   - id: CC6.3
@@ -43,7 +55,7 @@ controls:
       # permissions -- so it dragged container-hardening findings into a
       # role-based-access criterion (the F1 CC6.3 defect). Those findings now
       # evidence CC7.1, where configuration belongs.
-      cwe: ["CWE-269", "CWE-266"]
+      cwe: ["CWE-269"]
       pillars: ["security"]
 
   - id: CC6.6
@@ -60,7 +72,7 @@ controls:
     name: Restricts the transmission, movement and removal of information; encryption
     evidence:
       owasp: ["A02:2021"]
-      cwe: ["CWE-311", "CWE-312", "CWE-319", "CWE-326", "CWE-327", "CWE-328", "CWE-295", "CWE-916"]
+      cwe: ["CWE-311", "CWE-319", "CWE-326", "CWE-327", "CWE-328", "CWE-295", "CWE-916"]
       pillars: ["security"]
 
   - id: CC6.8
@@ -86,7 +98,7 @@ controls:
       # configuration. The configuration evidence moved here from the old CC7.2
       # entry, which was misnamed (see below).
       owasp: ["A06:2021", "A05:2021"]
-      cwe: ["CWE-937", "CWE-1035", "CWE-1104", "CWE-16", "CWE-1188", "CWE-732", "CWE-489"]
+      cwe: ["CWE-1104", "CWE-16", "CWE-732", "CWE-489"]
       pillars: ["security", "deployment"]
 
   - id: CC7.2

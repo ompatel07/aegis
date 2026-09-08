@@ -10,6 +10,16 @@ description: >
 # is public. Every control name below was checked verbatim against 45 CFR 164.312
 # during J1. Standard and implementation-specification names are quoted from the
 # regulation rather than paraphrased.
+# ── J2 scope declaration ─────────────────────────────────────────────────────
+# Stated here rather than only in a document, so the claim travels with the
+# mapping and appears on the generated report itself.
+scope:
+  standard_total: "~18 standards across Administrative, Physical and Technical Safeguards"
+  reachable_by_static_analysis: 7
+  claim: supporting-evidence
+  verification: normative-text
+  note: >-
+    Scoped to the §164.312 Technical Safeguards. Administrative (§164.308) and Physical (§164.310) safeguards are the majority of the Security Rule and are out of scope entirely.
 controls:
   - id: "164.312(a)(1)"
     name: Access control
@@ -26,7 +36,7 @@ controls:
     # "Implement a mechanism to encrypt and decrypt ePHI." — at rest.
     evidence:
       owasp: ["A02:2021"]
-      cwe: ["CWE-311", "CWE-312", "CWE-327", "CWE-328", "CWE-916"]
+      cwe: ["CWE-311", "CWE-327", "CWE-328", "CWE-916"]
       pillars: ["security"]
 
   - id: "164.312(c)(1)"
@@ -46,7 +56,7 @@ controls:
     # ePHI is the one claimed."
     evidence:
       owasp: ["A07:2021"]
-      cwe: ["CWE-287", "CWE-306", "CWE-798", "CWE-259", "CWE-321", "CWE-522"]
+      cwe: ["CWE-287", "CWE-306", "CWE-798", "CWE-321", "CWE-522"]
       pillars: ["security"]
 
   - id: "164.312(e)(1)"

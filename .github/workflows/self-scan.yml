@@ -63,6 +63,11 @@ jobs:
       # functions that fabricate a constant on an error path, unless documented
       # with `# fail-open:`. Keeps the whole class from creeping back in.
       - run: python services/scanner/tools/check_no_silent_degradation.py
+      # J2: the compliance mappings must exist in exactly one place, and every
+      # evidence identifier must be one an engine can actually emit. Both
+      # defects had been fixed once and returned.
+      - run: pip install --quiet pyyaml
+      - run: python services/scanner/tools/check_single_framework_tree.py
 
   semgrep:
     name: SAST (Semgrep + Aegis taint rules)

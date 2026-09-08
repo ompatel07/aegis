@@ -147,7 +147,7 @@ Completeness measured across every component in a real scan, not asserted from t
 | Component name | 100% | 100% | 100% | 100% | not measured |
 | Version | 99.7% | 99.6% | 85.7% | 97.1% | not measured |
 | Other unique IDs (purl) | 99.7% | 99.6% | 85.7% | 98.6% | not measured |
-| Dependency relationships | **47%** (179/380) | **49%** (267/543) | **50%** (4/8) | **3.6%** (5/139) | not measured |
+| Dependency relationships | **100%** reachable, depth 12 | **100%**, depth 9 | **100%**, depth 4 | **100%**, depth 3 ¹ | not measured |
 | Author of SBOM data | ✅ *(added in J1)* | ✅ | ✅ | ✅ | not measured |
 | Timestamp | 100% | 100% | 100% | 100% | not measured |
 
@@ -173,10 +173,16 @@ and averaging it would have hidden the truth:
 - **npm and pip: a genuine graph.** NodeGoat has 179 of 380 nodes with children and a realistic
   fan-out distribution (64 nodes with 1 child, 36 with 2, 22 with 4, and a tail). SPDX carries 631
   relationships for 382 packages. This satisfies the element.
-- **Go: effectively flat.** Only **5 of 139** entries have any `dependsOn` at all. A Go module graph
-  read from `go.sum` gives us the set of modules but almost none of the edges. **For Go projects we
-  do not meet the NTIA relationship element**, and a flat list is exactly what NTIA calls out as
-  insufficient.
+- **Go: complete but shallow.** ¹ **Corrected 2026-09-08 (J2).** This row first read "3.6% (5/139),
+  effectively flat, does not meet the NTIA relationship element". That was measured wrongly: it
+  counted *nodes that have children* rather than edges, and in a Go SBOM nearly all edges hang off
+  two module nodes (`api` -> 75 children, `orchestrator` -> 59). Re-measured by reachability, **all
+  138 components are reachable from the root and there are 138 edges — the relationship element is
+  met.** What Go genuinely lacks is *depth*: the graph is 3 levels deep versus npm's 12, so we can
+  say which module includes a component but not which dependency pulled in a given transitive one.
+  Closing that needs `go mod graph` (running the Go toolchain over customer code) or fetching each
+  module's `go.mod` (a network call per package); both are ruled out by our boundaries. See
+  `docs/COMPLIANCE_SCOPE_J2.md` §4.
 - **composer: too small to generalise** (4 of 8).
 
 ---
@@ -342,7 +348,7 @@ very little about the framework as a whole, and an auditor will read the denomin
 percentage. **Third, "not assessed" is doing real work now**: eleven controls are explicitly outside
 what we can evidence, and an auditor will want those covered by other means rather than treated as
 handled. **Fourth, and most likely to be challenged: for Go projects the dependency graph is
-effectively flat** (5 of 139 nodes have edges), and for Java we may not be able to produce an SBOM
+shallower — 3 levels against npm's 12, so transitive provenance is not recoverable — and for Java we may not be able to produce an SBOM
 at all when Maven Central rate-limits us — so our coverage claim is ecosystem-dependent in a way a
 single summary number would hide.
 

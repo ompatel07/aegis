@@ -177,3 +177,161 @@ def test_framework_yaml_is_parseable_and_titled():
             doc = yaml.safe_load(fh)
         assert doc.get("framework") and doc.get("version") and doc.get("authority")
         assert doc.get("controls"), name
+
+
+# ── J2: structural guards ─────────────────────────────────────────────────────
+# These two tests exist because both defect classes came back after being fixed
+# once. A corrected compliance defect must not be able to return quietly.
+
+def _repo_root() -> str | None:
+    """Walk up to the git checkout. Returns None inside the scanner image, where
+    services/scanner is mounted as / and there is no repository to inspect."""
+    d = os.path.dirname(os.path.abspath(__file__))
+    for _ in range(6):
+        if os.path.isdir(os.path.join(d, ".git")):
+            return d
+        parent = os.path.dirname(d)
+        if parent == d:
+            break
+        d = parent
+    return None
+
+
+def test_only_one_framework_tree_exists_in_the_repository():
+    """J2 Part A. Two copies of the framework mappings existed: the loaded one
+    under services/scanner/compliance/frameworks/, and a stale duplicate at the
+    repository root with its own README. Only the loaded copy was fixed, so the
+    root copy still carried the wrong HIPAA control title, CC6.3's over-broad
+    CWE-732 and CC8.1's wrong title -- and it is the copy someone browsing the
+    repository finds first.
+
+    A second tree must not be able to reappear unnoticed."""
+    root = _repo_root()
+    if root is None:
+        pytest.skip("not a git checkout (running inside the scanner image)")
+    found = []
+    skip = {".git", "node_modules", ".venv", "__pycache__", ".next", "dist", "build"}
+    for dirpath, dirs, files in os.walk(root):
+        dirs[:] = [d for d in dirs if d not in skip]
+        if os.path.basename(dirpath) != "frameworks":
+            continue
+        if any(f.endswith((".yaml", ".yml")) for f in files):
+            found.append(os.path.relpath(dirpath, root))
+    assert len(found) == 1, (
+        f"expected exactly one framework tree, found {len(found)}: {found}. "
+        f"A duplicate diverges silently -- the copy that is not loaded keeps its defects."
+    )
+    assert found[0].replace(os.sep, "/").endswith("services/scanner/compliance/frameworks")
+
+
+def _emittable() -> tuple[set[str], set[str]]:
+    path = FRAMEWORK_DIR.parent / "emittable_identifiers.yaml"
+    with open(path, encoding="utf-8") as fh:
+        doc = yaml.safe_load(fh)
+    cwe = {c.upper() for c in doc["declared"]["cwe"]} | {c.upper() for c in doc["observed"]["cwe"]}
+    ow = set(doc["declared"]["owasp"]) | set(doc["observed"]["owasp"])
+    return cwe, ow
+
+
+@pytest.mark.parametrize("name", FRAMEWORKS)
+def test_every_evidence_identifier_is_one_an_engine_can_emit(name):
+    """J2 Part B. An evidence rule that can never fire makes a control read
+    "no findings" when the truth is "never checked". J1 found CWE-937 and
+    CWE-1035 mapped in six frameworks and emitted by nothing; the full audit
+    found 36 such entries.
+
+    Every identifier must appear in the emittable inventory -- either declared in
+    a rule we ship, or observed on a real finding."""
+    live_cwe, live_ow = _emittable()
+    fw = load_framework(name)
+    dead = []
+    for ctrl in fw.get("controls", []):
+        if ctrl.get("aegis_scope") in ("out-of-scope", "not-assessed"):
+            continue
+        ev = ctrl.get("evidence") or {}
+        for c in ev.get("cwe", []):
+            if c.upper() not in live_cwe:
+                dead.append((ctrl["id"], c))
+        for o in ev.get("owasp", []):
+            if o not in live_ow:
+                dead.append((ctrl["id"], o))
+    assert not dead, (
+        f"{name}: these evidence entries reference identifiers no engine can emit, so the "
+        f"control would report 'no findings' without ever being checkable: {dead}. "
+        f"Remove them, or add the detector and refresh the inventory with "
+        f"scripts/refresh_emittable_identifiers.py."
+    )
+
+
+@pytest.mark.parametrize("name", FRAMEWORKS)
+def test_every_assessable_control_has_at_least_one_emittable_identifier(name):
+    """The consequence of the test above, at control granularity: a control whose
+    evidence is entirely un-emittable must be not-assessed, not scored."""
+    live_cwe, live_ow = _emittable()
+    fw = load_framework(name)
+    for ctrl in fw.get("controls", []):
+        if ctrl.get("aegis_scope") in ("out-of-scope", "not-assessed"):
+            continue
+        ev = ctrl.get("evidence") or {}
+        usable = [c for c in ev.get("cwe", []) if c.upper() in live_cwe]
+        usable += [o for o in ev.get("owasp", []) if o in live_ow]
+        assert usable, (
+            f"{name}: {ctrl['id']} is scored but no engine can produce any of its evidence. "
+            f"Mark it aegis_scope: not-assessed instead of letting it read 'no findings'."
+        )
+
+
+@pytest.mark.parametrize("name", FRAMEWORKS)
+def test_pillars_are_real_pillars(name):
+    valid = {"security", "quality", "deployment"}
+    fw = load_framework(name)
+    for ctrl in fw.get("controls", []):
+        for p in (ctrl.get("evidence") or {}).get("pillars", []):
+            assert p in valid, f"{name}: {ctrl['id']} references unknown pillar {p!r}"
+
+
+# ── J2 Part C: scope must be declared, and must reach the report ──────────────
+
+HEADLINE = {"soc2", "owasp_asvs"}
+
+
+@pytest.mark.parametrize("name", FRAMEWORKS)
+def test_every_framework_declares_its_scope(name):
+    """A framework where we assess 7 of ~300 sub-requirements must say so in the
+    mapping, not only in a document a reader may never open."""
+    fw = load_framework(name)
+    sc = fw.get("scope") or {}
+    assert sc.get("standard_total"), f"{name}: no standard_total declared"
+    assert sc.get("claim") in ("headline", "supporting-evidence"), f"{name}: {sc.get('claim')!r}"
+    assert sc.get("verification") in ("normative-text", "numbering-and-titles"), name
+    assert sc.get("note"), f"{name}: no scope note"
+
+
+def test_only_asvs_and_soc2_are_headline_claims():
+    """Everything else is labelled supporting evidence. If this changes, it should
+    be a deliberate decision, not a drift."""
+    actual = {n for n in FRAMEWORKS if (load_framework(n).get("scope") or {}).get("claim") == "headline"}
+    assert actual == HEADLINE, f"headline claims drifted: {actual}"
+
+
+@pytest.mark.parametrize("name", sorted(set(FRAMEWORKS) - HEADLINE))
+def test_supporting_frameworks_say_so_on_the_report_itself(name):
+    """The scope caveat has to be on the artifact. A caveat that lives only in a
+    doc is not attached to the thing someone forwards to an auditor."""
+    from compliance.report import render_html
+    fw = load_framework(name)
+    html_out = render_html(build_report({}, [], fw))
+    assert "SUPPORTING EVIDENCE ONLY" in html_out, f"{name}: report does not carry its scope caveat"
+    assert str((fw.get("scope") or {})["standard_total"]) in html_out
+
+
+@pytest.mark.parametrize("name", FRAMEWORKS)
+def test_paywalled_verification_is_disclosed_on_the_report(name):
+    """Where we could not read the normative text, the report must say so rather
+    than implying the mapping was checked against the standard itself."""
+    from compliance.report import render_html
+    fw = load_framework(name)
+    if (fw.get("scope") or {}).get("verification") != "numbering-and-titles":
+        pytest.skip("verified against normative text")
+    html_out = render_html(build_report({}, [], fw))
+    assert "was NOT read" in html_out

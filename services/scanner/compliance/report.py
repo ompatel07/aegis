@@ -208,6 +208,7 @@ def build_report(scan_meta: dict, findings: list[dict], framework: dict) -> dict
     return {
         "framework": framework.get("framework"),
         "version": framework.get("version"),
+        "scope": framework.get("scope") or {},
         "generated_at": _dt.datetime.now(_dt.timezone.utc).isoformat(),
         "scan": scan_meta,
         "summary": {
@@ -239,8 +240,47 @@ DISCLAIMER = (
 )
 
 
+_CLAIM_TEXT = {
+    "headline": ("This is one of the two frameworks Aegis assesses most directly.",
+                 "#065f46", "#ecfdf5", "#6ee7b7"),
+    "supporting-evidence": (
+        "SUPPORTING EVIDENCE ONLY. Aegis assesses a small technical subset of this "
+        "framework. This report is an input to an assessment, not coverage of the "
+        "standard, and must not be presented as either.",
+        "#7c2d12", "#fff7ed", "#fdba74"),
+}
+
+
+def _render_scope(report: dict) -> str:
+    sc = report.get("scope") or {}
+    if not sc:
+        return ""
+    claim = str(sc.get("claim") or "supporting-evidence")
+    text, fg, bg, border = _CLAIM_TEXT.get(claim, _CLAIM_TEXT["supporting-evidence"])
+    su = report["summary"]
+    verif = str(sc.get("verification") or "")
+    verif_text = {
+        "normative-text": "Control text verified against the published normative standard.",
+        "numbering-and-titles": (
+            "Control numbering and titles verified against the published list; the full "
+            "normative text is behind a paywall and was NOT read."),
+    }.get(verif, "")
+    return (
+        f'<div style="margin:1rem 0;padding:10px;background:{bg};border:1px solid {border};color:{fg}">'
+        f'<b>Scope.</b> {html.escape(text)}<br>'
+        f'This standard has <b>{html.escape(str(sc.get("standard_total","?")))}</b>. '
+        f'Aegis assesses <b>{su["controls_assessed"]}</b> of them; '
+        f'{su["controls_not_assessed"]} are in scope for the framework but cannot be evidenced '
+        f'by scanning a repository, and {su["controls_external"]} require external evidence.'
+        + (f'<br>{html.escape(str(sc.get("note")))}' if sc.get("note") else "")
+        + (f'<br><i>{html.escape(verif_text)}</i>' if verif_text else "")
+        + '</div>'
+    )
+
+
 def render_html(report: dict) -> str:
     s = report["summary"]
+    scope_html = _render_scope(report)
     rows = []
     for c in report["controls"]:
         badge = {"no-findings": "#16a34a", "needs-attention": "#dc2626",
@@ -285,6 +325,7 @@ def render_html(report: dict) -> str:
  <span class="kpi"><b>{s['controls_external']}</b>external evidence</span>
  <span class="kpi"><b>{s['coverage_pct']}%</b>of the framework assessed</span>
 </div>
+{scope_html}
 <h2>Findings by control</h2>
 <table><tr><th>Control</th><th>Status</th><th>Open</th><th>Open findings</th></tr>{''.join(rows)}</table>
 <h2>Remediation timeline</h2>

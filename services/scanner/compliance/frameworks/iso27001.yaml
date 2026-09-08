@@ -10,13 +10,23 @@ description: >
 # Verification note: ISO/IEC 27001:2022 is a paywalled standard. Control
 # numbering and titles below were checked against the publicly published Annex A
 # control list; the full normative text was NOT read during J1.
+# ── J2 scope declaration ─────────────────────────────────────────────────────
+# Stated here rather than only in a document, so the claim travels with the
+# mapping and appears on the generated report itself.
+scope:
+  standard_total: "93 Annex A controls (2022)"
+  reachable_by_static_analysis: 10
+  claim: supporting-evidence
+  verification: numbering-and-titles
+  note: >-
+    Only the technical Annex A 8.x controls are reachable; organizational (5.x), people (6.x) and physical (7.x) controls are not.
 controls:
   - id: "A.8.2"
     name: Privileged access rights
     evidence:
       # J1 fix: CWE-732 removed (it also sat under A.8.9, and in practice fires
       # on filesystem/container permissions, not privileged-access management).
-      cwe: ["CWE-269", "CWE-266"]
+      cwe: ["CWE-269"]
       pillars: ["security"]
 
   - id: "A.8.3"
@@ -30,28 +40,28 @@ controls:
     name: Secure authentication
     evidence:
       owasp: ["A07:2021"]
-      cwe: ["CWE-287", "CWE-306", "CWE-798", "CWE-259", "CWE-321", "CWE-522"]
+      cwe: ["CWE-287", "CWE-306", "CWE-798", "CWE-321", "CWE-522"]
       pillars: ["security"]
 
   - id: "A.8.8"
     name: Management of technical vulnerabilities
     evidence:
       owasp: ["A06:2021"]
-      cwe: ["CWE-937", "CWE-1035", "CWE-1104"]
+      cwe: ["CWE-1104"]
       pillars: ["security"]
 
   - id: "A.8.9"
     name: Configuration management
     evidence:
       owasp: ["A05:2021"]
-      cwe: ["CWE-16", "CWE-1188", "CWE-732", "CWE-489", "CWE-2"]
+      cwe: ["CWE-16", "CWE-732", "CWE-489"]
       pillars: ["deployment", "security"]
 
   - id: "A.8.24"
     name: Use of cryptography
     evidence:
       owasp: ["A02:2021"]
-      cwe: ["CWE-311", "CWE-312", "CWE-319", "CWE-326", "CWE-327", "CWE-328", "CWE-295", "CWE-916"]
+      cwe: ["CWE-311", "CWE-319", "CWE-326", "CWE-327", "CWE-328", "CWE-295", "CWE-916"]
       pillars: ["security"]
 
   - id: "A.8.25"
