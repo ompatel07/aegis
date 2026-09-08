@@ -221,7 +221,7 @@ findings against our own build. `--exclude services/scanner/tests/fixtures` was 
 | `semgrep --test` (cicd pack) | **3/3 rules pass** — 10 positives fire, 11 negatives stay silent |
 | Pack across 11 repos + self | **34 findings** (32 corpus + 2 ours), **0 semgrep errors**, **0 FP** |
 | Our own `.github` after pins | **0 findings** |
-| Scanner test suite | **154 passed, 0 failed** (was 150 at G2; +4 from `test_cicd_rules.py`) |
+| Scanner test suite | **154 passed, 0 failed, 0 skipped** (was 150 at G2; +4 from `test_cicd_rules.py`). Skip count confirmed with `-rs`: several tests carry `skipif` guards on binary availability, and none of them skipped in the scanner image |
 | `go build ./...` | **clean** — orchestrator and api both OK (no Go code changed this pass) |
 
 ---
