@@ -199,4 +199,4 @@ scriptable one.
 | Every MUST-RUN skip now running in CI | ✅ `scanner-tests` runs the suite inside the image where every guarded binary exists |
 | Unconditional column-coverage check | ✅ §4 — no DB, no services, wired into the Structural-guard job |
 | Deploy ordering documented and verified | ✅ §5 + `docs/DEPLOY_ORDERING.md` — both paths verified; the stated rule corrected |
-| Full suite green, remaining skips named and justified | ✅ see commit message |
+| Full suite green, remaining skips named and justified | ✅ **scanner: 255 passed, 0 failed, 4 skipped** (both accounted for in §3); **go: all packages ok in both services**, including `apiseam` at 0.767s — it ran rather than skipped |
