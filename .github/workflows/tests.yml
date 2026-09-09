@@ -26,6 +26,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # `cache-to: type=gha` needs the docker-container driver; the default
+      # docker driver rejects it with "Cache export is not supported".
+      - uses: docker/setup-buildx-action@v3
+
       # The suite is run inside the scanner image on purpose. Most of its tests
       # are guarded by `skipif not binary_available(...)` for semgrep, trivy,
       # gitleaks and ruff — running them anywhere those binaries are absent turns
@@ -65,9 +69,13 @@ jobs:
       # Compose already wires postgres, redis, migrations and the API together
       # with working dev defaults. Reusing it means CI exercises the same wiring
       # the product ships rather than a second, drifting definition.
-      - name: Start Postgres, Redis, migrations and the API
+      # The scanner is required, not optional: /report/compliance proxies to it,
+      # and the read-back seam asserts every scan-scoped endpoint returns 200.
+      # Starting only postgres+redis+api makes that one endpoint 500 and the seam
+      # correctly fails — which is what the first run of this workflow did.
+      - name: Start Postgres, Redis, migrations, the API and the scanner
         run: |
-          docker compose up -d --wait postgres redis migrate api
+          docker compose up -d --wait postgres redis migrate api scanner
           docker compose ps
 
       # Derive the DSN from the running API rather than restating compose's
@@ -92,6 +100,6 @@ jobs:
         env: { CI: "true" }
         run: go test ./... -count=1
 
-      - name: API logs on failure
+      - name: Service logs on failure
         if: failure()
-        run: docker compose logs --tail 200 api migrate postgres
+        run: docker compose logs --tail 200 api scanner migrate postgres
