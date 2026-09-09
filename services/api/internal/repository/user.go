@@ -11,6 +11,10 @@ import (
 	"github.com/aegis-platform/api/internal/models"
 )
 
+// UserColumns is the explicit SELECT list for users, derived from the model so
+// it cannot drift (K2).
+var UserColumns = columnsOf(models.User{}, "")
+
 // UserRepository handles persistence for users.
 type UserRepository struct {
 	db *sqlx.DB
@@ -42,7 +46,7 @@ func (r *UserRepository) Create(ctx context.Context, u *models.User) error {
 
 // GetByEmail loads a user by email (used for login).
 func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*models.User, error) {
-	const q = `SELECT * FROM users WHERE email = $1`
+	q := `SELECT ` + UserColumns + ` FROM users WHERE email = $1`
 	var u models.User
 	if err := r.db.GetContext(ctx, &u, q, email); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -55,7 +59,7 @@ func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*models.
 
 // GetByID loads a user by id.
 func (r *UserRepository) GetByID(ctx context.Context, id string) (*models.User, error) {
-	const q = `SELECT * FROM users WHERE id = $1`
+	q := `SELECT ` + UserColumns + ` FROM users WHERE id = $1`
 	var u models.User
 	if err := r.db.GetContext(ctx, &u, q, id); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {

@@ -6,6 +6,7 @@ import (
 	"github.com/jmoiron/sqlx"
 
 	"github.com/aegis-platform/api/internal/models"
+	"github.com/aegis-platform/api/internal/repository"
 
 	// Register the pgx stdlib driver under the name "pgx".
 	_ "github.com/jackc/pgx/v5/stdlib"
@@ -15,7 +16,7 @@ import (
 // struct we scan into.
 //
 // J4 added `code_key` to `findings` for rename-aware lifecycle and did not add it
-// to models.Finding. FindingRepository reads with `SELECT * FROM findings`, so
+// to models.Finding. FindingRepository then read with `SELECT * FROM findings`, so
 // sqlx failed with "missing destination name code_key" and EVERY scan-read
 // endpoint returned 500 — SARIF export, findings list, compliance report. Exactly
 // the shape of the T2 excluded_bundled P0 that F1 caught, reproduced by adding a
@@ -39,20 +40,33 @@ func TestSeamSelectStarTablesMatchTheirStructs(t *testing.T) {
 	}
 	defer func() { _ = db.Close() }()
 
-	// Only tables genuinely read with SELECT * belong here. `scans` deliberately
-	// does not: repository/scan.go enumerates its columns precisely so that
-	// raw_semgrep_output and friends never have to exist on the struct. That is
-	// the safer pattern, and adding it to this table would assert something the
-	// code does not do.
+	// K2 converted `findings` to an explicit column list, so the assertion for it
+	// changed direction. Under SELECT * the risk was a column the struct did not
+	// declare; with an explicit list that is harmless by design — the query simply
+	// does not ask for it. The remaining risk is the opposite one: the binary
+	// asking for a column the schema does not have, which is an immediate SQL
+	// error rather than a silent mismatch.
 	//
-	// LIMIT 1 is enough: sqlx resolves the full column set before it touches a
-	// row, so this fails on a schema/struct mismatch even on an empty table.
+	// So this runs the repository's REAL query fragment. It fails if any db tag on
+	// models.Finding has no column behind it.
+	//
+	// `scans` is not listed for the same reason it never was: repository/scan.go
+	// has always enumerated its columns, deliberately, so raw_semgrep_output and
+	// friends need not exist on the struct.
+	//
+	// LIMIT 1 is enough: the column set is resolved before any row is touched, so
+	// this fails on a mismatch even against an empty table.
 	cases := []struct {
 		name string
 		dest any
 		q    string
 	}{
-		{"findings", &[]models.Finding{}, "SELECT * FROM findings LIMIT 1"},
+		{"findings (explicit list)", &[]models.Finding{},
+			"SELECT " + repository.FindingColumns + " FROM findings LIMIT 1"},
+		{"projects (explicit list)", &[]models.Project{},
+			"SELECT " + repository.ProjectColumns + " FROM projects LIMIT 1"},
+		{"users (explicit list)", &[]models.User{},
+			"SELECT " + repository.UserColumns + " FROM users LIMIT 1"},
 	}
 
 	for _, c := range cases {

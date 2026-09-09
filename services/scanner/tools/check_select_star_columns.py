@@ -160,8 +160,14 @@ def main() -> int:
                 f"TABLE_STRUCT.\n      Add it (with its struct) so the column coverage below is "
                 f"checked, or read explicit columns instead.")
 
-    # Guarantee 2: every column has a field.
-    for tbl, struct in sorted(TABLE_STRUCT.items()):
+    # Guarantee 2: every column has a field -- but ONLY for tables still read with
+    # SELECT *. A table converted to an explicit column list (K2) does not need
+    # this: the query names the columns this binary knows about, so a column added
+    # by a migration is simply not selected. Checking it anyway would block the
+    # very migration pattern the conversion makes safe.
+    converted = sorted(set(TABLE_STRUCT) - used)
+    for tbl in sorted(used & set(TABLE_STRUCT)):
+        struct = TABLE_STRUCT[tbl]
         if tbl not in cols:
             problems.append(f"{tbl}: no CREATE TABLE found in database/migrations — cannot verify")
             continue
@@ -183,9 +189,13 @@ def main() -> int:
         print("\nThis is the defect class that shipped as T2/excluded_bundled and J4/code_key.")
         return 1
 
-    total = sum(len(cols.get(t, ())) for t in TABLE_STRUCT)
-    print(f"SELECT * column coverage OK: {len(TABLE_STRUCT)} tables, {total} columns, "
-          f"all covered by their Go structs")
+    checked = sorted(used & set(TABLE_STRUCT))
+    total = sum(len(cols.get(t, ())) for t in checked)
+    print(f"SELECT * column coverage OK: {len(checked)} tables still on SELECT *, "
+          f"{total} columns, all covered by their Go structs")
+    if converted:
+        print(f"  converted to explicit column lists, no longer checked (K2): "
+              f"{', '.join(converted)}")
     return 0
 
 

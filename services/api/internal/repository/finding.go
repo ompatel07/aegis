@@ -12,6 +12,15 @@ import (
 	"github.com/aegis-platform/api/internal/models"
 )
 
+// FindingColumns is the explicit SELECT list for findings, derived from
+// models.Finding's db tags so it can never drift from the struct (K2).
+//
+// findings is the table both SELECT * P0s hit — T2's excluded_bundled and J4's
+// code_key — and every scan-read endpoint touches it. With an explicit list a
+// migration that adds a column no longer breaks the running binary: the query
+// asks for what this build knows about and ignores the rest.
+var FindingColumns = columnsOf(models.Finding{}, "")
+
 // FindingRepository handles persistence for findings.
 type FindingRepository struct {
 	db *sqlx.DB
@@ -68,7 +77,7 @@ func (r *FindingRepository) ListByScan(
 	// positives down within each band, then file/line/fingerprint for stable,
 	// deterministic ordering across identical scans.
 	listQ := fmt.Sprintf(`
-		SELECT * FROM findings
+		SELECT `+FindingColumns+` FROM findings
 		WHERE %s
 		ORDER BY `+orderByFindings+`
 		LIMIT $%d OFFSET $%d`, clause, idx, idx+1)
@@ -93,7 +102,7 @@ func (r *FindingRepository) AllByScan(ctx context.Context, scanID string) ([]mod
 // the cap. A truncated export must be surfaced (e.g. a SARIF notification), never
 // returned as a complete-looking list — the clones[:60] / silent-truncation defect.
 func (r *FindingRepository) AllByScanCapped(ctx context.Context, scanID string) (findings []models.Finding, truncated bool, err error) {
-	q := `SELECT * FROM findings WHERE scan_id = $1 ORDER BY ` + orderByFindings + ` LIMIT $2`
+	q := `SELECT ` + FindingColumns + ` FROM findings WHERE scan_id = $1 ORDER BY ` + orderByFindings + ` LIMIT $2`
 	findings = []models.Finding{}
 	if err = r.db.SelectContext(ctx, &findings, q, scanID, findingExportCap+1); err != nil {
 		return nil, false, err

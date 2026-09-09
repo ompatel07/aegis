@@ -11,6 +11,11 @@ import (
 	"github.com/aegis-platform/api/internal/models"
 )
 
+// ProjectColumns is the explicit SELECT list for projects, derived from the
+// model so it cannot drift (K2). projects is the third-highest-churn table in
+// the migration history, after scans and findings.
+var ProjectColumns = columnsOf(models.Project{}, "")
+
 // ProjectRepository handles persistence for projects.
 type ProjectRepository struct {
 	db *sqlx.DB
@@ -39,7 +44,7 @@ func (r *ProjectRepository) Create(ctx context.Context, p *models.Project) error
 
 // GetByIDForUser enforces access: a project is visible to members of its org.
 func (r *ProjectRepository) GetByIDForUser(ctx context.Context, id, userID string) (*models.Project, error) {
-	const q = `SELECT * FROM projects
+	q := `SELECT ` + ProjectColumns + ` FROM projects
 		WHERE id = $1
 		  AND organization_id IN (SELECT org_id FROM organization_members WHERE user_id = $2)`
 	var p models.Project
@@ -86,7 +91,7 @@ func (r *ProjectRepository) FindIDByRepo(ctx context.Context, fullName string) (
 
 // GetByID loads a project regardless of owner (internal use, e.g. webhooks).
 func (r *ProjectRepository) GetByID(ctx context.Context, id string) (*models.Project, error) {
-	const q = `SELECT * FROM projects WHERE id = $1`
+	q := `SELECT ` + ProjectColumns + ` FROM projects WHERE id = $1`
 	var p models.Project
 	if err := r.db.GetContext(ctx, &p, q, id); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -106,8 +111,9 @@ func (r *ProjectRepository) ListByUser(ctx context.Context, userID string, limit
 		return nil, 0, err
 	}
 
-	const q = `
-		SELECT * FROM projects
+	q := `
+		SELECT ` + ProjectColumns + `
+		  FROM projects
 		WHERE organization_id IN (SELECT org_id FROM organization_members WHERE user_id = $1)
 		ORDER BY created_at DESC
 		LIMIT $2 OFFSET $3`
