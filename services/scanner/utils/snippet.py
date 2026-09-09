@@ -92,10 +92,15 @@ def attach(findings: list[Finding], root: str) -> None:
             ordinal = basis_counts.get(basis, 0)
             basis_counts[basis] = ordinal + 1
             f.fingerprint = _hash(basis, ordinal)
+            # Path-independent twin, with the SAME ordinal so duplicate findings
+            # keep distinct keys.
+            f.code_key = _hash(_content_basis(f, flagged), ordinal)
         except Exception as exc:  # noqa: BLE001 — snippet/fingerprint never fail a scan
             log.debug("snippet.attach_failed", rule_id=getattr(f, "rule_id", "?"), error=str(exc))
             if not f.fingerprint:
                 f.fingerprint = _hash(_basis(f, ""), 0)
+            if not f.code_key:
+                f.code_key = _hash(_content_basis(f, ""), 0)
 
 
 def _read(cache: _FileCache, root: str, file_path: str) -> list[str] | None:
@@ -146,6 +151,26 @@ def _basis(f: Finding, flagged: str) -> str:
     """Stable fingerprint basis: rule + file (+cve for SCA) + normalized code.
     Deliberately excludes the line number so the id survives line shifts."""
     parts = [f.rule_id or "", f.file_path or ""]
+    if f.cve_id:
+        parts.append(f.cve_id)
+    parts.append(flagged)
+    return _SEP.join(parts)
+
+
+def _content_basis(f: Finding, flagged: str) -> str:
+    """The same identity WITHOUT the file path (J4).
+
+    `file_path` has to stay in the fingerprint — identical code in two files is
+    two findings, and dropping the path would collide them. But that means moving
+    a file resolves every finding in it and opens an identical set as new: a wave
+    of fake regressions and fake fixes on the same day, which is the worst
+    possible story in an artifact whose value is open-vs-closed.
+
+    This key is what lets the lifecycle recognise a moved finding. It is used
+    ONLY as a fallback, and only for a strictly 1:1 pairing between a finding
+    that disappeared and one that appeared (see orchestrator lifecycle.go), so
+    two copies of identical code can never be matched to each other by guess."""
+    parts = [f.rule_id or ""]
     if f.cve_id:
         parts.append(f.cve_id)
     parts.append(flagged)

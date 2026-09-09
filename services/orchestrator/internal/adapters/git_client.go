@@ -30,8 +30,20 @@ func NewGitClient(workspaceDir string, cloneDepth int) *GitClient {
 
 // Checkout is a cloned repository on disk plus a cleanup func.
 type Checkout struct {
-	Dir     string
-	Cleanup func()
+	Dir string
+	// CommitSHA is the revision actually cloned, resolved from HEAD after the
+	// clone (J4). Before this, Aegis cloned a specific commit and never recorded
+	// which one: commit_sha was populated on 3 of 136 scans because it was only
+	// stored when an API caller happened to supply it. That made "which commit
+	// fixed this finding" unanswerable and left SARIF's revisionId empty.
+	//
+	// It is also what makes rename-aware lifecycle possible: to ask git what moved
+	// between two scans, we have to know which two revisions they were.
+	//
+	// Empty when HEAD cannot be resolved. Never fails the clone -- a scan that
+	// works today must not start failing because provenance is unavailable.
+	CommitSHA string
+	Cleanup   func()
 }
 
 // authFor returns HTTP Basic auth for a token, choosing the username the host
@@ -78,11 +90,19 @@ func (g *GitClient) Clone(ctx context.Context, scanID, repoURL, branch, token st
 
 	cleanup := func() { _ = os.RemoveAll(dir) }
 
-	if _, err := git.PlainCloneContext(ctx, dir, false, opts); err != nil {
+	repo, err := git.PlainCloneContext(ctx, dir, false, opts)
+	if err != nil {
 		cleanup()
 		return nil, g.cloneError(ctx, repoURL, branch, token, err)
 	}
-	return &Checkout{Dir: dir, Cleanup: cleanup}, nil
+
+	// Resolve what we actually got. Best-effort: an unresolvable HEAD leaves the
+	// field empty rather than failing a scan that would otherwise succeed.
+	var commit string
+	if head, herr := repo.Head(); herr == nil && head != nil {
+		commit = head.Hash().String()
+	}
+	return &Checkout{Dir: dir, CommitSHA: commit, Cleanup: cleanup}, nil
 }
 
 // cloneError turns a raw clone failure into a clear, user-facing message. A

@@ -107,6 +107,11 @@ class Finding(BaseModel):
     # cross-scan lifecycle tracking (new/existing/resolved/reopened). Content-
     # based (rule + file + normalized flagged code), never the raw line number.
     fingerprint: str | None = None
+    # Path-independent twin of the fingerprint (J4): rule + cve + normalized code
+    # + ordinal, with file_path deliberately omitted. Lets the lifecycle recognise
+    # a finding that moved to a new path instead of reporting it as one resolved
+    # and one new. Never used alone — only for an unambiguous 1:1 pairing.
+    code_key: str | None = None
 
     # SonarQube-style issue type: bug | vulnerability | code_smell (P2c). Security-
     # pillar findings are vulnerabilities; quality findings are code smells (or a

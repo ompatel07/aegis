@@ -1,0 +1,70 @@
+name: rule-pack drift
+
+# J4 Part D. The vendored Semgrep packs (G2) carry `refresh_cadence: monthly,
+# reviewed` in rules/manifest.yaml, and scripts/vendor_rules.py exists to do it —
+# but nothing ran it. self-scan.yml was the only workflow and it has no schedule
+# trigger, so the pins were current only because a human happened to refresh them
+# during G2. Documented intent that nothing enforces is the same class of defect
+# as everything else this series has removed.
+#
+# This job deliberately does NOT re-pin. Silently adopting upstream rule changes
+# would alter a customer's results between two scans of unchanged code with no
+# signal — the exact failure vendoring was introduced to prevent. It reports the
+# drift and a human decides.
+
+on:
+  schedule:
+    # 07:00 UTC on the 1st of each month.
+    - cron: "0 7 1 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  drift:
+    name: Report upstream rule-pack drift
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install --quiet pyyaml requests
+
+      # 1. The pins must still describe the files we ship. This failing means the
+      #    vendored files were edited without re-pinning, which breaks the
+      #    reproducibility G2 established — a hard failure, not a report.
+      - name: Verify vendored packs match the manifest
+        run: python scripts/vendor_rules.py --verify
+
+      # 2. Fetch upstream and diff against the pin. Report only — never --write.
+      #    A non-zero rule delta is information for a human, not a build failure:
+      #    upstream moving is normal, adopting it silently is not.
+      - name: Report drift against upstream
+        id: drift
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          python scripts/vendor_rules.py --refresh 2>&1 | tee /tmp/drift.txt
+
+      - name: Publish the drift report
+        if: always()
+        run: |
+          {
+            echo "## Vendored rule-pack drift"
+            echo
+            echo "Pinned at: \`$(python -c "import yaml;print(yaml.safe_load(open('services/scanner/rules/manifest.yaml'))['pinned_at'])")\`"
+            echo
+            echo '```'
+            tail -c 60000 /tmp/drift.txt 2>/dev/null || echo "(refresh produced no output)"
+            echo '```'
+            echo
+            echo "This job never re-pins. To adopt these changes, review the diff and run:"
+            echo
+            echo '```'
+            echo "python scripts/vendor_rules.py --refresh --write"
+            echo '```'
+            echo
+            echo "Then re-run the 0-FP gates before committing — the pinned rule set is"
+            echo "what every accuracy number in docs/ACCURACY.md was measured against."
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -76,6 +76,24 @@ func (s *Store) SaveSBOMs(ctx context.Context, scanID, cyclonedx, spdx string) e
 	return err
 }
 
+// SetCommitSHA records the revision that was actually cloned for this scan (J4).
+//
+// Written after the clone rather than at scan creation: the caller supplies a
+// branch, and the commit that branch pointed at is only known once we have it.
+// Before this, commit_sha was set only when an API caller happened to pass one —
+// 3 of 136 scans — so remediation evidence could not name the commit that fixed
+// a finding, and SARIF's versionControlProvenance.revisionId was empty.
+//
+// Best-effort at the call site: provenance must never fail a scan.
+func (s *Store) SetCommitSHA(ctx context.Context, scanID, commitSHA string) error {
+	if commitSHA == "" {
+		return nil
+	}
+	_, err := s.db.ExecContext(ctx,
+		`UPDATE scans SET commit_sha = $2 WHERE id = $1`, scanID, commitSHA)
+	return err
+}
+
 func (s *Store) MarkFailed(ctx context.Context, scanID, msg string) error {
 	const q = `
 		UPDATE scans
@@ -168,7 +186,7 @@ func (s *Store) SaveResults(ctx context.Context, scanID, projectID string, agg p
 	return nil
 }
 
-const findingColumnCount = 32
+const findingColumnCount = 33 // J4: +code_key
 
 // insertFindings bulk-inserts findings in chunks (bounded by Postgres' param limit).
 func insertFindings(ctx context.Context, tx *sqlx.Tx, scanID string, findings []types.Finding) error {
@@ -196,7 +214,7 @@ func buildInsert(scanID string, chunk []types.Finding) (string, []any) {
 		 title_human, impact, risk_level, remediation_action, remediation_details,
 		 estimated_effort, context_metadata, false_positive_probability,
 		 is_new, code_snippet, snippet_start_line,
-		 fingerprint, lifecycle_status, issue_type) VALUES `)
+		 fingerprint, lifecycle_status, issue_type, code_key) VALUES `)
 
 	args := make([]any, 0, len(chunk)*findingColumnCount)
 	for i, f := range chunk {
@@ -224,6 +242,7 @@ func buildInsert(scanID string, chunk []types.Finding) (string, []any) {
 			f.FalsePositiveProbability,
 			f.IsNew, nullStr(f.CodeSnippet), f.SnippetStartLine,
 			nullStr(f.Fingerprint), nullStr(f.LifecycleStatus), nullStr(f.IssueType),
+			nullStr(f.CodeKey),
 		)
 	}
 	return b.String(), args

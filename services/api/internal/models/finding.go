@@ -73,6 +73,15 @@ type Finding struct {
 	// Lifecycle identity + state (P1a). Fingerprint is the stable cross-scan id;
 	// LifecycleStatus is new | existing | reopened for findings in this scan.
 	Fingerprint     *string `db:"fingerprint" json:"fingerprint,omitempty"`
+	// CodeKey is the path-independent twin of the fingerprint (J4), used by the
+	// lifecycle to recognise a finding whose file was renamed or moved.
+	//
+	// It must be declared here even though the API never reads it: findings are
+	// loaded with SELECT *, so a column present in the table and absent from this
+	// struct makes sqlx fail with "missing destination name" and 500s every
+	// scan-read endpoint. That is the same defect class F1 found with
+	// excluded_bundled, and adding the column reproduced it exactly.
+	CodeKey *string `db:"code_key" json:"-"`
 	LifecycleStatus *string `db:"lifecycle_status" json:"lifecycle_status,omitempty"`
 
 	// IssueType: SonarQube-style bug | vulnerability | code_smell (P2c).

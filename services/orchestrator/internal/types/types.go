@@ -60,6 +60,10 @@ type Finding struct {
 	CodeSnippet      string `json:"code_snippet"`
 	SnippetStartLine *int   `json:"snippet_start_line"`
 	Fingerprint      string `json:"fingerprint"`
+	// CodeKey is the fingerprint without file_path (J4). It lets the lifecycle
+	// recognise a finding whose file was renamed or moved, instead of reporting
+	// it as one resolved plus one new.
+	CodeKey string `json:"code_key"`
 
 	// IsNew: this finding is genuinely new versus the project's prior scans —
 	// its stable fingerprint was never seen before (or was resolved and has now

@@ -84,6 +84,19 @@ func (p *ScanProcessor) ProcessTask(ctx context.Context, task *asynq.Task) error
 	}
 	defer checkout.Cleanup()
 
+	// Record what we actually scanned. Non-fatal: a scan that would otherwise
+	// succeed must not fail because provenance could not be written, but the
+	// failure is logged rather than swallowed.
+	if checkout.CommitSHA != "" {
+		if cerr := p.store.SetCommitSHA(ctx, payload.ScanID, checkout.CommitSHA); cerr != nil {
+			log.Warn().Err(cerr).Msg("could not record commit_sha for this scan")
+		} else {
+			log.Info().Str("commit", checkout.CommitSHA[:8]).Msg("scanning commit")
+		}
+	} else {
+		log.Warn().Msg("clone produced no resolvable HEAD; scan will have no commit provenance")
+	}
+
 	// ── Size guard ───────────────────────────────────────────────────────────
 	if sizeMB, serr := adapters.DirSizeMB(checkout.Dir); serr == nil && sizeMB > p.maxRepoSizeMB {
 		msg := fmt.Sprintf("Repository is too large to scan (%d MB, current limit %d MB). "+
