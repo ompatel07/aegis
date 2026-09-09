@@ -1,0 +1,97 @@
+name: tests
+
+# K1. Until this existed, neither test suite ran in CI at all — 255 Python tests
+# and every Go test were manual-only, and self-scan.yml ran only linters and
+# scanners. Two identical P0s shipped through that gap (T2's excluded_bundled and
+# J4's code_key), both breaking every scan-read endpoint, both invisible to
+# `go build`, `go vet` and the unit suite.
+#
+# The seam tests that catch exactly that already existed and skipped by default,
+# because nothing set their environment and no job stood up a database. J2's rule
+# applies: a test that always skips is not a guard.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  scanner-tests:
+    name: Scanner suite (pytest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # The suite is run inside the scanner image on purpose. Most of its tests
+      # are guarded by `skipif not binary_available(...)` for semgrep, trivy,
+      # gitleaks and ruff — running them anywhere those binaries are absent turns
+      # the rule packs, the IaC/CI-CD rules and the engine smoke tests into
+      # silent no-ops. The image is where those binaries live.
+      - name: Build the scanner image
+        uses: docker/build-push-action@v6
+        with:
+          context: services/scanner
+          load: true
+          tags: aegis-scanner:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Run the suite
+        run: |
+          docker run --rm -e CI=true -w /app aegis-scanner:ci \
+            python -m pytest -q --tb=short -rs
+
+      # Every skip is a deliberate choice or a defect. Print them so a new one
+      # cannot appear unnoticed in a green run.
+      - name: Report skips
+        if: always()
+        run: |
+          docker run --rm -e CI=true -w /app aegis-scanner:ci \
+            python -m pytest -q --tb=no -rs 2>&1 | grep -E "^SKIPPED|passed|failed" \
+            >> "$GITHUB_STEP_SUMMARY" || true
+
+  go-tests:
+    name: Go suites + API seams (live Postgres)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: { go-version: "1.25", cache-dependency-path: "services/*/go.sum" }
+
+      # Compose already wires postgres, redis, migrations and the API together
+      # with working dev defaults. Reusing it means CI exercises the same wiring
+      # the product ships rather than a second, drifting definition.
+      - name: Start Postgres, Redis, migrations and the API
+        run: |
+          docker compose up -d --wait postgres redis migrate api
+          docker compose ps
+
+      # Derive the DSN from the running API rather than restating compose's
+      # defaults here. A second copy of the credentials is a second thing to
+      # drift, and a wrong one would fail as an auth error that reads like a
+      # broken test.
+      - name: Seam environment
+        run: |
+          DSN=$(docker compose exec -T api printenv DATABASE_URL)
+          echo "AEGIS_SEAM_DB_URL=${DSN/@postgres:/@localhost:}" >> "$GITHUB_ENV"
+          echo "AEGIS_SEAM_API_URL=http://localhost:8080" >> "$GITHUB_ENV"
+
+      # CI=true is what makes the seams fail rather than skip when the
+      # environment above is missing (see apiseam/seamenv_test.go).
+      - name: go test — api
+        working-directory: services/api
+        env: { CI: "true" }
+        run: go test ./... -count=1
+
+      - name: go test — orchestrator
+        working-directory: services/orchestrator
+        env: { CI: "true" }
+        run: go test ./... -count=1
+
+      - name: API logs on failure
+        if: failure()
+        run: docker compose logs --tail 200 api migrate postgres

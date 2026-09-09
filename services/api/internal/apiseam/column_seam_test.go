@@ -1,7 +1,6 @@
 package apiseam
 
 import (
-	"os"
 	"testing"
 
 	"github.com/jmoiron/sqlx"
@@ -33,10 +32,7 @@ import (
 // Skips (does not fail) when unset, so `go test ./...` stays runnable without
 // Docker.
 func TestSeamSelectStarTablesMatchTheirStructs(t *testing.T) {
-	dbURL := os.Getenv("AEGIS_SEAM_DB_URL")
-	if dbURL == "" {
-		t.Skip("set AEGIS_SEAM_DB_URL to run the SELECT * column seam")
-	}
+	_, dbURL := requireSeamEnv(t, false)
 	db, err := sqlx.Connect("pgx", dbURL)
 	if err != nil {
 		t.Fatalf("connect: %v", err)

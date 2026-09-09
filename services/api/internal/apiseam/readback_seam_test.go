@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"testing"
 	"time"
 
@@ -63,10 +62,7 @@ type seamEnv struct {
 
 func setup(t *testing.T) *seamEnv {
 	t.Helper()
-	apiURL, dbURL := os.Getenv("AEGIS_SEAM_API_URL"), os.Getenv("AEGIS_SEAM_DB_URL")
-	if apiURL == "" || dbURL == "" {
-		t.Skip("set AEGIS_SEAM_API_URL and AEGIS_SEAM_DB_URL to run the API read-back seam")
-	}
+	apiURL, dbURL := requireSeamEnv(t, true)
 	db, err := sqlx.Open("pgx", dbURL)
 	if err != nil {
 		t.Fatalf("open db: %v", err)
