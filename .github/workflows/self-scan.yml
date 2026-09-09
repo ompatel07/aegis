@@ -68,6 +68,10 @@ jobs:
       # defects had been fixed once and returned.
       - run: pip install --quiet pyyaml
       - run: python services/scanner/tools/check_single_framework_tree.py
+      # K1: every table read with SELECT * must have a Go struct covering all
+      # its columns. This class shipped twice as a P0 (T2 excluded_bundled,
+      # J4 code_key) and is invisible to go build, go vet and the unit suite.
+      - run: python services/scanner/tools/check_select_star_columns.py
 
   semgrep:
     name: SAST (Semgrep + Aegis taint rules)
