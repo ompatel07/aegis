@@ -208,9 +208,12 @@ volume — was mis-ranked by exactly this bias. Corrected below.
 
 *Written to be accurate, not favourable.*
 
-> Aegis's own rules, plus the LGPL-licensed njsscan pack, detect **every documented vulnerability we
-> currently detect** on our ground-truth corpora — removing all 2,677 Semgrep-licensed rules changes
-> ground-truth recall not at all (NodeGoat 6/7, DVWA 3/6, WebGoat 6/6 either way). What those rules
+> Aegis's own rules, plus the LGPL-licensed njsscan pack, detect **almost every documented
+> vulnerability we currently detect** on our ground-truth corpora. Measured when the cut was made
+> (N1, 2026-09-19, same harness before and after): **24 of 45 documented vulnerabilities before,
+> 22 of 45 after**, across five repositories. DVWA 3/6, WebGoat 6/6, NodeGoat 5/7 and dvpwa 1/1 are
+> unchanged; **juice-shop falls from 9/25 to 7/25** — its two directory-listing challenges were
+> caught only by a Semgrep-licensed rule (`express-check-directory-listing`). What those rules
 > supply is **breadth**: 1,387 additional findings across a 15-repository corpus, of which hand-triage
 > of a 40-item weighted sample indicates roughly **55 % are true positives and roughly 23 % are
 > exploitable vulnerabilities** — an estimated ~767 true findings and ~312 real vulnerabilities we
@@ -222,8 +225,19 @@ volume — was mis-ranked by exactly this bias. Corrected below.
 > code location** (4 of the 9 sampled vulnerabilities). Our honest position is therefore that these
 > rules currently provide substantial *coverage breadth and report completeness* that we would need
 > months of rule-writing to reproduce, that we could continue to detect the vulnerability classes we
-> today claim and demonstrate without them, and that we have not yet written our own rules for
-> Python, Ruby or C# at all.
+> today claim and demonstrate without them, and that our own rules for Python are four pattern rules
+> (H1) and for Ruby and C# do not exist at all.
+
+> ² **Correction, 2026-09-19 (N1).** This paragraph previously said removing the Semgrep-licensed
+> rules "changes ground-truth recall not at all (NodeGoat 6/7, DVWA 3/6, WebGoat 6/6 either way)".
+> That was true of the three repositories G2 measured, but N1 executed the cut and measured five
+> repositories with one harness before and after, and **juice-shop loses two documented
+> vulnerabilities** (above). The NodeGoat figure is 5/7 here rather than 6/7 because N1 uses F2's
+> item-by-item ground truth (GT1–GT7, `docs/COMPETITIVE_F2.md` §B.2), which the earlier figure did
+> not; under that definition it is 5/7 both before and after. The paragraph also said we had no
+> rules of our own for Python; H1 had since added four. The breadth figures that follow
+> (1,387 findings, ~767 true, ~312 vulnerabilities) are unchanged: they were measured on V2's stored
+> findings, and N1's re-measure is in `docs/RULE_REMOVAL_N1.md`.
 
 ---
 

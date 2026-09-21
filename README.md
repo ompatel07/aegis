@@ -9,8 +9,24 @@ untrusted repositories.
 
 | Pillar | What it does | Competes with |
 | ------ | ------------ | ------------- |
-| **Security** | SAST (taint/dataflow), SCA (CVE), secrets detection, OWASP Top 10, IaC scanning | Snyk, Checkmarx |
+| **Security** | SCA (dependency CVEs, reachability, KEV/EPSS), secrets, IaC (Dockerfile, Terraform, Kubernetes, compose), CI/CD pipeline rules, and SAST from our own taint rules — see *What Aegis detects* below | Snyk (SCA, secrets, prioritisation). SAST depth is **not** a competitive claim — see [`docs/ACCURACY.md`](docs/ACCURACY.md) |
 | **Code Quality** | AST-based smells, cyclomatic complexity, duplication, maintainability, docs/coverage | SonarQube |
+
+### What Aegis detects
+
+Aegis's SAST runs only rules we wrote, plus the LGPL-licensed njsscan pack for Node — no
+third-party commercial rule sets (the Semgrep-registry packs were removed on 2026-09-19; see
+[`docs/RULE_REMOVAL_N1.md`](docs/RULE_REMOVAL_N1.md)). That makes code-level detection
+**strongest on PHP and JavaScript/TypeScript**, where our taint packs are proven against
+documented vulnerabilities (DVWA, NodeGoat, juice-shop), **real but narrower on Java, Python and
+Go** (injection, path traversal and SSRF taint; Python adds four pattern rules), and **absent for
+Ruby and C#** beyond the language-independent CI/CD rules. It is not a broad pattern library: on
+the OWASP Benchmark (synthetic Java) it scores well below CodeQL, and it has no rules yet for
+weak-crypto, weak-random or insecure-cookie classes. Everything outside code-level SAST is
+**unaffected by that**: dependency CVEs with reachability and KEV/EPSS, secrets, infrastructure-as-code,
+code quality, and the whole prioritisation and lifecycle layer (fingerprinted findings tracked
+new → existing → resolved across scans, compliance evidence from that history). Every number
+behind this paragraph is in [`docs/ACCURACY.md`](docs/ACCURACY.md).
 
 **Deployment testing is CI-only.** Verifying a build means running the customer's
 build (npm ci / mvn package / …), which would break the no-execute boundary, so it is

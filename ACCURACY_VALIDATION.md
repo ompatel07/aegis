@@ -1,5 +1,12 @@
 # Aegis Accuracy Validation — Shipping Product Scorecard
 
+> **SUPERSEDED — 2026-09-19 (Pass N1).** The SAST numbers in this document were measured with
+> the Semgrep-registry rule packs loaded (Semgrep Rules License v1.0). Aegis no longer ships
+> those rules: Semgrep declined an OEM licence and relicensing, so they were removed. Same
+> harness, sovereign rule set: OWASP Benchmark v1.2 **TPR 0.154 · FPR 0.103 · F1 0.247 ·
+> Youden 0.051** (was 0.884 · 0.425 · 0.775 · 0.459). Do not cite the older figures. Current
+> numbers live only in `docs/ACCURACY.md`; the cut is documented in `docs/RULE_REMOVAL_N1.md`.
+
 Per-engine accuracy for the **shipping configuration** (fast-scan; the experimental
 Joern deep-scan engine is gated **off** — see [DEEP_SCAN_VALUE.md](DEEP_SCAN_VALUE.md)).
 Every number here comes from a **real run against real data**, reproduced from the

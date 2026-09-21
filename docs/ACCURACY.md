@@ -31,7 +31,8 @@ Two numbers are two different things, and this file keeps them apart:
 | **V1 (S1-corrected)** | 5 biggest-offender repos re-scanned LIVE with real secret values (585/630 secrets); offline signals for the other 10 | 2026-08-27 | `e9e2e65` (S1 series `0c0d6f0`→`e9e2e65`) | same |
 | **P1 replay** | offline replay of Parts A+B over the V1 corpus (`scripts/precision_p1_replay.py`) | 2026-08-31 | `ad0dd66` | n/a (no re-scan) |
 | **secrets-bench** | synthetic: 12 planted real-format secrets + 8 decoys (`benchmarks/comparative/secrets_bench.py`) | 2026-08-31 | `ad0dd66`+P2 | gitleaks 8.21.2 |
-| **OWASP Benchmark v1.2** | 2,740 generated Java taint testcases (`benchmarks/owasp/`) | per `QUALITY_BENCHMARK.md` | `aa0121c`-era | semgrep 1.97.0 + Aegis Java taint rules |
+| **OWASP Benchmark v1.2** | 2,740 generated Java taint testcases (`benchmarks/owasp/`) | per `QUALITY_BENCHMARK.md` | `aa0121c`-era | semgrep 1.97.0 + Aegis Java taint rules — **superseded by N1 below** |
+| **N1 — sovereign rule set** | the same OWASP harness, 5 ground-truth repos (45 documented vulns), V2's 15 repos re-cloned, 114 hand-triaged findings — each run **before and after** the cut, same day, same checkout | 2026-09-19 | N1 (`b651c94` → N1) | semgrep 1.97.0; Aegis rules + njsscan (LGPL-3.0) only |
 | **P2 taint audit** | per-rule audit + FP fixes to `rules/taint/`, verified on minimal reproductions of each V1 FP shape | 2026-08-31 | `ad0dd66`+P2 | semgrep 1.97.0 |
 
 "P1"/"P2" = precision passes. P1 deleted the `ai-code-*` pack and suppressed
@@ -90,15 +91,18 @@ OWASP Benchmark v1.2, 2,740 cases):
 
 | tool | TPR | FPR | F1 | **Youden** | source |
 |---|---|---|---|---|---|
-| **Aegis** (semgrep + our Java taint rules) | 0.884 | **0.425** | 0.775 | **0.459** | ours, `QUALITY_BENCHMARK.md` |
+| **Aegis — what ships (N1, sovereign)** | **0.154** | **0.103** | **0.247** | **0.051** | ours, `docs/RULE_REMOVAL_N1.md` §C.1 — 2026-09-19 |
 | CodeQL | 0.970 | 0.682 | 0.744 | 0.288 | *Sifting the Noise*, Table 2 |
 | base Semgrep (default rules) | 0.904 | 0.748 | 0.694 | 0.156 | *Sifting the Noise*, Table 2 |
+| ~~Aegis with the Semgrep-registry packs~~ — **no longer shipped** | ~~0.884~~ | ~~0.425~~ | ~~0.775~~ | ~~0.459~~ | pre-N1; re-confirmed to four decimals on 2026-09-19 before the cut |
 
-**On this benchmark Aegis leads on both F1 (0.775 vs 0.744) and Youden (0.459 vs 0.288),
-and has by far the lowest FPR (0.425 vs 0.682)** — i.e. on synthetic Java taint, Aegis is the
-more *precise* tool while CodeQL is the more *complete* one (TPR 0.970 vs 0.884). That
-recall gap is the one that reproduced on real code in F2. Note our Java taint rules roughly
-halve base Semgrep's FPR (0.748 → 0.425) — that FPR gap is the value the custom rules add.
+**On this benchmark Aegis now scores below both CodeQL and base Semgrep** (Youden 0.051 vs 0.288
+and 0.156). The earlier lead came from the Semgrep-registry rules, which Aegis no longer ships
+(CORRECTION 11): 2,404 of the 2,865 findings in the pre-cut run were theirs. What ships is our own
+Java taint pack — the 461 remaining findings are *exactly* its findings in the pre-cut run. It keeps
+SQLi, XSS and path traversal at much lower recall and much lower FPR, and scores **zero** in five
+categories (weak random, weak crypto, weak hash, insecure cookie, trust boundary) that were entirely
+registry rules. Do not cite this benchmark in pitch material except with the sovereign row.
 
 **Limitation — this is a cross-study comparison on SYNTHETIC JAVA, and a same-harness
 run on real code now contradicts the framing it was used to support.**
@@ -113,6 +117,11 @@ run on real code now contradicts the framing it was used to support.**
 > caught dvpwa's documented SQLi, CodeQL missed it) and that **CodeQL cannot scan PHP at
 > all** — so the honest summary is "CodeQL is deeper where it runs; Aegis runs in more
 > places", not that either tool wins outright.
+>
+> **Sovereign status (N1, 2026-09-19).** NodeGoat is now **5/7**, before and after the cut —
+> later passes added the `$where` NoSQL and ReDoS rules F2 found missing. The dvpwa SQLi that
+> F2 credited to the registry rule `sqlalchemy-execute-raw-query` is still caught, by our own
+> `aegis-py-sql-string-construction` (H1).
 Aegis's TPR/FPR were measured on our own harness; CodeQL's and base Semgrep's are
 taken from Xiong & Zhang, *Sifting the Noise* (arXiv:2601.22952, Table 2). The
 paper's figures were verified against the source (CodeQL FPR 0.682 matches their
@@ -172,53 +181,37 @@ a free win. It applies to every rule sharing `request_sources`
 literal-key constraint lives in the shared source. Named-key access — the dominant
 form — is unaffected.
 
-The 180 actionable SAST findings also include **82 "secret-shaped" registry rules**
+The 180 actionable SAST findings also included **82 "secret-shaped" registry rules**
 (`node_secret`, `detected-bcrypt-hash`, …) overlapping the secrets pillar, and **91
-other community rules**; these were not exhaustively triaged.
+other community rules**; these were not exhaustively triaged. **Since N1 the community
+rules are gone**; of the secret-shaped ones only njsscan's `node_secret`/`node_password`
+remain, and N1's triage found them firing on message strings (CORRECTION 11).
 
-### Per-language marginal value of the custom taint packs (V2 §4 + T3)
+### Per-language SAST — what ships (N1, 2026-09-19)
 
-The custom `aegis-*` taint packs are **additive** over the Semgrep registry (registry
-rules fire regardless), so their marginal value **is exactly the `aegis-*` finding set**.
-Measured per language:
+Since N1 there are no registry rules to be "additive over": for most languages our own packs
+**are** the whole of SAST. Measured on V2's 15 repositories, each cloned once and scanned with the
+full rule set and the sovereign one (`docs/RULE_REMOVAL_N1.md` §C.3), plus ground truth (§C.2) and
+hand-triage (§C.4):
 
-| language | custom taint pack? | marginal value over registry | evidence |
-|---|---|---|---|
-| **PHP** | yes | **real** — +31 on DVWA, +14 librenms, +7 FreshRSS | V2 §4 |
-| **JS/TS** | yes | **real** — +55 on juice-shop, +3 NodeGoat (the SSJI) | V2 §4 |
-| **Java** | yes | **inert until T3** — 0 on WebGoat (T2); **+6 after T3** (Spring sources), all TP / 0-FP, +0 on eladmin & booklore after 0-FP triage | T2 (0) → T3 (6) |
-| **Python** | yes — 8 taint rules **+ 4 pattern rules (H1)** | **was zero, now real** — the 8 taint rules still fire 0; the 4 H1 pattern rules give **+13 on redash** (12 SQL-string-construction, 1 TLS-verification-disabled), **+2 on dvpwa**, **+2 on django-nV**. **17 findings, 17 hand-triaged TP, 0 FP** | V2 §4 (0) → **H1 (13 on redash)** |
-| **Ruby** | no pack | zero by design | V2 §4 chatwoot, mastodon |
-| **C#** | no pack | zero by design | V2 §4 jellyfin, nopCommerce |
-| **(none — language-independent)** | yes — 3 `aegis-cicd-*` pattern rules (H2) | **real, and orthogonal to language** — **32 findings across 6 of the 11 corpus repos**, 32 hand-triaged TP / **0 FP**: 31 third-party actions on movable refs, 1 `curl \| sh` (plus 2 on this repository, both since fixed). Fires on Ruby (chatwoot), C# (jellyfin corpus), Java (petclinic, WebGoat), PHP (DVWA), JS/TS (juice-shop) and Python (redash) repos alike — including the two languages where we otherwise add **nothing** | H2 |
+| language | what runs | SAST findings kept (V2, before → after) | documented-vuln evidence | status |
+|---|---|---|---|---|
+| **PHP** | `aegis-php-*` (5 taint rules) | 247 → 45 (18 %) on the 4 repos that completed before; **Dolibarr now completes: 2,649** | DVWA 3/6 unchanged; M1: 25 of 31 DVWA findings TP | **real on vulnerable apps; see the Dolibarr caveat** — `aegis-php-xss` fires 2,362 times there, effectively all false (an app-wide WAF on `PHP_SELF`) |
+| **JS / TS** | `aegis-js-*` (11) + **njsscan** (114, LGPL-3.0) | JavaScript 323 → 103 (32 %), TypeScript 173 → 130 (75 %) | NodeGoat 5/7 unchanged; juice-shop 9 → **7**/25 (directory listing lost) | **strongest** — our taint rules precise; njsscan 27 % precise |
+| **Java** | `aegis-java-*` (7 taint, intraprocedural) | 60 → 6 (10 %) | WebGoat 6/6 unchanged | **narrow** — injection, path traversal, SSRF only; OWASP Benchmark Youden 0.051 |
+| **Python** | `aegis-py-*` (8 taint + 4 H1 pattern) | 78 → 19 (24 %) | dvpwa 1/1 unchanged | **narrow** — H1's 17/17 TP stands |
+| **Go** | `aegis-go-*` (7 taint) | no Go repo in V2 | — | **narrow, unmeasured on real code** |
+| **Ruby** | none | 582 → **0** | — | **no application-code SAST** |
+| **C#** | none | 26 → **0** | — | **no application-code SAST** |
+| **(any) CI/CD** | `aegis-cicd-*` (3) | 37 → 37 | H2: 32/32 TP | unchanged; the only SAST that fires on Ruby and C# repos |
+| **Dockerfile / Terraform / k8s** | Trivy misconfig | registry duplicates removed | — | unchanged (Trivy) |
 
-**The last row does not have a language, and that is the point.** Every other row in this
-table answers "what do our rules add *for a repo written in X*". The `aegis-cicd-*` pack
-answers a different question, so it does not fit the shape: it reads the **pipeline
-definition**, which is YAML in every repository regardless of what the application is
-written in. It is therefore the only detection we own that yields on **Ruby and C#** repos
-— the two languages where the row above it reads "zero by design" — and it is the only row
-whose coverage does not decay as a customer's language mix moves away from PHP and JS/TS.
-It is also narrower than it looks: it covers **GitHub Actions only**, because Trivy already
-covers Dockerfile, Terraform and Kubernetes (measured: 7 + 82 findings on juice-shop, and
-**0** targeting `.github/workflows`), and duplicating Trivy would be worse than a gap.
-
-**The honest position.** On **Ruby and C#**, our **language-specific detection is the
-Semgrep registry** — the custom taint packs add nothing there (none exist for either), and
-what we now add on those repos is the CI/CD pack, not application-code analysis. **Python
-was in that group until H1** and no longer is: four pattern rules now produce 13 findings
-on redash where we previously produced zero, all true positives. That is real but partial —
-it recovers about **17 % of the ~76 true positives** G3 measured us losing on Python if the
-Semgrep-licensed rules went away, because the H1 rules are deliberately narrower than the
-registry's. What Aegis adds on the remaining registry-dependent languages is
-**enrichment** — reachability, KEV/EPSS, lifecycle/fingerprint tracking, ownership,
-honest-state surfacing — not extra detection. An unqualified "our rules find more" is
-false for those four; it is true and measured only for PHP and JS/TS, and now — modestly
-and **intraprocedurally only** — for Java. Before T3 the Java pack had been inert on every
-Java repo ever scanned (a servlet-only source that never matched Spring controllers); T3
-made it fire on WebGoat's same-method flows (SQLi ×3, path-traversal ×2, SSRF ×1, all true
-positives), while cross-method flows remain a registry-covered miss (semgrep OSS taint is
-intraprocedural). See `SAST_TIMEOUT_FIX_T2.md` / the T3 commits.
+**The honest position.** Before N1 this section argued our packs added value *on top of* the
+registry. There is no longer a registry. On PHP and JS/TS our own packs carry every documented
+vulnerability we detected before the cut. On Java, Python and Go they cover the injection classes
+and little else. On Ruby and C# we do no application-code SAST at all. Everything outside SAST —
+SCA, secrets, IaC, quality, prioritisation, lifecycle — is unaffected. The rebuild plan, ranked by
+measured loss, is `docs/RULE_REMOVAL_N1.md` §E.
 
 ---
 
@@ -269,16 +262,16 @@ number exists.
 
 | capability | status | evidence / what's missing |
 |---|---|---|
-| **Determinism** (same repo → same findings) | **verified, functional** (not a rate) | `test_seams.py::test_seam_scan_is_deterministic` — byte-identical findings on a repeat scan of one fixture; not measured across the corpus |
+| **Determinism** (same repo → same findings) | **verified, functional** (not a rate) | `test_seams.py::test_seam_scan_is_deterministic` — byte-identical findings on a repeat scan of one fixture; **N1 (2026-09-19): five ground-truth repos scanned twice on the sovereign rule set — identical `rule_pack_version` and byte-identical findings on all five** |
 | **Cross-tenant isolation** | **not measured as a rate** | it is an access-control property (org-scoped queries), not a detection rate; belongs in a security review, not here. No isolation-accuracy number is claimed |
 | **Reachability accuracy** (is a "reachable" CVE truly reachable?) | **NOT MEASURED** | Trivy/our reachability sets a `reachable` flag; its precision/recall against ground truth has not been measured. On V1, 135/185 actionable SCA were transitive+not-reachable, but "not-reachable" itself is unverified |
 | **KEV flagging** | **not measured** | we tag CVEs present in CISA KEV; the tag's correctness (list freshness, id match) has no measured accuracy — it inherits the KEV feed's |
 | **EPSS scores** | **passthrough, not ours** | EPSS is attached from FIRST's model; we do not compute or validate it. Not an Aegis accuracy claim |
-| **Lifecycle / fingerprint tracking** (same finding across scans) | **verified, functional** (not a rate) | stable-fingerprint enrichment; F1 exercised New→Existing→Resolved→Reopened plus a 20-line shift with unchanged fingerprints on a purpose-built repo |
+| **Lifecycle / fingerprint tracking** (same finding across scans) | **verified, functional** (not a rate) | stable-fingerprint enrichment; F1 exercised New→Existing→Resolved→Reopened plus a 20-line shift with unchanged fingerprints on a purpose-built repo. **N1:** a finding is resolved only when the detector that raised it ran; a finding whose rule no longer ships is `retired` (neither open nor fixed), and a failed engine resolves nothing — DB-backed test `TestLifecycleNeverResolvesWhatDidNotRun` (CORRECTION 11) |
 | **ML false-positive filter — safety** | **verified, functional** (not a rate) | advisory only: `false_positive_probability` appears solely in `ORDER BY` (API) and the web sort comparator — no `WHERE` filters on it. F1 marked 3 criticals as FP: all stayed visible and stayed `critical` |
 | **ML false-positive filter — learning from your feedback** | **NOT automatic — manual retrain only** | see CORRECTION 7. Feedback updates `project_rule_stats.fp_rate` (live, feeds project memory), but nothing changes the model's `P(fp)` without a manual `ml.train` run |
 | **"Competes with SonarQube on quality"** | **NOT RUN — no evidence** | deferred three times. F2 (2026-09-06) got SonarQube CE 9.9.8 to `status:UP` at 1.53 GiB, but the scanner could not complete on a **3.744 GiB** Docker VM (analysis exceeded 10 min reading across a Windows named volume, then the engine died). Recorded NOT RUN in `docs/COMPETITIVE_F2.md` §A. Needs ≥ 8 GiB. Do not make this claim until a head-to-head exists |
-| **Marginal value over registry-only Semgrep** | **verified, per language** | F2 re-confirmed V2 §4 on the F1 corpus post-T3: DVWA +31 (27% of its SAST), NodeGoat +3, dvpwa 0, spring-petclinic 0 |
+| **Marginal value over registry-only Semgrep** | **no longer applicable** | Aegis no longer ships registry rules (N1), so our rules are not a margin on top of anything — for most languages they are the whole of SAST. See the per-language table |
 | **Privacy guarantees** (self-hosted, source never leaves, AI opt-in) | **verified, functional** (not a rate) | code never executed (architectural); ML features metadata-only; secrets redacted at the egress chokepoint (18 tests + observed in Postgres on real repos); `ai_fix_enabled` defaults false. There is **no** graded privacy ladder — CORRECTION 6 |
 
 None of the "not measured" rows should be cited as an accuracy claim anywhere until
@@ -296,8 +289,8 @@ column only.
 | framework | standard total | assessed | claim | control text verified against |
 |---|---|--:|---|---|
 | **OWASP ASVS 4.0.3** | 286 requirements, 14 chapters | **11** | **headline** | published normative text |
-| **SOC 2 (2017 TSC)** | 33 Common Criteria | **7** | **headline** | numbering + titles only — **normative text paywalled, not read** |
-| ISO/IEC 27001:2022 | 93 Annex A controls | **8** | supporting evidence | numbering + titles only — **paywalled, not read** |
+| **SOC 2 (2017 TSC)** | 33 Common Criteria | **6** (7 before N1) | **headline** | numbering + titles only — **normative text paywalled, not read** |
+| ISO/IEC 27001:2022 | 93 Annex A controls | **7** (8 before N1) | supporting evidence | numbering + titles only — **paywalled, not read** |
 | NIST CSF 2.0 | 106 subcategories | **7** | supporting evidence | published normative text |
 | HIPAA Security Rule | ~18 standards, 3 safeguard families | **5** | supporting evidence | published normative text (45 CFR 164.312) |
 | PCI DSS 4.0 | 12 requirements, **~300 sub-requirements** | **7** | supporting evidence | numbering + titles only — **terms-gated, not read** |
@@ -312,8 +305,10 @@ normative text was not read. A test fails if that set drifts.
 - One finding is attributed to **at most one control** — 9,871 double-attributions across 14,041
   real findings became 0 in J1.
 - Every evidence identifier must be one an engine can actually emit — **36 dead entries removed** in
-  J2; a control whose evidence could never fire would report "no findings" when the truth is "never
-  checked".
+  J2, **71 more in N1** when the Semgrep-registry rules went; a control whose evidence could never
+  fire would report "no findings" when the truth is "never checked". N1 turned SOC 2 CC6.3 and ISO
+  27001 A.8.2 `not-assessed`: their only evidence (CWE-269) had come from removed rules. The
+  inventory's "observed" half now counts only findings from detectors that still ship.
 - The framework mappings exist in **exactly one place**; a second copy diverged silently through
   all of J1.
 - A control we cannot evidence is **`not-assessed`** and excluded from both sides of the score, not
@@ -469,3 +464,30 @@ the numbers above trustworthy.
     intended. Being at the root, it was the copy a reader found first. Deleted in J2, with a CI
     check that fails the build if a second tree reappears. No compliance number was wrong as a
     result (the loader never read it), but any reader of the repository would have been misled.
+
+11. **Every SAST number before 2026-09-19 was measured with rules Aegis may not ship.**
+    Pass N1 (2026-09-19) removed the 16 Semgrep-registry packs — 2,677 rule entries, 1,142
+    unique rules, all under the **Semgrep Rules License v1.0** — after Semgrep's head of legal
+    declined an OEM licence, declined relicensing, and confirmed permitted use is limited. What
+    ships now is Aegis's own 60 rules plus njsscan (114 rules, LGPL-3.0-or-later, rebuilt from
+    upstream source). The Semgrep CE engine (LGPL-2.1) is unaffected. Re-measured the same day,
+    same harness, before and after:
+    - **OWASP Benchmark v1.2: Youden 0.459 → 0.051, F1 0.775 → 0.247, TPR 0.884 → 0.154, FPR
+      0.425 → 0.103.** Aegis now scores below CodeQL and base Semgrep on it. The "leads on
+      Youden" claim is withdrawn.
+    - **Ground truth: 24 → 22 of 45 documented vulnerabilities** on five repositories. DVWA,
+      WebGoat, NodeGoat and dvpwa are unchanged; juice-shop loses two directory-listing
+      challenges. G2's "no documented vulnerability is lost" held for its three repositories,
+      not for five, and was corrected in G3 §5.
+    - **Precision did not rise.** Hand-triaged sovereign findings: Aegis taint rules 73 %,
+      njsscan 27 %, overall 46–56 %, against G3's 55 % for the rules removed. At corpus volume it
+      is worse: Dolibarr, whose SAST timed out before and now completes, yields 2,362
+      `aegis-php-xss` findings that are effectively all false (an application-wide WAF filters
+      `PHP_SELF`; 25/25 sampled FP). SAST now completes on 14 of V2's 15 repositories, against 11.
+    - **Compliance:** 71 dead evidence identifiers removed; SOC 2 CC6.3 and ISO 27001 A.8.2
+      became `not-assessed`.
+    - **A lifecycle defect the cut would have triggered:** every finding raised by a removed rule
+      would have been marked *resolved* on each project's next scan, and so appeared as
+      remediation evidence in compliance reports. Fixed before release with a `retired` state;
+      the same fix stops a timed-out engine from resolving everything it had found.
+    Full record: `docs/RULE_REMOVAL_N1.md`.

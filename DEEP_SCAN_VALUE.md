@@ -1,5 +1,12 @@
 # Deep-Scan Value Proposition — Joern Interprocedural Taint (Track 2f)
 
+> **SUPERSEDED — 2026-09-19 (Pass N1).** The SAST numbers in this document were measured with
+> the Semgrep-registry rule packs loaded (Semgrep Rules License v1.0). Aegis no longer ships
+> those rules: Semgrep declined an OEM licence and relicensing, so they were removed. Same
+> harness, sovereign rule set: OWASP Benchmark v1.2 **TPR 0.154 · FPR 0.103 · F1 0.247 ·
+> Youden 0.051** (was 0.884 · 0.425 · 0.775 · 0.459). Do not cite the older figures. Current
+> numbers live only in `docs/ACCURACY.md`; the cut is documented in `docs/RULE_REMOVAL_N1.md`.
+
 > **STATUS: SHELVED FOR LAUNCH (Phase 2D close-out).** The Joern deep-scan engine
 > is gated **experimental, OFF by default** (`DEEP_SCAN_ENABLED=false` in the
 > orchestrator). It is **not deleted** — it works end-to-end after the openjdk-21 +
