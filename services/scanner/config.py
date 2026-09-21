@@ -44,9 +44,12 @@ class Settings(BaseSettings):
     codeql_bin: str = "codeql"
 
     # ── Semgrep ──────────────────────────────────────────────────────────────
-    semgrep_base_configs: str = Field(
-        default="p/owasp-top-ten,p/r2c-security-audit,p/default,p/secrets,p/supply-chain,p/cwe-top-25"
-    )
+    # Extra always-on semgrep configs: LOCAL rule files or directories only. Empty by
+    # default. N1 removed the Semgrep-registry packs this used to name (p/default,
+    # p/owasp-top-ten, ...) -- their licence does not permit commercial shipping.
+    # A `p/...`/`r/...` registry shortcut set here is refused by the engine, never
+    # fetched (engines/semgrep_engine.py:_local_configs_only).
+    semgrep_base_configs: str = Field(default="")
     # High-precision profile (Track 2d): comma-separated Semgrep rule IDs to drop.
     # Empty by default (max recall). Set SEMGREP_EXCLUDE_RULES to silence the
     # low-confidence "security.audit.*" injection rules for a precision-first scan.
@@ -80,7 +83,7 @@ class Settings(BaseSettings):
 
     @property
     def semgrep_base_config_list(self) -> list[str]:
-        """Parse the comma-separated registry string into a clean list."""
+        """Parse the comma-separated list of local semgrep configs into a clean list."""
         return [c.strip() for c in self.semgrep_base_configs.split(",") if c.strip()]
 
 

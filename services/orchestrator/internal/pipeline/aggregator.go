@@ -55,11 +55,51 @@ type Aggregated struct {
 
 	// EngineErrors records engines that failed so the scan can note degradation.
 	EngineErrors map[string]string
+
+	// Evidence says which detectors actually ran (N1) -- what lifecycle may conclude
+	// from a finding's absence. See types.LifecycleEvidence.
+	Evidence types.LifecycleEvidence
+}
+
+// subEngines lists the finding-engine names an engine result carries besides its
+// own: the quality endpoint runs ruff and returns its findings as engine "ruff".
+var subEngines = map[string][]string{"quality": {"ruff"}}
+
+// lifecycleEvidence derives what each engine result lets lifecycle conclude.
+func lifecycleEvidence(results []*types.EngineResult) types.LifecycleEvidence {
+	ev := types.LifecycleEvidence{
+		Completed:     map[string]bool{},
+		RulesExecuted: map[string]map[string]bool{},
+		RulesShipped:  map[string]map[string]bool{},
+	}
+	set := func(ids []string) map[string]bool {
+		m := make(map[string]bool, len(ids))
+		for _, id := range ids {
+			m[id] = true
+		}
+		return m
+	}
+	for _, r := range results {
+		if r == nil || r.Status != "completed" || r.Error != "" {
+			continue // failed / skipped: absence proves nothing
+		}
+		if r.Degraded && r.RulesExecuted == nil {
+			continue // ran with unknown partial coverage: absence proves nothing
+		}
+		for _, e := range append([]string{r.Engine}, subEngines[r.Engine]...) {
+			ev.Completed[e] = true
+		}
+		if r.RulesExecuted != nil {
+			ev.RulesExecuted[r.Engine] = set(r.RulesExecuted)
+			ev.RulesShipped[r.Engine] = set(r.RulesShipped)
+		}
+	}
+	return ev
 }
 
 // Aggregate combines per-engine results into a single scored summary.
 func Aggregate(results []*types.EngineResult) Aggregated {
-	agg := Aggregated{EngineErrors: map[string]string{}}
+	agg := Aggregated{EngineErrors: map[string]string{}, Evidence: lifecycleEvidence(results)}
 
 	byEngine := map[string]*types.EngineResult{}
 	for _, r := range results {

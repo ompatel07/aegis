@@ -56,7 +56,11 @@ rules:
       owasp: ["A05:2021 - Security Misconfiguration"]
     paths:
       include: ["*compose*.yml", "*compose*.yaml", "*docker-compose*"]
+    # Only entries under cap_add. As a bare regex this also matched `cap_drop: [ALL]`
+    # -- the hardening this message recommends -- and raised ERROR on it (N1).
     patterns:
+      - pattern-inside: |
+          cap_add: [...]
       - pattern-regex: "-\\s*(SYS_ADMIN|NET_ADMIN|ALL)\\b"
 
   - id: aegis-compose-port-all-interfaces

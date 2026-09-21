@@ -19,6 +19,7 @@ Five seams:
 from __future__ import annotations
 
 import asyncio
+import os
 
 import pytest
 
@@ -102,34 +103,58 @@ def test_seam_reliability_source_not_constant_across_repos():
 
 
 # ── Seam 4: a degraded engine yields a DEGRADED result, never clean ─────────
-def test_seam_degraded_engine_is_not_clean(monkeypatch):
-    """Drive the real semgrep entrypoint but make the first (custom-pack) invocation
-    fail hard (rc=2) and the registry-only retry succeed. The result must be
-    completed-but-DEGRADED with the lost coverage named — never a clean success."""
-    from engines import semgrep_engine
-    from models.scan_request import ScanRequest
+def _broken_aegis_pack_run_command(calls):
     from utils.sandbox import CommandResult
 
-    calls = {"n": 0}
-
     async def fake_run_command(args, **kwargs):
-        calls["n"] += 1
-        if calls["n"] == 1:
-            # first call includes the custom packs → simulate a hard rule-load error
+        calls.append(args)
+        if len(calls) == 1:
+            # first call includes the Aegis packs → simulate a hard rule-load error
             return CommandResult(args=args, returncode=2, stdout="", stderr="invalid rule: boom",
                                  duration_seconds=0.01, timed_out=False)
-        # retry with registry packs only → clean success, no findings
+        # retry with the pinned third-party pack only → clean success, no findings
         return CommandResult(args=args, returncode=0, stdout='{"results": [], "errors": []}',
                              stderr="", duration_seconds=0.01, timed_out=False)
+    return fake_run_command
 
-    monkeypatch.setattr(semgrep_engine, "run_command", fake_run_command)
-    req = ScanRequest(path=str(_a_dir()), scan_id="seam-degraded")
+
+def test_seam_degraded_engine_is_not_clean(monkeypatch):
+    """Drive the real semgrep entrypoint on a JS repo, make the first (Aegis-pack)
+    invocation fail hard (rc=2) and the third-party-only retry succeed. The result
+    must be completed-but-DEGRADED with the lost coverage named — never clean."""
+    from engines import semgrep_engine
+    from models.scan_request import ScanRequest
+
+    calls: list = []
+    monkeypatch.setattr(semgrep_engine, "run_command", _broken_aegis_pack_run_command(calls))
+    req = ScanRequest(path=str(_a_dir("a.js", "var x = 1;\n")), scan_id="seam-degraded",
+                      languages=["javascript"], project_types=[])
     result = asyncio.run(semgrep_engine.run(req, settings))
 
     assert result.status.value in ("completed", "success"), "a broken pack must not fail the whole scan"
     assert result.degraded is True, "engine ran with reduced coverage but did not report DEGRADED"
     assert result.coverage_lost, "degraded result must name the coverage it lost"
-    assert calls["n"] == 2, "expected a registry-only retry after the custom-pack failure"
+    assert len(calls) == 2, "expected a third-party-only retry after the Aegis-pack failure"
+    retry_cfgs = [calls[1][i + 1] for i, a in enumerate(calls[1]) if a == "--config"]
+    assert retry_cfgs and all(os.path.isfile(c) for c in retry_cfgs), retry_cfgs
+
+
+def test_seam_no_fallback_fails_instead_of_fetching(monkeypatch):
+    """N1: a Python repo has no third-party pack to fall back to. When the Aegis
+    packs fail, the engine must report FAILED -- not clean, and never retry with an
+    empty --config list, which semgrep turns into `--config auto` (a registry fetch)."""
+    from engines import semgrep_engine
+    from models.scan_request import ScanRequest
+
+    calls: list = []
+    monkeypatch.setattr(semgrep_engine, "run_command", _broken_aegis_pack_run_command(calls))
+    req = ScanRequest(path=str(_a_dir("a.py", "x = 1\n")), scan_id="seam-nofallback",
+                      languages=["python"], project_types=[])
+    result = asyncio.run(semgrep_engine.run(req, settings))
+
+    assert result.status.value == "failed", f"expected FAILED with no fallback, got {result.status.value}"
+    assert len(calls) == 1, "must not retry when there is no pinned pack to fall back to"
+    assert "--config" in calls[0]
 
 
 # ── Seam 5: determinism — same repo twice, identical findings ───────────────
@@ -154,9 +179,9 @@ def test_seam_scan_is_deterministic(tmp_path):
     assert first == second, f"scan is non-deterministic:\n  {first}\n  {second}"
 
 
-def _a_dir():
+def _a_dir(name="a.py", body="x = 1\n"):
     import tempfile
     d = tempfile.mkdtemp(prefix="seam-degraded-")
-    with open(f"{d}/a.py", "w", encoding="utf-8") as fh:
-        fh.write("x = 1\n")
+    with open(f"{d}/{name}", "w", encoding="utf-8") as fh:
+        fh.write(body)
     return d

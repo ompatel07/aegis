@@ -27,7 +27,7 @@ controls:
     name: System components are configured and managed securely
     evidence:
       owasp: ["A05:2021"]
-      cwe: ["CWE-16", "CWE-732", "CWE-489"]
+      cwe: []
       pillars: ["deployment", "security"]
 
   - id: "3.5"
@@ -35,14 +35,14 @@ controls:
     evidence:
       # At-rest protection. In-transit lives at 4.2; the two shared A02:2021 and
       # CWE-326 before J1, so every crypto finding failed both.
-      cwe: ["CWE-311", "CWE-327", "CWE-328", "CWE-916"]
+      cwe: ["CWE-327", "CWE-328", "CWE-916"]
       pillars: ["security"]
 
   - id: "4.2"
     name: PAN is protected with strong cryptography during transmission over open networks
     evidence:
       owasp: ["A02:2021"]
-      cwe: ["CWE-319", "CWE-295", "CWE-326"]
+      cwe: ["CWE-319", "CWE-295"]
       pillars: ["security"]
 
   - id: "6.2.4"
@@ -63,7 +63,7 @@ controls:
       # *identification*; 6.3.3 is *installing the patches*, which we cannot
       # observe, so it is now not-assessed.
       owasp: ["A06:2021"]
-      cwe: ["CWE-1104"]
+      cwe: []
       pillars: ["security"]
 
   - id: "6.3.3"
@@ -88,7 +88,7 @@ controls:
     name: Strong authentication for users and administrators
     evidence:
       owasp: ["A07:2021"]
-      cwe: ["CWE-287", "CWE-306"]
+      cwe: ["CWE-287"]
       pillars: ["security"]
 
   - id: "8.6.1"
@@ -97,7 +97,7 @@ controls:
       # J1 fix: 8.3.1 and 8.6.1 shared CWE-798 and CWE-259. Hard-coded
       # credentials belong to 8.6.1 (application/system account management);
       # 8.3.1 keeps the authentication-strength weaknesses.
-      cwe: ["CWE-798", "CWE-321", "CWE-522"]
+      cwe: ["CWE-798", "CWE-522"]
       pillars: ["security"]
 
   - id: "1.x"

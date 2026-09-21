@@ -34,7 +34,7 @@ controls:
     name: Logical access security over protected information assets
     evidence:
       owasp: ["A01:2021"]
-      cwe: ["CWE-284", "CWE-285", "CWE-862", "CWE-863", "CWE-639", "CWE-352", "CWE-601"]
+      cwe: ["CWE-285", "CWE-863", "CWE-352", "CWE-601"]
       pillars: ["security"]
 
   - id: CC6.2
@@ -44,19 +44,25 @@ controls:
       # Hard-coded and weakly protected credentials sit here rather than under
       # CC8.1. CC8.1 is change management; a secret in source is an
       # authentication weakness, not a change-control failure (J1 fix).
-      cwe: ["CWE-287", "CWE-306", "CWE-798", "CWE-321", "CWE-522"]
+      cwe: ["CWE-287", "CWE-798", "CWE-522"]
       pillars: ["security"]
 
   - id: CC6.3
     name: Access to data, software and functions based on roles, least privilege and segregation of duties
-    evidence:
-      # CWE-732 was removed here (J1). It is "Incorrect Permission Assignment for
-      # a Critical Resource", which in practice fires on filesystem and container
-      # permissions -- so it dragged container-hardening findings into a
-      # role-based-access criterion (the F1 CC6.3 defect). Those findings now
-      # evidence CC7.1, where configuration belongs.
-      cwe: ["CWE-269"]
-      pillars: ["security"]
+    # CWE-732 was removed here (J1). It is "Incorrect Permission Assignment for
+    # a Critical Resource", which in practice fires on filesystem and container
+    # permissions -- so it dragged container-hardening findings into a
+    # role-based-access criterion (the F1 CC6.3 defect). Those findings now
+    # evidence CC7.1, where configuration belongs.
+    # N1: the remaining evidence, CWE-269, was emitted only by Semgrep-registry
+    # rules removed in N1 (2 findings in the whole corpus). With no shipped
+    # detector able to produce it, this criterion is not assessed -- it must not
+    # report "no findings" for a check that no longer runs.
+    aegis_scope: not-assessed
+    not_assessed_reason: >-
+      No shipped detector emits privilege-management evidence (CWE-269) since the
+      Semgrep-registry rules were removed (N1). Role design and segregation of
+      duties are also process evidence a repository scan cannot show.
 
   - id: CC6.6
     name: Logical access measures against threats from sources outside the system boundaries
@@ -72,7 +78,7 @@ controls:
     name: Restricts the transmission, movement and removal of information; encryption
     evidence:
       owasp: ["A02:2021"]
-      cwe: ["CWE-311", "CWE-319", "CWE-326", "CWE-327", "CWE-328", "CWE-295", "CWE-916"]
+      cwe: ["CWE-319", "CWE-327", "CWE-328", "CWE-295", "CWE-916"]
       pillars: ["security"]
 
   - id: CC6.8
@@ -86,7 +92,7 @@ controls:
       # CC6.8/CC7.1 defect). What remains is genuine software-integrity
       # evidence: unpinned/untrusted components and unverified downloads.
       owasp: ["A08:2021"]
-      cwe: ["CWE-829", "CWE-494", "CWE-353", "CWE-1357", "CWE-345"]
+      cwe: ["CWE-829", "CWE-494", "CWE-345"]
       pillars: ["security"]
 
   - id: CC7.1
@@ -98,7 +104,7 @@ controls:
       # configuration. The configuration evidence moved here from the old CC7.2
       # entry, which was misnamed (see below).
       owasp: ["A06:2021", "A05:2021"]
-      cwe: ["CWE-1104", "CWE-16", "CWE-732", "CWE-489"]
+      cwe: []
       pillars: ["security", "deployment"]
 
   - id: CC7.2

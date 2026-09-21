@@ -68,6 +68,20 @@ def main() -> int:
     elif trees[0].replace(os.sep, "/") != EXPECTED.replace(os.sep, "/"):
         problems.append(f"framework tree is at {trees[0]}, expected {EXPECTED}")
 
+    # N1: 'observed' identifiers come from stored findings. After a rule-set change
+    # some of them were emitted only by rules that no longer ship, so an inventory
+    # taken against an older rule set overstates what can be evidenced.
+    with open(os.path.join(ROOT, "services", "scanner", "compliance", "emittable_identifiers.yaml"),
+              encoding="utf-8") as fh:
+        inv_pin = str(((yaml.safe_load(fh) or {}).get("observed") or {}).get("rule_set_pinned_at"))
+    with open(os.path.join(ROOT, "services", "scanner", "rules", "manifest.yaml"), encoding="utf-8") as fh:
+        rules_pin = str((yaml.safe_load(fh) or {}).get("pinned_at"))
+    if inv_pin != rules_pin:
+        problems.append(
+            f"emittable_identifiers.yaml observed inventory was taken against rule set {inv_pin}, "
+            f"but the shipped rule set is {rules_pin}; refresh it with --dsn"
+        )
+
     if trees:
         live_cwe, live_ow = emittable()
         tree = os.path.join(ROOT, trees[0])

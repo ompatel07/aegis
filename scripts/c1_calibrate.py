@@ -14,6 +14,7 @@ from __future__ import annotations
 import glob
 import json
 import math
+import os
 from collections import Counter
 
 from enrichment import secret_context
@@ -61,19 +62,35 @@ def _mkf(fd):
                    metadata=meta)
 
 
+# N1: AEGIS_SHIPPED_RULES=<file of rule ids> replays the SOVEREIGN rule set -- SAST
+# findings whose rule no longer ships are dropped. Semgrep rules match independently
+# (verified in N1: the sovereign OWASP run was exactly the aegis-* subset of the full
+# run), so this subset replay equals a re-scan for the findings that survive.
+_SHIPPED = None
+if os.environ.get("AEGIS_SHIPPED_RULES"):
+    with open(os.environ["AEGIS_SHIPPED_RULES"]) as _fh:
+        _SHIPPED = {ln.strip() for ln in _fh if ln.strip()}
+
+
+def _sast_kept(f):
+    return _SHIPPED is None or (f.get("rule_id") or "") in _SHIPPED
+
+
 def corrected_security(slug, d):
     """Return corrected security-pillar severity Counter for a repo."""
     c = Counter()
     if slug in S1:  # live re-scan: already S1-corrected
         for name in ("sast", "sca", "secrets"):
             for f in S1[slug]["engines"].get(name, {}).get("findings", []):
+                if name == "sast" and not _sast_kept(f):
+                    continue
                 c[f["severity"]] += 1
         return c
     # offline: SAST unchanged; secrets path-prior; SCA from vector
     for e in d["engines"]:
         if e["engine"] == "sast":
             for f in e["findings"]:
-                if f["pillar"] == "security":
+                if f["pillar"] == "security" and _sast_kept(f):
                     c[f["severity"]] += 1
         elif e["engine"] == "secrets":
             objs = [_mkf(f) for f in e["findings"]]
@@ -93,7 +110,8 @@ def repo_row(slug, d):
     qm = q.get("quality_metrics") or {}
     qf = q.get("findings", [])
     nondup = [f for f in qf if f.get("rule_id") != "quality/duplicated-code"]
-    bugs = [f for e in d["engines"] for f in e["findings"] if f.get("issue_type") == "bug"]
+    bugs = [f for e in d["engines"] for f in e["findings"] if f.get("issue_type") == "bug"
+            and (e["engine"] != "sast" or _sast_kept(f))]
     bug_worst = max((severity_rank(f["severity"]) for f in bugs), default=0)
     sec = corrected_security(slug, d)
     loc = qm.get("total_code_lines") or d["loc"]["code_loc"]

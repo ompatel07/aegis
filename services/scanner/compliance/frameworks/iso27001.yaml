@@ -23,45 +23,50 @@ scope:
 controls:
   - id: "A.8.2"
     name: Privileged access rights
-    evidence:
-      # J1 fix: CWE-732 removed (it also sat under A.8.9, and in practice fires
-      # on filesystem/container permissions, not privileged-access management).
-      cwe: ["CWE-269"]
-      pillars: ["security"]
+    # J1 fix: CWE-732 removed (it also sat under A.8.9, and in practice fires
+    # on filesystem/container permissions, not privileged-access management).
+    # N1: the remaining evidence, CWE-269, was emitted only by Semgrep-registry
+    # rules removed in N1. No shipped detector can produce it, so the control is
+    # not assessed rather than reporting "no findings".
+    aegis_scope: not-assessed
+    not_assessed_reason: >-
+      No shipped detector emits privilege-management evidence (CWE-269) since the
+      Semgrep-registry rules were removed (N1). Allocation and review of privileged
+      access rights is process evidence a repository scan cannot show.
 
   - id: "A.8.3"
     name: Information access restriction
     evidence:
       owasp: ["A01:2021"]
-      cwe: ["CWE-284", "CWE-285", "CWE-862", "CWE-863", "CWE-639", "CWE-352", "CWE-601"]
+      cwe: ["CWE-285", "CWE-863", "CWE-352", "CWE-601"]
       pillars: ["security"]
 
   - id: "A.8.5"
     name: Secure authentication
     evidence:
       owasp: ["A07:2021"]
-      cwe: ["CWE-287", "CWE-306", "CWE-798", "CWE-321", "CWE-522"]
+      cwe: ["CWE-287", "CWE-798", "CWE-522"]
       pillars: ["security"]
 
   - id: "A.8.8"
     name: Management of technical vulnerabilities
     evidence:
       owasp: ["A06:2021"]
-      cwe: ["CWE-1104"]
+      cwe: []
       pillars: ["security"]
 
   - id: "A.8.9"
     name: Configuration management
     evidence:
       owasp: ["A05:2021"]
-      cwe: ["CWE-16", "CWE-732", "CWE-489"]
+      cwe: []
       pillars: ["deployment", "security"]
 
   - id: "A.8.24"
     name: Use of cryptography
     evidence:
       owasp: ["A02:2021"]
-      cwe: ["CWE-311", "CWE-319", "CWE-326", "CWE-327", "CWE-328", "CWE-295", "CWE-916"]
+      cwe: ["CWE-319", "CWE-327", "CWE-328", "CWE-295", "CWE-916"]
       pillars: ["security"]
 
   - id: "A.8.25"

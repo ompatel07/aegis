@@ -155,6 +155,29 @@ type EngineResult struct {
 	// exclusion is visible, never a silent skip. SCA + vendored fingerprinting still
 	// scan these files. nil when nothing was excluded.
 	ExcludedBundled *ExcludedBundled `json:"excluded_bundled"`
+
+	// Lifecycle evidence (N1): the semgrep rule ids that actually ran on this scan,
+	// and every rule id Aegis ships. A finding may only be marked resolved by a scan
+	// whose detector ran; see store.applyLifecycle. nil for engines without per-rule
+	// sets and for scanners that predate N1 (treated as "every rule ran").
+	RulesExecuted []string `json:"rules_executed"`
+	RulesShipped  []string `json:"rules_shipped"`
+}
+
+// LifecycleEvidence records which detectors actually ran on a scan, so lifecycle
+// never records "we stopped looking" as "it was fixed" (N1). A finding absent from
+// a scan is RESOLVED only when its engine completed and, where the engine reports
+// per-rule sets, its rule executed. Its rule no longer shipping makes it RETIRED
+// (neither open nor fixed). Anything else -- engine failed, skipped, or not run;
+// rule shipped but not executed -- leaves it untouched.
+type LifecycleEvidence struct {
+	// Completed is keyed by the engine name findings carry (state rows use it).
+	Completed map[string]bool
+	// RulesExecuted / RulesShipped: engine -> rule id set. An engine absent from
+	// RulesExecuted has no per-rule reporting (or predates N1): all its rules count
+	// as executed and none as retired -- the pre-N1 behaviour, deliberately.
+	RulesExecuted map[string]map[string]bool
+	RulesShipped  map[string]map[string]bool
 }
 
 // ExcludedBundled summarizes the bundled/minified third-party JS/TS files that SAST

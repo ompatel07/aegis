@@ -1,12 +1,15 @@
 """Semgrep SAST engine.
 
-Runs Semgrep with OWASP/security base packs, language-appropriate rule packs,
-and Aegis's own custom taint-mode rulesets, then normalizes each result into a
-`Finding`. The custom rules (rules/taint/*.yaml) add cross-file dataflow
-detection for SQLi / XSS / command injection / SSRF / path traversal / NoSQL /
-LDAP injection across Python, JS/TS, Go and Java — the SonarQube/Snyk-competing
-capability. Each ships with positive + sanitized-negative tests (`semgrep
---test`) so false positives are caught before release.
+Runs the Semgrep CE engine (LGPL-2.1) over rule packs Aegis owns or may ship:
+Aegis's own packs (rules/taint, rules/quality, rules/iac, rules/cicd) on every
+scan, plus the pinned njsscan pack (LGPL-3.0-or-later) for JS/TS. Normalizes
+each result into a `Finding`. The taint packs add cross-file dataflow detection
+for SQLi / XSS / command injection / SSRF / path traversal / NoSQL / LDAP
+injection; each ships with positive + sanitized-negative tests.
+
+N1 (2026-09-19): the Semgrep-registry packs were removed -- their licence does
+not permit commercial shipping -- together with every path that could fetch
+rules from the registry. Only local rule files ever reach the command line.
 """
 from __future__ import annotations
 
@@ -35,28 +38,20 @@ from utils.sandbox import binary_available, run_command
 
 log = get_logger("semgrep")
 
-# Canonical Semgrep registry packs per language (valid registry shortcuts).
+# Third-party packs per language. N1 removed every Semgrep-registry pack (Semgrep
+# Rules License v1.0 -- no commercial shipping); the only third-party pack left is
+# njsscan (LGPL-3.0-or-later, 114 Node rules), pinned to its upstream commit in
+# rules/manifest.yaml. Every other language is covered by Aegis's own packs alone
+# (rules/taint, rules/quality, ...), which load for every scan below.
+# Dockerfile/Terraform had registry packs too; Trivy's misconfig scanner covers both.
 _LANGUAGE_RULESETS: dict[str, list[str]] = {
-    # p/nodejsscan adds ~150 Node-specific security rules on top of p/javascript.
-    "python": ["p/python"],
-    "javascript": ["p/javascript", "p/nodejsscan"],
-    "typescript": ["p/typescript", "p/nodejsscan"],
-    "java": ["p/java"],
-    "go": ["p/golang"],
-    "ruby": ["p/ruby"],
-    "php": ["p/php"],
-    "csharp": ["p/csharp"],
-}
-
-# Infrastructure-as-Code packs added when the relevant files are present.
-_IAC_RULESETS: dict[str, list[str]] = {
-    "docker": ["p/dockerfile"],
-    "terraform": ["p/terraform"],
+    "javascript": ["nodejsscan"],
+    "typescript": ["nodejsscan"],
 }
 
 # Absolute path to Aegis's bundled custom taint rulesets. Shipped in the image
 # at /app/rules/taint (COPY . .); also resolves correctly when run from a local
-# checkout. Passed as an extra --config alongside the registry packs.
+# checkout. Passed as an extra --config alongside the pinned third-party packs.
 _CUSTOM_RULES_DIR = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "rules", "taint"
 )
@@ -86,42 +81,94 @@ _QUALITY_RULES_DIR = os.path.join(
 )
 
 
-# Pinned, vendored registry packs (G2). We no longer live-fetch `p/...` on every scan:
-# a live fetch means the registry can change a customer's results between two scans of
-# unchanged code, it makes rule_pack_version unpinnable, and it leaves our licence
-# exposure undocumented. `scripts/vendor_rules.py` pins the packs into rules/vendor/
-# with a manifest recording each pack's sha256 and licence mix.
+# Pinned third-party packs (G2, narrowed by N1). Nothing is ever fetched from a rule
+# registry: a pack is used only if its file is shipped in rules/vendor/ and described
+# by rules/manifest.yaml (tools/check_rule_licences.py enforces the licence side).
 _VENDOR_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "rules", "vendor")
 
 
-def _vendored(pack: str) -> str:
-    """Resolve a `p/<pack>` shortcut to its pinned local copy.
+def _vendored(pack: str) -> str | None:
+    """Resolve a pack name (`nodejsscan`) to its pinned local file, or None.
 
-    Falls back to the registry shortcut (and says so) if the vendored file is absent,
-    so a partial checkout degrades to the old behaviour rather than losing coverage.
+    Before N1 a missing file fell back to the `p/<pack>` registry shortcut, which
+    semgrep then downloaded from semgrep.dev. That fallback is gone: a missing pack
+    is dropped and logged, never fetched.
     """
-    path = os.path.join(_VENDOR_DIR, pack.replace("p/", "").replace("/", "_") + ".yaml")
+    name = pack[2:] if pack.startswith("p/") else pack
+    path = os.path.join(_VENDOR_DIR, name.replace("/", "_") + ".yaml")
     if os.path.isfile(path):
         return path
     log.warning("semgrep.vendored_pack_missing", pack=pack, expected=path)
-    return pack
+    return None
+
+
+def _local_configs_only(configs: list[str]) -> list[str]:
+    """Drop any config that is not a local file or directory.
+
+    Semgrep treats `p/...`, `r/...`, `s/...`, `auto`, and URLs as instructions to
+    download rules from the Semgrep registry. Nothing that reaches the command line
+    may be one of those -- not from settings, not from a pack map, not from a
+    future edit. Refused entries are logged, never passed through.
+    """
+    out: list[str] = []
+    for c in configs:
+        if os.path.isfile(c) or os.path.isdir(c):
+            out.append(c)
+        else:
+            log.warning("semgrep.non_local_config_refused", config=c)
+    return out
 
 
 def _select_configs(settings: Settings, languages: list[str], project_types: list[str]) -> list[str]:
-    """Build the ordered, de-duplicated `--config` list for this scan."""
+    """Build the ordered, de-duplicated `--config` list of third-party packs.
+
+    `project_types` is accepted for interface stability; since N1 no pack is
+    selected by project type (Trivy covers Dockerfile/Terraform).
+    """
     configs: list[str] = list(settings.semgrep_base_config_list)
     for lang in languages:
-        configs.extend(_LANGUAGE_RULESETS.get(lang, []))
-    for ptype in project_types:
-        configs.extend(_IAC_RULESETS.get(ptype, []))
-    # Preserve order while removing duplicates.
+        for pack in _LANGUAGE_RULESETS.get(lang, []):
+            path = _vendored(pack)
+            if path:
+                configs.append(path)
     seen: set[str] = set()
     ordered: list[str] = []
     for c in configs:
         if c not in seen:
             seen.add(c)
             ordered.append(c)
-    return [_vendored(c) if c.startswith("p/") else c for c in ordered]
+    return _local_configs_only(ordered)
+
+
+def _rule_ids_in(config: str) -> set[str]:
+    """Rule ids declared by one --config entry (file or directory of YAML).
+
+    The id in the YAML is the canonical id `_parse` reports: our rules and
+    per-project rules report their bare id, vendored rules their full id.
+    """
+    import yaml
+
+    paths = ([os.path.join(config, fn) for fn in sorted(os.listdir(config)) if fn.endswith((".yaml", ".yml"))]
+             if os.path.isdir(config) else [config])
+    ids: set[str] = set()
+    for p in paths:
+        try:
+            with open(p, encoding="utf-8") as fh:
+                doc = yaml.safe_load(fh)
+        except (OSError, yaml.YAMLError):
+            continue
+        if isinstance(doc, dict) and isinstance(doc.get("rules"), list):
+            ids |= {str(r.get("id")) for r in doc["rules"] if isinstance(r, dict) and r.get("id")}
+    return ids
+
+
+def _shipped_rule_ids() -> list[str]:
+    """Every semgrep rule id Aegis ships (all of rules/, ours + vendored)."""
+    root = os.path.dirname(_VENDOR_DIR)
+    ids: set[str] = set()
+    for dirpath, _dirs, _files in os.walk(root):
+        ids |= _rule_ids_in(dirpath)
+    return sorted(ids)
 
 
 def _write_project_rules(rules: list[str] | None) -> str | None:
@@ -152,7 +199,8 @@ def _rule_content_hash(config: str) -> bytes:
         with open(config, "rb") as fh:
             h.update(fh.read())
     else:
-        # A registry shortcut we could not vendor: its name is the only identity we have.
+        # Unreachable since N1 (_local_configs_only drops non-local configs); kept so
+        # the id still never fails a scan if a caller passes something unexpected.
         h.update(config.encode())
     return h.digest()
 
@@ -337,31 +385,13 @@ _DEFAULT_EXCLUDE_DIRS = [
 # (SEMGREP_EXCLUDE_RULES) still applies on top for teams wanting a deeper trade.
 _DEFAULT_EXCLUDE_RULES = [
     # Cookie attributes whose ABSENCE is not a security weakness: path/domain
-    # default to safe (host-only) values and maxAge/expires absence just means a
-    # session cookie. The real ones — no-secure, no-httponly, sameSite,
-    # default-name, hardcoded-secret — are deliberately kept.
-    "javascript.express.security.audit.express-cookie-settings.express-cookie-session-no-domain",
-    "javascript.express.security.audit.express-cookie-settings.express-cookie-session-no-path",
-    "javascript.express.security.audit.express-cookie-settings.express-cookie-session-no-expires",
+    # default to safe (host-only) values and maxAge absence just means a session
+    # cookie. The real ones -- no-secure, no-httponly, sameSite -- are kept.
+    # (N1 removed the Semgrep-registry equivalents of these along with their packs,
+    # and the Go/PHP registry-rule exclusions that used to follow.)
     "ajinabraham.njsscan.headers.header_cookie.cookie_session_no_domain",
     "ajinabraham.njsscan.headers.header_cookie.cookie_session_no_path",
     "ajinabraham.njsscan.headers.header_cookie.cookie_session_no_maxage",
-    # Indiscriminate audit rules that flag EVERY framework write to an
-    # http.ResponseWriter regardless of content-type or taint (a JSON/protobuf
-    # serializer is not XSS). Real dataflow XSS in Go is covered by Aegis's own
-    # go taint rules (rules/taint/go.yaml); these add only noise.
-    "go.lang.security.audit.xss.no-direct-write-to-responsewriter.no-direct-write-to-responsewriter",
-    "go.lang.security.audit.xss.no-fprintf-to-responsewriter.no-fprintf-to-responsewriter",
-    # PHP: `echoed-request` flags ANY echo of request data with no dataflow and no
-    # sanitizer awareness — it fires straight through htmlspecialchars() wrappers
-    # (e.g. a project's sanitize() helper), a large false-positive source. Real
-    # PHP XSS is covered precisely, sanitizer-aware, by Aegis's own taint rule
-    # (rules/taint/php.yaml: aegis-php-xss), so this only adds noise + double-counts.
-    "php.lang.security.injection.echoed-request.echoed-request",
-    # `tainted-callable` is over-broad: it fired on `$pdo->prepare($query)` (a
-    # prepared statement, not a callable) — a clear false positive. Dynamic-callable
-    # RCE from request data is rare and better handled by a precise rule if added.
-    "php.lang.security.injection.tainted-callable.tainted-callable",
 ]
 
 
@@ -414,7 +444,7 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
         languages = languages or detection.languages
         project_types = project_types or detection.project_types
 
-    registry_configs = _select_configs(settings, languages, project_types)
+    thirdparty_configs = _select_configs(settings, languages, project_types)
     custom_dir = _custom_rules_dir()
 
     # Teach the PHP XSS taint rule about the project's own HTML-escaping wrappers
@@ -425,10 +455,10 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
         custom_dir = aug_taint_dir
 
     # Per-project custom rules (already validated at upload) live for the duration
-    # of this scan in a temp dir added on top of the registry + Aegis packs.
+    # of this scan in a temp dir added on top of the third-party + Aegis packs.
     project_rules_dir = _write_project_rules(req.custom_rules)
     if project_rules_dir:
-        registry_configs = registry_configs + [project_rules_dir]
+        thirdparty_configs = thirdparty_configs + [project_rules_dir]
 
     iac_dir = _bundled_rules_dir(_IAC_RULES_DIR)
     cicd_dir = _bundled_rules_dir(_CICD_RULES_DIR)
@@ -436,7 +466,15 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
     bundled = (([custom_dir] if custom_dir else [])
                + ([iac_dir] if iac_dir else []) + ([cicd_dir] if cicd_dir else [])
                + ([quality_dir] if quality_dir else []))
-    configs = registry_configs + bundled
+    configs = _local_configs_only(thirdparty_configs + bundled)
+    if not configs:
+        # Never invoke semgrep with no --config: its default is `--config auto`,
+        # which downloads rules from the Semgrep registry. A scan with no rule set
+        # at all is a broken image, and must say so rather than fetch.
+        return EngineResult.failed(
+            Engine.SEMGREP, Pillar.SECURITY,
+            "no local rule packs found (rules/ missing from the image?)", scan_id=req.scan_id,
+        )
     rule_pack_version = _rule_pack_version(configs, req.custom_rules)
 
     # T1 fix: exclude bundled/minified third-party JS/TS from SAST (one 720KB library
@@ -465,28 +503,31 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
         )
 
     result = await _semgrep(configs)
+    used_configs = configs  # the config set whose result we keep (lifecycle evidence)
 
     # A hard error (rc >= 2) after including the custom rulesets must not lose the
-    # entire SAST run. Log it and retry with the registry packs only: a broken
-    # custom rule degrades to registry coverage rather than dropping all findings.
+    # entire SAST run. Log it and retry with the pinned third-party packs only: a
+    # broken custom rule degrades to that coverage rather than dropping all findings.
     # A genuine semgrep failure then still surfaces below (as a degraded engine).
     custom_applied = custom_dir is not None
     degraded = False
     degraded_reason: str | None = None
     coverage_lost: str | None = None
-    if custom_applied and not result.timed_out and result.returncode not in (0, 1):
+    if (custom_applied and thirdparty_configs and not result.timed_out
+            and result.returncode not in (0, 1)):
         log.warning(
             "semgrep.custom_rules_failed_retrying",
             error=normalizer.truncate(result.stderr, 1000),
         )
         custom_applied = False
-        # DEGRADED, not clean: registry rules still ran, but the Aegis custom packs
+        # DEGRADED, not clean: the third-party pack still ran, but the Aegis packs
         # (taint, AI-code taint, IaC, reliability bug pack) did NOT. Surface it — do
         # not report a successful SAST as if it had full coverage.
         degraded = True
-        degraded_reason = "custom rule pack failed to load; retried with registry packs only"
+        degraded_reason = "Aegis rule packs failed to load; retried with the pinned third-party pack only"
         coverage_lost = "Aegis custom taint, AI-code taint, IaC, and reliability bug-pack rules"
-        result = await _semgrep(registry_configs)
+        result = await _semgrep(thirdparty_configs)
+        used_configs = thirdparty_configs
 
     if result.timed_out:
         # Carry excluded_bundled even on timeout: the exclusion still APPLIED, and
@@ -548,28 +589,14 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
         duration_seconds=result.duration_seconds,
         scan_id=req.scan_id,
         rule_pack_version=rule_pack_version,
+        rules_executed=sorted(set().union(*(_rule_ids_in(c) for c in used_configs))),
+        rules_shipped=_shipped_rule_ids(),
         degraded=degraded,
         degraded_reason=degraded_reason,
         coverage_lost=coverage_lost,
         filtered_secrets={k: v for k, v in filtered_secrets.items() if v} or None,
         excluded_bundled=excluded_bundled,
     )
-
-
-def _is_non_subresource_link(matched: str) -> bool:
-    """True when a missing-integrity match is on a <link> whose rel is NOT a
-    subresource (stylesheet / preload / modulepreload) — SRI is meaningless on
-    rel=canonical/alternate/icon/preconnect/dns-prefetch/manifest/..., so flagging
-    those is a false positive. <script src> and real stylesheet/preload links are
-    kept (returns False)."""
-    m = matched.lower()
-    if "<link" not in m:
-        return False  # <script> or non-link match — a valid SRI target, keep it
-    for rel in ('rel="stylesheet"', "rel='stylesheet'", 'rel="preload"',
-                "rel='preload'", 'rel="modulepreload"', "rel='modulepreload'"):
-        if rel in m:
-            return False  # a genuine subresource link — keep it
-    return True  # a <link> with no subresource rel — false positive, drop it
 
 
 # Hardcoded-secret / password rules (njsscan node_password, generic hardcoded-
@@ -620,13 +647,6 @@ def _parse(raw: dict, root: str) -> list[Finding]:
         check_id = _canonical_check_id(item.get("check_id", "unknown-rule"))
         rule_short = check_id.rsplit(".", 1)[-1]
 
-        # Precision: the registry missing-integrity (SRI) rule fires on ANY external
-        # <link>, but Subresource Integrity only applies to <script> and
-        # <link rel="stylesheet"|"preload"|"modulepreload">. Firing on
-        # rel="canonical"/"alternate"/"icon"/... is a false positive — drop those.
-        if "missing-integrity" in check_id and _is_non_subresource_link(extra.get("lines", "") or ""):
-            continue
-
         # Precision: hardcoded-secret rules over-match masked / placeholder values
         # (a `dummyPassword = "****"` display mask, `password: ''`) that are plainly
         # not credentials. Drop those; a real literal value keeps the finding.
@@ -639,14 +659,14 @@ def _parse(raw: dict, root: str) -> list[Finding]:
         # Rules loaded from a local dir are namespaced by semgrep with a
         # path-derived prefix (e.g. "rules.taint.aegis-js-xss" for our bundled
         # packs, or "tmp.aegis-project-rules-XXXX.rule" for per-project rules).
-        # Normalize both to their stable rule id; keep registry ids canonical.
+        # Normalize both to their stable rule id; keep third-party ids canonical.
         is_project = "aegis-project-rules-" in check_id
         is_aegis = rule_short.startswith("aegis-")
         rule_id = rule_short if (is_project or is_aegis) else check_id
         ruleset = (
             "project-custom" if is_project
             else "aegis-custom" if is_aegis
-            else "registry"
+            else "third-party"  # the pinned njsscan pack (N1: no registry rules ship)
         )
 
         # Route by the rule's declared pillar: aegis-bug-* quality rules carry

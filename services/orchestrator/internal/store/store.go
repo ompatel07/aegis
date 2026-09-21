@@ -125,7 +125,7 @@ func (s *Store) SaveResults(ctx context.Context, scanID, projectID string, agg p
 	// Instance-level lifecycle (P1a): classify new/existing/reopened, record
 	// resolved, set is_new — must run before applyBaseline (which now only keeps
 	// the rule-level profile + team-learning stats, no longer sets is_new).
-	if err := applyLifecycle(ctx, tx, projectID, scanID, agg.Findings); err != nil {
+	if err := applyLifecycle(ctx, tx, projectID, scanID, agg.Findings, agg.Evidence); err != nil {
 		return fmt.Errorf("apply lifecycle: %w", err)
 	}
 	if err := applyBaseline(ctx, tx, projectID, scanID, agg.Findings); err != nil {

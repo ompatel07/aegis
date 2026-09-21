@@ -58,7 +58,9 @@ func (h *ExecReportHandler) Compliance(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		w.Header().Set("Content-Disposition", "attachment; filename=\"aegis-"+framework+"-"+scanID+".html\"")
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(report.HTML))
+		// Served as an attachment (downloaded, not rendered), and the body is the report the
+		// scanner renders with every value HTML-escaped -- no request data reaches it raw.
+		_, _ = w.Write([]byte(report.HTML)) // nosemgrep: aegis-go-xss
 		return
 	}
 	httpx.WriteSuccess(w, http.StatusOK, report)

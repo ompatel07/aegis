@@ -17,18 +17,7 @@ rules:
     owasp-web: a9
     cwe: cwe-327
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.crypto.crypto_node.node_aes_ecb
-    shortlink: https://sg.run/5zzX
-    semgrep.dev:
-      rule:
-        r_id: 43603
-        rv_id: 833097
-        rule_id: wdUvvQ
-        version_id: BjTe0kX
-        url: https://semgrep.dev/playground/r/BjTe0kX/ajinabraham.njsscan.crypto.crypto_node.node_aes_ecb
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/crypto/crypto_node.yaml
 - id: ajinabraham.njsscan.crypto.crypto_node.node_aes_noiv
   patterns:
   - pattern-either:
@@ -45,18 +34,7 @@ rules:
     owasp-web: a9
     cwe: cwe-327
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.crypto.crypto_node.node_aes_noiv
-    shortlink: https://sg.run/G302
-    semgrep.dev:
-      rule:
-        r_id: 43604
-        rv_id: 833098
-        rule_id: x8U1lL
-        version_id: DkTG0Rq
-        url: https://semgrep.dev/playground/r/DkTG0Rq/ajinabraham.njsscan.crypto.crypto_node.node_aes_noiv
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/crypto/crypto_node.yaml
 - id: ajinabraham.njsscan.crypto.crypto_node.node_insecure_random_generator
   patterns:
   - pattern-either:
@@ -75,18 +53,7 @@ rules:
     owasp-web: a9
     cwe: cwe-327
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.crypto.crypto_node.node_insecure_random_generator
-    shortlink: https://sg.run/ABG8
-    semgrep.dev:
-      rule:
-        r_id: 43606
-        rv_id: 833100
-        rule_id: eqUwYg
-        version_id: 0bTwbK5
-        url: https://semgrep.dev/playground/r/0bTwbK5/ajinabraham.njsscan.crypto.crypto_node.node_insecure_random_generator
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/crypto/crypto_node.yaml
 - id: ajinabraham.njsscan.crypto.crypto_node.node_md5
   patterns:
   - pattern: '$X.createHash("md5")
@@ -101,18 +68,7 @@ rules:
     owasp-web: a9
     cwe: cwe-327
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.crypto.crypto_node.node_md5
-    shortlink: https://sg.run/PxxW
-    semgrep.dev:
-      rule:
-        r_id: 43601
-        rv_id: 833095
-        rule_id: NbUEE1
-        version_id: RGTKGR1
-        url: https://semgrep.dev/playground/r/RGTKGR1/ajinabraham.njsscan.crypto.crypto_node.node_md5
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/crypto/crypto_node.yaml
 - id: ajinabraham.njsscan.crypto.crypto_node.node_sha1
   patterns:
   - pattern: '$X.createHash("sha1")
@@ -127,18 +83,7 @@ rules:
     owasp-web: a9
     cwe: cwe-327
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.crypto.crypto_node.node_sha1
-    shortlink: https://sg.run/JooW
-    semgrep.dev:
-      rule:
-        r_id: 43602
-        rv_id: 833096
-        rule_id: kxU99A
-        version_id: A8T37gj
-        url: https://semgrep.dev/playground/r/A8T37gj/ajinabraham.njsscan.crypto.crypto_node.node_sha1
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/crypto/crypto_node.yaml
 - id: ajinabraham.njsscan.crypto.crypto_node.node_weak_crypto
   patterns:
   - pattern-either:
@@ -154,18 +99,7 @@ rules:
     owasp-web: a9
     cwe: cwe-327
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.crypto.crypto_node.node_weak_crypto
-    shortlink: https://sg.run/Rxje
-    semgrep.dev:
-      rule:
-        r_id: 43605
-        rv_id: 833099
-        rule_id: OrUrAN
-        version_id: WrTdpql
-        url: https://semgrep.dev/playground/r/WrTdpql/ajinabraham.njsscan.crypto.crypto_node.node_weak_crypto
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/crypto/crypto_node.yaml
 - id: ajinabraham.njsscan.crypto.timing_attack_node.node_timing_attack
   patterns:
   - pattern-not: if ($Z == null) { ... };
@@ -532,18 +466,7 @@ rules:
     owasp-web: a9
     cwe: cwe-208
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.crypto.timing_attack_node.node_timing_attack
-    shortlink: https://sg.run/BDR2
-    semgrep.dev:
-      rule:
-        r_id: 43607
-        rv_id: 833101
-        rule_id: v8UJKp
-        version_id: K3TrqK4
-        url: https://semgrep.dev/playground/r/K3TrqK4/ajinabraham.njsscan.crypto.timing_attack_node.node_timing_attack
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/crypto/timing_attack_node.yaml
 - id: ajinabraham.njsscan.crypto.tls_node.node_curl_ssl_verify_disable
   patterns:
   - pattern: '$X(..., {SSL_VERIFYPEER : 0}, ...)
@@ -557,18 +480,7 @@ rules:
     owasp-web: a6
     cwe: cwe-599
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.crypto.tls_node.node_curl_ssl_verify_disable
-    shortlink: https://sg.run/Wx5g
-    semgrep.dev:
-      rule:
-        r_id: 43609
-        rv_id: 833103
-        rule_id: ZqUJkq
-        version_id: l4TyOJ8
-        url: https://semgrep.dev/playground/r/l4TyOJ8/ajinabraham.njsscan.crypto.tls_node.node_curl_ssl_verify_disable
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/crypto/tls_node.yaml
 - id: ajinabraham.njsscan.crypto.tls_node.node_tls_reject
   patterns:
   - pattern-either:
@@ -587,18 +499,7 @@ rules:
     owasp-web: a6
     cwe: cwe-295
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.crypto.tls_node.node_tls_reject
-    shortlink: https://sg.run/D03o
-    semgrep.dev:
-      rule:
-        r_id: 43608
-        rv_id: 833102
-        rule_id: d8UEOj
-        version_id: qkTQnRb
-        url: https://semgrep.dev/playground/r/qkTQnRb/ajinabraham.njsscan.crypto.tls_node.node_tls_reject
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/crypto/tls_node.yaml
 - id: ajinabraham.njsscan.database.nosql_find_injection.node_nosqli_injection
   mode: taint
   pattern-sources:
@@ -669,18 +570,7 @@ rules:
     owasp-web: a1
     cwe: cwe-943
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.database.nosql_find_injection.node_nosqli_injection
-    shortlink: https://sg.run/0q35
-    semgrep.dev:
-      rule:
-        r_id: 43610
-        rv_id: 1509036
-        rule_id: nJUl5r
-        version_id: 0bTgn6l
-        url: https://semgrep.dev/playground/r/0bTgn6l/ajinabraham.njsscan.database.nosql_find_injection.node_nosqli_injection
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/database/nosql_find_injection.yaml
 - id: ajinabraham.njsscan.database.nosql_injection.node_nosqli_js_injection
   patterns:
   - pattern-either:
@@ -771,18 +661,7 @@ rules:
     owasp-web: a1
     cwe: cwe-943
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.database.nosql_injection.node_nosqli_js_injection
-    shortlink: https://sg.run/KzYX
-    semgrep.dev:
-      rule:
-        r_id: 43611
-        rv_id: 833105
-        rule_id: EwUbyK
-        version_id: 6xTDg2D
-        url: https://semgrep.dev/playground/r/6xTDg2D/ajinabraham.njsscan.database.nosql_injection.node_nosqli_js_injection
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/database/nosql_injection.yaml
 - id: ajinabraham.njsscan.database.sequelize_tls.sequelize_tls
   message: 'The Sequelize connection string indicates that database server does not
     use TLS. Non TLS connections are susceptible to man in the middle (MITM) attacks.
@@ -795,18 +674,7 @@ rules:
     owasp-web: a6
     cwe: cwe-319
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.database.sequelize_tls.sequelize_tls
-    shortlink: https://sg.run/q3Qy
-    semgrep.dev:
-      rule:
-        r_id: 43612
-        rv_id: 833106
-        rule_id: 7KUwJW
-        version_id: o5TBEbK
-        url: https://semgrep.dev/playground/r/o5TBEbK/ajinabraham.njsscan.database.sequelize_tls.sequelize_tls
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/database/sequelize_tls.yaml
   patterns:
   - pattern: "{\n  host: $HOST,\n  database: $DATABASE,\n  dialect: $DIALECT\n }\n"
   - pattern-not: "{\n  host: $HOST,\n  database: $DATABASE,\n  dialect: \"postgres\"\
@@ -831,18 +699,7 @@ rules:
     owasp-web: a6
     cwe: cwe-295
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.database.sequelize_tls_validation.sequelize_tls_cert_validation
-    shortlink: https://sg.run/lAQ9
-    semgrep.dev:
-      rule:
-        r_id: 43613
-        rv_id: 833107
-        rule_id: L1UJLE
-        version_id: zyTWJbl
-        url: https://semgrep.dev/playground/r/zyTWJbl/ajinabraham.njsscan.database.sequelize_tls_validation.sequelize_tls_cert_validation
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/database/sequelize_tls_validation.yaml
   patterns:
   - pattern: "{\n  host: $HOST,\n  database: $DATABASE,\n  dialect: $DIALECT,\n  dialectOptions:\
       \ {\n    ssl: {\n      rejectUnauthorized: false\n    }\n  }\n }\n"
@@ -859,18 +716,7 @@ rules:
     owasp-web: a6
     cwe: cwe-757
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.database.sequelize_weak_tls.sequelize_weak_tls
-    shortlink: https://sg.run/YeR4
-    semgrep.dev:
-      rule:
-        r_id: 43614
-        rv_id: 833108
-        rule_id: 8GU0Pv
-        version_id: pZTXj0y
-        url: https://semgrep.dev/playground/r/pZTXj0y/ajinabraham.njsscan.database.sequelize_weak_tls.sequelize_weak_tls
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/database/sequelize_weak_tls.yaml
   severity: ERROR
   languages:
   - javascript
@@ -962,18 +808,7 @@ rules:
     owasp-web: a1
     cwe: cwe-89
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.database.sql_injection.node_sqli_injection
-    shortlink: https://sg.run/6poB
-    semgrep.dev:
-      rule:
-        r_id: 43615
-        rv_id: 833109
-        rule_id: gxUpve
-        version_id: 2KT7xv3
-        url: https://semgrep.dev/playground/r/2KT7xv3/ajinabraham.njsscan.database.sql_injection.node_sqli_injection
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/database/sql_injection.yaml
 - id: ajinabraham.njsscan.database.sql_injection_knex.node_knex_sqli_injection
   patterns:
   - pattern-either:
@@ -1081,18 +916,7 @@ rules:
     owasp-web: a1
     cwe: cwe-89
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.database.sql_injection_knex.node_knex_sqli_injection
-    shortlink: https://sg.run/oWQR
-    semgrep.dev:
-      rule:
-        r_id: 43616
-        rv_id: 833110
-        rule_id: QrULR0
-        version_id: X0T5Nzz
-        url: https://semgrep.dev/playground/r/X0T5Nzz/ajinabraham.njsscan.database.sql_injection_knex.node_knex_sqli_injection
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/database/sql_injection_knex.yaml
 - id: ajinabraham.njsscan.dos.express_bodyparser_dos.express_bodyparser
   patterns:
   - pattern-inside: '$APP = express()
@@ -1113,18 +937,7 @@ rules:
     owasp-web: a9
     cwe: cwe-400
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.dos.express_bodyparser_dos.express_bodyparser
-    shortlink: https://sg.run/zXQW
-    semgrep.dev:
-      rule:
-        r_id: 43617
-        rv_id: 833111
-        rule_id: 3qUg5r
-        version_id: jQTrXnB
-        url: https://semgrep.dev/playground/r/jQTrXnB/ajinabraham.njsscan.dos.express_bodyparser_dos.express_bodyparser
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/dos/express_bodyparser_dos.yaml
 - id: ajinabraham.njsscan.dos.layer7_object_dos.layer7_object_dos
   patterns:
   - pattern-either:
@@ -1159,18 +972,7 @@ rules:
     owasp-web: a6
     cwe: cwe-400
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.dos.layer7_object_dos.layer7_object_dos
-    shortlink: https://sg.run/p0QL
-    semgrep.dev:
-      rule:
-        r_id: 43618
-        rv_id: 833112
-        rule_id: 4bUJKE
-        version_id: 1QTPLyE
-        url: https://semgrep.dev/playground/r/1QTPLyE/ajinabraham.njsscan.dos.layer7_object_dos.layer7_object_dos
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/dos/layer7_object_dos.yaml
 - id: ajinabraham.njsscan.dos.regex_dos.regex_dos
   patterns:
   - pattern-either:
@@ -1270,18 +1072,7 @@ rules:
     owasp-web: a6
     cwe: cwe-185
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.dos.regex_dos.regex_dos
-    shortlink: https://sg.run/23qD
-    semgrep.dev:
-      rule:
-        r_id: 43619
-        rv_id: 833113
-        rule_id: PeUK7z
-        version_id: 9lTJ04q
-        url: https://semgrep.dev/playground/r/9lTJ04q/ajinabraham.njsscan.dos.regex_dos.regex_dos
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/dos/regex_dos.yaml
 - id: ajinabraham.njsscan.dos.regex_injection.regex_injection_dos
   patterns:
   - pattern-either:
@@ -1388,18 +1179,7 @@ rules:
     owasp-web: a1
     cwe: cwe-400
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.dos.regex_injection.regex_injection_dos
-    shortlink: https://sg.run/Xx3b
-    semgrep.dev:
-      rule:
-        r_id: 43620
-        rv_id: 930057
-        rule_id: JDU4On
-        version_id: BjTK9J5
-        url: https://semgrep.dev/playground/r/BjTK9J5/ajinabraham.njsscan.dos.regex_injection.regex_injection_dos
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/dos/regex_injection.yaml
 - id: ajinabraham.njsscan.electronjs.security_electron.electron_allow_http
   patterns:
   - pattern-either:
@@ -1418,18 +1198,7 @@ rules:
     owasp-web: a6
     cwe: cwe-319
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.electronjs.security_electron.electron_allow_http
-    shortlink: https://sg.run/1lKv
-    semgrep.dev:
-      rule:
-        r_id: 43622
-        rv_id: 833116
-        rule_id: GdUgbB
-        version_id: bZTBe54
-        url: https://semgrep.dev/playground/r/bZTBe54/ajinabraham.njsscan.electronjs.security_electron.electron_allow_http
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/electronjs/security_electron.yaml
 - id: ajinabraham.njsscan.electronjs.security_electron.electron_blink_integration
   patterns:
   - pattern-either:
@@ -1448,18 +1217,7 @@ rules:
     owasp-web: a6
     cwe: cwe-272
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.electronjs.security_electron.electron_blink_integration
-    shortlink: https://sg.run/9j28
-    semgrep.dev:
-      rule:
-        r_id: 43623
-        rv_id: 833117
-        rule_id: ReUdNr
-        version_id: NdTB2z5
-        url: https://semgrep.dev/playground/r/NdTB2z5/ajinabraham.njsscan.electronjs.security_electron.electron_blink_integration
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/electronjs/security_electron.yaml
 - id: ajinabraham.njsscan.electronjs.security_electron.electron_context_isolation
   patterns:
   - pattern-either:
@@ -1477,18 +1235,7 @@ rules:
     owasp-web: a6
     cwe: cwe-693
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.electronjs.security_electron.electron_context_isolation
-    shortlink: https://sg.run/rqQR
-    semgrep.dev:
-      rule:
-        r_id: 43625
-        rv_id: 833119
-        rule_id: BYUo4Q
-        version_id: w8TAxRq
-        url: https://semgrep.dev/playground/r/w8TAxRq/ajinabraham.njsscan.electronjs.security_electron.electron_context_isolation
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/electronjs/security_electron.yaml
 - id: ajinabraham.njsscan.electronjs.security_electron.electron_disable_websecurity
   patterns:
   - pattern-either:
@@ -1507,18 +1254,7 @@ rules:
     owasp-web: a6
     cwe: cwe-346
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.electronjs.security_electron.electron_disable_websecurity
-    shortlink: https://sg.run/jG1J
-    semgrep.dev:
-      rule:
-        r_id: 43621
-        rv_id: 833115
-        rule_id: 5rUxKr
-        version_id: rxTDzAG
-        url: https://semgrep.dev/playground/r/rxTDzAG/ajinabraham.njsscan.electronjs.security_electron.electron_disable_websecurity
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/electronjs/security_electron.yaml
 - id: ajinabraham.njsscan.electronjs.security_electron.electron_experimental_features
   patterns:
   - pattern-either:
@@ -1536,18 +1272,7 @@ rules:
     owasp-web: a6
     cwe: cwe-272
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.electronjs.security_electron.electron_experimental_features
-    shortlink: https://sg.run/bEYE
-    semgrep.dev:
-      rule:
-        r_id: 43626
-        rv_id: 833120
-        rule_id: DbULBL
-        version_id: xyTNejb
-        url: https://semgrep.dev/playground/r/xyTNejb/ajinabraham.njsscan.electronjs.security_electron.electron_experimental_features
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/electronjs/security_electron.yaml
 - id: ajinabraham.njsscan.electronjs.security_electron.electron_nodejs_integration
   patterns:
   - pattern-either:
@@ -1567,18 +1292,7 @@ rules:
     owasp-web: a6
     cwe: cwe-272
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.electronjs.security_electron.electron_nodejs_integration
-    shortlink: https://sg.run/y2QR
-    semgrep.dev:
-      rule:
-        r_id: 43624
-        rv_id: 833118
-        rule_id: AbUxvn
-        version_id: kbT2lz9
-        url: https://semgrep.dev/playground/r/kbT2lz9/ajinabraham.njsscan.electronjs.security_electron.electron_nodejs_integration
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/electronjs/security_electron.yaml
 - id: ajinabraham.njsscan.eval.eval_deserialize.node_deserialize
   patterns:
   - pattern-inside: 'require(''node-serialize'')
@@ -1598,18 +1312,7 @@ rules:
     owasp-web: a8
     cwe: cwe-502
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.eval.eval_deserialize.node_deserialize
-    shortlink: https://sg.run/kR32
-    semgrep.dev:
-      rule:
-        r_id: 43628
-        rv_id: 833122
-        rule_id: 0oUZ0k
-        version_id: e1TDky2
-        url: https://semgrep.dev/playground/r/e1TDky2/ajinabraham.njsscan.eval.eval_deserialize.node_deserialize
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/eval/eval_deserialize.yaml
 - id: ajinabraham.njsscan.eval.eval_deserialize.serializetojs_deserialize
   patterns:
   - pattern-inside: 'require(''serialize-to-js'')
@@ -1629,18 +1332,7 @@ rules:
     owasp-web: a8
     cwe: cwe-502
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.eval.eval_deserialize.serializetojs_deserialize
-    shortlink: https://sg.run/NXzz
-    semgrep.dev:
-      rule:
-        r_id: 43627
-        rv_id: 833121
-        rule_id: WAUgee
-        version_id: O9TJWpK
-        url: https://semgrep.dev/playground/r/O9TJWpK/ajinabraham.njsscan.eval.eval_deserialize.serializetojs_deserialize
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/eval/eval_deserialize.yaml
 - id: ajinabraham.njsscan.eval.eval_grpc_deserialize.grpc_insecure_connection
   patterns:
   - pattern-inside: 'require(''grpc'')
@@ -1656,18 +1348,7 @@ rules:
     owasp-web: a8
     cwe: cwe-502
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.eval.eval_grpc_deserialize.grpc_insecure_connection
-    shortlink: https://sg.run/wzQP
-    semgrep.dev:
-      rule:
-        r_id: 43629
-        rv_id: 833123
-        rule_id: KxURAB
-        version_id: vdTOz0w
-        url: https://semgrep.dev/playground/r/vdTOz0w/ajinabraham.njsscan.eval.eval_grpc_deserialize.grpc_insecure_connection
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/eval/eval_grpc_deserialize.yaml
   severity: ERROR
   languages:
   - javascript
@@ -1769,18 +1450,7 @@ rules:
     owasp-web: a1
     cwe: cwe-95
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.eval.eval_node.eval_nodejs
-    shortlink: https://sg.run/xpQg
-    semgrep.dev:
-      rule:
-        r_id: 43630
-        rv_id: 833124
-        rule_id: qNUrAP
-        version_id: d6TKGyo
-        url: https://semgrep.dev/playground/r/d6TKGyo/ajinabraham.njsscan.eval.eval_node.eval_nodejs
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/eval/eval_node.yaml
 - id: ajinabraham.njsscan.eval.eval_require.eval_require
   patterns:
   - pattern-either:
@@ -1815,18 +1485,7 @@ rules:
     owasp-web: a1
     cwe: cwe-706
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.eval.eval_require.eval_require
-    shortlink: https://sg.run/Ojpn
-    semgrep.dev:
-      rule:
-        r_id: 43631
-        rv_id: 833125
-        rule_id: lBUY3K
-        version_id: ZRTlPKn
-        url: https://semgrep.dev/playground/r/ZRTlPKn/ajinabraham.njsscan.eval.eval_require.eval_require
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/eval/eval_require.yaml
 - id: ajinabraham.njsscan.eval.eval_sandbox.sandbox_code_injection
   patterns:
   - pattern-inside: 'require(''sandbox'')
@@ -1887,18 +1546,7 @@ rules:
     owasp-web: a1
     cwe: cwe-94
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.eval.eval_sandbox.sandbox_code_injection
-    shortlink: https://sg.run/egzy
-    semgrep.dev:
-      rule:
-        r_id: 43632
-        rv_id: 833126
-        rule_id: PeUK79
-        version_id: nWTy42X
-        url: https://semgrep.dev/playground/r/nWTy42X/ajinabraham.njsscan.eval.eval_sandbox.sandbox_code_injection
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/eval/eval_sandbox.yaml
 - id: ajinabraham.njsscan.eval.eval_vm2_injection.vm2_code_injection
   patterns:
   - pattern-inside: 'require(''vm2'')
@@ -1988,18 +1636,7 @@ rules:
     owasp-web: a1
     cwe: cwe-94
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.eval.eval_vm2_injection.vm2_code_injection
-    shortlink: https://sg.run/voQb
-    semgrep.dev:
-      rule:
-        r_id: 43633
-        rv_id: 833127
-        rule_id: JDU4Ob
-        version_id: ExTrDEZ
-        url: https://semgrep.dev/playground/r/ExTrDEZ/ajinabraham.njsscan.eval.eval_vm2_injection.vm2_code_injection
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/eval/eval_vm2_injection.yaml
 - id: ajinabraham.njsscan.eval.eval_vm2_injection.vm2_context_injection
   patterns:
   - pattern-inside: 'require(''vm2'')
@@ -2336,18 +1973,7 @@ rules:
     owasp-web: a1
     cwe: cwe-94
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.eval.eval_vm2_injection.vm2_context_injection
-    shortlink: https://sg.run/dnod
-    semgrep.dev:
-      rule:
-        r_id: 43634
-        rv_id: 833128
-        rule_id: 5rUxKW
-        version_id: 7ZTx9Ek
-        url: https://semgrep.dev/playground/r/7ZTx9Ek/ajinabraham.njsscan.eval.eval_vm2_injection.vm2_context_injection
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/eval/eval_vm2_injection.yaml
 - id: ajinabraham.njsscan.eval.eval_vm_injection.vm_code_injection
   patterns:
   - pattern-inside: '$VM = require(''vm'')
@@ -2450,18 +2076,7 @@ rules:
     owasp-web: a1
     cwe: cwe-94
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.eval.eval_vm_injection.vm_code_injection
-    shortlink: https://sg.run/72zW
-    semgrep.dev:
-      rule:
-        r_id: 43638
-        rv_id: 833132
-        rule_id: BYUo40
-        version_id: QkTkrGq
-        url: https://semgrep.dev/playground/r/QkTkrGq/ajinabraham.njsscan.eval.eval_vm_injection.vm_code_injection
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/eval/eval_vm_injection.yaml
 - id: ajinabraham.njsscan.eval.eval_vm_injection.vm_compilefunction_injection
   patterns:
   - pattern-inside: 'require(''vm'')
@@ -2613,18 +2228,7 @@ rules:
     owasp-web: a1
     cwe: cwe-94
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.eval.eval_vm_injection.vm_compilefunction_injection
-    shortlink: https://sg.run/EKDe
-    semgrep.dev:
-      rule:
-        r_id: 43637
-        rv_id: 833131
-        rule_id: AbUxvo
-        version_id: gETy2BX
-        url: https://semgrep.dev/playground/r/gETy2BX/ajinabraham.njsscan.eval.eval_vm_injection.vm_compilefunction_injection
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/eval/eval_vm_injection.yaml
 - id: ajinabraham.njsscan.eval.eval_vm_injection.vm_runincontext_injection
   patterns:
   - pattern-inside: 'require(''vm'')
@@ -2711,18 +2315,7 @@ rules:
     owasp-web: a1
     cwe: cwe-94
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.eval.eval_vm_injection.vm_runincontext_injection
-    shortlink: https://sg.run/ZZAo
-    semgrep.dev:
-      rule:
-        r_id: 43635
-        rv_id: 833129
-        rule_id: GdUgb1
-        version_id: LjTEbk8
-        url: https://semgrep.dev/playground/r/LjTEbk8/ajinabraham.njsscan.eval.eval_vm_injection.vm_runincontext_injection
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/eval/eval_vm_injection.yaml
 - id: ajinabraham.njsscan.eval.eval_vm_injection.vm_runinnewcontext_injection
   patterns:
   - pattern-inside: 'require(''vm'')
@@ -2815,18 +2408,7 @@ rules:
     owasp-web: a1
     cwe: cwe-94
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.eval.eval_vm_injection.vm_runinnewcontext_injection
-    shortlink: https://sg.run/nDQ2
-    semgrep.dev:
-      rule:
-        r_id: 43636
-        rv_id: 833130
-        rule_id: ReUdNj
-        version_id: 8KTGk5k
-        url: https://semgrep.dev/playground/r/8KTGk5k/ajinabraham.njsscan.eval.eval_vm_injection.vm_runinnewcontext_injection
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/eval/eval_vm_injection.yaml
 - id: ajinabraham.njsscan.eval.eval_yaml_deserialize.yaml_deserialize
   patterns:
   - pattern-inside: 'require(''js-yaml'')
@@ -2846,18 +2428,7 @@ rules:
     owasp-web: a8
     cwe: cwe-502
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.eval.eval_yaml_deserialize.yaml_deserialize
-    shortlink: https://sg.run/Lp6o
-    semgrep.dev:
-      rule:
-        r_id: 43639
-        rv_id: 833133
-        rule_id: DbULBy
-        version_id: 3ZT3A41
-        url: https://semgrep.dev/playground/r/3ZT3A41/ajinabraham.njsscan.eval.eval_yaml_deserialize.yaml_deserialize
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/eval/eval_yaml_deserialize.yaml
 - id: ajinabraham.njsscan.eval.server_side_template_injection.server_side_template_injection
   patterns:
   - pattern-either:
@@ -2975,18 +2546,7 @@ rules:
     owasp-web: a1
     cwe: cwe-94
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.eval.server_side_template_injection.server_side_template_injection
-    shortlink: https://sg.run/8XpE
-    semgrep.dev:
-      rule:
-        r_id: 43640
-        rv_id: 833134
-        rule_id: WAUgeK
-        version_id: 44TQPEO
-        url: https://semgrep.dev/playground/r/44TQPEO/ajinabraham.njsscan.eval.server_side_template_injection.server_side_template_injection
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/eval/server_side_template_injection.yaml
 - id: ajinabraham.njsscan.exec.exec_os_command.generic_os_command_exec
   patterns:
   - pattern-inside: 'require(''child_process'')
@@ -3050,18 +2610,7 @@ rules:
     owasp-web: a1
     cwe: cwe-78
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.exec.exec_os_command.generic_os_command_exec
-    shortlink: https://sg.run/gP2Z
-    semgrep.dev:
-      rule:
-        r_id: 43641
-        rv_id: 833135
-        rule_id: 0oUZ0X
-        version_id: PkTxrRg
-        url: https://semgrep.dev/playground/r/PkTxrRg/ajinabraham.njsscan.exec.exec_os_command.generic_os_command_exec
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/exec/exec_os_command.yaml
 - id: ajinabraham.njsscan.exec.exec_shelljs.shelljs_os_command_exec
   patterns:
   - pattern-inside: 'require(''shelljs'')
@@ -3105,18 +2654,7 @@ rules:
     owasp-web: a1
     cwe: cwe-78
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.exec.exec_shelljs.shelljs_os_command_exec
-    shortlink: https://sg.run/QxXQ
-    semgrep.dev:
-      rule:
-        r_id: 43642
-        rv_id: 833136
-        rule_id: KxURA0
-        version_id: JdTlrzJ
-        url: https://semgrep.dev/playground/r/JdTlrzJ/ajinabraham.njsscan.exec.exec_shelljs.shelljs_os_command_exec
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/exec/exec_shelljs.yaml
 - id: ajinabraham.njsscan.generic.error_disclosure.generic_error_disclosure
   patterns:
   - pattern-either:
@@ -3134,18 +2672,7 @@ rules:
     owasp-web: a3
     cwe: cwe-209
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.generic.error_disclosure.generic_error_disclosure
-    shortlink: https://sg.run/4oYz
-    semgrep.dev:
-      rule:
-        r_id: 43644
-        rv_id: 833138
-        rule_id: lBUY3L
-        version_id: GxTDEkw
-        url: https://semgrep.dev/playground/r/GxTDEkw/ajinabraham.njsscan.generic.error_disclosure.generic_error_disclosure
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/generic/error_disclosure.yaml
 - id: ajinabraham.njsscan.generic.error_disclosure.node_error_disclosure
   patterns:
   - pattern-either:
@@ -3184,18 +2711,7 @@ rules:
     owasp-web: a3
     cwe: cwe-209
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.generic.error_disclosure.node_error_disclosure
-    shortlink: https://sg.run/36lp
-    semgrep.dev:
-      rule:
-        r_id: 43643
-        rv_id: 833137
-        rule_id: qNUrAk
-        version_id: 5PTyDo6
-        url: https://semgrep.dev/playground/r/5PTyDo6/ajinabraham.njsscan.generic.error_disclosure.node_error_disclosure
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/generic/error_disclosure.yaml
 - id: ajinabraham.njsscan.generic.hardcoded_passport.hardcoded_passport_secret
   pattern-either:
   - pattern: '$F = require("passport-auth0").Strategy;
@@ -4298,18 +3814,7 @@ rules:
     cwe: cwe-522
     owasp-web: a2
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.generic.hardcoded_passport.hardcoded_passport_secret
-    shortlink: https://sg.run/Px2W
-    semgrep.dev:
-      rule:
-        r_id: 43645
-        rv_id: 833139
-        rule_id: YGUxgo
-        version_id: RGTKG01
-        url: https://semgrep.dev/playground/r/RGTKG01/ajinabraham.njsscan.generic.hardcoded_passport.hardcoded_passport_secret
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/generic/hardcoded_passport.yaml
   languages:
   - javascript
   severity: ERROR
@@ -4338,18 +3843,7 @@ rules:
     owasp-web: a3
     cwe: cwe-798
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.generic.hardcoded_secrets.node_api_key
-    shortlink: https://sg.run/G3B2
-    semgrep.dev:
-      rule:
-        r_id: 43648
-        rv_id: 833142
-        rule_id: zdU9gq
-        version_id: DkTG0kq
-        url: https://semgrep.dev/playground/r/DkTG0kq/ajinabraham.njsscan.generic.hardcoded_secrets.node_api_key
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/generic/hardcoded_secrets.yaml
 - id: ajinabraham.njsscan.generic.hardcoded_secrets.node_password
   patterns:
   - pattern-not: $X = ''
@@ -4371,18 +3865,7 @@ rules:
     owasp-web: a3
     cwe: cwe-798
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.generic.hardcoded_secrets.node_password
-    shortlink: https://sg.run/JolW
-    semgrep.dev:
-      rule:
-        r_id: 43646
-        rv_id: 833140
-        rule_id: 6JUk4K
-        version_id: A8T37qj
-        url: https://semgrep.dev/playground/r/A8T37qj/ajinabraham.njsscan.generic.hardcoded_secrets.node_password
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/generic/hardcoded_secrets.yaml
 - id: ajinabraham.njsscan.generic.hardcoded_secrets.node_secret
   patterns:
   - pattern-not: $X = ''
@@ -4407,18 +3890,7 @@ rules:
     owasp-web: a3
     cwe: cwe-798
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.generic.hardcoded_secrets.node_secret
-    shortlink: https://sg.run/Rxpe
-    semgrep.dev:
-      rule:
-        r_id: 43649
-        rv_id: 833143
-        rule_id: pKUJg1
-        version_id: WrTdp8l
-        url: https://semgrep.dev/playground/r/WrTdp8l/ajinabraham.njsscan.generic.hardcoded_secrets.node_secret
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/generic/hardcoded_secrets.yaml
 - id: ajinabraham.njsscan.generic.hardcoded_secrets.node_username
   patterns:
   - pattern-not: $X = ''
@@ -4440,18 +3912,7 @@ rules:
     owasp-web: a3
     cwe: cwe-798
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.generic.hardcoded_secrets.node_username
-    shortlink: https://sg.run/5z6X
-    semgrep.dev:
-      rule:
-        r_id: 43647
-        rv_id: 833141
-        rule_id: oqUPGY
-        version_id: BjTe0bX
-        url: https://semgrep.dev/playground/r/BjTe0bX/ajinabraham.njsscan.generic.hardcoded_secrets.node_username
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/generic/hardcoded_secrets.yaml
 - id: ajinabraham.njsscan.generic.logic_bypass.node_logic_bypass
   patterns:
   - pattern-either:
@@ -4524,18 +3985,7 @@ rules:
     owasp-web: a5
     cwe: cwe-807
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.generic.logic_bypass.node_logic_bypass
-    shortlink: https://sg.run/AB38
-    semgrep.dev:
-      rule:
-        r_id: 43650
-        rv_id: 833144
-        rule_id: 2ZUXNG
-        version_id: 0bTwbo5
-        url: https://semgrep.dev/playground/r/0bTwbo5/ajinabraham.njsscan.generic.logic_bypass.node_logic_bypass
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/generic/logic_bypass.yaml
 - id: ajinabraham.njsscan.good.good_anti_csrf.anti_csrf_control
   patterns:
   - pattern-inside: '$CSRUF = require(''csurf'')
@@ -4555,16 +4005,7 @@ rules:
   severity: INFO
   metadata:
     license: LGPL-3.0-or-later
-    source: https://semgrep.dev/r/ajinabraham.njsscan.good.good_anti_csrf.anti_csrf_control
-    shortlink: https://sg.run/BDJ2
-    semgrep.dev:
-      rule:
-        r_id: 43651
-        rv_id: 833145
-        rule_id: X5Upew
-        version_id: K3Trqo4
-        url: https://semgrep.dev/playground/r/K3Trqo4/ajinabraham.njsscan.good.good_anti_csrf.anti_csrf_control
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/good/good_anti_csrf.yaml
 - id: ajinabraham.njsscan.good.good_helmet_checks.helmet_header_check_crossdomain
   message: 'X-Permitted-Cross-Domain-Policies header set to off. More information:
     https://helmetjs.github.io/docs/crossdomain/'
@@ -4593,16 +4034,7 @@ rules:
         '
   metadata:
     license: LGPL-3.0-or-later
-    source: https://semgrep.dev/r/ajinabraham.njsscan.good.good_helmet_checks.helmet_header_check_crossdomain
-    shortlink: https://sg.run/Wx9g
-    semgrep.dev:
-      rule:
-        r_id: 43653
-        rv_id: 833147
-        rule_id: 10UnWZ
-        version_id: l4TyOZ8
-        url: https://semgrep.dev/playground/r/l4TyOZ8/ajinabraham.njsscan.good.good_helmet_checks.helmet_header_check_crossdomain
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/good/good_helmet_checks.yaml
 - id: ajinabraham.njsscan.good.good_helmet_checks.helmet_header_check_csp
   message: 'Content Security Policy header is present. More Information: https://helmetjs.github.io/docs/csp/'
   languages:
@@ -4624,16 +4056,7 @@ rules:
         '
   metadata:
     license: LGPL-3.0-or-later
-    source: https://semgrep.dev/r/ajinabraham.njsscan.good.good_helmet_checks.helmet_header_check_csp
-    shortlink: https://sg.run/D0Go
-    semgrep.dev:
-      rule:
-        r_id: 43652
-        rv_id: 833146
-        rule_id: j2Upev
-        version_id: qkTQnOb
-        url: https://semgrep.dev/playground/r/qkTQnOb/ajinabraham.njsscan.good.good_helmet_checks.helmet_header_check_csp
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/good/good_helmet_checks.yaml
 - id: ajinabraham.njsscan.good.good_helmet_checks.helmet_header_check_expect_ct
   message: 'Expect-CT header is present. More information: https://helmetjs.github.io/docs/expect-ct/'
   languages:
@@ -4661,16 +4084,7 @@ rules:
         '
   metadata:
     license: LGPL-3.0-or-later
-    source: https://semgrep.dev/r/ajinabraham.njsscan.good.good_helmet_checks.helmet_header_check_expect_ct
-    shortlink: https://sg.run/0qx5
-    semgrep.dev:
-      rule:
-        r_id: 43654
-        rv_id: 833148
-        rule_id: 9AULNk
-        version_id: YDTl0EA
-        url: https://semgrep.dev/playground/r/YDTl0EA/ajinabraham.njsscan.good.good_helmet_checks.helmet_header_check_expect_ct
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/good/good_helmet_checks.yaml
 - id: ajinabraham.njsscan.good.good_helmet_checks.helmet_header_dns_prefetch
   message: 'X-DNS-Prefetch-Control header is present and DNS Prefetch Control is enabled.
     More information: https://helmetjs.github.io/docs/dns-prefetch-control/'
@@ -4702,16 +4116,7 @@ rules:
         '
   metadata:
     license: LGPL-3.0-or-later
-    source: https://semgrep.dev/r/ajinabraham.njsscan.good.good_helmet_checks.helmet_header_dns_prefetch
-    shortlink: https://sg.run/lAX9
-    semgrep.dev:
-      rule:
-        r_id: 43657
-        rv_id: 833151
-        rule_id: bwUJWB
-        version_id: GxTDEqP
-        url: https://semgrep.dev/playground/r/GxTDEqP/ajinabraham.njsscan.good.good_helmet_checks.helmet_header_dns_prefetch
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/good/good_helmet_checks.yaml
 - id: ajinabraham.njsscan.good.good_helmet_checks.helmet_header_feature_policy
   message: 'Feature-Policy header is present. More information: https://helmetjs.github.io/docs/feature-policy/'
   languages:
@@ -4733,16 +4138,7 @@ rules:
         '
   metadata:
     license: LGPL-3.0-or-later
-    source: https://semgrep.dev/r/ajinabraham.njsscan.good.good_helmet_checks.helmet_header_feature_policy
-    shortlink: https://sg.run/KzKX
-    semgrep.dev:
-      rule:
-        r_id: 43655
-        rv_id: 833149
-        rule_id: yyUzbP
-        version_id: JdTlrkl
-        url: https://semgrep.dev/playground/r/JdTlrkl/ajinabraham.njsscan.good.good_helmet_checks.helmet_header_feature_policy
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/good/good_helmet_checks.yaml
 - id: ajinabraham.njsscan.good.good_helmet_checks.helmet_header_frame_guard
   message: 'X-Frame-Options header is present. More information: https://helmetjs.github.io/docs/frameguard/'
   languages:
@@ -4767,16 +4163,7 @@ rules:
         '
   metadata:
     license: LGPL-3.0-or-later
-    source: https://semgrep.dev/r/ajinabraham.njsscan.good.good_helmet_checks.helmet_header_frame_guard
-    shortlink: https://sg.run/q3by
-    semgrep.dev:
-      rule:
-        r_id: 43656
-        rv_id: 833150
-        rule_id: r6UXg2
-        version_id: 5PTyDqN
-        url: https://semgrep.dev/playground/r/5PTyDqN/ajinabraham.njsscan.good.good_helmet_checks.helmet_header_frame_guard
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/good/good_helmet_checks.yaml
 - id: ajinabraham.njsscan.good.good_helmet_checks.helmet_header_hsts
   message: 'HSTS header is present. More information: https://helmetjs.github.io/docs/hsts/'
   languages:
@@ -4801,16 +4188,7 @@ rules:
         '
   metadata:
     license: LGPL-3.0-or-later
-    source: https://semgrep.dev/r/ajinabraham.njsscan.good.good_helmet_checks.helmet_header_hsts
-    shortlink: https://sg.run/6peB
-    semgrep.dev:
-      rule:
-        r_id: 43659
-        rv_id: 833153
-        rule_id: kxU9vY
-        version_id: A8T37qX
-        url: https://semgrep.dev/playground/r/A8T37qX/ajinabraham.njsscan.good.good_helmet_checks.helmet_header_hsts
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/good/good_helmet_checks.yaml
 - id: ajinabraham.njsscan.good.good_helmet_checks.helmet_header_ienoopen
   message: 'X-Download-Options header is present. More information: https://helmetjs.github.io/docs/ienoopen/'
   languages:
@@ -4833,16 +4211,7 @@ rules:
     - pattern: "helmet({ieNoOpen: ...})  \n"
   metadata:
     license: LGPL-3.0-or-later
-    source: https://semgrep.dev/r/ajinabraham.njsscan.good.good_helmet_checks.helmet_header_ienoopen
-    shortlink: https://sg.run/oW9R
-    semgrep.dev:
-      rule:
-        r_id: 43660
-        rv_id: 833154
-        rule_id: wdUvgn
-        version_id: BjTe0bk
-        url: https://semgrep.dev/playground/r/BjTe0bk/ajinabraham.njsscan.good.good_helmet_checks.helmet_header_ienoopen
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/good/good_helmet_checks.yaml
 - id: ajinabraham.njsscan.good.good_helmet_checks.helmet_header_nosniff
   message: 'Content-Type-Options header is present. More information: https://helmetjs.github.io/docs/dont-sniff-mimetype/'
   languages:
@@ -4867,16 +4236,7 @@ rules:
         '
   metadata:
     license: LGPL-3.0-or-later
-    source: https://semgrep.dev/r/ajinabraham.njsscan.good.good_helmet_checks.helmet_header_nosniff
-    shortlink: https://sg.run/zXbW
-    semgrep.dev:
-      rule:
-        r_id: 43661
-        rv_id: 833155
-        rule_id: x8U1bp
-        version_id: DkTG0kk
-        url: https://semgrep.dev/playground/r/DkTG0kk/ajinabraham.njsscan.good.good_helmet_checks.helmet_header_nosniff
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/good/good_helmet_checks.yaml
 - id: ajinabraham.njsscan.good.good_helmet_checks.helmet_header_referrer_policy
   message: 'Referrer-Policy header is present. More information: https://helmetjs.github.io/docs/referrer-policy/'
   languages:
@@ -4898,16 +4258,7 @@ rules:
         '
   metadata:
     license: LGPL-3.0-or-later
-    source: https://semgrep.dev/r/ajinabraham.njsscan.good.good_helmet_checks.helmet_header_referrer_policy
-    shortlink: https://sg.run/p0bL
-    semgrep.dev:
-      rule:
-        r_id: 43662
-        rv_id: 833156
-        rule_id: OrUrLp
-        version_id: WrTdp87
-        url: https://semgrep.dev/playground/r/WrTdp87/ajinabraham.njsscan.good.good_helmet_checks.helmet_header_referrer_policy
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/good/good_helmet_checks.yaml
 - id: ajinabraham.njsscan.good.good_helmet_checks.helmet_header_x_powered_by
   message: 'Default X-Powered-By is removed or modified. More information: https://helmetjs.github.io/docs/hide-powered-by/'
   languages:
@@ -4935,16 +4286,7 @@ rules:
         '
   metadata:
     license: LGPL-3.0-or-later
-    source: https://semgrep.dev/r/ajinabraham.njsscan.good.good_helmet_checks.helmet_header_x_powered_by
-    shortlink: https://sg.run/YeP4
-    semgrep.dev:
-      rule:
-        r_id: 43658
-        rv_id: 833152
-        rule_id: NbUEWe
-        version_id: RGTKGpk
-        url: https://semgrep.dev/playground/r/RGTKGpk/ajinabraham.njsscan.good.good_helmet_checks.helmet_header_x_powered_by
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/good/good_helmet_checks.yaml
 - id: ajinabraham.njsscan.good.good_helmet_checks.helmet_header_xss_filter
   message: 'X-XSS-Protection header is present. More information: https://helmetjs.github.io/docs/xss-filter/'
   languages:
@@ -4969,16 +4311,7 @@ rules:
         '
   metadata:
     license: LGPL-3.0-or-later
-    source: https://semgrep.dev/r/ajinabraham.njsscan.good.good_helmet_checks.helmet_header_xss_filter
-    shortlink: https://sg.run/23QD
-    semgrep.dev:
-      rule:
-        r_id: 43663
-        rv_id: 833157
-        rule_id: eqUwPe
-        version_id: 0bTwbog
-        url: https://semgrep.dev/playground/r/0bTwbog/ajinabraham.njsscan.good.good_helmet_checks.helmet_header_xss_filter
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/good/good_helmet_checks.yaml
 - id: ajinabraham.njsscan.good.good_ratelimiting.rate_limit_control
   patterns:
   - pattern-either:
@@ -4991,16 +4324,7 @@ rules:
   severity: INFO
   metadata:
     license: LGPL-3.0-or-later
-    source: https://semgrep.dev/r/ajinabraham.njsscan.good.good_ratelimiting.rate_limit_control
-    shortlink: https://sg.run/Xx4b
-    semgrep.dev:
-      rule:
-        r_id: 43664
-        rv_id: 833158
-        rule_id: v8UJbL
-        version_id: K3Trqo3
-        url: https://semgrep.dev/playground/r/K3Trqo3/ajinabraham.njsscan.good.good_ratelimiting.rate_limit_control
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/good/good_ratelimiting.yaml
 - id: ajinabraham.njsscan.headers.header_cookie.cookie_session_default
   patterns:
   - pattern-either:
@@ -5043,18 +4367,7 @@ rules:
     cwe: cwe-522
     owasp-web: a2
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.headers.header_cookie.cookie_session_default
-    shortlink: https://sg.run/jGpJ
-    semgrep.dev:
-      rule:
-        r_id: 43665
-        rv_id: 833159
-        rule_id: d8UEN7
-        version_id: qkTQnOe
-        url: https://semgrep.dev/playground/r/qkTQnOe/ajinabraham.njsscan.headers.header_cookie.cookie_session_default
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/headers/header_cookie.yaml
 - id: ajinabraham.njsscan.headers.header_cookie.cookie_session_no_domain
   patterns:
   - pattern-either:
@@ -5131,18 +4444,7 @@ rules:
     cwe: cwe-522
     owasp-web: a2
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.headers.header_cookie.cookie_session_no_domain
-    shortlink: https://sg.run/rqbR
-    semgrep.dev:
-      rule:
-        r_id: 43669
-        rv_id: 833163
-        rule_id: 7KUw65
-        version_id: o5TBEdG
-        url: https://semgrep.dev/playground/r/o5TBEdG/ajinabraham.njsscan.headers.header_cookie.cookie_session_no_domain
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/headers/header_cookie.yaml
 - id: ajinabraham.njsscan.headers.header_cookie.cookie_session_no_httponly
   patterns:
   - pattern-either:
@@ -5219,18 +4521,7 @@ rules:
     cwe: cwe-1004
     owasp-web: a2
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.headers.header_cookie.cookie_session_no_httponly
-    shortlink: https://sg.run/y2ZR
-    semgrep.dev:
-      rule:
-        r_id: 43668
-        rv_id: 833162
-        rule_id: EwUb5Y
-        version_id: 6xTDg8k
-        url: https://semgrep.dev/playground/r/6xTDg8k/ajinabraham.njsscan.headers.header_cookie.cookie_session_no_httponly
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/headers/header_cookie.yaml
 - id: ajinabraham.njsscan.headers.header_cookie.cookie_session_no_maxage
   patterns:
   - pattern-either:
@@ -5304,18 +4595,7 @@ rules:
     cwe: cwe-613
     owasp-web: a2
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.headers.header_cookie.cookie_session_no_maxage
-    shortlink: https://sg.run/NXYz
-    semgrep.dev:
-      rule:
-        r_id: 43671
-        rv_id: 833165
-        rule_id: 8GU0oP
-        version_id: pZTXjnv
-        url: https://semgrep.dev/playground/r/pZTXjnv/ajinabraham.njsscan.headers.header_cookie.cookie_session_no_maxage
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/headers/header_cookie.yaml
 - id: ajinabraham.njsscan.headers.header_cookie.cookie_session_no_path
   patterns:
   - pattern-either:
@@ -5392,18 +4672,7 @@ rules:
     cwe: cwe-522
     owasp-web: a2
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.headers.header_cookie.cookie_session_no_path
-    shortlink: https://sg.run/bE0E
-    semgrep.dev:
-      rule:
-        r_id: 43670
-        rv_id: 833164
-        rule_id: L1UJdJ
-        version_id: zyTWJLg
-        url: https://semgrep.dev/playground/r/zyTWJLg/ajinabraham.njsscan.headers.header_cookie.cookie_session_no_path
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/headers/header_cookie.yaml
 - id: ajinabraham.njsscan.headers.header_cookie.cookie_session_no_samesite
   patterns:
   - pattern-either:
@@ -5533,18 +4802,7 @@ rules:
     cwe: cwe-1275
     owasp-web: a2
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.headers.header_cookie.cookie_session_no_samesite
-    shortlink: https://sg.run/9jg8
-    semgrep.dev:
-      rule:
-        r_id: 43667
-        rv_id: 833161
-        rule_id: nJUlD0
-        version_id: YDTl0Ez
-        url: https://semgrep.dev/playground/r/YDTl0Ez/ajinabraham.njsscan.headers.header_cookie.cookie_session_no_samesite
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/headers/header_cookie.yaml
 - id: ajinabraham.njsscan.headers.header_cookie.cookie_session_no_secure
   patterns:
   - pattern-either:
@@ -5620,18 +4878,7 @@ rules:
     cwe: cwe-614
     owasp-web: a2
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.headers.header_cookie.cookie_session_no_secure
-    shortlink: https://sg.run/1lNv
-    semgrep.dev:
-      rule:
-        r_id: 43666
-        rv_id: 833160
-        rule_id: ZqUJRW
-        version_id: l4TyOZN
-        url: https://semgrep.dev/playground/r/l4TyOZN/ajinabraham.njsscan.headers.header_cookie.cookie_session_no_secure
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/headers/header_cookie.yaml
 - id: ajinabraham.njsscan.headers.header_cors_star.express_cors
   patterns:
   - pattern-either:
@@ -5666,18 +4913,7 @@ rules:
     owasp-web: a6
     cwe: cwe-346
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.headers.header_cors_star.express_cors
-    shortlink: https://sg.run/wzbP
-    semgrep.dev:
-      rule:
-        r_id: 43673
-        rv_id: 833167
-        rule_id: QrUL3l
-        version_id: X0T5N4j
-        url: https://semgrep.dev/playground/r/X0T5N4j/ajinabraham.njsscan.headers.header_cors_star.express_cors
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/headers/header_cors_star.yaml
 - id: ajinabraham.njsscan.headers.header_cors_star.generic_cors
   patterns:
   - pattern: '$APP.options(''*'', cors(...))
@@ -5692,18 +4928,7 @@ rules:
     owasp-web: a6
     cwe: cwe-346
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.headers.header_cors_star.generic_cors
-    shortlink: https://sg.run/kR22
-    semgrep.dev:
-      rule:
-        r_id: 43672
-        rv_id: 833166
-        rule_id: gxUp88
-        version_id: 2KT7xpo
-        url: https://semgrep.dev/playground/r/2KT7xpo/ajinabraham.njsscan.headers.header_cors_star.generic_cors
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/headers/header_cors_star.yaml
 - id: ajinabraham.njsscan.headers.header_helmet_disabled.helmet_feature_disabled
   patterns:
   - pattern-either:
@@ -5751,18 +4976,7 @@ rules:
     owasp-web: a6
     cwe: cwe-693
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.headers.header_helmet_disabled.helmet_feature_disabled
-    shortlink: https://sg.run/xpNg
-    semgrep.dev:
-      rule:
-        r_id: 43674
-        rv_id: 833168
-        rule_id: 3qUgKz
-        version_id: jQTrXB8
-        url: https://semgrep.dev/playground/r/jQTrXB8/ajinabraham.njsscan.headers.header_helmet_disabled.helmet_feature_disabled
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/headers/header_helmet_disabled.yaml
 - id: ajinabraham.njsscan.headers.header_injection.generic_header_injection
   patterns:
   - pattern-either:
@@ -5849,18 +5063,7 @@ rules:
     owasp-web: a1
     cwe: cwe-644
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.headers.header_injection.generic_header_injection
-    shortlink: https://sg.run/Oj6n
-    semgrep.dev:
-      rule:
-        r_id: 43675
-        rv_id: 930058
-        rule_id: 4bUJNL
-        version_id: DkT2OXl
-        url: https://semgrep.dev/playground/r/DkT2OXl/ajinabraham.njsscan.headers.header_injection.generic_header_injection
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/headers/header_injection.yaml
 - id: ajinabraham.njsscan.headers.header_xss_protection.header_xss_generic
   patterns:
   - pattern-either:
@@ -5891,18 +5094,7 @@ rules:
     owasp-web: a6
     cwe: cwe-693
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.headers.header_xss_protection.header_xss_generic
-    shortlink: https://sg.run/vowb
-    semgrep.dev:
-      rule:
-        r_id: 43677
-        rv_id: 833171
-        rule_id: JDU4wb
-        version_id: yeTN1Oo
-        url: https://semgrep.dev/playground/r/yeTN1Oo/ajinabraham.njsscan.headers.header_xss_protection.header_xss_generic
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/headers/header_xss_protection.yaml
 - id: ajinabraham.njsscan.headers.header_xss_protection.header_xss_lusca
   patterns:
   - pattern-inside: '$X = require(''lusca'')
@@ -5929,18 +5121,7 @@ rules:
     owasp-web: a6
     cwe: cwe-693
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.headers.header_xss_protection.header_xss_lusca
-    shortlink: https://sg.run/egly
-    semgrep.dev:
-      rule:
-        r_id: 43676
-        rv_id: 833170
-        rule_id: PeUKw9
-        version_id: 9lTJ0lr
-        url: https://semgrep.dev/playground/r/9lTJ0lr/ajinabraham.njsscan.headers.header_xss_protection.header_xss_lusca
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/headers/header_xss_protection.yaml
 - id: ajinabraham.njsscan.headers.host_header_injection.host_header_injection
   patterns:
   - pattern-either:
@@ -6019,18 +5200,7 @@ rules:
     owasp-web: a1
     cwe: cwe-20
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.headers.host_header_injection.host_header_injection
-    shortlink: https://sg.run/dnqd
-    semgrep.dev:
-      rule:
-        r_id: 43678
-        rv_id: 833172
-        rule_id: 5rUxlW
-        version_id: rxTDz1Q
-        url: https://semgrep.dev/playground/r/rxTDz1Q/ajinabraham.njsscan.headers.host_header_injection.host_header_injection
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/headers/host_header_injection.yaml
 - id: ajinabraham.njsscan.jwt.jwt_exposed_credentials.jwt_exposed_credentials
   patterns:
   - pattern-either:
@@ -6418,18 +5588,7 @@ rules:
     cwe: cwe-522
     owasp-web: a2
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.jwt.jwt_exposed_credentials.jwt_exposed_credentials
-    shortlink: https://sg.run/ZZJo
-    semgrep.dev:
-      rule:
-        r_id: 43679
-        rv_id: 833173
-        rule_id: GdUgO1
-        version_id: bZTBeZj
-        url: https://semgrep.dev/playground/r/bZTBeZj/ajinabraham.njsscan.jwt.jwt_exposed_credentials.jwt_exposed_credentials
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/jwt/jwt_exposed_credentials.yaml
   message: Password is exposed through JWT token payload. This is not encrypted and  the
     password could be compromised. Do not store passwords in JWT tokens.
 - id: ajinabraham.njsscan.jwt.jwt_exposed_data.jwt_exposed_data
@@ -6457,18 +5616,7 @@ rules:
     owasp-web: a3
     cwe: cwe-522
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.jwt.jwt_exposed_data.jwt_exposed_data
-    shortlink: https://sg.run/nD12
-    semgrep.dev:
-      rule:
-        r_id: 43680
-        rv_id: 833174
-        rule_id: ReUdWj
-        version_id: NdTB2Z2
-        url: https://semgrep.dev/playground/r/NdTB2Z2/ajinabraham.njsscan.jwt.jwt_exposed_data.jwt_exposed_data
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/jwt/jwt_exposed_data.yaml
   languages:
   - javascript
 - id: ajinabraham.njsscan.jwt.jwt_express_hardcoded.jwt_express_hardcoded
@@ -6514,18 +5662,7 @@ rules:
     cwe: cwe-522
     owasp-web: a2
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.jwt.jwt_express_hardcoded.jwt_express_hardcoded
-    shortlink: https://sg.run/EKRe
-    semgrep.dev:
-      rule:
-        r_id: 43681
-        rv_id: 833175
-        rule_id: AbUxPo
-        version_id: kbT2lDP
-        url: https://semgrep.dev/playground/r/kbT2lDP/ajinabraham.njsscan.jwt.jwt_express_hardcoded.jwt_express_hardcoded
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/jwt/jwt_express_hardcoded.yaml
 - id: ajinabraham.njsscan.jwt.jwt_hardcoded.hardcoded_jwt_secret
   patterns:
   - pattern-either:
@@ -6645,18 +5782,7 @@ rules:
     owasp-web: a3
     cwe: cwe-798
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.jwt.jwt_hardcoded.hardcoded_jwt_secret
-    shortlink: https://sg.run/72NW
-    semgrep.dev:
-      rule:
-        r_id: 43682
-        rv_id: 833176
-        rule_id: BYUoj0
-        version_id: w8TAxpo
-        url: https://semgrep.dev/playground/r/w8TAxpo/ajinabraham.njsscan.jwt.jwt_hardcoded.hardcoded_jwt_secret
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/jwt/jwt_hardcoded.yaml
 - id: ajinabraham.njsscan.jwt.jwt_none_algorithm.node_jwt_none_algorithm
   patterns:
   - pattern-either:
@@ -6705,18 +5831,7 @@ rules:
     owasp-web: a9
     cwe: cwe-327
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.jwt.jwt_none_algorithm.node_jwt_none_algorithm
-    shortlink: https://sg.run/Lpqo
-    semgrep.dev:
-      rule:
-        r_id: 43683
-        rv_id: 833177
-        rule_id: DbULoy
-        version_id: xyTNe85
-        url: https://semgrep.dev/playground/r/xyTNe85/ajinabraham.njsscan.jwt.jwt_none_algorithm.node_jwt_none_algorithm
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/jwt/jwt_none_algorithm.yaml
 - id: ajinabraham.njsscan.jwt.jwt_not_revoked.jwt_not_revoked
   patterns:
   - pattern-inside: '$JWT = require(''express-jwt'')
@@ -6740,18 +5855,7 @@ rules:
     cwe: cwe-522
     owasp-web: a2
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.jwt.jwt_not_revoked.jwt_not_revoked
-    shortlink: https://sg.run/8XNE
-    semgrep.dev:
-      rule:
-        r_id: 43684
-        rv_id: 833178
-        rule_id: WAUg5K
-        version_id: O9TJW8Y
-        url: https://semgrep.dev/playground/r/O9TJW8Y/ajinabraham.njsscan.jwt.jwt_not_revoked.jwt_not_revoked
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/jwt/jwt_not_revoked.yaml
 - id: ajinabraham.njsscan.memory.buffer_noassert.buffer_noassert
   pattern-either:
   - pattern: $OBJ.readUInt8(..., true)
@@ -6789,18 +5893,7 @@ rules:
     owasp-web: a6
     cwe: cwe-119
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.memory.buffer_noassert.buffer_noassert
-    shortlink: https://sg.run/gP6Z
-    semgrep.dev:
-      rule:
-        r_id: 43685
-        rv_id: 833179
-        rule_id: 0oUZkX
-        version_id: e1TDkeW
-        url: https://semgrep.dev/playground/r/e1TDkeW/ajinabraham.njsscan.memory.buffer_noassert.buffer_noassert
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/memory/buffer_noassert.yaml
   message: Detected usage of noassert in Buffer API, which allows the offset the be
     beyond the end of the buffer. This could result in writing or reading beyond the
     end of the buffer.
@@ -6849,18 +5942,7 @@ rules:
     owasp-web: a1
     cwe: cwe-601
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.redirect.open_redirect.express_open_redirect
-    shortlink: https://sg.run/QxzQ
-    semgrep.dev:
-      rule:
-        r_id: 43686
-        rv_id: 923782
-        rule_id: KxUR90
-        version_id: 7ZTbyvD
-        url: https://semgrep.dev/playground/r/7ZTbyvD/ajinabraham.njsscan.redirect.open_redirect.express_open_redirect
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/redirect/open_redirect.yaml
 - id: ajinabraham.njsscan.redirect.open_redirect.express_open_redirect2
   patterns:
   - pattern-inside: '$APP.$METHOD(..., function $FUNC($REQ, $RES) { ... })
@@ -6944,18 +6026,7 @@ rules:
     owasp-web: a1
     cwe: cwe-601
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.redirect.open_redirect.express_open_redirect2
-    shortlink: https://sg.run/36Np
-    semgrep.dev:
-      rule:
-        r_id: 43687
-        rv_id: 923783
-        rule_id: qNUrgk
-        version_id: LjTz352
-        url: https://semgrep.dev/playground/r/LjTz352/ajinabraham.njsscan.redirect.open_redirect.express_open_redirect2
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/redirect/open_redirect.yaml
 - id: ajinabraham.njsscan.ssrf.ssrf_node.node_ssrf
   patterns:
   - pattern-either:
@@ -7260,18 +6331,7 @@ rules:
     owasp-web: a1
     cwe: cwe-918
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.ssrf.ssrf_node.node_ssrf
-    shortlink: https://sg.run/4oZz
-    semgrep.dev:
-      rule:
-        r_id: 43688
-        rv_id: 833182
-        rule_id: lBUYqL
-        version_id: ZRTlP2E
-        url: https://semgrep.dev/playground/r/ZRTlP2E/ajinabraham.njsscan.ssrf.ssrf_node.node_ssrf
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/ssrf/ssrf_node.yaml
 - id: ajinabraham.njsscan.ssrf.ssrf_phantomjs.phantom_ssrf
   patterns:
   - pattern-inside: 'require(''phantom'')
@@ -7371,18 +6431,7 @@ rules:
     owasp-web: a1
     cwe: cwe-918
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.ssrf.ssrf_phantomjs.phantom_ssrf
-    shortlink: https://sg.run/PxoW
-    semgrep.dev:
-      rule:
-        r_id: 43689
-        rv_id: 833183
-        rule_id: YGUxGo
-        version_id: nWTy49q
-        url: https://semgrep.dev/playground/r/nWTy49q/ajinabraham.njsscan.ssrf.ssrf_phantomjs.phantom_ssrf
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/ssrf/ssrf_phantomjs.yaml
   severity: ERROR
   languages:
   - javascript
@@ -7526,18 +6575,7 @@ rules:
     owasp-web: a1
     cwe: cwe-918
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.ssrf.ssrf_playwright.playwright_ssrf
-    shortlink: https://sg.run/Jo0W
-    semgrep.dev:
-      rule:
-        r_id: 43690
-        rv_id: 833184
-        rule_id: 6JUk7K
-        version_id: ExTrDe8
-        url: https://semgrep.dev/playground/r/ExTrDe8/ajinabraham.njsscan.ssrf.ssrf_playwright.playwright_ssrf
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/ssrf/ssrf_playwright.yaml
   severity: ERROR
   languages:
   - javascript
@@ -7688,18 +6726,7 @@ rules:
     owasp-web: a1
     cwe: cwe-918
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.ssrf.ssrf_puppeteer.puppeteer_ssrf
-    shortlink: https://sg.run/5zNX
-    semgrep.dev:
-      rule:
-        r_id: 43691
-        rv_id: 833185
-        rule_id: oqUPQY
-        version_id: 7ZTx9Kg
-        url: https://semgrep.dev/playground/r/7ZTx9Kg/ajinabraham.njsscan.ssrf.ssrf_puppeteer.puppeteer_ssrf
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/ssrf/ssrf_puppeteer.yaml
   severity: ERROR
   languages:
   - javascript
@@ -7746,18 +6773,7 @@ rules:
     owasp-web: a1
     cwe: cwe-918
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.ssrf.ssrf_wkhtmltoimage.wkhtmltoimage_ssrf
-    shortlink: https://sg.run/G3E2
-    semgrep.dev:
-      rule:
-        r_id: 43692
-        rv_id: 833186
-        rule_id: zdU9vq
-        version_id: LjTEbR7
-        url: https://semgrep.dev/playground/r/LjTEbR7/ajinabraham.njsscan.ssrf.ssrf_wkhtmltoimage.wkhtmltoimage_ssrf
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/ssrf/ssrf_wkhtmltoimage.yaml
 - id: ajinabraham.njsscan.ssrf.ssrf_wkhtmltopdf.wkhtmltopdf_ssrf
   patterns:
   - pattern-inside: 'require(''wkhtmltopdf'')
@@ -7801,18 +6817,7 @@ rules:
     owasp-web: a1
     cwe: cwe-918
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.ssrf.ssrf_wkhtmltopdf.wkhtmltopdf_ssrf
-    shortlink: https://sg.run/RxEe
-    semgrep.dev:
-      rule:
-        r_id: 43693
-        rv_id: 833187
-        rule_id: pKUJv1
-        version_id: 8KTGk3q
-        url: https://semgrep.dev/playground/r/8KTGk3q/ajinabraham.njsscan.ssrf.ssrf_wkhtmltopdf.wkhtmltopdf_ssrf
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/ssrf/ssrf_wkhtmltopdf.yaml
 - id: ajinabraham.njsscan.traversal.archive_path_overwrite.admzip_path_overwrite
   patterns:
   - pattern-inside: '$X = require(''adm-zip'')
@@ -7849,18 +6854,7 @@ rules:
     owasp-web: a5
     cwe: cwe-22
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.traversal.archive_path_overwrite.admzip_path_overwrite
-    shortlink: https://sg.run/D0Eo
-    semgrep.dev:
-      rule:
-        r_id: 43696
-        rv_id: 833190
-        rule_id: j2UpAv
-        version_id: 3ZT3A2E
-        url: https://semgrep.dev/playground/r/3ZT3A2E/ajinabraham.njsscan.traversal.archive_path_overwrite.admzip_path_overwrite
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/traversal/archive_path_overwrite.yaml
 - id: ajinabraham.njsscan.traversal.archive_path_overwrite.tar_path_overwrite
   patterns:
   - pattern-inside: '$X = require(''tar-stream'')
@@ -7903,18 +6897,7 @@ rules:
     owasp-web: a5
     cwe: cwe-22
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.traversal.archive_path_overwrite.tar_path_overwrite
-    shortlink: https://sg.run/WxEg
-    semgrep.dev:
-      rule:
-        r_id: 43697
-        rv_id: 833191
-        rule_id: 10UnAZ
-        version_id: 44TQPb1
-        url: https://semgrep.dev/playground/r/44TQPb1/ajinabraham.njsscan.traversal.archive_path_overwrite.tar_path_overwrite
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/traversal/archive_path_overwrite.yaml
 - id: ajinabraham.njsscan.traversal.archive_path_overwrite.zip_path_overwrite
   patterns:
   - pattern-either:
@@ -7964,18 +6947,7 @@ rules:
     owasp-web: a5
     cwe: cwe-22
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.traversal.archive_path_overwrite.zip_path_overwrite
-    shortlink: https://sg.run/ABO8
-    semgrep.dev:
-      rule:
-        r_id: 43694
-        rv_id: 833188
-        rule_id: 2ZUXBG
-        version_id: gETy2r1
-        url: https://semgrep.dev/playground/r/gETy2r1/ajinabraham.njsscan.traversal.archive_path_overwrite.zip_path_overwrite
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/traversal/archive_path_overwrite.yaml
 - id: ajinabraham.njsscan.traversal.archive_path_overwrite.zip_path_overwrite2
   patterns:
   - pattern-either:
@@ -8023,18 +6995,7 @@ rules:
     owasp-web: a5
     cwe: cwe-22
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.traversal.archive_path_overwrite.zip_path_overwrite2
-    shortlink: https://sg.run/BD82
-    semgrep.dev:
-      rule:
-        r_id: 43695
-        rv_id: 833189
-        rule_id: X5UpXw
-        version_id: QkTkrE6
-        url: https://semgrep.dev/playground/r/QkTkrE6/ajinabraham.njsscan.traversal.archive_path_overwrite.zip_path_overwrite2
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/traversal/archive_path_overwrite.yaml
 - id: ajinabraham.njsscan.traversal.express_hbs_lfr.express_lfr
   patterns:
   - pattern-inside: 'require(''hbs'')
@@ -8073,18 +7034,7 @@ rules:
     owasp-web: a5
     cwe: cwe-23
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.traversal.express_hbs_lfr.express_lfr
-    shortlink: https://sg.run/0qO5
-    semgrep.dev:
-      rule:
-        r_id: 43698
-        rv_id: 833192
-        rule_id: 9AULYk
-        version_id: PkTxre0
-        url: https://semgrep.dev/playground/r/PkTxre0/ajinabraham.njsscan.traversal.express_hbs_lfr.express_lfr
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/traversal/express_hbs_lfr.yaml
 - id: ajinabraham.njsscan.traversal.express_hbs_lfr.express_lfr_warning
   patterns:
   - pattern-not-inside: 'require(''hbs'')
@@ -8123,18 +7073,7 @@ rules:
     owasp-web: a5
     cwe: cwe-23
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.traversal.express_hbs_lfr.express_lfr_warning
-    shortlink: https://sg.run/KzEX
-    semgrep.dev:
-      rule:
-        r_id: 43699
-        rv_id: 833193
-        rule_id: yyUz9P
-        version_id: JdTlrnl
-        url: https://semgrep.dev/playground/r/JdTlrnl/ajinabraham.njsscan.traversal.express_hbs_lfr.express_lfr_warning
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/traversal/express_hbs_lfr.yaml
 - id: ajinabraham.njsscan.traversal.path_traversal.generic_path_traversal
   patterns:
   - pattern-either:
@@ -8350,18 +7289,7 @@ rules:
     owasp-web: a5
     cwe: cwe-23
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.traversal.path_traversal.generic_path_traversal
-    shortlink: https://sg.run/4oOl
-    semgrep.dev:
-      rule:
-        r_id: 43700
-        rv_id: 930059
-        rule_id: r6UXR2
-        version_id: WrTYRGL
-        url: https://semgrep.dev/playground/r/WrTYRGL/ajinabraham.njsscan.traversal.path_traversal.generic_path_traversal
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/traversal/path_traversal.yaml
 - id: ajinabraham.njsscan.traversal.resolve_path_traversal.join_resolve_path_traversal
   patterns:
   - pattern-inside: 'require(''path'')
@@ -8414,18 +7342,7 @@ rules:
     owasp-web: a5
     cwe: cwe-22
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.traversal.resolve_path_traversal.join_resolve_path_traversal
-    shortlink: https://sg.run/PxEY
-    semgrep.dev:
-      rule:
-        r_id: 43701
-        rv_id: 833195
-        rule_id: bwUJDB
-        version_id: GxTDElP
-        url: https://semgrep.dev/playground/r/GxTDElP/ajinabraham.njsscan.traversal.resolve_path_traversal.join_resolve_path_traversal
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/traversal/resolve_path_traversal.yaml
   severity: WARNING
 - id: ajinabraham.njsscan.xml.xml_entity_expansion_dos.node_entity_expansion
   patterns:
@@ -8466,18 +7383,7 @@ rules:
     owasp-web: a4
     cwe: cwe-776
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.xml.xml_entity_expansion_dos.node_entity_expansion
-    shortlink: https://sg.run/JoEw
-    semgrep.dev:
-      rule:
-        r_id: 43702
-        rv_id: 833196
-        rule_id: NbUE0e
-        version_id: RGTKGEk
-        url: https://semgrep.dev/playground/r/RGTKGEk/ajinabraham.njsscan.xml.xml_entity_expansion_dos.node_entity_expansion
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/xml/xml_entity_expansion_dos.yaml
 - id: ajinabraham.njsscan.xml.xpathi_node.node_xpath_injection
   patterns:
   - pattern-either:
@@ -8555,18 +7461,7 @@ rules:
     owasp-web: a1
     cwe: cwe-643
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.xml.xpathi_node.node_xpath_injection
-    shortlink: https://sg.run/5zOA
-    semgrep.dev:
-      rule:
-        r_id: 43703
-        rv_id: 833197
-        rule_id: kxU90Y
-        version_id: A8T37EX
-        url: https://semgrep.dev/playground/r/A8T37EX/ajinabraham.njsscan.xml.xpathi_node.node_xpath_injection
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/xml/xpathi_node.yaml
 - id: ajinabraham.njsscan.xml.xxe_expat.xxe_expat
   patterns:
   - pattern-inside: 'require(''node-expat'')
@@ -8627,18 +7522,7 @@ rules:
     owasp-web: a4
     cwe: cwe-611
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.xml.xxe_expat.xxe_expat
-    shortlink: https://sg.run/G3Ep
-    semgrep.dev:
-      rule:
-        r_id: 43704
-        rv_id: 833198
-        rule_id: wdUvdn
-        version_id: BjTe0yk
-        url: https://semgrep.dev/playground/r/BjTe0yk/ajinabraham.njsscan.xml.xxe_expat.xxe_expat
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/xml/xxe_expat.yaml
   severity: ERROR
   languages:
   - javascript
@@ -8813,18 +7697,7 @@ rules:
     owasp-web: a4
     cwe: cwe-611
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.xml.xxe_node.node_xxe
-    shortlink: https://sg.run/RxEO
-    semgrep.dev:
-      rule:
-        r_id: 43705
-        rv_id: 833199
-        rule_id: x8U1yp
-        version_id: DkTG0wk
-        url: https://semgrep.dev/playground/r/DkTG0wk/ajinabraham.njsscan.xml.xxe_node.node_xxe
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/xml/xxe_node.yaml
 - id: ajinabraham.njsscan.xml.xxe_sax.xxe_sax
   pattern-either:
   - pattern: 'require(''sax'')
@@ -8851,18 +7724,7 @@ rules:
     owasp-web: a4
     cwe: cwe-611
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.xml.xxe_sax.xxe_sax
-    shortlink: https://sg.run/ABOp
-    semgrep.dev:
-      rule:
-        r_id: 43706
-        rv_id: 833200
-        rule_id: OrUrKp
-        version_id: WrTdp77
-        url: https://semgrep.dev/playground/r/WrTdp77/ajinabraham.njsscan.xml.xxe_sax.xxe_sax
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/xml/xxe_sax.yaml
 - id: ajinabraham.njsscan.xml.xxe_xml2json.xxe_xml2json
   patterns:
   - pattern-inside: 'require(''xml2json'')
@@ -8898,18 +7760,7 @@ rules:
     owasp-web: a4
     cwe: cwe-611
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.xml.xxe_xml2json.xxe_xml2json
-    shortlink: https://sg.run/BD8W
-    semgrep.dev:
-      rule:
-        r_id: 43707
-        rv_id: 833201
-        rule_id: eqUwXe
-        version_id: 0bTwbGg
-        url: https://semgrep.dev/playground/r/0bTwbGg/ajinabraham.njsscan.xml.xxe_xml2json.xxe_xml2json
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/xml/xxe_xml2json.yaml
   severity: ERROR
   languages:
   - javascript
@@ -8950,18 +7801,7 @@ rules:
     owasp-web: a3
     cwe: cwe-79
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.xss.xss_dom.dom_xss
-    shortlink: https://sg.run/JqBkd
-    semgrep.dev:
-      rule:
-        r_id: 326746
-        rv_id: 1509037
-        rule_id: qNU17n5
-        version_id: K3T8xOG
-        url: https://semgrep.dev/playground/r/K3T8xOG/ajinabraham.njsscan.xss.xss_dom.dom_xss
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/xss/xss_dom.yaml
 - id: ajinabraham.njsscan.xss.xss_mustache_escape.xss_disable_mustache_escape
   pattern: $OBJ.escapeMarkup = false
   severity: WARNING
@@ -8971,18 +7811,7 @@ rules:
     cwe: cwe-116
     owasp-web: a7
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.xss.xss_mustache_escape.xss_disable_mustache_escape
-    shortlink: https://sg.run/D0EY
-    semgrep.dev:
-      rule:
-        r_id: 43708
-        rv_id: 833202
-        rule_id: v8UJxL
-        version_id: K3Trqg3
-        url: https://semgrep.dev/playground/r/K3Trqg3/ajinabraham.njsscan.xss.xss_mustache_escape.xss_disable_mustache_escape
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/xss/xss_mustache_escape.yaml
   message: Markup escaping disabled. This can be used with some template engines to
     escape disabling of HTML entities, which can lead to XSS attacks.
 - id: ajinabraham.njsscan.xss.xss_node.express_xss
@@ -9208,18 +8037,7 @@ rules:
     owasp-web: a1
     cwe: cwe-79
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.xss.xss_node.express_xss
-    shortlink: https://sg.run/WxE4
-    semgrep.dev:
-      rule:
-        r_id: 43709
-        rv_id: 833203
-        rule_id: d8UE27
-        version_id: qkTQnve
-        url: https://semgrep.dev/playground/r/qkTQnve/ajinabraham.njsscan.xss.xss_node.express_xss
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/xss/xss_node.yaml
 - id: ajinabraham.njsscan.xss.xss_serialize_js.xss_serialize_javascript
   patterns:
   - pattern-inside: '$S = require(''serialize-javascript'')
@@ -9241,18 +8059,7 @@ rules:
     owasp-web: a1
     cwe: cwe-80
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.xss.xss_serialize_js.xss_serialize_javascript
-    shortlink: https://sg.run/0qOv
-    semgrep.dev:
-      rule:
-        r_id: 43710
-        rv_id: 833204
-        rule_id: ZqUJ1W
-        version_id: l4TyOpN
-        url: https://semgrep.dev/playground/r/l4TyOpN/ajinabraham.njsscan.xss.xss_serialize_js.xss_serialize_javascript
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/xss/xss_serialize_js.yaml
 - id: ajinabraham.njsscan.xss.xss_templates.handlebars_noescape
   patterns:
   - pattern: '$X.compile(..., {noEscape: true}, ...)
@@ -9267,18 +8074,7 @@ rules:
     owasp-web: a1
     cwe: cwe-80
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.xss.xss_templates.handlebars_noescape
-    shortlink: https://sg.run/q3Xz
-    semgrep.dev:
-      rule:
-        r_id: 43712
-        rv_id: 833206
-        rule_id: EwUbPY
-        version_id: 6xTDgRk
-        url: https://semgrep.dev/playground/r/6xTDgRk/ajinabraham.njsscan.xss.xss_templates.handlebars_noescape
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/xss/xss_templates.yaml
 - id: ajinabraham.njsscan.xss.xss_templates.handlebars_safestring
   pattern-either:
   - pattern: $X.SafeString(...)
@@ -9299,18 +8095,7 @@ rules:
     owasp-web: a1
     cwe: cwe-79
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.xss.xss_templates.handlebars_safestring
-    shortlink: https://sg.run/KzE7
-    semgrep.dev:
-      rule:
-        r_id: 43711
-        rv_id: 923784
-        rule_id: nJUlA0
-        version_id: 8KTvZzj
-        url: https://semgrep.dev/playground/r/8KTvZzj/ajinabraham.njsscan.xss.xss_templates.handlebars_safestring
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/xss/xss_templates.yaml
 - id: ajinabraham.njsscan.xss.xss_templates.squirrelly_autoescape
   pattern: $X.autoEscaping(false)
   message: Handlebars SafeString will not escape the data passed through it. Untrusted
@@ -9322,15 +8107,4 @@ rules:
     owasp-web: a1
     cwe: cwe-79
     license: LGPL-3.0-or-later
-    vulnerability_class:
-    - Other
-    source: https://semgrep.dev/r/ajinabraham.njsscan.xss.xss_templates.squirrelly_autoescape
-    shortlink: https://sg.run/lA6y
-    semgrep.dev:
-      rule:
-        r_id: 43713
-        rv_id: 833207
-        rule_id: 7KUwq5
-        version_id: o5TBELG
-        url: https://semgrep.dev/playground/r/o5TBELG/ajinabraham.njsscan.xss.xss_templates.squirrelly_autoescape
-        origin: community
+    source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/xss/xss_templates.yaml

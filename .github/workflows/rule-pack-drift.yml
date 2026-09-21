@@ -1,11 +1,11 @@
 name: rule-pack drift
 
-# J4 Part D. The vendored Semgrep packs (G2) carry `refresh_cadence: monthly,
-# reviewed` in rules/manifest.yaml, and scripts/vendor_rules.py exists to do it —
-# but nothing ran it. self-scan.yml was the only workflow and it has no schedule
-# trigger, so the pins were current only because a human happened to refresh them
-# during G2. Documented intent that nothing enforces is the same class of defect
-# as everything else this series has removed.
+# J4 Part D. Vendored rule packs carry `refresh_cadence: monthly, reviewed` in
+# rules/manifest.yaml; this job is what makes that cadence real.
+#
+# N1: the only vendored pack is now njsscan (LGPL-3.0-or-later), built from its
+# upstream GitHub repository. `--refresh` clones upstream and diffs it against the
+# pin; nothing in this job (or anywhere) contacts the Semgrep registry.
 #
 # This job deliberately does NOT re-pin. Silently adopting upstream rule changes
 # would alter a customer's results between two scans of unchanged code with no

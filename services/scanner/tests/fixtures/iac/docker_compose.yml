@@ -26,6 +26,12 @@ services:
     cap_add:
       # ok: aegis-compose-dangerous-capability
       - NET_BIND_SERVICE
+    # Dropping every capability is the hardening the rule's own message asks for.
+    # The rule used to be a bare regex and flagged this as ERROR (found in N1, when
+    # this repository's self-scan ran for the first time since G2).
+    cap_drop:
+      # ok: aegis-compose-dangerous-capability
+      - ALL
     ports:
       # ok: aegis-compose-port-all-interfaces
       - "127.0.0.1:8080:8080"

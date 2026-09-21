@@ -72,6 +72,10 @@ jobs:
       # its columns. This class shipped twice as a P0 (T2 excluded_bundled,
       # J4 code_key) and is invisible to go build, go vet and the unit suite.
       - run: python services/scanner/tools/check_select_star_columns.py
+      # N1: no rule with a non-permitted licence may ship (per-rule licence,
+      # manifest integrity, logic fingerprints of every removed Semgrep-licensed
+      # rule), and no code path may fetch rules from the Semgrep registry.
+      - run: python services/scanner/tools/check_rule_licences.py
 
   semgrep:
     name: SAST (Semgrep + Aegis taint rules)
@@ -79,12 +83,20 @@ jobs:
     container: semgrep/semgrep
     steps:
       - uses: actions/checkout@v4
-      # Aegis's own taint rules + the community security ruleset. --error makes
-      # any finding fail the job (our bar is zero).
+      # Exactly the rule set Aegis ships, nothing fetched. N1 removed
+      # `--config p/security-audit`, a live Semgrep-registry fetch of Semgrep-
+      # licensed rules: the self-scan dogfoods the product's own rules.
+      # --error makes any finding fail the job (our bar is zero).
+      # The rule directories are named, not services/scanner/rules: that directory
+      # also holds manifest.yaml, which is not a rule file, and passing it made this
+      # job fail with "invalid configuration file" on every push since G2.
       - run: |
-          semgrep scan --error --severity ERROR \
-            --config services/scanner/rules \
-            --config "p/security-audit" \
+          semgrep scan --error --severity ERROR --metrics off \
+            --config services/scanner/rules/taint \
+            --config services/scanner/rules/quality \
+            --config services/scanner/rules/iac \
+            --config services/scanner/rules/cicd \
+            --config services/scanner/rules/vendor \
             --exclude services/scanner/rules \
             --exclude services/scanner/tests/fixtures \
             --exclude "**/.venv/**" --exclude "**/node_modules/**"

@@ -59,25 +59,60 @@ def declared() -> tuple[set[str], set[str]]:
     return cwe, ow
 
 
-def observed(dsn: str) -> tuple[set[str], set[str], int]:
-    """Identifiers that have appeared on a real finding."""
+def shipped_rule_ids() -> set[str]:
+    """Ids of every semgrep rule we currently ship (ours + vendored)."""
+    ids: set[str] = set()
+    for dirpath, _dirs, files in os.walk(RULES_DIR):
+        for name in files:
+            if not name.endswith((".yaml", ".yml")):
+                continue
+            with open(os.path.join(dirpath, name), encoding="utf-8") as fh:
+                doc = yaml.safe_load(fh)
+            if isinstance(doc, dict) and isinstance(doc.get("rules"), list):
+                ids |= {str(r.get("id")) for r in doc["rules"]}
+    return ids
+
+
+def rule_set_pinned_at() -> str:
+    with open(os.path.join(RULES_DIR, "manifest.yaml"), encoding="utf-8") as fh:
+        return str((yaml.safe_load(fh) or {}).get("pinned_at", ""))
+
+
+def observed(dsn: str) -> tuple[set[str], set[str], int, int]:
+    """Identifiers that have appeared on a real finding FROM A DETECTOR WE STILL SHIP.
+
+    A semgrep finding counts only if its rule id is in the shipped rule set. Without
+    that filter, an identifier observed only because a since-removed rule emitted it
+    (N1 removed 1,142 Semgrep-licensed rules) stays "emittable" forever, and a
+    control evidenced only by it reports "no findings" instead of "not assessed".
+    Non-semgrep engines (trivy CVE metadata, gitleaks, quality) are unaffected.
+    """
     import psycopg  # imported lazily: only needed with --dsn
 
+    # A finding counts when it came from a non-semgrep engine or a shipped rule.
+    ids = sorted(shipped_rule_ids())
     with psycopg.connect(dsn) as conn, conn.cursor() as cur:
-        cur.execute("SELECT DISTINCT upper(cwe_id) FROM findings WHERE cwe_id IS NOT NULL")
+        cur.execute(
+            "SELECT DISTINCT upper(cwe_id) FROM findings WHERE cwe_id IS NOT NULL"
+            " AND (engine <> 'semgrep' OR rule_id = ANY(%s))", (ids,))
         cwe = {r[0] for r in cur.fetchall() if r[0]}
-        cur.execute("SELECT DISTINCT owasp_category FROM findings WHERE owasp_category IS NOT NULL")
+        cur.execute(
+            "SELECT DISTINCT owasp_category FROM findings WHERE owasp_category IS NOT NULL"
+            " AND (engine <> 'semgrep' OR rule_id = ANY(%s))", (ids,))
         ow = set()
         for (val,) in cur.fetchall():
             m = _OWASP.search(val or "")
             if m:
                 ow.add(m.group(0))
-        cur.execute("SELECT count(*) FROM findings")
-        n = cur.fetchone()[0]
-    return cwe, ow, n
+        cur.execute(
+            "SELECT count(*) FILTER (WHERE engine <> 'semgrep' OR rule_id = ANY(%s)),"
+            "       count(*) FILTER (WHERE NOT (engine <> 'semgrep' OR rule_id = ANY(%s))) FROM findings",
+            (ids, ids))
+        n, dropped = cur.fetchone()
+    return cwe, ow, n, dropped
 
 
-def main() -> None:
+def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dsn", help="Postgres DSN; without it the observed snapshot is preserved")
     args = ap.parse_args()
@@ -92,12 +127,20 @@ def main() -> None:
     ocwe = set(prev_obs.get("cwe") or [])
     oow = set(prev_obs.get("owasp") or [])
     corpus = prev_obs.get("corpus_findings", 0)
+    dropped = prev_obs.get("excluded_findings_from_removed_rules", 0)
     asof = prev_obs.get("as_of", "")
+    pinned = rule_set_pinned_at()
 
     if args.dsn:
-        ocwe, oow, corpus = observed(args.dsn)
+        ocwe, oow, corpus, dropped = observed(args.dsn)
         asof = _dt.date.today().isoformat()
-        print(f"observed refreshed from database: {len(ocwe)} CWE, {len(oow)} OWASP, {corpus} findings")
+        print(f"observed refreshed from database: {len(ocwe)} CWE, {len(oow)} OWASP, {corpus} findings "
+              f"({dropped} findings from rules no longer shipped were excluded)")
+    elif prev_obs.get("rule_set_pinned_at") != pinned:
+        # Preserving would carry identifiers emitted only by rules we no longer ship.
+        print(f"observed snapshot was taken against rule set {prev_obs.get('rule_set_pinned_at')!r}, "
+              f"but the shipped rule set is {pinned!r}. Refresh it: --dsn \"$DSN\"")
+        return 1
     else:
         print(f"observed snapshot preserved ({len(ocwe)} CWE, {len(oow)} OWASP)")
 
@@ -114,7 +157,9 @@ def main() -> None:
         "declared": {"cwe": sorted(dcwe), "owasp": sorted(dow)},
         "observed": {
             "as_of": asof,
+            "rule_set_pinned_at": pinned,
             "corpus_findings": corpus,
+            "excluded_findings_from_removed_rules": dropped,
             "cwe": sorted(ocwe),
             "owasp": sorted(oow),
         },
@@ -122,6 +167,7 @@ def main() -> None:
     with open(OUT, "w", encoding="utf-8", newline="\n") as fh:
         yaml.safe_dump(doc, fh, sort_keys=False, width=100, default_flow_style=False)
     print(f"wrote {OUT}: declared {len(dcwe)} CWE / {len(dow)} OWASP")
+    return 0
 
 
 if __name__ == "__main__":

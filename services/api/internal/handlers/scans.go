@@ -135,7 +135,8 @@ func (h *ScanHandler) ExportSBOM(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="aegis-%s.%s"`, scanID, ext))
 	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte(content))
+	// A JSON SBOM served as an attachment: not HTML, and not rendered.
+	_, _ = w.Write([]byte(content)) // nosemgrep: aegis-go-xss
 }
 
 // UploadScan handles POST /api/v1/projects/{id}/scans/upload — a multipart

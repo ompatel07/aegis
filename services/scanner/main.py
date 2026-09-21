@@ -66,7 +66,8 @@ async def lifespan(app: FastAPI):
 
 async def _rulepack_refresh_loop() -> None:
     """Refresh the Trivy vuln DB periodically so scans use current advisories.
-    Semgrep registry rules are cached and re-fetched by semgrep itself."""
+    Semgrep rules are local files shipped in the image (N1: nothing is fetched from
+    a rule registry), so there is nothing for this loop to refresh on that side."""
     from utils.sandbox import run_command
 
     while True:

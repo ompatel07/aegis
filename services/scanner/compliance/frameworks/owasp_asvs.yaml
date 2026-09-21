@@ -33,7 +33,7 @@ controls:
     level: 1
     evidence:
       owasp: ["A07:2021"]
-      cwe: ["CWE-798", "CWE-321", "CWE-287", "CWE-306", "CWE-522", "CWE-916"]
+      cwe: ["CWE-798", "CWE-287", "CWE-522", "CWE-916"]
       pillars: ["security"]
 
   - id: "V3.x"
@@ -52,8 +52,7 @@ controls:
     level: 1
     evidence:
       owasp: ["A01:2021"]
-      cwe: ["CWE-284", "CWE-285", "CWE-862", "CWE-863", "CWE-639", "CWE-352",
-            "CWE-601", "CWE-269"]
+      cwe: ["CWE-285", "CWE-863", "CWE-352", "CWE-601"]
       pillars: ["security"]
 
   - id: "V5.1"
@@ -90,7 +89,7 @@ controls:
     name: Algorithms
     level: 1
     evidence:
-      cwe: ["CWE-327", "CWE-328", "CWE-311", "CWE-326"]
+      cwe: ["CWE-327", "CWE-328"]
       pillars: ["security"]
 
   - id: "V7.x"
@@ -120,8 +119,7 @@ controls:
     level: 1
     evidence:
       owasp: ["A06:2021", "A08:2021"]
-      cwe: ["CWE-1104", "CWE-829", "CWE-494", "CWE-353",
-            "CWE-1357", "CWE-345"]
+      cwe: ["CWE-829", "CWE-494", "CWE-345"]
       pillars: ["security"]
 
   - id: "V12.x"
@@ -138,5 +136,5 @@ controls:
     level: 1
     evidence:
       owasp: ["A05:2021"]
-      cwe: ["CWE-16", "CWE-489", "CWE-732"]
+      cwe: []
       pillars: ["deployment", "security"]

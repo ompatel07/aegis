@@ -22,6 +22,11 @@ import (
 //   - previously resolved, present again        -> REOPENED (is_new = true)
 //   - present before and now                    -> EXISTING (is_new = false)
 //   - present before, absent now                -> RESOLVED (recorded on its state row)
+//     ...but ONLY when the detector that raised it ran on this scan (N1):
+//     its engine completed and, for per-rule engines, its rule executed.
+//   - absent, and its rule no longer ships       -> RETIRED (neither open nor fixed)
+//   - absent, detector did not run               -> unchanged (absence proves nothing)
+//   - previously retired, present again          -> EXISTING (never fixed, only unchecked)
 //
 // The very first scan of a project establishes the baseline: everything is
 // grandfathered as EXISTING (is_new = false) so the first PR isn't failed by the
@@ -29,7 +34,8 @@ import (
 // correctly reads as NEW — the fix for the old rule-level gate weakness.
 //
 // Runs inside the SaveResults transaction so tagging + state update are atomic.
-func applyLifecycle(ctx context.Context, tx *sqlx.Tx, projectID, scanID string, findings []types.Finding) error {
+func applyLifecycle(ctx context.Context, tx *sqlx.Tx, projectID, scanID string, findings []types.Finding,
+	ev types.LifecycleEvidence) error {
 	if projectID == "" {
 		return nil // nothing to anchor lifecycle to (e.g. ad-hoc scan)
 	}
@@ -59,7 +65,7 @@ func applyLifecycle(ctx context.Context, tx *sqlx.Tx, projectID, scanID string, 
 		prior[pr.fingerprint] = pr.status
 		// Only active rows are migration candidates: a finding that was already
 		// resolved should stay resolved, not be revived by a coincidental match.
-		if pr.codeKey != "" && pr.status != statusResolved {
+		if pr.codeKey != "" && pr.status != statusResolved && pr.status != statusRetired {
 			priorByCodeKey[pr.codeKey] = append(priorByCodeKey[pr.codeKey], pr)
 		}
 	}
@@ -188,6 +194,10 @@ func applyLifecycle(ctx context.Context, tx *sqlx.Tx, projectID, scanID string, 
 			status = statusNew
 		case prior[fp] == statusResolved:
 			status = statusReopened
+		case prior[fp] == statusRetired:
+			// Its rule stopped running and has come back. It was never fixed, only
+			// unchecked, so it is neither new nor a regression.
+			status = statusExisting
 		default:
 			status = statusExisting
 		}
@@ -209,24 +219,84 @@ func applyLifecycle(ctx context.Context, tx *sqlx.Tx, projectID, scanID string, 
 		}
 	}
 
-	// Resolved detection: every present finding's state row was just stamped with
-	// last_seen_scan_id = scanID above. So any row that is still active
-	// (new/existing/reopened) but was NOT touched this scan (its last_seen predates
-	// this scan) is a finding that has gone away — resolved by this scan. This
-	// avoids binding a fingerprint array and is exact. (First scan: nothing prior.)
+	// Absence detection: every present finding's state row was just stamped with
+	// last_seen_scan_id = scanID above, so any row still active (new/existing/
+	// reopened) but NOT touched this scan is a finding that did not appear.
+	//
+	// Not appearing is only evidence of a fix when the detector that raised it ran
+	// (N1). Before N1 every absent row was marked resolved, so a semgrep timeout, or
+	// removing a rule, turned "we stopped looking" into "proven closed" -- and the
+	// compliance report lists resolved findings as remediation evidence (J3).
 	if !firstScan {
-		const markResolved = `
-			UPDATE project_finding_states
-			SET status = $3, resolved_scan_id = $2, updated_at = now()
-			WHERE project_id = $1
-			  AND status IN ('new', 'existing', 'reopened')
-			  AND last_seen_scan_id IS DISTINCT FROM $2`
-		if _, err := tx.ExecContext(ctx, markResolved, projectID, scanID, statusResolved); err != nil {
+		rows, err := tx.QueryxContext(ctx, `
+			SELECT fingerprint, COALESCE(engine,''), COALESCE(rule_id,'')
+			  FROM project_finding_states
+			 WHERE project_id = $1
+			   AND status IN ('new', 'existing', 'reopened')
+			   AND last_seen_scan_id IS DISTINCT FROM $2`, projectID, scanID)
+		if err != nil {
 			return err
+		}
+		var resolve, retire []string
+		for rows.Next() {
+			var fp, engine, ruleID string
+			if err := rows.Scan(&fp, &engine, &ruleID); err != nil {
+				_ = rows.Close()
+				return err
+			}
+			switch absenceVerdict(ev, engine, ruleID) {
+			case statusResolved:
+				resolve = append(resolve, fp)
+			case statusRetired:
+				retire = append(retire, fp)
+			}
+		}
+		_ = rows.Close()
+		if err := rows.Err(); err != nil {
+			return err
+		}
+		// A retired finding carries no resolved_scan_id: no scan resolved it.
+		const mark = `
+			UPDATE project_finding_states
+			SET status = $2, resolved_scan_id = $3, updated_at = now()
+			WHERE project_id = $1 AND fingerprint = ANY($4)`
+		for _, batch := range []struct {
+			status       string
+			resolvedScan any
+			fps          []string
+		}{{statusResolved, scanID, resolve}, {statusRetired, nil, retire}} {
+			if len(batch.fps) == 0 {
+				continue
+			}
+			if _, err := tx.ExecContext(ctx, mark, projectID, batch.status, batch.resolvedScan, batch.fps); err != nil {
+				return err
+			}
 		}
 	}
 
 	return nil
+}
+
+// absenceVerdict decides what a finding's absence from this scan proves:
+// statusResolved, statusRetired, or "" (nothing -- leave the row as it is).
+func absenceVerdict(ev types.LifecycleEvidence, engine, ruleID string) string {
+	if ev.Completed == nil {
+		return statusResolved // no evidence supplied: pre-N1 behaviour
+	}
+	if !ev.Completed[engine] {
+		return "" // engine failed, was skipped, or did not run: absence proves nothing
+	}
+	executed, perRule := ev.RulesExecuted[engine]
+	if !perRule {
+		return statusResolved // engine completed and has no per-rule sets
+	}
+	if executed[ruleID] {
+		return statusResolved // its rule ran and did not fire: evidence of a fix
+	}
+	if shipped := ev.RulesShipped[engine]; shipped != nil && !shipped[ruleID] {
+		return statusRetired // its rule no longer exists (N1) or a custom rule was removed
+	}
+	return "" // shipped but not run this scan (pack failed, language not detected)
 }
 
 const (
@@ -234,6 +304,9 @@ const (
 	statusExisting = "existing"
 	statusResolved = "resolved"
 	statusReopened = "reopened"
+	// statusRetired: the rule that raised the finding no longer runs (N1). Neither
+	// open nor fixed; excluded from both sides of every open-vs-closed count.
+	statusRetired = "retired"
 )
 
 // fallbackFingerprint keeps a finding keyed even if the scanner didn't supply a
