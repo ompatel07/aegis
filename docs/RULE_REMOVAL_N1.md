@@ -272,9 +272,9 @@ Checking the brief's "full CI green" against GitHub's history rather than assumi
 |---|---|---|
 | **SAST (Semgrep + Aegis rules)** | `--config services/scanner/rules` also loads `manifest.yaml`, which is not a rule file ("missing keys") — failing since G2 put it there, so **the self-scan has not evaluated a single rule against this repository since G2** | **fixed** — the job names the rule directories. It then found **9 ERROR findings in our own code**, handled below |
 | Web dependencies (npm audit) | 5 advisories: Auth.js ×3, Next.js ×2 (2 critical, 2 high) | **not touched** — dependency upgrades are their own risk and do not belong in a licensing cut |
-| Scanner dependencies (pip-audit) | 17 known vulnerabilities in 4 packages | not touched |
+| Scanner dependencies (pip-audit) | known vulnerabilities in 4 packages — 17 on 2026-09-10, **22** on the N1 push (new advisories, same packages) | not touched |
 | Go vulnerabilities (govulncheck) | `cloudflare/circl` < 1.6.1 (fixed upstream) | not touched |
-| Filesystem + config (Trivy) | fails with the dependency CVEs above | not touched |
+| Filesystem + config (Trivy) | **never runs**: `trivy-action` depends on `aquasecurity/setup-trivy@v0.2.1`, which GitHub can no longer resolve ("unable to find version"). Same error before N1. So the repository has had **no Trivy self-scan at all** | not touched — pinning a working action version is a one-line fix for the dependency pass |
 
 The nine findings the SAST job had been hiding:
 
@@ -516,8 +516,9 @@ despite that.
 4. **The OWASP number in pitch material.** Youden 0.051 is below CodeQL and base Semgrep. Either stop
    citing the benchmark until §E rows 3–4 land, or cite it with this number. It must not be cited
    with the old one.
-5. **The dependency CVEs (§B.7).** npm (Auth.js, Next.js — 2 critical), pip (17 in 4 packages),
+5. **The dependency CVEs (§B.7).** npm (Auth.js, Next.js — 2 critical), pip (22 in 4 packages),
    Go (`cloudflare/circl`). `self-scan.yml` has been red on them for three weeks. A security
    product failing its own dependency audit is its own finding; this deserves a dedicated pass.
+   The Trivy self-scan job has not run at all (an unresolvable action version); fix that first.
 6. **`aegis-go-xss` sink precision.** It flags any `http.ResponseWriter.Write`, including JSON and
    attachment downloads. Two suppressions in our own API are the symptom.
