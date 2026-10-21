@@ -10,9 +10,7 @@ declared:
   - CWE-119
   - CWE-1275
   - CWE-1333
-  - CWE-185
   - CWE-20
-  - CWE-208
   - CWE-209
   - CWE-22
   - CWE-23
@@ -34,7 +32,6 @@ declared:
   - CWE-599
   - CWE-601
   - CWE-611
-  - CWE-613
   - CWE-614
   - CWE-643
   - CWE-644
@@ -66,10 +63,10 @@ declared:
   - A08:2021
   - A10:2021
 observed:
-  as_of: '2026-09-21'
-  rule_set_pinned_at: '2026-09-19'
-  corpus_findings: 11826
-  excluded_findings_from_removed_rules: 2831
+  as_of: '2026-10-22'
+  rule_set_pinned_at: '2026-10-21'
+  corpus_findings: 11436
+  excluded_findings_from_removed_rules: 3221
   cwe:
   - CWE-1050
   - CWE-113
@@ -88,7 +85,6 @@ observed:
   - CWE-20
   - CWE-200
   - CWE-201
-  - CWE-208
   - CWE-22
   - CWE-23
   - CWE-241
@@ -99,7 +95,6 @@ observed:
   - CWE-288
   - CWE-295
   - CWE-297
-  - CWE-327
   - CWE-328
   - CWE-345
   - CWE-346
@@ -127,7 +122,6 @@ observed:
   - CWE-524
   - CWE-59
   - CWE-601
-  - CWE-613
   - CWE-614
   - CWE-665
   - CWE-668

@@ -476,15 +476,12 @@ _DEFAULT_EXCLUDE_DIRS = [
 # Benchmark (all JS/Go), so recall there is provably unchanged — verified by
 # re-running the benchmark after adding these. The high-precision profile
 # (SEMGREP_EXCLUDE_RULES) still applies on top for teams wanting a deeper trade.
-_DEFAULT_EXCLUDE_RULES = [
-    # Cookie attributes whose ABSENCE is not a security weakness: path/domain
-    # default to safe (host-only) values and maxAge absence just means a session
-    # cookie. The real ones -- no-secure, no-httponly, sameSite -- are kept.
-    # (N1 removed the Semgrep-registry equivalents of these along with their packs,
-    # and the Go/PHP registry-rule exclusions that used to follow.)
-    "ajinabraham.njsscan.headers.header_cookie.cookie_session_no_domain",
-    "ajinabraham.njsscan.headers.header_cookie.cookie_session_no_path",
-    "ajinabraham.njsscan.headers.header_cookie.cookie_session_no_maxage",
+_DEFAULT_EXCLUDE_RULES: list[str] = [
+    # Empty since N2b. The three njsscan cookie rules that used to be excluded here
+    # (cookie_session_no_domain/no_path/no_maxage -- an attribute whose ABSENCE is a
+    # safe default) are now pruned when the pack is vendored (scripts/vendor_rules.py
+    # PRUNED), so the shipped file, the coverage count and what executes agree. Keep
+    # rule removal there: a rule excluded here still counts as coverage.
 ]
 
 

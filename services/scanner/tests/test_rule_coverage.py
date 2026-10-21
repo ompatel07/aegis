@@ -12,15 +12,52 @@ from utils import rule_coverage as rc
 
 def test_rule_index_is_measured_from_the_shipped_rules():
     idx = rc.rule_index()
-    # Measured on the N1 rule set. These are floors, not equalities: adding rules
-    # must not fail the suite, removing the ones a tier depends on must.
-    assert idx["javascript"].rules >= 120, idx["javascript"]
-    assert idx["javascript"].families.get("vendor") == 114, "njsscan pack missing"
+    # Measured on the N2b rule set (njsscan pruned 114 -> 89). Floors, not
+    # equalities: adding rules must not fail the suite. What a TIER depends on is
+    # tested separately (test_every_strong_tier_still_ships_its_evidence) -- a count
+    # floor cannot catch a prune that removes the one rule a tier was proven with.
+    assert idx["javascript"].rules >= 100, idx["javascript"]
+    assert idx["javascript"].families.get("vendor") == 89, "njsscan pack changed; re-run N2b"
     assert idx["php"].rules >= 5 and idx["java"].rules >= 7 and idx["python"].rules >= 12
-    assert idx["go"].rules >= 7 and idx["typescript"].rules >= 11
+    assert idx["go"].rules >= 7
     # Quality-pillar rules must not inflate security coverage.
     for cov in idx.values():
         assert "quality" not in cov.families, f"bug-pack rules counted as security: {cov}"
+
+
+def test_javascript_rules_are_counted_for_typescript_because_semgrep_runs_them():
+    """Semgrep runs a `languages: [javascript]` rule on .ts/.tsx (measured, semgrep
+    1.97.0). Before N2b TypeScript was reported as 11 rules while all of njsscan ran
+    on it -- juice-shop's njsscan findings are on .ts files."""
+    idx = rc.rule_index()
+    assert idx["typescript"].families.get("vendor") == idx["javascript"].families.get("vendor")
+    assert idx["typescript"].rules >= idx["javascript"].rules - 1
+    assert rc.applies_to({"languages": ["javascript"]}) == ["javascript", "typescript"]
+    # ...and not the reverse: a typescript rule does not run on .js.
+    assert rc.applies_to({"languages": ["typescript"]}) == ["typescript"]
+    assert rc.applies_to({"languages": ["javascript", "typescript"]}) == ["javascript", "typescript"]
+
+
+def test_every_strong_tier_still_ships_its_evidence():
+    """STRONG means proven on documented vulnerabilities. If a prune removes a rule
+    that proof rests on, the tier is no longer grounded and must be re-measured."""
+    assert rc.tier_evidence_gaps() == []
+    assert set(rc.STRONG_EVIDENCE) == set(rc.STRONG), "every STRONG tier must name its evidence"
+
+
+def test_tier_evidence_check_catches_a_prune_that_counts_would_miss():
+    """The N2b failure mode: drop node_ssrf (the only rule catching NodeGoat GT4) and
+    add one unrelated rule. Every count is unchanged; the evidence check must fail."""
+    shipped = rc.shipped_rule_languages()
+    pruned = {k: v for k, v in shipped.items() if not k.endswith(".node_ssrf")}
+    pruned["some-new-rule"] = {"javascript", "typescript"}
+    assert len(pruned) == len(shipped)
+    gaps = rc.tier_evidence_gaps(pruned)
+    assert len(gaps) == 1 and "GT4" in gaps[0] and gaps[0].startswith("javascript")
+    # A rule still shipped but no longer for that language is a gap too.
+    narrowed = dict(shipped)
+    narrowed["aegis-js-sql-injection"] = {"javascript"}
+    assert any(g.startswith("typescript") for g in rc.tier_evidence_gaps(narrowed))
 
 
 def test_every_tiered_language_actually_has_rules():

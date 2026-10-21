@@ -20,16 +20,21 @@ distinct CWE classes. Nothing here is declared — it is counted from the files,
 moves when the rule set moves, and `tests/test_rule_coverage.py` fails if the tier
 table and the measured rule set disagree.
 
-Measured on the N1 rule set (60 Aegis rules + 114 njsscan):
+Measured on the N2b rule set (60 Aegis rules + 89 njsscan, pruned from 114 --
+docs/NJSSCAN_TRIAGE_N2B.md):
 
-    javascript   125 rules (taint 11, njsscan 114)   41 CWE classes
+    javascript   100 rules (taint 11, njsscan 89)    38 CWE classes
+    typescript   100 rules (taint 11, njsscan 89)    38 CWE classes   (see _ALSO_RUNS_ON)
     python        12 rules (taint)                   10 CWE classes
-    typescript    11 rules (taint)                    9 CWE classes
     java           7 rules (taint)                     7 CWE classes
     go             7 rules (taint)                     7 CWE classes
     php            5 rules (taint)                     5 CWE classes
     ruby           0 rules                              0
     csharp         0 rules                              0
+
+(N1/N2 reported javascript 125 / 41 classes and typescript 11 / 9. N2b pruned 25
+njsscan rules, three of which had only ever been excluded at run time, and found
+TypeScript had been undercounted: semgrep runs javascript rules on .ts.)
 
 WHERE THE TIERS COME FROM
 -------------------------
@@ -42,8 +47,14 @@ documented-vulnerability corpora. They are:
       Our taint packs are proven to fire on the vulnerability classes they target,
       across MORE THAN ONE real repository: PHP on DVWA (3/6 documented, +31 findings),
       librenms and FreshRSS; JS on NodeGoat (5/7 documented); TS on juice-shop (7/25
-      documented) and nocodb. JavaScript additionally has real class breadth (41 CWE
-      classes) because njsscan covers crypto, cookies, headers and DoS on top of taint.
+      documented) and nocodb. The rules each of those proofs rests on are named in
+      STRONG_EVIDENCE and tested to still ship.
+
+      Class breadth is NOT part of the claim. N1/N2 said JavaScript "has real class
+      breadth (41 CWE classes)". N2b measured it: of the 38 classes left after the
+      prune, 11 have a true positive on real code (V2 + F1 corpora; 13 at most), and
+      for 23 no rule of ours fired on any of the 20 repositories.
+      38 is how many classes we have rules for, not how many we have shown we find.
 
   LIMITED java, python, go
       Rules exist and fire, but only for the injection/taint families, and the
@@ -91,6 +102,40 @@ CONFIDENT_STRONG_FRACTION = 0.5
 # named here must have rules, and a language with rules must be named here.
 STRONG = ("php", "javascript", "typescript")
 LIMITED = ("java", "python", "go")
+
+# What a STRONG tier actually rests on (N2b). STRONG is "proven on documented
+# vulnerabilities", so it is tied to the shipped rules that produced that proof: the
+# ground-truth items each rule catches (F2 / N1 C2 definitions, re-run in N2b). A
+# prune that removes one of these must re-measure and re-tier the language;
+# tests/test_rule_coverage.py fails until it does. Rule counts and CWE-class counts
+# are NOT the test -- N2b showed a count can fall by 25 without the evidence moving,
+# and could just as easily stay put while the evidence goes.
+STRONG_EVIDENCE: dict[str, dict[str, str]] = {
+    "php": {
+        "aegis-php-sql-injection": "DVWA sqli + sqli_blind (low.php)",
+        "aegis-php-command-injection": "DVWA exec (low.php)",
+    },
+    "javascript": {
+        "aegis-js-code-injection": "NodeGoat GT1 eval (contributions.js:32-34)",
+        "aegis-js-nosql-where-injection": "NodeGoat GT2 $where (allocations-dao.js:78)",
+        "ajinabraham.njsscan.redirect.open_redirect.express_open_redirect":
+            "NodeGoat GT3 open redirect (index.js:72) -- the only rule that catches it",
+        "ajinabraham.njsscan.ssrf.ssrf_node.node_ssrf":
+            "NodeGoat GT4 SSRF (research.js:15) -- the only rule that catches it",
+        "aegis-js-redos-nested-quantifier": "NodeGoat GT7 ReDoS (profile.js:59)",
+    },
+    "typescript": {
+        "aegis-js-sql-injection": "juice-shop login*/union/dbSchema challenges (5)",
+        "aegis-js-nosql-injection": "juice-shop noSqlReviews + forgedReview challenges",
+    },
+}
+
+# Semgrep applies a rule to more languages than it declares: a `languages:
+# [javascript]` rule also runs on .ts/.tsx (measured on semgrep 1.97.0 in N2b; a
+# `[typescript]` rule does NOT run on .js). Coverage counts what runs, so a
+# javascript-only rule is counted for typescript too. Before N2b this was missed and
+# TypeScript was reported as 11 rules while all 114 njsscan rules ran on it.
+_ALSO_RUNS_ON = {"javascript": ("typescript",)}
 
 TIER_NONE = "none"
 TIER_LIMITED = "limited"
@@ -153,8 +198,7 @@ def rule_index() -> dict[str, LanguageCoverage]:
         if meta.get("pillar") == "quality":
             continue
         found = {m.group(0).upper() for m in _CWE.finditer(str(meta.get("cwe", "")))}
-        for lang in rule.get("languages") or []:
-            lang = str(lang).lower()
+        for lang in applies_to(rule):
             cov = out.setdefault(lang, LanguageCoverage(language=lang, tier=TIER_NONE, rules=0))
             cov.rules += 1
             cov.families[family] = cov.families.get(family, 0) + 1
@@ -163,6 +207,40 @@ def rule_index() -> dict[str, LanguageCoverage]:
         cov.cwe_classes = len(cwes.get(lang, ()))
         cov.tier = tier_of(lang)
     return out
+
+
+def applies_to(rule: dict) -> list[str]:
+    """The languages semgrep will run `rule` on: its declared languages plus the
+    ones semgrep extends them to (`_ALSO_RUNS_ON`), each once."""
+    out: list[str] = []
+    for lang in rule.get("languages") or []:
+        for l in (str(lang).lower(), *_ALSO_RUNS_ON.get(str(lang).lower(), ())):
+            if l not in out:
+                out.append(l)
+    return out
+
+
+def shipped_rule_languages() -> dict[str, set[str]]:
+    """rule id -> languages it runs on, for every shipped security rule."""
+    out: dict[str, set[str]] = {}
+    for _family, rule in _iter_rule_docs():
+        if (rule.get("metadata") or {}).get("pillar") == "quality":
+            continue
+        out.setdefault(str(rule.get("id")), set()).update(applies_to(rule))
+    return out
+
+
+def tier_evidence_gaps(shipped: dict[str, set[str]] | None = None) -> list[str]:
+    """STRONG tiers whose evidence rules are no longer shipped for that language.
+    Empty means every STRONG tier still has the rules it was proven with."""
+    shipped = shipped_rule_languages() if shipped is None else shipped
+    gaps = []
+    for lang, rules in STRONG_EVIDENCE.items():
+        for rule_id, proves in rules.items():
+            if lang not in shipped.get(rule_id, ()):
+                gaps.append(f"{lang} is STRONG on '{proves}', but {rule_id} no longer ships "
+                            f"for {lang}: re-measure the ground truth and re-tier {lang}")
+    return gaps
 
 
 def tier_of(language: str) -> str:

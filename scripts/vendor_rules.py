@@ -16,13 +16,18 @@ Why vendoring at all (G2, still true):
   * Licence visibility -- the exact rule set and each rule's licence is an artefact
     we can read, diff and audit (tools/check_rule_licences.py).
 
-The pack is rebuilt verbatim from upstream: every rule's logic, message, severity,
-languages and upstream metadata are copied as-is. Two things are added, both
-derived from upstream, never from the registry:
+The pack is rebuilt from upstream: every rule's logic, message, severity, languages
+and upstream metadata are copied as-is, EXCEPT where Pass N2b (2026-10-22) measured
+a rule on real code and pruned or constrained it (`PRUNED`, `CONSTRAINED` below --
+the evidence is docs/NJSSCAN_TRIAGE_N2B.md). Added to every rule, derived from
+upstream, never from the registry:
   * the id is namespaced `ajinabraham.njsscan.<dir>.<file>.<id>` -- the form these
     rules have always had in Aegis findings, so fingerprints and lifecycle continue;
   * `metadata.license` (read from upstream's LICENSE, which is checked to be LGPL-3.0)
     and `metadata.source` (the upstream blob URL at the pinned commit).
+A constrained rule also carries `metadata.aegis-modified` stating what was changed
+and when. That, and rules/vendor/NOTICE.md, are the LGPL-3.0 / GPL-3.0 s5(a) notice
+that this is a modified version; the file stays LGPL-3.0-or-later and stays source.
 
 USAGE
     python scripts/vendor_rules.py --verify                 # vendored file matches the manifest
@@ -61,6 +66,111 @@ UPSTREAM = {
     "licence_file": "vendor/LICENSES/nodejsscan-LGPL-3.0.txt",
 }
 PERMITTED_LICENCES = ["LGPL-3.0-or-later"]
+
+# ── Pass N2b (2026-10-22): measured on 475 findings across the V2 + F1 corpora ──────
+# Every njsscan finding was hand-triaged in its source at the scanned commit. Rules
+# whose false positives ARE the rule -- the matching logic itself is the heuristic,
+# so no narrow constraint exists -- are not shipped. The figures are TP/findings.
+_N2B = "2026-10-22"
+PRUNED = {
+    # Fires on `<regex>.test(<input>)` inside ANY two-parameter function and never
+    # looks at the regex: 0/257, and none of the 1,469 regexes in the flagged files
+    # backtracks catastrophically when executed. aegis-js-redos-nested-quantifier
+    # checks the regex's shape and catches NodeGoat's documented ReDoS (GT7).
+    "ajinabraham.njsscan.dos.regex_dos.regex_dos": "0/257; regex never inspected",
+    # Any Math.random() call: 3/73 (UI ids, jitter, colours, demo data). Purpose is
+    # the whole question and the rule cannot see it -- weak random is N3's to rebuild.
+    "ajinabraham.njsscan.crypto.crypto_node.node_insecure_random_generator": "3/73; API name only",
+    # Comparisons involving a variable named password/secret/token: 1/13 (password vs
+    # its confirmation, `=== null` the rule's own exclusions miss, a moment locale).
+    "ajinabraham.njsscan.crypto.timing_attack_node.node_timing_attack": "1/13; identifier name only",
+    # `$X = '<string>'` where $X's NAME matches user/api_key/secret/password: 1/50
+    # (error messages, event constants, bootstrap's DATA_API_KEY). The value is never
+    # examined; hardcoded credentials are the secrets pillar's job (gitleaks: format
+    # and entropy, on every language).
+    "ajinabraham.njsscan.generic.hardcoded_secrets.node_username": "0/27; identifier name only",
+    "ajinabraham.njsscan.generic.hardcoded_secrets.node_api_key": "0/16; identifier name only",
+    "ajinabraham.njsscan.generic.hardcoded_secrets.node_secret": "0/2; identifier name only",
+    "ajinabraham.njsscan.generic.hardcoded_secrets.node_password": "1/5; identifier name only",
+    # console.error(err) / console.trace(): 0/18. Logging is not disclosure to a
+    # client; node_error_disclosure (the response-side rule) is kept.
+    "ajinabraham.njsscan.generic.error_disclosure.generic_error_disclosure": "0/18; flags logging",
+    # Cookie attributes whose ABSENCE is not a weakness (host-only path/domain, session
+    # lifetime). Excluded at run time since before N1; pruned here instead so the
+    # coverage count matches what executes.
+    "ajinabraham.njsscan.headers.header_cookie.cookie_session_no_domain": "absence is safe default",
+    "ajinabraham.njsscan.headers.header_cookie.cookie_session_no_path": "absence is safe default",
+    "ajinabraham.njsscan.headers.header_cookie.cookie_session_no_maxage": "absence is safe default",
+}
+# njsscan's `good/` rules report that a control IS present (helmet headers, csurf,
+# rate limiting). They are not detections, carry no CWE, and surfaced as findings.
+PRUNED_DIRS = {"ajinabraham.njsscan.good.": "reports a control that is present; not a detection"}
+
+_REQ_NAMED = {"metavariable-regex": {"metavariable": "$REQ", "regex": "(?i)^(req|request)$"}}
+
+
+def _require_req_named(rule: dict) -> None:
+    """$REQ was unconstrained, so any two-parameter function was a 'request handler'
+    and any `a.b` was request data. Upstream's own taint rules constrain it exactly
+    this way (node_nosqli_injection's sources)."""
+    rule["patterns"] = list(rule["patterns"]) + [_REQ_NAMED]
+
+
+def _not_orm_where(rule: dict) -> None:
+    """findOne({where: ...}) is the Sequelize/TypeORM query shape, not Mongo's (Mongo's
+    operator is `$where`). Upstream meant to exclude Sequelize with
+    `pattern-not-sinks`, a key semgrep does not implement, so it never applied."""
+    rule["pattern-sinks"] = [{"patterns": [
+        {"pattern": "$OBJ.findOne($QUERY, ...)"},
+        {"pattern-not": "$OBJ.findOne({..., where: $W, ...}, ...)"},
+    ]}]
+
+
+# rule id -> (what changed, how). Each verified on the N2b corpus: every FP of the
+# mechanism removed, every TP kept.
+CONSTRAINED = {
+    "ajinabraham.njsscan.eval.eval_node.eval_nodejs":
+        ("$REQ must be named req/request (was: any 2-parameter function)", _require_req_named),
+    "ajinabraham.njsscan.eval.eval_require.eval_require":
+        ("$REQ must be named req/request (was: any 2-parameter function)", _require_req_named),
+    "ajinabraham.njsscan.dos.regex_injection.regex_injection_dos":
+        ("$REQ must be named req/request (was: any 2-parameter function)", _require_req_named),
+    "ajinabraham.njsscan.traversal.express_hbs_lfr.express_lfr_warning":
+        ("$REQ must be named req/request (was: any object, e.g. process.env)", _require_req_named),
+    "ajinabraham.njsscan.database.nosql_find_injection.node_nosqli_injection":
+        ("findOne({where: ...}) (Sequelize/TypeORM) is not a sink; upstream's "
+         "pattern-not-sinks is not a semgrep key and never applied", _not_orm_where),
+}
+
+
+def _pruned(rule_id: str) -> str | None:
+    if rule_id in PRUNED:
+        return PRUNED[rule_id]
+    return next((why for pre, why in PRUNED_DIRS.items() if rule_id.startswith(pre)), None)
+
+
+def apply_n2b(rules: list[dict]) -> tuple[list[dict], list[str]]:
+    """Drop the pruned rules and constrain the constrained ones. Fails loudly if a
+    named rule no longer exists upstream: a prune that silently stops applying would
+    ship the rule again with nobody noticing."""
+    ids = {r["id"] for r in rules}
+    gone = sorted((set(PRUNED) | set(CONSTRAINED)) - ids)
+    if gone:
+        raise SystemExit(f"N2b prune/constraint names rules upstream no longer has: {gone} "
+                         "-- re-measure before re-pinning")
+    kept, dropped = [], []
+    for r in rules:
+        if _pruned(r["id"]):
+            dropped.append(r["id"])
+            continue
+        if r["id"] in CONSTRAINED:
+            what, fn = CONSTRAINED[r["id"]]
+            fn(r)
+            r["metadata"]["aegis-modified"] = f"{_N2B} Aegis Pass N2b: {what}"
+        kept.append(r)
+    return kept, dropped
+
+
 LOGIC_KEYS = ("pattern", "patterns", "pattern-either", "pattern-regex", "mode", "pattern-sources",
               "pattern-sinks", "pattern-not-sinks", "pattern-sanitizers", "pattern-propagators",
               "languages", "message", "severity")
@@ -123,7 +233,10 @@ def load_manifest() -> dict:
 def refresh(write: bool, commit: str | None) -> int:
     work, head = _checkout(commit)
     _check_licence(work)
-    rules = build(work, head)
+    upstream_rules = build(work, head)
+    rules, dropped = apply_n2b(upstream_rules)
+    print(f"  upstream rules: {len(upstream_rules)}   pruned (N2b): {len(dropped)}   "
+          f"constrained (N2b): {len(CONSTRAINED)}")
     body = yaml.safe_dump({"rules": rules}, sort_keys=False, allow_unicode=True)
     sha = hashlib.sha256(body.encode()).hexdigest()
 
@@ -163,7 +276,10 @@ def refresh(write: bool, commit: str | None) -> int:
             "file": f"vendor/{UPSTREAM['pack']}.yaml",
             "sha256": sha,
             "rules": len(rules),
-            "excluded": 0,
+            "upstream_rules": len(upstream_rules),
+            "excluded": len(dropped),
+            "excluded_rules": dropped,
+            "constrained_rules": sorted(CONSTRAINED),
             "licenses": dict(lic),
             "licence_text": UPSTREAM["licence_file"],
         }],

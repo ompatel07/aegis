@@ -1,4 +1,4 @@
-pinned_at: '2026-09-19'
+pinned_at: '2026-10-21'
 source_policy: upstream-git-only
 refresh_cadence: monthly, reviewed — see scripts/vendor_rules.py docstring
 permitted_licences:
@@ -11,9 +11,42 @@ packs:
   upstream_commit: b6ade853818a0c2a4fde36a1c5740b663e758ad2
   upstream_path: njsscan/rules/semantic_grep
   file: vendor/nodejsscan.yaml
-  sha256: 2c8259a3e9074eb9f879f76a96ae82500eac08c15751580de45ab4aef6edb075
-  rules: 114
-  excluded: 0
+  sha256: 852b63456da4a336524b9f88bd5ef1122100ae1d80aa9981f49dc56e3c79ab6f
+  rules: 89
+  upstream_rules: 114
+  excluded: 25
+  excluded_rules:
+  - ajinabraham.njsscan.crypto.crypto_node.node_insecure_random_generator
+  - ajinabraham.njsscan.crypto.timing_attack_node.node_timing_attack
+  - ajinabraham.njsscan.dos.regex_dos.regex_dos
+  - ajinabraham.njsscan.generic.error_disclosure.generic_error_disclosure
+  - ajinabraham.njsscan.generic.hardcoded_secrets.node_api_key
+  - ajinabraham.njsscan.generic.hardcoded_secrets.node_password
+  - ajinabraham.njsscan.generic.hardcoded_secrets.node_secret
+  - ajinabraham.njsscan.generic.hardcoded_secrets.node_username
+  - ajinabraham.njsscan.good.good_anti_csrf.anti_csrf_control
+  - ajinabraham.njsscan.good.good_helmet_checks.helmet_header_check_crossdomain
+  - ajinabraham.njsscan.good.good_helmet_checks.helmet_header_check_csp
+  - ajinabraham.njsscan.good.good_helmet_checks.helmet_header_check_expect_ct
+  - ajinabraham.njsscan.good.good_helmet_checks.helmet_header_dns_prefetch
+  - ajinabraham.njsscan.good.good_helmet_checks.helmet_header_feature_policy
+  - ajinabraham.njsscan.good.good_helmet_checks.helmet_header_frame_guard
+  - ajinabraham.njsscan.good.good_helmet_checks.helmet_header_hsts
+  - ajinabraham.njsscan.good.good_helmet_checks.helmet_header_ienoopen
+  - ajinabraham.njsscan.good.good_helmet_checks.helmet_header_nosniff
+  - ajinabraham.njsscan.good.good_helmet_checks.helmet_header_referrer_policy
+  - ajinabraham.njsscan.good.good_helmet_checks.helmet_header_x_powered_by
+  - ajinabraham.njsscan.good.good_helmet_checks.helmet_header_xss_filter
+  - ajinabraham.njsscan.good.good_ratelimiting.rate_limit_control
+  - ajinabraham.njsscan.headers.header_cookie.cookie_session_no_domain
+  - ajinabraham.njsscan.headers.header_cookie.cookie_session_no_maxage
+  - ajinabraham.njsscan.headers.header_cookie.cookie_session_no_path
+  constrained_rules:
+  - ajinabraham.njsscan.database.nosql_find_injection.node_nosqli_injection
+  - ajinabraham.njsscan.dos.regex_injection.regex_injection_dos
+  - ajinabraham.njsscan.eval.eval_node.eval_nodejs
+  - ajinabraham.njsscan.eval.eval_require.eval_require
+  - ajinabraham.njsscan.traversal.express_hbs_lfr.express_lfr_warning
   licenses:
-    LGPL-3.0-or-later: 114
+    LGPL-3.0-or-later: 89
   licence_text: vendor/LICENSES/nodejsscan-LGPL-3.0.txt
