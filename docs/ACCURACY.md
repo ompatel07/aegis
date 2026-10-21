@@ -33,6 +33,7 @@ Two numbers are two different things, and this file keeps them apart:
 | **secrets-bench** | synthetic: 12 planted real-format secrets + 8 decoys (`benchmarks/comparative/secrets_bench.py`) | 2026-08-31 | `ad0dd66`+P2 | gitleaks 8.21.2 |
 | **OWASP Benchmark v1.2** | 2,740 generated Java taint testcases (`benchmarks/owasp/`) | per `QUALITY_BENCHMARK.md` | `aa0121c`-era | semgrep 1.97.0 + Aegis Java taint rules — **superseded by N1 below** |
 | **N1 — sovereign rule set** | the same OWASP harness, 5 ground-truth repos (45 documented vulns), V2's 15 repos re-cloned, 114 hand-triaged findings — each run **before and after** the cut, same day, same checkout | 2026-09-19 | N1 (`b651c94` → N1) | semgrep 1.97.0; Aegis rules + njsscan (LGPL-3.0) only |
+| **N2b — njsscan triage** | every njsscan finding on V2's 15 repos + F1's 5 ground-truth repos (475, deduplicated), each read in source at the scanned commit; pack re-run on the same 285 files after the prune; ground truth re-scanned | 2026-10-22 | N2b (after `3eac2e8`) | semgrep 1.97.0; njsscan @ `b6ade853`, 114 → 89 rules |
 | **P2 taint audit** | per-rule audit + FP fixes to `rules/taint/`, verified on minimal reproductions of each V1 FP shape | 2026-08-31 | `ad0dd66`+P2 | semgrep 1.97.0 |
 
 "P1"/"P2" = precision passes. P1 deleted the `ai-code-*` pack and suppressed
@@ -157,8 +158,9 @@ form — is unaffected.
 The 180 actionable SAST findings also included **82 "secret-shaped" registry rules**
 (`node_secret`, `detected-bcrypt-hash`, …) overlapping the secrets pillar, and **91
 other community rules**; these were not exhaustively triaged. **Since N1 the community
-rules are gone**; of the secret-shaped ones only njsscan's `node_secret`/`node_password`
-remain, and N1's triage found them firing on message strings (CORRECTION 11).
+rules are gone**; njsscan's `node_secret`/`node_password` survived N1, were measured at
+1 TP in 50 findings across the four name-based credential rules, and were not shipped
+from N2b on (CORRECTION 12). Hardcoded credentials are the secrets pillar's job.
 
 ### Per-language SAST — what ships (N1, 2026-09-19)
 
@@ -170,7 +172,7 @@ hand-triage (§C.4):
 | language | what runs | SAST findings kept (V2, before → after) | documented-vuln evidence | status |
 |---|---|---|---|---|
 | **PHP** | `aegis-php-*` (5 taint rules) | 247 → 45 (18 %) on the 4 repos that completed before; **Dolibarr now completes: 2,649** | DVWA 3/6 unchanged; M1: 25 of 31 DVWA findings TP | **real on vulnerable apps; see the Dolibarr caveat** — `aegis-php-xss` fires 2,362 times there, effectively all false (an app-wide WAF on `PHP_SELF`) |
-| **JS / TS** | `aegis-js-*` (11) + **njsscan** (114, LGPL-3.0) | JavaScript 323 → 103 (32 %), TypeScript 173 → 130 (75 %) | NodeGoat 5/7 unchanged; juice-shop 9 → **7**/25 (directory listing lost) | **strongest** — our taint rules precise; njsscan 27 % precise |
+| **JS / TS** | `aegis-js-*` (11) + **njsscan** (89 of 114 since N2b, LGPL-3.0; javascript rules run on `.ts` too) | JavaScript 323 → 103 (32 %), TypeScript 173 → 130 (75 %) at N1; N2b then removed 446 of the 475 njsscan findings on these corpora | NodeGoat 5/7 unchanged; juice-shop 9 → **7**/25 (directory listing lost); both unchanged by N2b | **strongest** — our taint rules precise. njsscan: **4.5 % precise** as shipped through N2 (corpus-wide, 21/471), **59 %** after the N2b prune (16/27) |
 | **Java** | `aegis-java-*` (7 taint, intraprocedural) | 60 → 6 (10 %) | WebGoat 6/6 unchanged | **narrow** — injection, path traversal, SSRF only; OWASP Benchmark Youden 0.051 |
 | **Python** | `aegis-py-*` (8 taint + 4 H1 pattern) | 78 → 19 (24 %) | dvpwa 1/1 unchanged | **narrow** — H1's 17/17 TP stands |
 | **Go** | `aegis-go-*` (7 taint) | no Go repo in V2 | — | **narrow, unmeasured on real code** |
@@ -464,6 +466,32 @@ the numbers above trustworthy.
       remediation evidence in compliance reports. Fixed before release with a `retired` state;
       the same fix stops a timed-out engine from resolving everything it had found.
     Full record: `docs/RULE_REMOVAL_N1.md`.
+
+12. **"njsscan 27 % precise" was a 33-finding sample, and the JavaScript breadth built on
+    it was mostly noise.** Pass N2b (2026-10-22) hand-triaged **every** njsscan finding on
+    V2's 15 repositories and F1's 5 ground-truth repositories: 475 findings from 30 rules.
+    **21 TP, 450 FP, 4 uncertain: 4.5 %** (10.6 % excluding the 273 findings in vendored
+    third-party code). One rule, `regex_dos`, made 257 of them, all false: it treats any
+    two-parameter function as a request handler and never looks at the regex. None of the
+    1,469 regexes in the flagged files backtracks when executed against adversarial input.
+    - **Pruned 114 → 89 rules** (22 measured as structurally noisy, 3 that had only ever
+      been excluded at run time), and **constrained 5**, each verified on the same files to
+      remove its false positives and keep its true positives. On the corpus: 475 findings →
+      29; **TP rate 4.5 % → 59.3 %** (16/27, uncertain excluded; 55.2 % counting them as
+      false). 5 true positives were lost with dropped rules; none was a documented
+      vulnerability.
+    - **Ground truth unchanged: 22/45**, item by item. NodeGoat's open redirect and SSRF
+      are still caught, and only by njsscan rules (`express_open_redirect`, `node_ssrf`).
+    - **The "41 CWE classes" JavaScript breadth (N2) is withdrawn.** 38 classes remain;
+      **11** have a true positive on real code (13 at most: Aegis's XSS and path-traversal
+      findings on V2 were not re-triaged per class). For 23, no rule of ours fired on any of
+      the 20 repositories.
+    - **Two coverage-measurement defects found and fixed.** (a) TypeScript was reported as
+      11 rules, but semgrep runs `javascript` rules on `.ts`, so all of njsscan ran on it;
+      it is now 100. (b) The N2 test did not test the tier. STRONG was a declared tuple,
+      and the only thing a prune could trip was a rule-count floor. Tiers are now tied to
+      the shipped rules their ground-truth evidence rests on (`STRONG_EVIDENCE`).
+    Full record: `docs/NJSSCAN_TRIAGE_N2B.md`.
 
 ---
 

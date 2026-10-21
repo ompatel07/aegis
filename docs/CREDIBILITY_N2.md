@@ -31,6 +31,14 @@ measured rule set disagree.
 | php | 5 | taint | 5 | **strong** |
 | ruby, csharp, c, cpp, rust, kotlin, scala | **0** | — | 0 | **none** |
 
+> **Superseded by N2b (2026-10-22), `docs/NJSSCAN_TRIAGE_N2B.md`.** Two things in this
+> table were wrong. The test above did not catch a tier change: it compared counts, and
+> STRONG was a declared tuple. And TypeScript was undercounted, because semgrep runs
+> `javascript` rules on `.ts`. After the njsscan prune: javascript **100 / 38 classes**,
+> typescript **100 / 38**. "41 CWE classes of real breadth" is withdrawn: 11 of the
+> 38 (13 at most) have a true positive on real code. Tiers are unchanged, and are now tested against
+> the rules their evidence rests on (`STRONG_EVIDENCE`).
+
 ### A.2 Where the tiers come from, and the thresholds
 
 Grounded in the N1 per-language measurement (`docs/RULE_REMOVAL_N1.md` §C.3), which ran
