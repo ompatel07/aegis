@@ -78,16 +78,58 @@ class DetectionResult:
     languages: list[str] = field(default_factory=list)
     project_types: list[str] = field(default_factory=list)
     language_file_counts: dict[str, int] = field(default_factory=dict)
+    # Lines of code per language (N2). Drives per-language SAST coverage
+    # (utils/rule_coverage.py): a repo is covered by LOC, not by file count --
+    # one 5,000-line Java service and fifty one-line JS configs are not equal
+    # halves. Empty when `count_lines=False`.
+    language_code_lines: dict[str, int] = field(default_factory=dict)
+    # Source files whose lines could not be counted, per language. Reported rather
+    # than silently treated as empty -- see _count_lines.
+    unreadable_files: dict[str, int] = field(default_factory=dict)
     marker_files: list[str] = field(default_factory=list)
 
 
-def detect(root: str, max_files: int = 50_000) -> DetectionResult:
+# Per-file byte cap when counting lines: the same 2 MB limit semgrep applies with
+# --max-target-bytes, so LOC is counted over the files that are actually analysed.
+_MAX_LINE_COUNT_BYTES = 2_000_000
+
+
+def _count_lines(path: str) -> int | None:
+    """Newlines in a file, bounded. **None when the file could not be read** --
+    never 0.
+
+    Returning 0 would be a fabricated measurement: an unreadable Java file would
+    count as zero Java lines, shrinking that language's share of the repository and
+    potentially flipping the coverage-confidence decision towards "we covered this".
+    Callers count the None cases separately and report them (`unreadable_files`), so
+    a repository we could not fully read says so.
+    """
+    total = 0
+    read = 0
+    try:
+        with open(path, "rb") as fh:
+            while read < _MAX_LINE_COUNT_BYTES:
+                chunk = fh.read(262_144)
+                if not chunk:
+                    break
+                read += len(chunk)
+                total += chunk.count(b"\n")
+    except OSError:
+        return None
+    return total
+
+
+def detect(root: str, max_files: int = 50_000, count_lines: bool = True) -> DetectionResult:
     """Detect languages/project types under `root`.
 
     Walks the tree once, ignoring vendored/build directories. Bounded by
-    `max_files` so a hostile or huge repo cannot stall detection.
+    `max_files` so a hostile or huge repo cannot stall detection. `count_lines`
+    additionally reads each source file to attribute LOC per language (N2); pass
+    False where only the language list is wanted.
     """
     ext_counter: Counter[str] = Counter()
+    line_counter: Counter[str] = Counter()
+    unreadable: Counter[str] = Counter()
     found_markers: list[str] = []
     project_types: set[str] = set()
     marker_language_hits: Counter[str] = Counter()
@@ -113,6 +155,12 @@ def detect(root: str, max_files: int = 50_000) -> DetectionResult:
             lang = _EXTENSION_MAP.get(ext.lower())
             if lang:
                 ext_counter[lang] += 1
+                if count_lines:
+                    n = _count_lines(os.path.join(dirpath, name))
+                    if n is None:
+                        unreadable[lang] += 1  # not measured, never counted as 0
+                    else:
+                        line_counter[lang] += n
 
         if scanned > max_files:
             break
@@ -132,5 +180,7 @@ def detect(root: str, max_files: int = 50_000) -> DetectionResult:
         languages=languages,
         project_types=sorted(project_types),
         language_file_counts=dict(ext_counter),
+        language_code_lines=dict(line_counter),
+        unreadable_files=dict(unreadable),
         marker_files=found_markers,
     )

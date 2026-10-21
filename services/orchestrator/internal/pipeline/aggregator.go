@@ -59,6 +59,10 @@ type Aggregated struct {
 	// Evidence says which detectors actually ran (N1) -- what lifecycle may conclude
 	// from a finding's absence. See types.LifecycleEvidence.
 	Evidence types.LifecycleEvidence
+
+	// SecurityCoverage: how much of this repo's code our rules can see (N2). When it
+	// says the coverage is not confident, SecurityScore/SecurityRating are withheld.
+	SecurityCoverage *types.SecurityCoverage
 }
 
 // subEngines lists the finding-engine names an engine result carries besides its
@@ -112,6 +116,9 @@ func Aggregate(results []*types.EngineResult) Aggregated {
 		}
 		if r.Engine == "semgrep" && r.RulePackVersion != "" {
 			agg.RulePackVersion = r.RulePackVersion
+		}
+		if r.SecurityCoverage != nil {
+			agg.SecurityCoverage = r.SecurityCoverage
 		}
 		// Collect findings from every engine, dropping suppressed-by-default none.
 		agg.Findings = append(agg.Findings, r.Findings...)
@@ -209,7 +216,14 @@ func Aggregate(results []*types.EngineResult) Aggregated {
 		}
 		return true
 	}
-	securityConfident := confident("semgrep", "trivy", "gitleaks")
+	// Security confidence has two independent halves, and BOTH must hold:
+	//   - every engine feeding it ran to full coverage (P4b), and
+	//   - our rules can actually see this repository's languages (N2).
+	// The second exists because after N1 a Java-only repo could score 100/A on seven
+	// Java rules: not clean, unread. Thin coverage withholds the score exactly as a
+	// degraded engine does -- no new state.
+	coverageConfident := agg.SecurityCoverage == nil || agg.SecurityCoverage.Confident
+	securityConfident := confident("semgrep", "trivy", "gitleaks") && coverageConfident
 	qualityConfident := confident("quality")
 	reliabilityConfident := confident("semgrep", "quality") // reliability bugs from both
 

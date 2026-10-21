@@ -114,14 +114,42 @@ const PILLAR_ENGINES: Record<string, string[]> = {
 // Why a pillar reads "Not measured" — the degraded/failed engine's reason, so the
 // UI shows the REASON (C3), not the method that never ran. null when we have none.
 export function notMeasuredReason(
-  scan: Pick<Scan, "engines_degraded">,
+  scan: Pick<Scan, "engines_degraded" | "security_coverage">,
   pillar: "security" | "reliability" | "maintainability" | "quality",
 ): string | null {
   const engines = PILLAR_ENGINES[pillar] ?? [];
   for (const d of scan.engines_degraded ?? []) {
     if (engines.includes(d.engine)) return `${d.engine}: ${d.reason}`;
   }
+  // N2: thin per-language coverage withholds the security score too, and it is not a
+  // degraded engine — nothing malfunctioned, we simply cannot read most of this code.
+  // Without this the pillar would read "Not measured" with no reason at all.
+  if (pillar === "security" && scan.security_coverage && !scan.security_coverage.confident) {
+    return scan.security_coverage.gap ?? coverageLabel(scan.security_coverage);
+  }
   return null;
+}
+
+// "Security coverage: PHP strong; Java limited" — what a customer is and is not
+// getting from SAST. Shown on the scan page and every report (N2).
+export function coverageLabel(
+  coverage?: Pick<Scan["security_coverage"] & object, "summary"> | null,
+): string | null {
+  if (!coverage?.summary) return null;
+  return `Security coverage: ${coverage.summary}`;
+}
+
+// Percent of the repo's code (by LOC) in each coverage tier, for the detail view.
+export function coverageBreakdown(
+  coverage?: Scan["security_coverage"] | null,
+): { label: string; pct: number }[] {
+  if (!coverage) return [];
+  const pct = (f: number) => Math.round(f * 100);
+  return [
+    { label: "strongly covered", pct: pct(coverage.strong_fraction) },
+    { label: "thinly covered", pct: pct(coverage.limited_fraction) },
+    { label: "no SAST rules", pct: pct(coverage.uncovered_fraction) },
+  ].filter((r) => r.pct > 0);
 }
 
 // filtered_secrets -> a human sentence, or null when nothing was filtered. Silent

@@ -14,7 +14,7 @@ import { ScanFeedback } from "@/components/dashboard/ScanFeedback";
 import { FindingsList } from "@/components/findings/FindingsList";
 import { Button } from "@/components/ui/button";
 import { cn, formatDate, formatDuration, gradeColor, scoreColor } from "@/lib/utils";
-import { ratingDisplay, filteredSecretsLabel, filteredSecretsTotal, excludedBundledLabel, notMeasuredReason, overallState, partialQualifier } from "@/lib/display";
+import { ratingDisplay, filteredSecretsLabel, filteredSecretsTotal, excludedBundledLabel, notMeasuredReason, overallState, partialQualifier, coverageLabel, coverageBreakdown } from "@/lib/display";
 import type { Scan } from "@/lib/types";
 import { Download, FileText, HelpCircle } from "lucide-react";
 import { useState } from "react";
@@ -107,6 +107,61 @@ export default function ScanDetailPage() {
                 </li>
               ))}
             </ul>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {/* N2 — per-language SAST coverage. Shown on EVERY scan, not only the thin
+          ones: a customer has to be able to see what they are getting, and "we cover
+          this well" is only credible if the same card also says when we do not.
+          Amber when the coverage is too thin to present a confident security score. */}
+      {scan.security_coverage ? (
+        <Card
+          className={cn(
+            scan.security_coverage.confident
+              ? "border-muted bg-muted/30"
+              : "border-amber-500/40 bg-amber-500/10",
+          )}
+        >
+          <CardContent className="space-y-1 py-4 text-sm">
+            <p className="font-medium text-foreground">
+              {coverageLabel(scan.security_coverage)}
+            </p>
+            <p className="text-muted-foreground">
+              {coverageBreakdown(scan.security_coverage)
+                .map((r) => `${r.pct}% ${r.label}`)
+                .join(" · ")}{" "}
+              of {scan.security_coverage.total_code_lines.toLocaleString()} lines.
+            </p>
+            {!scan.security_coverage.confident ? (
+              <p className="font-medium text-amber-700 dark:text-amber-400">
+                Security is reported as Not measured: {scan.security_coverage.gap}
+              </p>
+            ) : null}
+            <details className="mt-1">
+              <summary className="cursor-pointer text-muted-foreground hover:text-foreground">
+                Per-language detail
+              </summary>
+              <ul className="ml-4 mt-1 list-disc text-xs text-muted-foreground">
+                {scan.security_coverage.languages.map((l) => (
+                  <li key={l.language}>
+                    <span className="font-mono">{l.language}</span> — {Math.round(l.share * 100)}% of
+                    the code, coverage <strong>{l.tier}</strong>
+                    {l.rules > 0
+                      ? ` (${l.rules} rule${l.rules === 1 ? "" : "s"}, ${l.cwe_classes} CWE class${
+                          l.cwe_classes === 1 ? "" : "es"
+                        })`
+                      : " (no SAST rules)"}
+                  </li>
+                ))}
+              </ul>
+              {scan.security_coverage.always_on?.length ? (
+                <p className="ml-4 mt-2 text-xs text-muted-foreground">
+                  Runs on every repository regardless of language:{" "}
+                  {scan.security_coverage.always_on.join(", ")}.
+                </p>
+              ) : null}
+            </details>
           </CardContent>
         </Card>
       ) : null}

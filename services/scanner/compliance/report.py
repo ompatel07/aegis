@@ -350,8 +350,41 @@ def _render_remediation(report: dict) -> str:
     )
 
 
+def _render_coverage(report: dict) -> str:
+    """Per-language SAST coverage on the compliance report (N2).
+
+    An auditor reading "no findings" against an injection control is entitled to know
+    whether we can read the language the application is written in. Omitted when the
+    scan predates N2 (nothing to state) rather than implying full coverage.
+    """
+    cov = (report.get("scan") or {}).get("security_coverage")
+    if not isinstance(cov, dict) or not cov.get("languages"):
+        return ""
+    confident = bool(cov.get("confident"))
+    fg, bg, border = (("#166534", "#f0fdf4", "#bbf7d0") if confident
+                      else ("#92400e", "#fffbeb", "#fde68a"))
+    rows = "; ".join(
+        f"{html.escape(str(l.get('language','')))} "
+        f"{round(float(l.get('share', 0)) * 100)}% ({html.escape(str(l.get('tier','')))}"
+        + (f", {l.get('rules')} rules)" if l.get("rules") else ", no rules)")
+        for l in cov["languages"][:6]
+    )
+    gap = ""
+    if not confident:
+        gap = ("<br><b>Static analysis of application code is NOT a confident control "
+               "for this repository.</b> " + html.escape(str(cov.get("gap") or "")) +
+               " Treat an absence of SAST findings against the controls below as "
+               "unmeasured, not as evidence of compliance.")
+    return (
+        f'<div style="margin:1rem 0;padding:10px;background:{bg};border:1px solid {border};color:{fg}">'
+        f'<b>SAST coverage by language.</b> {rows}.'
+        f'{gap}</div>'
+    )
+
+
 def render_html(report: dict) -> str:
     s = report["summary"]
+    coverage_html = _render_coverage(report)
     scope_html = _render_scope(report)
     remediation_html = _render_remediation(report)
     rows = []
@@ -400,6 +433,7 @@ def render_html(report: dict) -> str:
  <span class="kpi"><b>{s['coverage_pct']}%</b>of the framework assessed</span>
 </div>
 {scope_html}
+{coverage_html}
 <h2>Findings by control</h2>
 <table><tr><th>Control</th><th>Status</th><th>Open</th><th>Open findings</th></tr>{''.join(rows)}</table>
 <h2>Remediation evidence &mdash; vulnerabilities proven closed</h2>

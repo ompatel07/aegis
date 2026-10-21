@@ -60,6 +60,13 @@ type Scan struct {
 	// here rather than flattened to NOT NULL DEFAULT '{}' just to dodge a scan error.
 	ExcludedBundled JSONB `db:"excluded_bundled" json:"excluded_bundled,omitempty"`
 
+	// SecurityCoverage (N2): which fraction of this repo's code, by LOC, our shipped
+	// rules cover strongly / thinly / not at all, and whether the security score may
+	// be presented as confidently measured. NULL on scans from before N2 and where
+	// SAST did not run. The UI and every report show it, so a customer knows what
+	// they are and are not getting.
+	SecurityCoverage JSONB `db:"security_coverage" json:"security_coverage,omitempty"`
+
 	QualityIssuesTotal   int `db:"quality_issues_total" json:"quality_issues_total"`
 	SecurityIssuesTotal  int `db:"security_issues_total" json:"security_issues_total"`
 	SecretsFound         int `db:"secrets_found" json:"secrets_found"`

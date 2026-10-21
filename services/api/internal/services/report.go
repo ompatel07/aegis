@@ -18,13 +18,43 @@ import (
 
 // ExecReport is a CISO-level, metadata-only executive summary of a scan.
 type ExecReport struct {
-	Project     string         `json:"project"`
-	Scan        *models.Scan   `json:"scan"`
-	Summary     string         `json:"summary"`
-	TopRisks    []RiskItem     `json:"top_risks"`
-	Trend       *Trend         `json:"trend,omitempty"`
-	Priorities  []string       `json:"priorities"`
-	GeneratedBy string         `json:"generated_by"` // template | ai:<provider>
+	Project string       `json:"project"`
+	Scan    *models.Scan `json:"scan"`
+	Summary string       `json:"summary"`
+	// SASTCoverage states, in prose, how much of this repository's code our rules can
+	// actually read (N2). An executive summary is read as prose, so coverage being
+	// present in the embedded scan is not enough -- it has to be said. Empty on
+	// scans from before N2.
+	SASTCoverage string     `json:"sast_coverage,omitempty"`
+	TopRisks     []RiskItem `json:"top_risks"`
+	Trend        *Trend     `json:"trend,omitempty"`
+	Priorities   []string   `json:"priorities"`
+	GeneratedBy  string     `json:"generated_by"` // template | ai:<provider>
+}
+
+// sastCoverageSentence turns the scan's coverage object into one plain sentence.
+// "" when the scan predates N2 -- silence is honest, a claim of full coverage is not.
+func sastCoverageSentence(cm models.JSONB) string {
+	if len(cm) == 0 {
+		return ""
+	}
+	var c struct {
+		Confident bool    `json:"confident"`
+		Summary   string  `json:"summary"`
+		Gap       string  `json:"gap"`
+		Strong    float64 `json:"strong_fraction"`
+	}
+	if err := json.Unmarshal(cm, &c); err != nil || c.Summary == "" {
+		return ""
+	}
+	if c.Confident {
+		return fmt.Sprintf("SAST coverage: %s. %d%% of this repository's code is in languages "+
+			"Aegis covers strongly, so the security result below is a measured one.",
+			c.Summary, int(c.Strong*100+0.5))
+	}
+	return fmt.Sprintf("SAST coverage: %s. The security score is reported as NOT MEASURED because %s. "+
+		"Dependency CVEs, secrets, IaC and CI/CD checks ran normally and are unaffected.",
+		c.Summary, c.Gap)
 }
 
 type RiskItem struct {
@@ -197,6 +227,10 @@ func (s *ReportService) Compliance(ctx context.Context, scanID, userID, framewor
 			"scan_id": scan.ID, "project": project.Name,
 			"grade": gradeText(scan.OverallGrade), "commit": derefStr(scan.CommitSHA),
 			"generated_at": scan.CreatedAt,
+			// N2: per-language SAST coverage. An auditor reading "no findings" against
+			// an injection control must be told whether we can read the language the
+			// application is written in.
+			"security_coverage": scan.SecurityCoverage,
 		},
 		"findings":               fs,
 		"remediated":             remediated,
@@ -240,13 +274,14 @@ func (s *ReportService) Executive(ctx context.Context, scanID, userID string) (*
 	}
 
 	report := &ExecReport{
-		Project:     project.Name,
-		Scan:        scan,
-		TopRisks:    topRisks(findings, 5),
-		Trend:       s.trend(ctx, project.ID, scan),
-		Priorities:  priorities(findings),
-		GeneratedBy: "template",
-		Summary:     templateSummary(project.Name, scan, findings),
+		Project:      project.Name,
+		Scan:         scan,
+		SASTCoverage: sastCoverageSentence(scan.SecurityCoverage),
+		TopRisks:     topRisks(findings, 5),
+		Trend:        s.trend(ctx, project.ID, scan),
+		Priorities:   priorities(findings),
+		GeneratedBy:  "template",
+		Summary:      templateSummary(project.Name, scan, findings),
 	}
 
 	// Optional AI-written prose — only if the project opted in and a backend is
@@ -356,13 +391,38 @@ func priorities(findings []models.Finding) []string {
 }
 
 func templateSummary(project string, scan *models.Scan, findings []models.Finding) string {
-	return fmt.Sprintf(
+	summary := fmt.Sprintf(
 		"Project %q scored an overall grade of %s (%s). "+
 			"The scan surfaced %d security issue(s), %d secret(s), and %d vulnerable dependency(ies). "+
 			"See the prioritized risks below for the recommended order of remediation.",
 		project, gradeText(scan.OverallGrade), pillarText(scan),
 		scan.SecurityIssuesTotal, scan.SecretsFound, scan.VulnerabilitiesFound,
 	)
+	// N2: the caveat belongs in the FIRST paragraph a reader sees, not only in a
+	// coverage field further down. A low security-issue count in a language we cannot
+	// read is not a good result and must not be presented as one.
+	if !coverageConfident(scan.SecurityCoverage) {
+		if cov := sastCoverageSentence(scan.SecurityCoverage); cov != "" {
+			summary += " " + cov
+		}
+	}
+	return summary
+}
+
+// coverageConfident reports whether the scan's coverage object says the security
+// result may be presented as measured. Absent coverage (a scan from before N2) counts
+// as confident, so historical scans keep their original prose.
+func coverageConfident(cm models.JSONB) bool {
+	if len(cm) == 0 {
+		return true
+	}
+	var c struct {
+		Confident bool `json:"confident"`
+	}
+	if err := json.Unmarshal(cm, &c); err != nil {
+		return true
+	}
+	return c.Confident
 }
 
 func metadataDigest(project string, scan *models.Scan, findings []models.Finding) string {
@@ -371,6 +431,11 @@ func metadataDigest(project string, scan *models.Scan, findings []models.Finding
 		project, gradeText(scan.OverallGrade), pillarText(scan))
 	fmt.Fprintf(&b, "Security issues: %d, secrets: %d, vulnerable deps: %d\n",
 		scan.SecurityIssuesTotal, scan.SecretsFound, scan.VulnerabilitiesFound)
+	// N2: tell the model what we could NOT read. Without this it writes confident
+	// prose about a clean result on a repository our rules barely cover.
+	if cov := sastCoverageSentence(scan.SecurityCoverage); cov != "" {
+		fmt.Fprintf(&b, "%s\n", cov)
+	}
 	b.WriteString("\nTop findings (title | severity):\n")
 	for i, r := range topRisks(findings, 10) {
 		fmt.Fprintf(&b, "%d. %s | %s\n", i+1, r.Title, r.Severity)

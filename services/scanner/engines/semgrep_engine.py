@@ -33,7 +33,7 @@ from models.scan_result import (
     SeveritySummary,
 )
 from enrichment import steps_to_reproduce
-from utils import bundled_assets, language_detector, normalizer
+from utils import bundled_assets, language_detector, normalizer, rule_coverage
 from utils.sandbox import binary_available, run_command
 
 log = get_logger("semgrep")
@@ -436,13 +436,21 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
             "semgrep binary not found on PATH", scan_id=req.scan_id,
         )
 
-    # Resolve languages/types: trust caller-provided values, else detect.
-    languages = req.languages
-    project_types = req.project_types
-    if languages is None or project_types is None:
-        detection = language_detector.detect(req.path)
-        languages = languages or detection.languages
-        project_types = project_types or detection.project_types
+    # Resolve languages/types: trust caller-provided values, else detect. Detection
+    # runs REGARDLESS (N2) because per-language LOC drives the coverage report, and
+    # the orchestrator always passes languages -- so gating the walk on them being
+    # absent meant coverage was never measured on a real scan.
+    detection = language_detector.detect(req.path)
+    languages = req.languages or detection.languages
+    project_types = req.project_types or detection.project_types
+
+    # Per-language SAST coverage. A repo whose code is mostly in languages we cover
+    # thinly produces few findings, and few findings read as clean -- so coverage
+    # travels with the result and can withdraw the score (utils/rule_coverage.py).
+    coverage = rule_coverage.summarise(detection.language_code_lines, detection.unreadable_files)
+    if coverage and not coverage["confident"]:
+        log.info("semgrep.coverage_not_confident", strong_fraction=coverage["strong_fraction"],
+                 summary=coverage["summary"])
 
     thirdparty_configs = _select_configs(settings, languages, project_types)
     custom_dir = _custom_rules_dir()
@@ -539,6 +547,7 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
             scan_id=req.scan_id, duration_seconds=result.duration_seconds,
         )
         failed.excluded_bundled = excluded_bundled
+        failed.security_coverage = coverage
         return failed
 
     if result.returncode not in (0, 1):
@@ -548,6 +557,7 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
             scan_id=req.scan_id, duration_seconds=result.duration_seconds,
         )
         failed.excluded_bundled = excluded_bundled
+        failed.security_coverage = coverage
         return failed
 
     try:
@@ -591,6 +601,7 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
         rule_pack_version=rule_pack_version,
         rules_executed=sorted(set().union(*(_rule_ids_in(c) for c in used_configs))),
         rules_shipped=_shipped_rule_ids(),
+        security_coverage=coverage,
         degraded=degraded,
         degraded_reason=degraded_reason,
         coverage_lost=coverage_lost,

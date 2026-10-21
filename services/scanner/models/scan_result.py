@@ -219,6 +219,14 @@ class EngineResult(BaseModel):
     rules_executed: list[str] | None = None
     rules_shipped: list[str] | None = None
 
+    # PER-LANGUAGE SAST COVERAGE (N2). Which fraction of this repo's code, by LOC, is
+    # in languages our shipped rules cover strongly / thinly / not at all, plus whether
+    # the security score may be presented as confidently measured. A repo we can barely
+    # read produces few findings, and few findings read as "clean" -- so this travels
+    # with the result and the orchestrator withdraws the score when it says so.
+    # See utils/rule_coverage.py. None for engines that are not language-scoped.
+    security_coverage: dict | None = None
+
     # DEGRADATION (D1): the engine produced results but NOT its full coverage — a
     # broken custom rule pack that fell back to registry rules, a partial run, etc.
     # This is distinct from `status`: a DEGRADED engine still ran and returned

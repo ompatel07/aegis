@@ -162,6 +162,40 @@ type EngineResult struct {
 	// sets and for scanners that predate N1 (treated as "every rule ran").
 	RulesExecuted []string `json:"rules_executed"`
 	RulesShipped  []string `json:"rules_shipped"`
+
+	// Per-language SAST coverage (N2). nil for engines that are not language-scoped
+	// and for scanners predating N2.
+	SecurityCoverage *SecurityCoverage `json:"security_coverage"`
+}
+
+// SecurityCoverage is how much of a repository's code our shipped rules can actually
+// see (N2, scanner utils/rule_coverage.py). A repository written mostly in a language
+// we cover thinly yields few findings, and few findings read as "clean" -- so when
+// Confident is false the security score and rating are withheld (NULL, "Not measured")
+// and the overall renders PARTIAL with Gap as its qualifier. Same contract as a
+// degraded engine (P4b/C1); thin coverage is a known limit, not a malfunction, so it
+// does not claim an engine failed.
+type SecurityCoverage struct {
+	TotalCodeLines    int                 `json:"total_code_lines"`
+	StrongFraction    float64             `json:"strong_fraction"`
+	LimitedFraction   float64             `json:"limited_fraction"`
+	UncoveredFraction float64             `json:"uncovered_fraction"`
+	Confident         bool                `json:"confident"`
+	Threshold         float64             `json:"threshold"`
+	Languages         []LanguageCoverage  `json:"languages"`
+	Summary           string              `json:"summary"`
+	Gap               string              `json:"gap"`
+	AlwaysOn          []string            `json:"always_on"`
+}
+
+// LanguageCoverage is one language's share of the repository and how well we cover it.
+type LanguageCoverage struct {
+	Language   string  `json:"language"`
+	Tier       string  `json:"tier"` // strong | limited | none
+	LOC        int     `json:"loc"`
+	Share      float64 `json:"share"`
+	Rules      int     `json:"rules"`
+	CWEClasses int     `json:"cwe_classes"`
 }
 
 // LifecycleEvidence records which detectors actually ran on a scan, so lifecycle

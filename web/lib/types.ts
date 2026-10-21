@@ -313,6 +313,29 @@ export interface Scan {
     reasons?: Record<string, number>;
     sample?: string[];
   };
+  // Per-language SAST coverage (N2): how much of this repo's code, by LOC, our
+  // shipped rules cover strongly / thinly / not at all. `confident: false` is why
+  // security_score/security_rating are null — a repo we can barely read yields few
+  // findings, and few findings must not read as "clean". Absent on pre-N2 scans.
+  security_coverage?: {
+    total_code_lines: number;
+    strong_fraction: number;
+    limited_fraction: number;
+    uncovered_fraction: number;
+    confident: boolean;
+    threshold: number;
+    languages: {
+      language: string;
+      tier: "strong" | "limited" | "none";
+      loc: number;
+      share: number;
+      rules: number;
+      cwe_classes: number;
+    }[];
+    summary: string;
+    gap?: string | null;
+    always_on?: string[];
+  };
 }
 
 export interface Finding {
