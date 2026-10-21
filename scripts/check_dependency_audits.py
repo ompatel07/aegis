@@ -55,6 +55,20 @@ NPM_ACCEPTED: dict[str, tuple[str, str, str]] = {
 }
 
 PIP_ACCEPTED: dict[str, tuple[str, str, str]] = {
+    "PYSEC-2026-3447": (
+        "setuptools",
+        "Fixed in setuptools 83.0.0, which we CANNOT install: setuptools 81 removed "
+        "`pkg_resources`, and semgrep imports it at runtime through "
+        "opentelemetry-instrumentation (pinned by semgrep 1.97.0 to ~=0.46b0). N2 tried "
+        "83.0.0 and CI caught it -- semgrep crashed on startup and every rule test "
+        "failed, which is a product-breaking outage, not a hardening gap. 80.9.0 is the "
+        "newest release that still ships pkg_resources and it does carry the other "
+        "setuptools fix (PYSEC-2025-49). setuptools is a build/runtime shim here, not a "
+        "request-path component: nothing attacker-controlled reaches it.",
+        "Fixed by a semgrep upgrade whose opentelemetry-instrumentation no longer imports "
+        "pkg_resources -- the same blocker as PYSEC-2026-1805 below, and the same reason "
+        "it is out of scope for N2 (an engine bump must not land with rule changes).",
+    ),
     "PYSEC-2026-1805": (
         "protobuf",
         "Pinned transitively by semgrep 1.97.0: its "
