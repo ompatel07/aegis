@@ -227,6 +227,13 @@ class EngineResult(BaseModel):
     # See utils/rule_coverage.py. None for engines that are not language-scoped.
     security_coverage: dict | None = None
 
+    # PER-PROJECT RULE ADJUSTMENTS (N2). Where a project's own code changes what a
+    # rule should treat as tainted -- an HTML-escaping wrapper it defines, or a
+    # bootstrap input filter that makes a source unexploitable -- the adjustment is
+    # recorded here with the file that evidences it. A suppression nobody can see is
+    # indistinguishable from a false negative, so these are reported, never silent.
+    project_adjustments: list[dict] | None = None
+
     # DEGRADATION (D1): the engine produced results but NOT its full coverage — a
     # broken custom rule pack that fell back to registry rules, a partial run, etc.
     # This is distinct from `status`: a DEGRADED engine still ran and returned

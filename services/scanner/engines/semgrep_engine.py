@@ -317,13 +317,78 @@ def _php_escaper_wrappers(root: str, cap_files: int = 5000, cap_bytes: int = 2_0
     return out
 
 
-def _augmented_taint_dir(root: str, base_dir: str) -> str | None:
-    """If the project defines its own HTML-escaping wrapper(s), return a temp copy
-    of the taint rules with aegis-php-xss taught to treat them as sanitizers.
-    Returns None (use the static rules) when there's nothing to add. Best-effort."""
+# ── Project-wide PHP_SELF input filter (N2) ──────────────────────────────────
+# Dolibarr's first complete scan produced 2,362 `aegis-php-xss` findings, effectively
+# all false. It loads `waf.inc.php` from `main.inc.php` on EVERY page and, at file
+# scope, rejects any request whose `$_SERVER['PHP_SELF']` contains
+# `: ; " ' < > ( ) { } $ % #` or `..`, then dies. With quotes and angle brackets
+# refused, PHP_SELF cannot break out of an HTML attribute or open a tag.
+#
+# Semgrep's taint is per-file and intraprocedural, so a guard in an included file is
+# invisible at the sink. This detects the guard the same way `_php_escaper_wrappers`
+# detects project escapers -- by reading the project -- and then drops PHP_SELF as a
+# SOURCE for this scan only. Everything else about the rule is untouched, so a
+# `$_GET`-sourced XSS in the same file still fires.
+#
+# Deliberately narrow, because a wrong positive here SILENCES a real vulnerability
+# class (TeamPass's `public/install/upgrade.php` PHP_SELF XSS is a true positive we
+# must keep). All three must hold in ONE file:
+#   1. it reads $_SERVER['PHP_SELF'];
+#   2. it applies a preg_match character class that rejects BOTH angle brackets and a
+#      quote -- the characters an attribute/tag breakout needs;
+#   3. that check is reached at file scope, not only defined in a function that
+#      nothing calls (approximated by the file also calling something at column 0).
+# Verified against the corpus: matches Dolibarr, and matches neither DVWA, TeamPass,
+# FreshRSS nor librenms (tests/test_php_self_filter.py).
+_PHP_SELF_READ = re.compile(r"""\$_SERVER\s*\[\s*['"]PHP_SELF['"]\s*\]""")
+_PHP_SELF_CLASS_GUARD = re.compile(
+    r"""preg_match\s*\(\s*(['"])/?\[[^\]]*(?:<[^\]]*>|>[^\]]*<)[^\]]*\]""", re.S)
+_QUOTE_IN_CLASS = re.compile(r"""preg_match\s*\(\s*(['"])/?\[[^\]]*(?:\\?'|\\?"|\\x27|\\x22)""")
+_TOPLEVEL_CALL = re.compile(r"^[A-Za-z_]\w*\s*\(", re.M)
+
+
+def _php_self_globally_filtered(root: str, cap_files: int = 8000,
+                                cap_bytes: int = 2_000_000) -> str | None:
+    """Relative path of a file holding a project-wide PHP_SELF character filter, else None."""
+    scanned = 0
+    try:
+        for dirpath, dirs, files in os.walk(root):
+            dirs[:] = [d for d in dirs if d not in _WALK_SKIP]
+            for fn in files:
+                if not fn.endswith((".php", ".inc", ".inc.php")):
+                    continue
+                scanned += 1
+                if scanned > cap_files:
+                    return None
+                path = os.path.join(dirpath, fn)
+                try:
+                    if os.path.getsize(path) > cap_bytes:
+                        continue
+                    with open(path, encoding="utf-8", errors="ignore") as fh:
+                        text = fh.read()
+                except OSError:
+                    continue
+                if not _PHP_SELF_READ.search(text):
+                    continue
+                if not (_PHP_SELF_CLASS_GUARD.search(text) and _QUOTE_IN_CLASS.search(text)):
+                    continue
+                if not _TOPLEVEL_CALL.search(text):
+                    continue
+                return os.path.relpath(path, root).replace(os.sep, "/")
+    except Exception as exc:  # noqa: BLE001 — detection must never break a scan
+        log.debug("semgrep.php_self_filter_scan_failed", error=str(exc))
+    return None
+
+
+def _augmented_taint_dir(root: str, base_dir: str) -> tuple[str | None, list[dict]]:
+    """If the project defines its own HTML-escaping wrapper(s), or a project-wide
+    PHP_SELF input filter, return a temp copy of the taint rules adjusted for it,
+    plus the adjustments made so they can be reported. (None, []) when there is
+    nothing to add. Best-effort: never raises into a scan."""
     wrappers = _php_escaper_wrappers(root)
-    if not wrappers:
-        return None
+    php_self_filter = _php_self_globally_filtered(root)
+    if not wrappers and not php_self_filter:
+        return None, []
     try:
         import yaml
 
@@ -335,6 +400,8 @@ def _augmented_taint_dir(root: str, base_dir: str) -> str | None:
         with open(php_path, encoding="utf-8") as fh:
             doc = yaml.safe_load(fh)
         extra = [{"pattern": f"{w}(...)"} for w in sorted(wrappers)]
+        dropped_sources: list[str] = []
+        adjustments: list[dict] = []
         for rule in doc.get("rules", []):
             if rule.get("id") != "aegis-php-xss":
                 continue
@@ -342,13 +409,39 @@ def _augmented_taint_dir(root: str, base_dir: str) -> str | None:
                 pe = san.get("pattern-either")
                 if isinstance(pe, list):
                     pe.extend(extra)
+            if php_self_filter:
+                # Drop PHP_SELF as a source for this scan. Only that source: every
+                # other source ($_GET, $_POST, …) is untouched, so a real XSS in the
+                # same file still fires.
+                for src in rule.get("pattern-sources", []) or []:
+                    pe = src.get("pattern-either")
+                    if not isinstance(pe, list):
+                        continue
+                    keep = [p for p in pe
+                            if "PHP_SELF" not in str(p.get("pattern", ""))]
+                    if len(keep) != len(pe):
+                        dropped_sources.append("PHP_SELF")
+                    src["pattern-either"] = keep
         with open(php_path, "w", encoding="utf-8") as fh:
             yaml.safe_dump(doc, fh, sort_keys=False, allow_unicode=True)
-        log.info("semgrep.project_sanitizers", wrappers=sorted(wrappers))
-        return tmp
+        if wrappers:
+            log.info("semgrep.project_sanitizers", wrappers=sorted(wrappers))
+        if dropped_sources:
+            # Never silent: the suppression is logged with the evidence file so it can
+            # be challenged, and it is reported on the result (`project_adjustments`).
+            log.info("semgrep.php_self_globally_filtered", evidence=php_self_filter,
+                     dropped_sources=sorted(set(dropped_sources)))
+            adjustments.append({
+                "rule": "aegis-php-xss", "dropped_source": "$_SERVER['PHP_SELF']",
+                "reason": "the project applies a character-class filter to PHP_SELF at "
+                          "file scope, rejecting quotes and angle brackets before any page "
+                          "renders, so PHP_SELF cannot break out of an HTML attribute",
+                "evidence": php_self_filter,
+            })
+        return tmp, adjustments
     except Exception as exc:  # noqa: BLE001 — augmentation must never break a scan
         log.warning("semgrep.sanitizer_augment_failed", error=str(exc))
-        return None
+        return None, []
 
 
 def _semgrep_jobs(settings: Settings) -> int:
@@ -458,7 +551,8 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
     # Teach the PHP XSS taint rule about the project's own HTML-escaping wrappers
     # (e.g. a sanitize() helper) so it doesn't false-positive on escaped output.
     # Uses a per-scan augmented copy of the taint rules; cleaned up below.
-    aug_taint_dir = _augmented_taint_dir(req.path, custom_dir) if custom_dir else None
+    aug_taint_dir, project_adjustments = (
+        _augmented_taint_dir(req.path, custom_dir) if custom_dir else (None, []))
     if aug_taint_dir:
         custom_dir = aug_taint_dir
 
@@ -602,6 +696,7 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
         rules_executed=sorted(set().union(*(_rule_ids_in(c) for c in used_configs))),
         rules_shipped=_shipped_rule_ids(),
         security_coverage=coverage,
+        project_adjustments=project_adjustments or None,
         degraded=degraded,
         degraded_reason=degraded_reason,
         coverage_lost=coverage_lost,
