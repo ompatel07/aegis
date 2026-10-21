@@ -3,7 +3,7 @@
 # Dependencies are resolved at build time with `go mod tidy`, which generates a
 # verified go.sum, so the repo can ship go.mod alone.
 # ─────────────────────────────────────────────────────────────────────────────
-FROM golang:1.25-alpine AS builder
+FROM golang:1.26-alpine AS builder
 
 RUN apk add --no-cache git ca-certificates
 WORKDIR /src

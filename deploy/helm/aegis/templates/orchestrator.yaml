@@ -25,7 +25,10 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           securityContext:
             {{- toYaml .Values.containerSecurityContext | nindent 12 }}
-            readOnlyRootFilesystem: false   # clones repos into the workspace
+            # N2: hardened. Clones go to WORKSPACE_DIR (/workspaces, mounted below) and
+            # nothing writes elsewhere -- verified by grepping every MkdirAll/MkdirTemp
+            # in internal/. /tmp is mounted because go-git may use it. Trivy KSV-0014.
+            readOnlyRootFilesystem: true
           env:
             - name: SCANNER_BASE_URL
               value: "http://{{ include "aegis.fullname" . }}-scanner:{{ .Values.scanner.port }}"
@@ -34,7 +37,10 @@ spec:
             {{- include "aegis.commonEnv" . | nindent 12 }}
           volumeMounts:
             - { name: workspace, mountPath: /workspaces }
+            - { name: tmp, mountPath: /tmp }
           resources: {{- toYaml .Values.orchestrator.resources | nindent 12 }}
       volumes:
         - name: workspace
           emptyDir: { sizeLimit: 10Gi }
+        - name: tmp
+          emptyDir: {}

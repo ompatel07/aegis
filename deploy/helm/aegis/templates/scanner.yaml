@@ -26,7 +26,11 @@ spec:
           ports: [{ containerPort: {{ .Values.scanner.port }} }]
           securityContext:
             {{- toYaml .Values.containerSecurityContext | nindent 12 }}
-            readOnlyRootFilesystem: false   # engines write temp files
+            # N2: hardened. The engines DO write, but every path they write to is an
+            # explicit mount below (/workspaces, /tmp, the tool caches, the ML model
+            # dir -- see services/scanner/main.py and the Dockerfile), so the root
+            # filesystem itself can be read-only. Trivy KSV-0014.
+            readOnlyRootFilesystem: true
           env:
             - { name: SCANNER_HOST, value: "0.0.0.0" }
             - { name: SCANNER_PORT, value: {{ .Values.scanner.port | quote }} }
@@ -38,11 +42,19 @@ spec:
           volumeMounts:
             - { name: workspace, mountPath: /workspaces }
             - { name: tmp, mountPath: /tmp }
+            # Written at startup by main.py and by trivy/semgrep while scanning.
+            - { name: toolcache, mountPath: /opt/aegis/cache }
+            # ml.train writes the FP classifier here (FP_MODEL_PATH).
+            - { name: models, mountPath: /opt/aegis/models }
           resources: {{- toYaml .Values.scanner.resources | nindent 12 }}
       volumes:
         - name: workspace
           emptyDir: { sizeLimit: 10Gi }
         - name: tmp
+          emptyDir: {}
+        - name: toolcache
+          emptyDir: {}
+        - name: models
           emptyDir: {}
 ---
 apiVersion: v1

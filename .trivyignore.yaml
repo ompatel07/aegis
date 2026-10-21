@@ -1,0 +1,28 @@
+# Trivy findings accepted with a reason (N2, 2026-10-21).
+#
+# Scoped per check AND per path, each with a written statement -- the same discipline as
+# scripts/check_dependency_audits.py. A bare `.trivyignore` with an ID on a line would
+# suppress that check everywhere, including in code we own, which is how a real finding
+# gets absorbed by an old exception.
+#
+# The Trivy job itself had NEVER run before N2 (trivy-action depended on an unresolvable
+# setup-trivy version), so these are the first findings it has ever produced.
+
+misconfigurations:
+  - id: KSV-0014
+    paths:
+      - "deploy/helm/aegis/templates/datastores.yaml"
+    statement: >-
+      Root filesystem is not read-only on the Postgres and Redis StatefulSets. Both run
+      upstream third-party images (postgres:16-alpine, redis:7-alpine) that write outside
+      their PersistentVolumeClaims at runtime -- Postgres to its socket directory and
+      temporary files, Redis to its working directory -- so making the root read-only
+      requires knowing every such path for each image version. We cannot verify that
+      without deploying to a real cluster, which this pass had no access to, and shipping
+      an untested change to a customer's DATASTORE is worse than the hardening gap it
+      closes: the failure mode is a database that will not start.
+      The equivalent finding on the containers we build ourselves -- scanner and
+      orchestrator -- was FIXED rather than ignored (readOnlyRootFilesystem: true plus
+      explicit mounts for every path the code writes to, enumerated from the source).
+      Revisit when a staging cluster exists: the change is to add emptyDir mounts for
+      /var/run/postgresql and /tmp (Postgres) and /tmp (Redis), then deploy-test.
