@@ -20,9 +20,11 @@ third-party commercial rule sets (the Semgrep-registry packs were removed on 202
 **strongest on PHP and JavaScript/TypeScript**, where our taint packs are proven against
 documented vulnerabilities (DVWA, NodeGoat, juice-shop), **real but narrower on Java, Python and
 Go** (injection, path traversal and SSRF taint; Python adds four pattern rules), and **absent for
-Ruby and C#** beyond the language-independent CI/CD rules. It is not a broad pattern library: on
-the OWASP Benchmark (synthetic Java) it scores well below CodeQL, and it has no rules yet for
-weak-crypto, weak-random or insecure-cookie classes. Everything outside code-level SAST is
+Ruby and C#** beyond the language-independent CI/CD rules. It is not a broad pattern library, and
+it has no rules yet for weak-crypto, weak-random or insecure-cookie classes. **Every scan reports
+its own per-language coverage**, and where most of a repository is in a language we cover thinly
+the security score is withheld as *Not measured* rather than presented as a clean result.
+Everything outside code-level SAST is
 **unaffected by that**: dependency CVEs with reachability and KEV/EPSS, secrets, infrastructure-as-code,
 code quality, and the whole prioritisation and lifecycle layer (fingerprinted findings tracked
 new → existing → resolved across scans, compliance evidence from that history). Every number

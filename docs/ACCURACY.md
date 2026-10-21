@@ -81,56 +81,29 @@ signal in every path — including documentation paths — and is regression-tes
 
 ## SAST (semgrep)
 
-### Benchmark — OWASP Benchmark v1.2, by the benchmark's own metric (Youden)
+### Benchmark — withdrawn from the headline (N2, 2026-10-21)
 
-The OWASP Benchmark's canonical score is the **Youden index (TPR − FPR)**, not F1.
-F1 flatters a high-recall / high-FPR profile; Youden penalises the false positives.
-Here is the side-by-side (Aegis measured by us; CodeQL and base Semgrep from an
-independent 2026 study, *Sifting the Noise*, arXiv:2601.22952 Table 2 — all on
-OWASP Benchmark v1.2, 2,740 cases):
+**Aegis makes no SAST benchmark claim.** The OWASP Benchmark comparison that stood here
+measured *synthetic Java* — the language Aegis lost most of when N1 removed the
+Semgrep-licensed rules, and one this file now classifies as `limited` coverage (seven
+rules, seven CWE classes). A number measured on the weakest thing we do is not a
+headline, in either direction:
 
-| tool | TPR | FPR | F1 | **Youden** | source |
-|---|---|---|---|---|---|
-| **Aegis — what ships (N1, sovereign)** | **0.154** | **0.103** | **0.247** | **0.051** | ours, `docs/RULE_REMOVAL_N1.md` §C.1 — 2026-09-19 |
-| CodeQL | 0.970 | 0.682 | 0.744 | 0.288 | *Sifting the Noise*, Table 2 |
-| base Semgrep (default rules) | 0.904 | 0.748 | 0.694 | 0.156 | *Sifting the Noise*, Table 2 |
-| ~~Aegis with the Semgrep-registry packs~~ — **no longer shipped** | ~~0.884~~ | ~~0.425~~ | ~~0.775~~ | ~~0.459~~ | pre-N1; re-confirmed to four decimals on 2026-09-19 before the cut |
+- the pre-N1 figures (F1 0.775 / Youden 0.459) are **not ours to cite** — they were
+  produced by rules we no longer ship;
+- the post-N1 figures (F1 0.247 / Youden 0.051) are real but **not representative** —
+  they score the one language where our coverage is thinnest, on generated code.
 
-**On this benchmark Aegis now scores below both CodeQL and base Semgrep** (Youden 0.051 vs 0.288
-and 0.156). The earlier lead came from the Semgrep-registry rules, which Aegis no longer ships
-(CORRECTION 11): 2,404 of the 2,865 findings in the pre-cut run were theirs. What ships is our own
-Java taint pack — the 461 remaining findings are *exactly* its findings in the pre-cut run. It keeps
-SQLi, XSS and path traversal at much lower recall and much lower FPR, and scores **zero** in five
-categories (weak random, weak crypto, weak hash, insecure cookie, trust boundary) that were entirely
-registry rules. Do not cite this benchmark in pitch material except with the sovereign row.
+Both are preserved with their method and dates under
+[Superseded benchmark history](#superseded-benchmark-history) at the end of this file.
+They may be cited there, as history. They may **not** be used as a current capability
+claim in the README, a deck, or any customer-facing material.
 
-**Limitation — this is a cross-study comparison on SYNTHETIC JAVA, and a same-harness
-run on real code now contradicts the framing it was used to support.**
-> **Pass F2 (2026-09-06) ran CodeQL CLI 2.26.4 on the same checkouts as Aegis and found the
-> opposite result on real JavaScript.** Against NodeGoat's documented, source-verified
-> vulnerabilities, **CodeQL recalled 6/7 (86 %) and Aegis 4/7 (57 %)** — Aegis missed the
-> flagship `$where` NoSQL injection and a planted ReDoS. **The "beats CodeQL" framing is
-> therefore withdrawn** (see CORRECTION 8 and `docs/COMPETITIVE_F2.md` §B.2). The table below
-> is retained because it is a real, correctly-cited benchmark result, but it measures
-> *synthetic Java taint under the Youden metric* and must not be generalised into an
-> overall "we beat CodeQL" claim. The same pass also found the reverse on Python (Aegis
-> caught dvpwa's documented SQLi, CodeQL missed it) and that **CodeQL cannot scan PHP at
-> all** — so the honest summary is "CodeQL is deeper where it runs; Aegis runs in more
-> places", not that either tool wins outright.
->
-> **Sovereign status (N1, 2026-09-19).** NodeGoat is now **5/7**, before and after the cut —
-> later passes added the `$where` NoSQL and ReDoS rules F2 found missing. The dvpwa SQLi that
-> F2 credited to the registry rule `sqlalchemy-execute-raw-query` is still caught, by our own
-> `aegis-py-sql-string-construction` (H1).
-Aegis's TPR/FPR were measured on our own harness; CodeQL's and base Semgrep's are
-taken from Xiong & Zhang, *Sifting the Noise* (arXiv:2601.22952, Table 2). The
-paper's figures were verified against the source (CodeQL FPR 0.682 matches their
-reported value), but tool version, configuration, and which CWE categories were
-scored can differ between their run and ours, so treat the gap as indicative, not
-exact. The clean version — running CodeQL ourselves on our own harness — is a
-pre-funding-deck TODO, not done here. And this is a *synthetic Java taint*
-benchmark: a benchmark score is not a real-world precision claim (see the V1 triage
-below, and CORRECTION 2).
+What replaces it: the **per-language coverage** table below (what we can and cannot
+read), the **ground-truth recall** in `docs/RULE_REMOVAL_N1.md` §C.2 (22 of 45
+documented vulnerabilities across five corpora), and the hand-triaged precision in
+§C.4. Those measure the product as it ships. Rebuilding a benchmark claim needs the
+Java rules in `docs/RULE_REMOVAL_N1.md` §E first.
 
 ### Real-world — V1 corpus
 
@@ -491,3 +464,61 @@ the numbers above trustworthy.
       remediation evidence in compliance reports. Fixed before release with a `retired` state;
       the same fix stops a timed-out engine from resolving everything it had found.
     Full record: `docs/RULE_REMOVAL_N1.md`.
+
+---
+
+## Superseded benchmark history
+
+Kept for provenance, **not for citation as a current claim** (N2). These measured synthetic
+Java under two different rule sets, neither of which represents what Aegis ships today; see
+the withdrawal note in the SAST section above.
+
+The OWASP Benchmark's canonical score is the **Youden index (TPR − FPR)**, not F1.
+F1 flatters a high-recall / high-FPR profile; Youden penalises the false positives.
+Here is the side-by-side (Aegis measured by us; CodeQL and base Semgrep from an
+independent 2026 study, *Sifting the Noise*, arXiv:2601.22952 Table 2 — all on
+OWASP Benchmark v1.2, 2,740 cases):
+
+| tool | TPR | FPR | F1 | **Youden** | source |
+|---|---|---|---|---|---|
+| **Aegis — what ships (N1, sovereign)** | **0.154** | **0.103** | **0.247** | **0.051** | ours, `docs/RULE_REMOVAL_N1.md` §C.1 — 2026-09-19 |
+| CodeQL | 0.970 | 0.682 | 0.744 | 0.288 | *Sifting the Noise*, Table 2 |
+| base Semgrep (default rules) | 0.904 | 0.748 | 0.694 | 0.156 | *Sifting the Noise*, Table 2 |
+| ~~Aegis with the Semgrep-registry packs~~ — **no longer shipped** | ~~0.884~~ | ~~0.425~~ | ~~0.775~~ | ~~0.459~~ | pre-N1; re-confirmed to four decimals on 2026-09-19 before the cut |
+
+**On this benchmark Aegis now scores below both CodeQL and base Semgrep** (Youden 0.051 vs 0.288
+and 0.156). The earlier lead came from the Semgrep-registry rules, which Aegis no longer ships
+(CORRECTION 11): 2,404 of the 2,865 findings in the pre-cut run were theirs. What ships is our own
+Java taint pack — the 461 remaining findings are *exactly* its findings in the pre-cut run. It keeps
+SQLi, XSS and path traversal at much lower recall and much lower FPR, and scores **zero** in five
+categories (weak random, weak crypto, weak hash, insecure cookie, trust boundary) that were entirely
+registry rules. Do not cite this benchmark in pitch material except with the sovereign row.
+
+**Limitation — this is a cross-study comparison on SYNTHETIC JAVA, and a same-harness
+run on real code now contradicts the framing it was used to support.**
+> **Pass F2 (2026-09-06) ran CodeQL CLI 2.26.4 on the same checkouts as Aegis and found the
+> opposite result on real JavaScript.** Against NodeGoat's documented, source-verified
+> vulnerabilities, **CodeQL recalled 6/7 (86 %) and Aegis 4/7 (57 %)** — Aegis missed the
+> flagship `$where` NoSQL injection and a planted ReDoS. **The "beats CodeQL" framing is
+> therefore withdrawn** (see CORRECTION 8 and `docs/COMPETITIVE_F2.md` §B.2). The table below
+> is retained because it is a real, correctly-cited benchmark result, but it measures
+> *synthetic Java taint under the Youden metric* and must not be generalised into an
+> overall "we beat CodeQL" claim. The same pass also found the reverse on Python (Aegis
+> caught dvpwa's documented SQLi, CodeQL missed it) and that **CodeQL cannot scan PHP at
+> all** — so the honest summary is "CodeQL is deeper where it runs; Aegis runs in more
+> places", not that either tool wins outright.
+>
+> **Sovereign status (N1, 2026-09-19).** NodeGoat is now **5/7**, before and after the cut —
+> later passes added the `$where` NoSQL and ReDoS rules F2 found missing. The dvpwa SQLi that
+> F2 credited to the registry rule `sqlalchemy-execute-raw-query` is still caught, by our own
+> `aegis-py-sql-string-construction` (H1).
+Aegis's TPR/FPR were measured on our own harness; CodeQL's and base Semgrep's are
+taken from Xiong & Zhang, *Sifting the Noise* (arXiv:2601.22952, Table 2). The
+paper's figures were verified against the source (CodeQL FPR 0.682 matches their
+reported value), but tool version, configuration, and which CWE categories were
+scored can differ between their run and ours, so treat the gap as indicative, not
+exact. The clean version — running CodeQL ourselves on our own harness — is a
+pre-funding-deck TODO, not done here. And this is a *synthetic Java taint*
+benchmark: a benchmark score is not a real-world precision claim (see the V1 triage
+below, and CORRECTION 2).
+
