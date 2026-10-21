@@ -6,7 +6,7 @@ things an evaluator would find in their first session. This pass fixes them.
 | # | defect | status |
 |--:|---|---|
 | A | A Java-only repository could score **Security 100 / grade A** on seven Java rules — not clean, unread | **fixed** — coverage measured, score withheld, gate test asserts it |
-| B | `self-scan.yml` red since 2026-08-31; the **Trivy job had never run at all** | **fixed** — Trivy runs (88 findings on its first run), 101 of 110 advisories closed, 9 named and justified |
+| B | `self-scan.yml` red since 2026-08-31; the **Trivy job had never run at all** | **fixed** — 7 of 7 jobs green; Trivy runs (88 findings on its first run), **109 of 112** advisories closed, 3 named and justified |
 | C | Dolibarr's first complete scan: **2,362 false XSS findings** | **fixed** — 2,362 → 24, of which **3 are real findings the flood had buried** |
 | D | OWASP Benchmark cited as a headline capability number | **withdrawn** from all pitch-facing docs, preserved as labelled history |
 
@@ -128,13 +128,13 @@ resolve, so the job failed at action-resolution on every push. Pinned to
 **Its first real run found 88 issues** — 84 vulnerabilities and 4 misconfigurations. It
 had been silent, not clean.
 
-### B.2 Dependencies — 101 of 110 advisories closed
+### B.2 Dependencies — 109 of 112 advisories closed
 
 | ecosystem | before | after | what moved |
 |---|--:|--:|---|
-| Go (both services) | 24 CVEs | **0** | go-git 5.13→5.19.2, go-billy 5.6→5.9.2, x/crypto 0.50→0.55, x/net 0.53→0.58, x/text 0.36→0.41, x/mod 0.34→0.40, golang-jwt 5.2.1→5.2.2, goxmldsig 1.4→1.6 |
+| Go (both services) | 24 CVEs + 2 govulncheck-only | **0** | go-redis 9.7.0→9.7.3 (GO-2025-3540, found by govulncheck not Trivy), the toolchain to **1.26.10** (GO-2026-6809 in `crypto/x509`), go-git 5.13→5.19.2, go-billy 5.6→5.9.2, x/crypto 0.50→0.55, x/net 0.53→0.58, x/text 0.36→0.41, x/mod 0.34→0.40, golang-jwt 5.2.1→5.2.2, goxmldsig 1.4→1.6 |
 | npm | 22 (2 critical) | **1** | next 14.2.35→15.5.28, next-auth patched, postcss → 8.5.31 and postcss-selector-parser → 7.1.7 forced tree-wide via `overrides`, plus `npm audit fix` |
-| pip | 22 in 4 packages | **1** | fastapi 0.115.6→0.135.4 with starlette pinned to 1.3.1, setuptools 75.6→83.0, pytest 8.3.4→9.0.3, pytest-asyncio 0.25→1.3 |
+| pip | 22 in 4 packages | **2** | fastapi 0.115.6→0.135.4 with starlette pinned to 1.3.1 (clears all 7 starlette advisories), setuptools 75.6→**80.9.0** (see §B.5), pytest 8.3.4→9.0.3, pytest-asyncio 0.25→1.3 |
 | Trivy misconfig | 4 | *(see B.4)* | Helm `readOnlyRootFilesystem` |
 
 Each upgrade was verified, not assumed: `go build`, `go vet` and the full Go suites
@@ -147,7 +147,7 @@ Two upgrades needed a second step rather than a bigger version number:
   the project targets 1.25. Raising the toolchain is a separate change.
 - **`pytest` 9 needed `pytest-asyncio` 1.3.0** — the old pin capped pytest below 9.
 
-### B.3 The nine that remain, each named
+### B.3 The three that remain, each named
 
 `npm audit --audit-level=high` and a bare `pip-audit` are all-or-nothing: either the job
 is red on something nobody can act on, or someone raises the threshold and every future
@@ -158,21 +158,61 @@ on the list fails the build**.
 
 | advisory | package | why it is tolerated |
 |---|---|---|
-| GHSA-vfj7-8cjw-p6xm | braces ≤3.0.3 | **No fixed version exists at any release.** Reaches us only through `tailwindcss@3.4.15`'s build-time file watcher (chokidar) and glob matcher (micromatch) — verified with `npm ls braces`. Tailwind runs at build time over glob patterns *we* author, against paths in our own repository; no attacker-supplied value reaches it. Exploiting it needs write access to the repo or build config, at which point the glob is not the weakness. Fixed by tailwindcss 4.x, a CSS-first-config migration whose result cannot be verified without looking at the rendered UI — deliberately a separate pass, not a blind upgrade inside N2 |
+| GHSA-vfj7-8cjw-p6xm<br>CVE-2026-93687 | braces ≤3.0.3 | **No fixed version exists at any release.** Reaches us only through `tailwindcss@3.4.15`'s build-time file watcher (chokidar) and glob matcher (micromatch) — verified with `npm ls braces`. Tailwind runs at build time over glob patterns *we* author, against paths in our own repository; no attacker-supplied value reaches it. Exploiting it needs write access to the repo or build config, at which point the glob is not the weakness. Fixed by tailwindcss 4.x, a CSS-first-config migration whose result cannot be verified without looking at the rendered UI — deliberately a separate pass, not a blind upgrade inside N2 |
+| PYSEC-2026-3447 | setuptools 80.9.0 | Fixed only in 83.0.0, which **cannot be installed**: setuptools 81 removed `pkg_resources`, which semgrep needs at runtime. N2 tried it and CI caught the outage — see §B.5. setuptools is a build/runtime shim, not a request-path component |
 | PYSEC-2026-1805 | protobuf 4.25.9 | Blocked by **semgrep 1.97.0**, whose `opentelemetry-exporter-otlp-proto-http` dependency pins protobuf < 5. `pip install semgrep==1.97.0 protobuf==5.29.6` is `ResolutionImpossible`. Bumping semgrep changes findings, and N1's rule is that an engine bump must not land in a pass that also changes rules (this one does, Part C) or the regression is unattributable |
 
-The eight Go CVEs that `x/net` 0.58.0 does not reach are **not** on this list — they are
-closed; only the single advisory requiring 0.60.0 remains, and it is recorded in the Go
-section above rather than tolerated silently.
+**Nothing Go-related is on this list.** `x/net` initially stopped at 0.58.0 because
+0.60.0 requires Go ≥ 1.26; rather than document that advisory, the toolchain moved to
+1.26.10 and it is closed. The same applies to the `braces` entry carrying two
+identifiers: Trivy keys on the CVE alias and npm on the GHSA id, so one exception is
+named twice rather than either gate being widened.
 
 ### B.4 Trivy's four misconfigurations
 
 `KSV-0014` — *root filesystem is not read-only* — on `datastores.yaml` (×2),
 `orchestrator.yaml` and `scanner.yaml`. See §B.5 for what was done.
 
-### B.5 Status
+### B.5 A P0 I introduced, and CI caught
 
-*(completed below)*
+The setuptools bump in this pass was itself a defect. **setuptools 81 removed
+`pkg_resources`**, which semgrep imports at runtime through
+`opentelemetry-instrumentation` (pinned by semgrep 1.97.0). Bumping 75.6.0 → 83.0.0 to
+clear a CVE made semgrep crash on startup, so **every rule test failed in CI** —
+`ModuleNotFoundError: No module named 'pkg_resources'`. That is the scanner's entire SAST
+path, not a hardening gap.
+
+`requirements.txt` already carried a comment saying semgrep needs `pkg_resources` from
+setuptools. I bumped past it anyway while chasing a version number. It is now a
+DO-NOT-BUMP with the boundary, the failure mode, and a pointer to the justification.
+
+Pinned to **80.9.0** — the newest release that still ships `pkg_resources` — which keeps
+the PYSEC-2025-49 fix. PYSEC-2026-3447 (fixed only in 83.0.0) joins the named list, with
+the same root cause as protobuf: semgrep's OpenTelemetry pin.
+
+This is precisely the risk the brief named — *"dependency bumps are exactly how P0s sneak
+in"* — and the reason every upgrade here was re-verified rather than assumed. It is also
+an argument for the per-advisory gate over a severity threshold: a threshold would have
+let me keep a product-breaking upgrade in exchange for a tidier audit score.
+
+### B.6 Final state
+
+| check | result |
+|---|---|
+| `aegis-self-scan` | **7 of 7 green** on `d7d58b6` — including a Trivy job that had never run, and govulncheck |
+| Scanner suite (in the rebuilt image) | **278 passed, 4 skipped, 0 failed**. The three "ruff binary not available" skips are gone with the rebuild, leaving K1's four audited skips |
+| Go suites + API seams (live Postgres) | green on Go 1.26.10, both services |
+| Web | `tsc --noEmit` clean, 22 unit tests pass, real `next build` succeeds on Next 15 |
+| `semgrep --test` | 4/4 compose rules, 42/42 taint pack |
+
+Two findings only govulncheck caught, which Trivy missed — proof the two jobs are not
+redundant:
+
+- **GO-2025-3540**, `redis/go-redis` 9.7.0 → 9.7.3, reachable from
+  `ProgressHandler.Stream` → `redis.Client.Subscribe`.
+- **GO-2026-6809** in the **toolchain**, not a dependency: `crypto/x509` in go1.26.9,
+  fixed in go1.26.10. `setup-go` with `"1.26"` resolved to `.9`, so both workflows now
+  pin the patch.
 
 ---
 
