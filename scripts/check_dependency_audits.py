@@ -83,6 +83,19 @@ PIP_ACCEPTED: dict[str, tuple[str, str, str]] = {
         "changes rules -- N2 Part C changes aegis-php-xss, so a regression would be "
         "unattributable. It belongs in a pass that bumps semgrep and re-measures.",
     ),
+    "CVE-2026-114603": (
+        "opentelemetry-api",
+        "TraceState.from_header splits an inbound W3C `tracestate` header with a regex. "
+        "Fixed in 1.45.1, which semgrep 1.97.0's `opentelemetry-api~=1.25.0` pin forbids. "
+        "Not reachable in Aegis: the scanner service has no OpenTelemetry instrumentation of "
+        "its own (no import outside semgrep), Aegis never enables semgrep tracing (no "
+        "--trace / trace endpoint), and even with tracing on semgrep's Traces.extract() "
+        "builds its carrier from its own SEMGREP_TRACE_PARENT_* environment variables, "
+        "with a `traceparent` only -- no `tracestate` header is ever parsed. Read in "
+        "semgrep/tracing.py at 1.97.0.",
+        "Fixed by the same semgrep upgrade as PYSEC-2026-1805, which must not land in a "
+        "pass that changes rules (N5 changes the Java and Python packs).",
+    ),
 }
 
 
