@@ -1,5 +1,6 @@
 # Fixtures for rules/taint/python_weakness.yaml (Pass N3).
 import hashlib
+import os
 import hmac
 import random
 import secrets
@@ -154,3 +155,32 @@ def prefs():
 def django_view(request):
     request.session["role"] = request.POST.get("role")
     request.session["cart_note"] = request.POST.get("note")
+
+
+# ── Flask debug mode (N5) ────────────────────────────────────────────────────
+# ruleid: aegis-py-flask-debug-enabled
+app.config["DEBUG"] = True
+# ruleid: aegis-py-flask-debug-enabled
+app.debug = True
+# a value read from the environment is a deployment decision, not a literal
+# ok: aegis-py-flask-debug-enabled
+app.config["DEBUG"] = os.environ.get("FLASK_DEBUG") == "1"
+# ok: aegis-py-flask-debug-enabled
+app.config["TESTING"] = True
+
+
+class Runner:
+    def run(self, debug=False):
+        return debug
+
+
+runner = Runner()
+# not a Flask app
+# ok: aegis-py-flask-debug-enabled
+runner.run(debug=True)
+
+if __name__ == "__main__":
+    # ruleid: aegis-py-flask-debug-enabled
+    app.run(host="127.0.0.1", debug=True, port=5000)
+    # ok: aegis-py-flask-debug-enabled
+    app.run(debug=False)

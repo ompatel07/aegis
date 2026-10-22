@@ -6,6 +6,9 @@
 # scanned in production (real scans target the cloned repo, and --config only
 # loads *.yaml as rules).
 import ast
+import base64
+import json
+import pickle
 import io  # noqa: F401
 import os
 import shutil  # noqa: F401
@@ -13,6 +16,7 @@ import subprocess
 
 import ldap
 import requests
+import yaml
 from bson import ObjectId
 from flask import render_template_string, request, send_file  # noqa: F401
 from ldap.filter import escape_filter_chars
@@ -74,6 +78,13 @@ def cmd_bad_shell():
     host = request.args.get("host")
     # ruleid: aegis-py-command-injection, aegis-py-shell-command-construction
     subprocess.call("nslookup " + host, shell=True)
+
+
+def cmd_bad_shell_not_last():
+    host = request.args.get("host")
+    # N5: shell=True need not be the last argument (PyGoat's Popen(cmd, shell=True, stdout=...)).
+    # ruleid: aegis-py-command-injection, aegis-py-shell-command-construction
+    subprocess.Popen("nslookup " + host, shell=True, stdout=subprocess.PIPE)
 
 
 def cmd_ok():
@@ -265,3 +276,49 @@ def tls_private_ca_ok(url):
     # switching verification off
     # ok: aegis-py-tls-verification-disabled
     return requests.get(url, verify="/etc/ssl/certs/internal-ca.pem")
+
+
+# ── Unsafe deserialization (N5) ─────────────────────────────────────────────
+def deser_pickle_form_bad():
+    blob = base64.b64decode(request.form.get("state", ""))
+    # ruleid: aegis-py-unsafe-deserialization
+    return pickle.loads(blob)
+
+
+def deser_pickle_cookie_bad():
+    # ruleid: aegis-py-unsafe-deserialization
+    return pickle.loads(base64.b64decode(request.cookies.get("prefs")))
+
+
+def deser_yaml_upload_bad():
+    upload = request.files["doc"]
+    # ruleid: aegis-py-unsafe-deserialization
+    return yaml.load(upload.stream, Loader=yaml.Loader)
+
+
+def deser_yaml_unsafe_load_bad():
+    # ruleid: aegis-py-unsafe-deserialization
+    return yaml.unsafe_load(request.get_data())
+
+
+def deser_yaml_safe_load_ok():
+    upload = request.files["doc"]
+    # ok: aegis-py-unsafe-deserialization
+    return yaml.safe_load(upload.stream)
+
+
+def deser_yaml_safe_loader_ok():
+    # ok: aegis-py-unsafe-deserialization
+    return yaml.load(request.data, Loader=yaml.SafeLoader)
+
+
+def deser_trusted_file_ok():
+    # a file the application itself wrote is not request data
+    with open("/var/cache/app/state.pkl", "rb") as fh:
+        # ok: aegis-py-unsafe-deserialization
+        return pickle.load(fh)
+
+
+def deser_json_ok():
+    # ok: aegis-py-unsafe-deserialization
+    return json.loads(request.data)

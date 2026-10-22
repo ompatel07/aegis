@@ -69,6 +69,49 @@ rules:
       - pattern: $APP.config.update(..., SESSION_COOKIE_SECURE=False, ...)
       - pattern: $APP.config.update(..., SESSION_COOKIE_HTTPONLY=False, ...)
 
+  # N5. Context-free on purpose: the Werkzeug debugger the flag turns on is an
+  # in-browser Python console, so the setting is the vulnerability wherever the app
+  # is reachable. Only a literal True is flagged; a value read from the environment
+  # or config is a deployment decision we cannot see.
+  - id: aegis-py-flask-debug-enabled
+    languages: [python]
+    severity: ERROR
+    message: >-
+      The Flask app runs with debug mode on. Debug mode enables the Werkzeug
+      interactive debugger, which lets anyone who can trigger an error execute
+      arbitrary Python in the server process, and it shows source and config in
+      tracebacks. Never enable it outside local development; read it from the
+      environment and default it to off.
+    metadata:
+      cwe:
+        - "CWE-489: Active Debug Code"
+        - "CWE-94: Improper Control of Generation of Code ('Code Injection')"
+      owasp:
+        - A05:2021 - Security Misconfiguration
+      category: security
+      subcategory: [vuln]
+      confidence: HIGH
+      likelihood: MEDIUM
+      impact: HIGH
+      technology: [python, flask, werkzeug]
+      written-from: CWE-489; Flask "Debug Mode" and Flask.run(debug=) / DEBUG config documentation; Werkzeug debugger security notes
+      references:
+        - https://flask.palletsprojects.com/en/stable/debugging/
+        - https://werkzeug.palletsprojects.com/en/stable/debug/#debugger-pin
+    patterns:
+      - pattern-either:
+          - pattern-inside: |
+              $APP = Flask(...)
+              ...
+          - pattern-inside: |
+              $APP = flask.Flask(...)
+              ...
+      - pattern-either:
+          - pattern: $APP.run(..., debug=True, ...)
+          - pattern: $APP.debug = True
+          - pattern: $APP.config["DEBUG"] = True
+          - pattern: $APP.config.update(..., DEBUG=True, ...)
+
   - id: aegis-py-weak-cipher
     languages: [python]
     severity: ERROR
