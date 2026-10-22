@@ -35,24 +35,26 @@ func semgrepWith(c *types.SecurityCoverage, findings ...types.Finding) *types.En
 	return r
 }
 
-// N2 GATE: a Java-only repository with NO findings must not present a confident
-// security score or an A rating. Before this, seven Java rules finding nothing read
-// as 100/A -- the fabricated-clean-score defect, in the family of constant-A
+// N2 GATE: a repository in a LIMITED-coverage language with NO findings must not
+// present a confident security score or an A rating. N2 wrote it for Java (seven
+// rules finding nothing read as 100/A); N4 moved Java to STRONG on ground-truth
+// proof, so it is asserted for Go, still LIMITED. The fabricated-clean-score
+// defect, in the family of constant-A
 // reliability, `return 100` deployment and "passing" unassessed controls.
 //
 // Asserted the way C1 asserted degraded-must-not-outscore-complete: on the real
 // Aggregate output, not on a helper.
-func TestJavaOnlyRepoWithNoFindingsIsNotAConfidentA(t *testing.T) {
-	java := types.LanguageCoverage{Language: "java", Tier: "limited", LOC: 5000, Share: 1, Rules: 7}
+func TestLimitedLanguageRepoWithNoFindingsIsNotAConfidentA(t *testing.T) {
+	golang := types.LanguageCoverage{Language: "go", Tier: "limited", LOC: 5000, Share: 1, Rules: 8}
 	agg := Aggregate([]*types.EngineResult{
-		semgrepWith(cov(false, 0.0, java)),
+		semgrepWith(cov(false, 0.0, golang)),
 		er("trivy", "completed"),
 		er("gitleaks", "completed"),
 		qualityResult(80),
 	})
 
 	if agg.SecurityScore != nil {
-		t.Errorf("security score is %d on a Java-only repo we barely cover; "+
+		t.Errorf("security score is %d on a Go-only repo we barely cover; "+
 			"it must be nil (\"Not measured\"), never a number read as clean", *agg.SecurityScore)
 	}
 	if agg.SecurityRating != nil {

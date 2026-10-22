@@ -159,6 +159,11 @@ public class JavaWeakness {
         // ok: aegis-java-insecure-session-cookie
         response.addCookie(e);
 
+        // a bare "token" cookie used as the CSRF double-submit token
+        Cookie csrf = new Cookie("token", token);
+        // ok: aegis-java-insecure-session-cookie
+        response.addCookie(csrf);
+
         Cookie gone = new Cookie("session", "");
         gone.setMaxAge(0);
         // ok: aegis-java-insecure-session-cookie

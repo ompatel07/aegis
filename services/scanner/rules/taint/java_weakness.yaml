@@ -170,7 +170,9 @@ rules:
           ...
       - metavariable-regex:
           metavariable: $NAME
-          regex: (?i)^(?!.*(csrf|xsrf)).*(sess|sid|auth|token|jwt|remember|login|refresh|access|identity|credential).*$
+          # a bare "token" cookie is often the CSRF double-submit token, which must stay
+          # readable (N4: Security Shepherd's Login/ACS/MobileLogin); require a qualifier
+          regex: (?i)^(?!.*(csrf|xsrf)).*(sess|sid|auth|jwt|remember|login|refresh|access|identity|credential|(?:id|bearer|api)[-_]?token).*$
 
   - id: aegis-java-weak-cipher
     languages: [java]
@@ -183,7 +185,7 @@ rules:
       equal ciphertext, so structure leaks. This needs no context. Use
       AES/GCM/NoPadding with a fresh 12-byte IV.
     metadata:
-      aegis-validation: silent-clean   # N4: API-shaped, 0 FP on the N3 corpus, never fired on real code; recall unvalidated, not counted as coverage
+      # N4: promoted SILENT-CLEAN -> PROVEN (VulnerableApp: AES/ECB and the LM-hash DES, 3 TP / 0 FP)
       cwe:
         - "CWE-327: Use of a Broken or Risky Cryptographic Algorithm"
       owasp:

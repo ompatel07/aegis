@@ -125,6 +125,9 @@ def cookies(resp, token, opts):
     resp.set_cookie("theme", "dark")
     # ok: aegis-py-insecure-session-cookie
     resp.set_cookie("session_id", token, **opts)
+    # an empty value deletes the cookie
+    # ok: aegis-py-insecure-session-cookie
+    resp.set_cookie("session_id", "", expires=0)
     return resp
 
 

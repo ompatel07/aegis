@@ -20,25 +20,20 @@ distinct CWE classes. Nothing here is declared — it is counted from the files,
 moves when the rule set moves, and `tests/test_rule_coverage.py` fails if the tier
 table and the measured rule set disagree.
 
-Measured on the N3 rule set (70 Aegis rules + 89 njsscan; N3's 18 unproven rules
-are in rules_staging/ and are not counted -- docs/OWASP_CATEGORIES_N3.md):
+Measured on the N4 rule set (79 Aegis rules + 89 njsscan; 6 SILENT-CLEAN rules run but
+are not counted, 9 STAGED rules do not run -- docs/GROUND_TRUTH_N4.md):
 
-    javascript   102 rules (taint 13, njsscan 89)    39 CWE classes
-    typescript   102 rules (taint 13, njsscan 89)    39 CWE classes   (see _ALSO_RUNS_ON)
-    python        13 rules (taint)                   12 CWE classes
-    java           9 rules (taint)                   10 CWE classes
-    php            9 rules (taint)                   11 CWE classes
-    go             8 rules (taint)                    8 CWE classes
+    javascript   102 rules (taint 13, njsscan 89)    39 CWE classes   strong
+    typescript   102 rules (taint 13, njsscan 89)    39 CWE classes   strong   (_ALSO_RUNS_ON)
+    python        13 rules (taint)                   12 CWE classes   strong   (since N4)
+    java          10 rules (taint)                   11 CWE classes   strong   (since N4)
+    go            10 rules (taint)                   12 CWE classes   limited
+    php            9 rules (taint)                   11 CWE classes   strong
     ruby           0 rules                              0
     csharp         0 rules                              0
 
-(N2b: javascript/typescript 100 / 38, python 12 / 10, java 7 / 7, go 7 / 7, php
-5 / 5. N3 added 10 rules proven on real code; no tier changed, because no new rule
-adds a documented-vulnerability proof -- see STRONG_EVIDENCE.)
-
-(N1/N2 reported javascript 125 / 41 classes and typescript 11 / 9. N2b pruned 25
-njsscan rules, three of which had only ever been excluded at run time, and found
-TypeScript had been undercounted: semgrep runs javascript rules on .ts.)
+(N3: java 9 / 10, go 8 / 8. N4 promoted aegis-java-weak-cipher, aegis-go-weak-hash-
+credential and aegis-go-insecure-session-cookie to PROVEN on ground-truth findings.)
 
 WHERE THE TIERS COME FROM
 -------------------------
@@ -60,12 +55,20 @@ documented-vulnerability corpora. They are:
       for 23 no rule of ours fired on any of the 20 repositories.
       38 is how many classes we have rules for, not how many we have shown we find.
 
-  LIMITED java, python, go
-      Rules exist and fire, but only for the injection/taint families, and the
-      evidence is thinner: Java 6/6 on WebGoat but inert on every Java repository
-      before T3 and 10% of pre-cut finding volume retained; Python 24% retained, H1's
-      four pattern rules 17/17 TP; Go has no measured yield on real code at all —
-      V2 contained no Go repository.
+  STRONG  java, python (since N4, 2026-10-22)
+      N4 built ground-truth corpora for both (docs/GROUND_TRUTH_N4.md). The taint pack
+      caught documented vulnerabilities in MORE THAN ONE corpus: Java in WebGoat,
+      Security Shepherd, java-sec-code, VulnerableApp and JavaVulnerableLab; Python in
+      PyGoat, DSVW, DVGraphQL, django.nV, lets-be-bad-guys and dvpwa. That is the bar.
+      It is NOT a recall claim: in-scope recall on those corpora is Java 31/209 (15%)
+      and Python 18/72 (25%), below TypeScript's 7/25 on juice-shop for Java. The
+      misses are listed and split into rule gaps and engine ceilings there.
+
+  LIMITED go
+      Rules exist and fire, but the taint pack's documented detections (path traversal,
+      SSRF) are all in ONE corpus (damn-vulnerable-golang); four other Go corpora
+      caught nothing through it -- their flows cross a function or file boundary
+      (go-test-bench, GoVWA, DVGA) or need a missing sink (template.HTML).
 
   NONE    everything else (ruby, csharp, c, cpp, rust, kotlin, scala, …)
       Zero shipped security rules. We do no application-code SAST on these at all.
@@ -104,8 +107,12 @@ CONFIDENT_STRONG_FRACTION = 0.5
 # Tier per language. Grounded in the N1 per-language measurement (module docstring).
 # `tests/test_rule_coverage.py` asserts these against the shipped rule set: a language
 # named here must have rules, and a language with rules must be named here.
-STRONG = ("php", "javascript", "typescript")
-LIMITED = ("java", "python", "go")
+# N4 (2026-10-22): java and python moved to STRONG on documented-vulnerability proof
+# from MORE THAN ONE ground-truth corpus caught by their taint packs (STRONG_EVIDENCE;
+# docs/GROUND_TRUTH_N4.md). go stays LIMITED: its taint pack's documented detections are
+# all in one corpus. "Strong" is proven, not broad -- see the recall caveat there.
+STRONG = ("php", "javascript", "typescript", "java", "python")
+LIMITED = ("go",)
 
 # What a STRONG tier actually rests on (N2b). STRONG is "proven on documented
 # vulnerabilities", so it is tied to the shipped rules that produced that proof: the
@@ -131,6 +138,22 @@ STRONG_EVIDENCE: dict[str, dict[str, str]] = {
     "typescript": {
         "aegis-js-sql-injection": "juice-shop login*/union/dbSchema challenges (5)",
         "aegis-js-nosql-injection": "juice-shop noSqlReviews + forgedReview challenges",
+    },
+    # N4 ground-truth corpora (docs/GROUND_TRUTH_N4.md). Each rule below caught documented
+    # vulnerabilities in MORE THAN ONE corpus.
+    "java": {
+        "aegis-java-sql-injection":
+            "WebGoat SQLi challenges (F1); Security Shepherd SqlInjection 1-7/Email/Escaping/"
+            "StoredProcedure; java-sec-code SQLI; VulnerableApp error-based SQLi; "
+            "JavaVulnerableLab login bypass + blind SQLi",
+        "aegis-java-ssrf": "WebGoat SSRF JKU (F1); java-sec-code SSRF; VulnerableApp SIMPLE_SSRF levels 1-4",
+        "aegis-java-path-traversal": "WebGoat path traversal x2 (F1); java-sec-code FileUpload",
+    },
+    "python": {
+        "aegis-py-sql-injection": "PyGoat sql_injection_lab; django.nV upload() SQLi",
+        "aegis-py-code-injection": "PyGoat command_injection_lab lab2 (eval); lets-be-bad-guys code execution",
+        "aegis-py-path-traversal": "PyGoat ssrf_lab lab1; lets-be-bad-guys file access",
+        "aegis-py-sql-string-construction": "dvpwa SQLi (F1); DSVW blind/UNION SQLi + login bypass; DVGraphQL pastes filter",
     },
 }
 

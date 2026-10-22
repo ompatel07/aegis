@@ -50,22 +50,27 @@ func weakRandomOk(items []string, tokens TokenService) {
 
 // ── weak hash ───────────────────────────────────────────────────────────────
 func weakHashBad(password string, apiSecret []byte) {
+	// ruleid: aegis-go-weak-hash-credential
 	a := md5.Sum([]byte(password))
+	// ruleid: aegis-go-weak-hash-credential
 	h := sha1.New()
 	io.WriteString(h, password)
 	// a non-password secret is not password storage (an HMAC key)
+	// ok: aegis-go-weak-hash-credential
 	k := sha1.Sum(apiSecret)
 	_ = k
 	_ = a
 }
 
 func hashPassword(raw string) string {
+	// ruleid: aegis-go-weak-hash-credential
 	sum := md5.Sum([]byte(raw))
 	return hex.EncodeToString(sum[:])
 }
 
 func weakHashOk(body []byte) string {
 	// a checksum / ETag is not a credential problem
+	// ok: aegis-go-weak-hash-credential
 	sum := md5.Sum(body)
 	return hex.EncodeToString(sum[:])
 }
@@ -91,14 +96,21 @@ func keys(r io.Reader) {
 
 // ── session cookie ──────────────────────────────────────────────────────────
 func cookies(w http.ResponseWriter, token string) {
+	// ruleid: aegis-go-insecure-session-cookie
 	http.SetCookie(w, &http.Cookie{Name: "session_id", Value: token, Path: "/"})
+	// ruleid: aegis-go-insecure-session-cookie
 	http.SetCookie(w, &http.Cookie{Name: "auth_token", Value: token, HttpOnly: true, Secure: false})
+	// ok: aegis-go-insecure-session-cookie
 	http.SetCookie(w, &http.Cookie{Name: "auth_token", Value: token, HttpOnly: true, Secure: true})
+	// ok: aegis-go-insecure-session-cookie
 	http.SetCookie(w, &http.Cookie{Name: "csrf_token", Value: token, Secure: true})
+	// ok: aegis-go-insecure-session-cookie
 	http.SetCookie(w, &http.Cookie{Name: "theme", Value: "dark"})
 	// deleting a cookie carries no secret
+	// ok: aegis-go-insecure-session-cookie
 	http.SetCookie(w, &http.Cookie{Name: "session_id", Value: "", MaxAge: -1})
 	// flags set on the variable afterwards
+	// ok: aegis-go-insecure-session-cookie
 	c := &http.Cookie{Name: "session_id", Value: token}
 	c.HttpOnly = true
 	c.Secure = true
@@ -106,7 +118,9 @@ func cookies(w http.ResponseWriter, token string) {
 }
 
 func ginCookies(ctx GinContext, token string) {
+	// ruleid: aegis-go-insecure-session-cookie
 	ctx.SetCookie("session", token, 3600, "/", "", false, true)
+	// ok: aegis-go-insecure-session-cookie
 	ctx.SetCookie("session", token, 3600, "/", "", true, true)
 }
 

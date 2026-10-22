@@ -86,3 +86,152 @@ rules:
               comparison: $N < 2048
       - pattern: dsa.GenerateParameters($P, $R, dsa.L1024N160)
 
+  - id: aegis-go-weak-hash-credential
+    languages: [go]
+    severity: WARNING
+    message: >-
+      A credential is hashed with MD5 or SHA-1, or inside a function whose name
+      says it handles passwords. Both are fast and broken for collision
+      resistance, so a password store built on them falls to brute force. Use
+      golang.org/x/crypto/argon2, bcrypt or scrypt for passwords and
+      crypto/hmac with SHA-256 for integrity. An MD5 checksum or cache key is
+      not flagged.
+    metadata:
+      cwe:
+        - "CWE-328: Use of Weak Hash"
+        - "CWE-916: Use of Password Hash With Insufficient Computational Effort"
+      owasp:
+        - A02:2021 - Cryptographic Failures
+      category: security
+      subcategory: [vuln]
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: HIGH
+      technology: [go]
+      written-from: CWE-328, CWE-916; crypto/md5 and crypto/sha1 package docs ("cryptographically broken")
+      references:
+        - https://pkg.go.dev/crypto/md5
+    patterns:
+      - pattern-either:
+          - pattern-inside: |
+              import "crypto/md5"
+              ...
+          - pattern-inside: |
+              import "crypto/sha1"
+              ...
+      - pattern-either:
+          - patterns:
+              - pattern-either:
+                  - pattern: md5.Sum(<... $CRED ...>)
+                  - pattern: sha1.Sum(<... $CRED ...>)
+                  - pattern: |
+                      $H := md5.New()
+                      ...
+                      $H.Write(<... $CRED ...>)
+                  - pattern: |
+                      $H := sha1.New()
+                      ...
+                      $H.Write(<... $CRED ...>)
+                  - pattern: |
+                      $H := md5.New()
+                      ...
+                      io.WriteString($H, <... $CRED ...>)
+                  - pattern: |
+                      $H := sha1.New()
+                      ...
+                      io.WriteString($H, <... $CRED ...>)
+              - metavariable-regex:
+                  metavariable: $CRED
+                  regex: (?i)^(?!.*hash).*(password|passwd|pwd|(?<![a-z])pass(?![a-z])|passphrase).*
+          - patterns:
+              - pattern-inside: |
+                  func $FN(...) $RT { ... }
+              - pattern-either:
+                  - pattern: md5.Sum(...)
+                  - pattern: sha1.Sum(...)
+                  - pattern: md5.New()
+                  - pattern: sha1.New()
+              - metavariable-regex:
+                  metavariable: $FN
+                  regex: (?i)^(hash|encode|encrypt|crypt|digest|check|verify|match|make|create|store|compute|generate)[-_]?(user)?[-_]?(password|passwd|pwd|passphrase)s?$
+
+  - id: aegis-go-insecure-session-cookie
+    languages: [go]
+    severity: WARNING
+    message: >-
+      A session or authentication cookie is built without HttpOnly or without
+      Secure (or with one explicitly false). net/http's Cookie defaults both to
+      false. Without HttpOnly any XSS can read it; without Secure it is sent over
+      plain HTTP. Set HttpOnly: true and Secure: true. CSRF cookies, which must
+      stay readable by script, are not flagged.
+    metadata:
+      cwe:
+        - "CWE-614: Sensitive Cookie in HTTPS Session Without 'Secure' Attribute"
+        - "CWE-1004: Sensitive Cookie Without 'HttpOnly' Flag"
+      owasp:
+        - A05:2021 - Security Misconfiguration
+      category: security
+      subcategory: [vuln]
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: MEDIUM
+      technology: [go, net/http, gin]
+      written-from: CWE-614, CWE-1004; net/http.Cookie struct docs; gin Context.SetCookie signature
+      references:
+        - https://pkg.go.dev/net/http#Cookie
+    pattern-either:
+      - patterns:
+          - pattern-either:
+              - pattern: 'http.Cookie{..., Name: $NAME, ...}'
+          # Only a cookie written to a response: HttpOnly/Secure are attributes a
+          # browser enforces, meaningless on a client-side cookie jar (vault CLI).
+          - pattern-either:
+              - pattern-inside: http.SetCookie($W, <... $X ...>)
+              - pattern-inside: |
+                  $C := &http.Cookie{...}
+                  ...
+                  http.SetCookie($W, $C)
+              - pattern-inside: |
+                  $C := http.Cookie{...}
+                  ...
+                  http.SetCookie($W, &$C)
+          - pattern-either:
+              - pattern: 'http.Cookie{..., HttpOnly: false, ...}'
+              - pattern: 'http.Cookie{..., Secure: false, ...}'
+              - patterns:
+                  - pattern: 'http.Cookie{...}'
+                  - pattern-not: 'http.Cookie{..., HttpOnly: $H, ...}'
+                  - pattern-not-inside: |
+                      $C := &http.Cookie{...}
+                      ...
+                      $C.HttpOnly = $X
+                  - pattern-not-inside: |
+                      $C := http.Cookie{...}
+                      ...
+                      $C.HttpOnly = $X
+              - patterns:
+                  - pattern: 'http.Cookie{...}'
+                  - pattern-not: 'http.Cookie{..., Secure: $S, ...}'
+                  - pattern-not-inside: |
+                      $C := &http.Cookie{...}
+                      ...
+                      $C.Secure = $X
+                  - pattern-not-inside: |
+                      $C := http.Cookie{...}
+                      ...
+                      $C.Secure = $X
+          # MaxAge < 0 / an empty Value deletes the cookie
+          - pattern-not: 'http.Cookie{..., MaxAge: -1, ...}'
+          - pattern-not: 'http.Cookie{..., Value: "", ...}'
+          - metavariable-regex:
+              metavariable: $NAME
+              regex: (?i)^(?!.*(csrf|xsrf)).*(sess|sid|auth|token|jwt|remember|login|refresh|access|identity|credential).*$
+      - patterns:
+          - pattern-either:
+              - pattern: $CTX.SetCookie($NAME, $V, $AGE, $PATH, $DOMAIN, false, $HTTPONLY)
+              - pattern: $CTX.SetCookie($NAME, $V, $AGE, $PATH, $DOMAIN, $SECURE, false)
+          - pattern-not: $CTX.SetCookie($NAME, "", ...)
+          - metavariable-regex:
+              metavariable: $NAME
+              regex: (?i)^(?!.*(csrf|xsrf)).*(sess|sid|auth|token|jwt|remember|login|refresh|access|identity|credential).*$
+

@@ -20,22 +20,30 @@ its findings, and is never counted as coverage or STRONG evidence.
 
 ## The N4 audit of N3's 18 staged rules
 
-Each rule was read for what it actually matches on.
+Each rule was read for what it actually matches on, then re-checked on the N4 ground-truth corpora.
 
-**Promoted to SILENT-CLEAN (7), API shape only:** `aegis-js-insecure-session-cookie-esm`
-(the `express-session` import and its options object), `aegis-py-weak-cipher`,
-`aegis-java-weak-cipher` (JDK standard algorithm names; NIST SP 800-131A),
-`aegis-py-weak-key-size`, `aegis-java-weak-key-size`, `aegis-go-weak-key-size` and
-`aegis-php-weak-key-size` (a numeric bit length below 2048).
+**SILENT-CLEAN (6), API shape only, ran on every measured corpus with 0 FP and never
+fired:** `aegis-js-insecure-session-cookie-esm` (the `express-session` import and its options
+object), `aegis-py-weak-cipher`, `aegis-py-weak-key-size`, `aegis-java-weak-key-size`,
+`aegis-go-weak-key-size`, `aegis-php-weak-key-size`.
 
-**Still STAGED (11):**
+**Promoted to PROVEN in N4 Part C** (fired on the N4 ground-truth corpora, every finding
+a true positive -- docs/GROUND_TRUTH_N4.md):
+
+| rule | from | evidence |
+|---|---|---|
+| `aegis-java-weak-cipher` | silent-clean | VulnerableApp: `AES/ECB/PKCS5Padding` (EncryptionUtils:88) and the LM-hash DES (PasswordHashingUtils:150-151) -- 3 TP / 0 FP |
+| `aegis-go-weak-hash-credential` | staged | DVGA (Go): `md5.Sum([]byte(u.Password))`, its documented weak-password module -- 1 TP / 0 FP |
+| `aegis-go-insecure-session-cookie` | staged | DVGA (Go): `session_id` and `signed_session` cookies without Secure -- 2 TP / 0 FP |
+
+**Still STAGED (9):**
 
 | rule | why it stays |
 |---|---|
-| `aegis-js-weak-random`-family siblings: `aegis-py-weak-random-secret`, `aegis-go-weak-random-secret` | match on the **name** of the receiving variable / function (`$NAME`, `$FN`) |
-| `aegis-py-weak-hash-security-use`, `aegis-java-weak-hash-credential`, `aegis-go-weak-hash-credential` | match on credential / digest **names** (`$NAME`, `$ARG`, `$CRED`, `$FN`) |
-| `aegis-go-insecure-session-cookie` | matches on the cookie **name**; one real-code FP (a client cookie jar) before its fix |
-| `aegis-js-session-trust-boundary`, `aegis-py-session-trust-boundary`, `aegis-go-session-trust-boundary`, `aegis-php-session-trust-boundary` | the privilege branch matches on session-key **names** (`$PRIV`); JS also on the request variable's name (`$REQ`) |
+| `aegis-py-weak-random-secret` | fired in N4: 4 TP (PyGoat OTP, API key) but **1 FP** (DVGraphQL `random.choice(['changeme'])`, where the weakness is the password list, not the RNG); also name-based |
+| `aegis-go-weak-random-secret` | matches on the receiving variable / function **name**; never fired |
+| `aegis-py-weak-hash-security-use`, `aegis-java-weak-hash-credential` | match on digest / credential **names**; never fired on real code |
+| `aegis-js-session-trust-boundary`, `aegis-py-session-trust-boundary`, `aegis-go-session-trust-boundary`, `aegis-php-session-trust-boundary` | the privilege branch matches on session-key **names** (`$PRIV`); never fired |
 | `aegis-java-session-trust-boundary` | one OWASP Benchmark FP, plus the `$PRIV` name branch |
 
 ## Promotion

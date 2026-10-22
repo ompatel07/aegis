@@ -91,16 +91,28 @@ def test_languages_we_do_no_sast_on_are_tiered_none():
         assert rc.rule_index().get(lang) is None, f"{lang} now has rules; re-tier it"
 
 
-def test_java_only_repo_is_not_confident():
+def test_limited_language_repo_is_not_confident():
     """The scanner half of the N2 gate (the orchestrator half is
-    pipeline/coverage_confidence_test.go)."""
-    cov = rc.summarise({"java": 5000})
+    pipeline/coverage_confidence_test.go). N2 wrote it for Java; N4 moved Java to
+    STRONG, so it now holds for Go, the language still LIMITED."""
+    cov = rc.summarise({"go": 5000})
     assert cov is not None
     assert cov["confident"] is False
     assert cov["strong_fraction"] == 0.0
-    # the gap names the MEASURED rule count, not a constant (N3 moved it from 7)
-    assert "Java" in cov["gap"] and f"{rc.rule_index()['java'].rules} rules" in cov["gap"]
-    assert cov["summary"] == "Java limited"
+    # the gap names the MEASURED rule count, not a constant
+    assert "Go" in cov["gap"] and f"{rc.rule_index()['go'].rules} rules" in cov["gap"]
+    assert cov["summary"] == "Go limited"
+
+
+def test_java_and_python_are_strong_on_n4_ground_truth():
+    """N4: both taint packs caught documented vulnerabilities in more than one
+    ground-truth corpus. The proof is named per rule in STRONG_EVIDENCE and must ship."""
+    for lang in ("java", "python"):
+        assert rc.tier_of(lang) == rc.TIER_STRONG
+        assert rc.STRONG_EVIDENCE.get(lang), f"{lang} is STRONG with no named evidence"
+    assert rc.summarise({"java": 5000})["confident"] is True
+    assert rc.summarise({"python": 5000})["confident"] is True
+    assert rc.tier_of("go") == rc.TIER_LIMITED
 
 
 def test_strongly_covered_repos_are_confident():
@@ -129,7 +141,7 @@ def test_non_application_languages_do_not_create_coverage():
     """A Kubernetes-heavy Java repo must not look covered because we read its YAML."""
     assert rc.summarise({"yaml": 5000}) is None
     assert rc.summarise({}) is None
-    cov = rc.summarise({"java": 1000, "yaml": 9000})
+    cov = rc.summarise({"go": 1000, "yaml": 9000})
     assert cov["total_code_lines"] == 1000 and cov["confident"] is False
 
 
