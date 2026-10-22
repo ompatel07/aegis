@@ -9,8 +9,14 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import javax.xml.xpath.XPath;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -19,6 +25,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.util.HtmlUtils;
 import org.springframework.web.reactive.function.server.ServerRequest;
 
 class TaintFixtures {
@@ -75,6 +83,131 @@ class TaintFixtures {
             // ok: aegis-java-xss
             pw.println(logLine);
         }
+    }
+
+    // N5: a value of numeric type cannot carry markup (taint_assume_safe_numbers).
+    void xssNumberOk(HttpServletResponse resp, HttpServletRequest req) throws Exception {
+        int qty = Integer.parseInt(req.getParameter("qty"));
+        int total = qty * 3;
+        PrintWriter out = resp.getWriter();
+        // ok: aegis-java-xss
+        out.println("<p>Total: " + total + "</p>");
+    }
+
+    void xssParsedInlineOk(HttpServletResponse resp, HttpServletRequest req) throws Exception {
+        PrintWriter out = resp.getWriter();
+        // ok: aegis-java-xss
+        out.println("<p>" + Long.parseLong(req.getParameter("n")) + "</p>");
+    }
+
+    // N5: a ResultSet holds database rows, not the request. Binding a request value
+    // into the statement does not make the rows attacker data (stored XSS is a
+    // second-order flow this rule does not model).
+    void xssResultSetOk(Connection conn, HttpServletResponse resp, HttpServletRequest req) throws Exception {
+        String code = req.getParameter("code");
+        PreparedStatement ps = conn.prepareStatement("SELECT name FROM items WHERE code = ?");
+        ps.setString(1, code);
+        ResultSet rows = ps.executeQuery();
+        PrintWriter out = resp.getWriter();
+        while (rows.next()) {
+            // ok: aegis-java-xss
+            out.println("<li>" + rows.getString(1) + "</li>");
+        }
+    }
+
+    void xssXPathResultOk(HttpServletResponse resp, HttpServletRequest req, org.w3c.dom.Document doc) throws Exception {
+        String user = req.getParameter("user");
+        javax.xml.xpath.XPath xp = javax.xml.xpath.XPathFactory.newInstance().newXPath();
+        XPath xpath = xp;
+        // the XPath INJECTION is real, but the printed value is a node of the document
+        String name = xpath.compile("/users/user[name='" + user + "']/display").evaluate(doc);
+        PrintWriter out = resp.getWriter();
+        // ok: aegis-java-xss
+        out.println(name);
+    }
+
+    // N5: Spring writes a String response body as-is, and a browser's Accept header
+    // negotiates it to text/html, so a request value in it is reflected XSS.
+    ResponseEntity<String> xssResponseEntityBad(@RequestParam("q") String q) {
+        // ruleid: aegis-java-xss
+        return new ResponseEntity<String>("<p>" + q + "</p>", HttpStatus.OK);
+    }
+
+    ResponseEntity<String> xssResponseEntityOkBuilderBad(@RequestParam("q") String q) {
+        // ruleid: aegis-java-xss
+        return ResponseEntity.ok("<p>" + q + "</p>");
+    }
+
+    ResponseEntity<String> xssResponseEntityBodyBad(@RequestParam("q") String q) {
+        // ruleid: aegis-java-xss
+        return ResponseEntity.status(HttpStatus.OK).body("<p>" + q + "</p>");
+    }
+
+    ResponseEntity<String> xssResponseEntityEncodedOk(@RequestParam("q") String q) {
+        // ok: aegis-java-xss
+        return ResponseEntity.ok("<p>" + Encode.forHtml(q) + "</p>");
+    }
+
+    ResponseEntity<String> xssResponseEntitySpringEscapedOk(@RequestParam("q") String q) {
+        String page = String.format("<img src=\"%s\"/>", HtmlUtils.htmlEscapeHex(q));
+        // ok: aegis-java-xss
+        return new ResponseEntity<>(page, HttpStatus.OK);
+    }
+
+    // A non-String body is serialized by a message converter (JSON), not written as markup.
+    ResponseEntity<LoginForm> xssResponseEntityObjectOk(@RequestParam("q") String q) {
+        LoginForm form = () -> q;
+        // ok: aegis-java-xss
+        return new ResponseEntity<LoginForm>(form, HttpStatus.OK);
+    }
+
+    @GetMapping("/greet")
+    @ResponseBody
+    String xssResponseBodyBad(@RequestParam("name") String name) {
+        // ruleid: aegis-java-xss
+        return "<h1>Hello " + name + "</h1>";
+    }
+
+    @GetMapping(value = "/greet.json", produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    String xssResponseBodyJsonOk(@RequestParam("name") String name) {
+        // ok: aegis-java-xss
+        return "{\"name\": \"" + name + "\"}";
+    }
+
+    // ── Spring JdbcTemplate (N5) ─────────────────────────────────────────────
+    private JdbcTemplate jdbcTemplate;
+    private NamedParameterJdbcTemplate namedJdbc;
+
+    void jdbcTemplateBad(@RequestParam("id") String id) {
+        // ruleid: aegis-java-sql-injection
+        jdbcTemplate.queryForList("SELECT * FROM items WHERE id = " + id);
+    }
+
+    void jdbcTemplateUpdateBad(@RequestParam("name") String name) {
+        // ruleid: aegis-java-sql-injection
+        jdbcTemplate.update("UPDATE items SET name = '" + name + "'");
+    }
+
+    void namedJdbcBad(@RequestParam("id") String id) {
+        // ruleid: aegis-java-sql-injection
+        namedJdbc.queryForList("SELECT * FROM items WHERE id = " + id, new java.util.HashMap<String, Object>());
+    }
+
+    // A PreparedStatementCreator lambda as the first argument: the SQL text is inside
+    // it, and the inner prepareStatement() is the sink that must still report.
+    void jdbcTemplateCreatorBad(@RequestParam("id") String id) {
+        jdbcTemplate.query(
+                (conn) ->
+                        // ruleid: aegis-java-sql-injection
+                        conn.prepareStatement("SELECT * FROM items WHERE id = '" + id + "'"),
+                (ps) -> {},
+                (rs) -> { return null; });
+    }
+
+    void jdbcTemplateBoundOk(@RequestParam("id") String id) {
+        // ok: aegis-java-sql-injection
+        jdbcTemplate.queryForList("SELECT * FROM items WHERE id = ?", id);
     }
 
     // ── OS command injection ─────────────────────────────────────────────────

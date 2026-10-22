@@ -83,6 +83,24 @@ rules:
               - pattern: $CONN.prepareStatement($SQL, ...)
               - pattern: $CONN.prepareCall($SQL, ...)
           - focus-metavariable: $SQL
+      # N5: Spring JDBC. JdbcTemplate / NamedParameterJdbcTemplate (and their
+      # JdbcOperations / NamedParameterJdbcOperations interfaces) take the SQL text as
+      # the first argument of query*, update, execute and batchUpdate; bind values are
+      # the later arguments, so only the first is a sink. The receiver is matched by
+      # its declared type, not its name. A SEPARATE sink entry on purpose: as one more
+      # branch of the pattern-either above, semgrep 1.97 let this match suppress the
+      # prepareStatement() sink nested inside a PreparedStatementCreator lambda passed
+      # as the first argument (VulnerableApp ErrorBased level 4 was lost that way).
+      - patterns:
+          - pattern-either:
+              - pattern: (JdbcTemplate $JT).$METHOD($SQL, ...)
+              - pattern: (JdbcOperations $JT).$METHOD($SQL, ...)
+              - pattern: (NamedParameterJdbcTemplate $JT).$METHOD($SQL, ...)
+              - pattern: (NamedParameterJdbcOperations $JT).$METHOD($SQL, ...)
+          - metavariable-regex:
+              metavariable: $METHOD
+              regex: ^(query|queryForObject|queryForList|queryForMap|queryForRowSet|queryForStream|update|execute|batchUpdate)$
+          - focus-metavariable: $SQL
 
   # ── Cross-site scripting ─────────────────────────────────────────────────────
   - id: aegis-java-xss
@@ -103,9 +121,14 @@ rules:
       confidence: MEDIUM
       likelihood: MEDIUM
       impact: MEDIUM
-      technology: [java, servlet]
+      technology: [java, servlet, spring]
       references:
         - https://owasp.org/www-community/attacks/xss/
+        - https://docs.spring.io/spring-framework/reference/web/webmvc/mvc-controller/ann-methods/responsebody.html
+    # N5: a value of numeric or boolean type cannot carry markup.
+    options:
+      taint_assume_safe_numbers: true
+      taint_assume_safe_booleans: true
     pattern-sources: *request_sources
     pattern-sanitizers:
       - pattern-either:
@@ -119,6 +142,36 @@ rules:
           - pattern: org.owasp.esapi.ESAPI.encoder().encodeForHTML(...)
           - pattern: StringEscapeUtils.escapeHtml4(...)
           - pattern: StringEscapeUtils.escapeHtml3(...)
+          # N5: Spring's org.springframework.web.util.HtmlUtils escapers.
+          - pattern: HtmlUtils.htmlEscape(...)
+          - pattern: HtmlUtils.htmlEscapeDecimal(...)
+          - pattern: HtmlUtils.htmlEscapeHex(...)
+          - pattern: org.springframework.web.util.HtmlUtils.htmlEscape(...)
+          # N5: numeric parsing. The result is a number, and a number cannot carry
+          # markup (java.lang.Integer/Long/Short/Byte/Double/Float parse and valueOf).
+          - pattern: Integer.parseInt(...)
+          - pattern: Integer.valueOf(...)
+          - pattern: Long.parseLong(...)
+          - pattern: Long.valueOf(...)
+          - pattern: Short.parseShort(...)
+          - pattern: Byte.parseByte(...)
+          - pattern: Double.parseDouble(...)
+          - pattern: Double.valueOf(...)
+          - pattern: Float.parseFloat(...)
+          - pattern: Float.valueOf(...)
+          # N5: query results. A JDBC ResultSet holds database rows, and an XPath
+          # evaluation returns nodes of the document; binding or splicing a request
+          # value into the query does not make those rows attacker data. (Stored XSS,
+          # where the rows themselves were planted earlier, is a second-order flow this
+          # intraprocedural rule does not model.) This was the Security Shepherd FP
+          # mechanism: prepstmt.setString(1, code) tainted the statement, and with it
+          # the ResultSet it returned (docs/GROUND_TRUTH_N5.md).
+          - pattern: $ST.executeQuery(...)
+          - pattern: $ST.getResultSet()
+          - pattern: (javax.xml.xpath.XPath $XP).evaluate(...)
+          - pattern: (XPath $XP).evaluate(...)
+          - pattern: (XPathExpression $XE).evaluate(...)
+          - pattern: (XPath $XP).compile(...).evaluate(...)
     pattern-sinks:
       - patterns:
           - pattern-either:
@@ -140,6 +193,33 @@ rules:
                   - pattern-inside: |
                       $W $OUT = $RESP.getWriter();
                       ...
+          - focus-metavariable: $S
+      # N5: Spring MVC response bodies. A handler's String body is written to the
+      # response as-is (StringHttpMessageConverter), and a browser's Accept header
+      # negotiates it to text/html, so request data in it is reflected XSS. Two API
+      # shapes: a method declared to return ResponseEntity<String> (the body is the
+      # constructor's first argument, ok(...) or the builder's body(...)), and an
+      # @ResponseBody method returning String. A non-String body is serialized by a
+      # message converter (JSON), and an explicit JSON / plain-text `produces` is not
+      # rendered as HTML, so neither is a sink.
+      - patterns:
+          - pattern-inside: |
+              ResponseEntity<String> $M(...) { ... }
+          - pattern-either:
+              - pattern: new ResponseEntity<$T>($S, ...)
+              - pattern: new ResponseEntity<>($S, ...)
+              - pattern: new ResponseEntity($S, ...)
+              - pattern: ResponseEntity.ok($S)
+              - pattern: $BUILDER.body($S)
+          - focus-metavariable: $S
+      - patterns:
+          - pattern-inside: |
+              @ResponseBody
+              String $M(...) { ... }
+          - pattern-not-inside: |
+              @$MAP(..., produces = $P, ...)
+              String $M(...) { ... }
+          - pattern: return $S;
           - focus-metavariable: $S
 
   # ── OS command injection ─────────────────────────────────────────────────────
