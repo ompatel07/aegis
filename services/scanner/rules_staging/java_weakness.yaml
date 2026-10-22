@@ -1,0 +1,252 @@
+# Pass N3 (2026-10-22) -- STAGED, NOT SHIPPED (see README.md): Java weakness rules. Written by Aegis from the CWE
+# definitions and the JDK (java.util.Random, java.security, javax.crypto), Servlet
+# and Spring Security documentation; no registry, benchmark or vendor rule text
+# was used. Purpose-aware where purpose decides (random, hash, cookie, trust
+# boundary); context-free only where the primitive itself is broken (DES, RC4,
+# ECB, short RSA keys).
+rules:
+  - id: aegis-java-weak-hash-credential
+    languages: [java]
+    severity: WARNING
+    message: >-
+      A credential is hashed with MD5 or SHA-1, or an MD5/SHA-1 digest is used
+      as a password, signature or token. Both are fast (billions per second on a
+      GPU) and broken for collision resistance; a password store built on them
+      falls to brute force. Use a password hash (Argon2, bcrypt, scrypt, PBKDF2:
+      Spring Security's Argon2PasswordEncoder / BCryptPasswordEncoder) and
+      HMAC-SHA-256 for integrity. An MD5 checksum or cache key is not flagged.
+    metadata:
+      cwe:
+        - "CWE-328: Use of Weak Hash"
+        - "CWE-916: Use of Password Hash With Insufficient Computational Effort"
+      owasp:
+        - A02:2021 - Cryptographic Failures
+      category: security
+      subcategory: [vuln]
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: HIGH
+      technology: [java, spring-security, commons-codec]
+      written-from: CWE-328, CWE-916; java.security.MessageDigest javadoc; Spring Security PasswordEncoder javadoc (Md5/Sha/MessageDigest encoders deprecated as insecure)
+      references:
+        - https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html
+    pattern-either:
+      # Password encoders that are weak by construction: a PasswordEncoder only
+      # ever hashes passwords, so no further context is needed.
+      - pattern: new org.springframework.security.authentication.encoding.Md5PasswordEncoder(...)
+      - pattern: new org.springframework.security.authentication.encoding.ShaPasswordEncoder(...)
+      - pattern: new org.springframework.security.crypto.password.LdapShaPasswordEncoder(...)
+      - pattern: new org.springframework.security.crypto.password.Md4PasswordEncoder(...)
+      - patterns:
+          - pattern: new org.springframework.security.crypto.password.MessageDigestPasswordEncoder("$ALG")
+          - metavariable-regex: {metavariable: $ALG, regex: '(?i)^(md2|md4|md5|sha|sha-?1)$'}
+      # MessageDigest MD5/SHA-1 over a credential-named value.
+      - patterns:
+          - pattern-either:
+              - pattern: java.security.MessageDigest.getInstance("$ALG").digest(<... $CRED ...>)
+              - pattern: |
+                  $MD = java.security.MessageDigest.getInstance("$ALG");
+                  ...
+                  $MD.update(<... $CRED ...>);
+              - pattern: |
+                  $T $MD = java.security.MessageDigest.getInstance("$ALG");
+                  ...
+                  $MD.update(<... $CRED ...>);
+              - pattern: |
+                  $MD = java.security.MessageDigest.getInstance("$ALG");
+                  ...
+                  $MD.digest(<... $CRED ...>);
+              - pattern: |
+                  $T $MD = java.security.MessageDigest.getInstance("$ALG");
+                  ...
+                  $MD.digest(<... $CRED ...>);
+          - metavariable-regex: {metavariable: $ALG, regex: '(?i)^(md2|md4|md5|sha|sha-?1)$'}
+          - metavariable-regex: {metavariable: $CRED, regex: '(?i)^(?!.*hash).*(password|passwd|pwd|(?<![a-z])pass(?![a-z])|passphrase).*'}
+      # commons-codec DigestUtils md5/sha1 over a credential-named value.
+      - patterns:
+          - pattern: org.apache.commons.codec.digest.DigestUtils.$DU(<... $CRED ...>)
+          - metavariable-regex: {metavariable: $DU, regex: '^(md2|md5|sha|sha1)(Hex)?$'}
+          - metavariable-regex: {metavariable: $CRED, regex: '(?i)^(?!.*hash).*(password|passwd|pwd|(?<![a-z])pass(?![a-z])|passphrase).*'}
+      # Guava Hashing.md5()/sha1() over a credential-named value.
+      - patterns:
+          - pattern: com.google.common.hash.Hashing.$GH().$HF(<... $CRED ...>, ...)
+          - metavariable-regex: {metavariable: $GH, regex: '^(md5|sha1)$'}
+          - metavariable-regex: {metavariable: $CRED, regex: '(?i)^(?!.*hash).*(password|passwd|pwd|(?<![a-z])pass(?![a-z])|passphrase).*'}
+      # A weak digest inside a method whose name says it handles passwords.
+      - patterns:
+          - pattern-inside: |
+              $RT $FN(...) { ... }
+          - pattern-either:
+              - patterns:
+                  - pattern: java.security.MessageDigest.getInstance("$ALG")
+                  - metavariable-regex: {metavariable: $ALG, regex: '(?i)^(md2|md4|md5|sha|sha-?1)$'}
+              - patterns:
+                  - pattern: org.apache.commons.codec.digest.DigestUtils.$DU(...)
+                  - metavariable-regex: {metavariable: $DU, regex: '^(md2|md5|sha|sha1)(Hex)?$'}
+          - metavariable-regex: {metavariable: $FN, regex: '(?i)^(hash|encode|encrypt|crypt|digest|check|verify|match|make|create|store|compute|generate)[-_]?(user)?[-_]?(password|passwd|pwd|passphrase)s?$'}
+
+  - id: aegis-java-weak-cipher
+    languages: [java]
+    severity: ERROR
+    message: >-
+      A broken cipher or mode is requested: DES (56-bit key), 3DES/DESede (64-bit
+      block, Sweet32; disallowed by NIST from 2024), RC2, RC4/ARCFOUR (biased
+      keystream), Blowfish (64-bit block), or ECB mode -- including plain "AES",
+      which the JDK expands to AES/ECB/PKCS5Padding. ECB encrypts equal blocks to
+      equal ciphertext, so structure leaks. This needs no context. Use
+      AES/GCM/NoPadding with a fresh 12-byte IV.
+    metadata:
+      cwe:
+        - "CWE-327: Use of a Broken or Risky Cryptographic Algorithm"
+      owasp:
+        - A02:2021 - Cryptographic Failures
+      category: security
+      subcategory: [vuln]
+      confidence: HIGH
+      likelihood: MEDIUM
+      impact: HIGH
+      technology: [java]
+      written-from: CWE-327; JDK Security Standard Algorithm Names (Cipher transformations; "AES" defaults to ECB); NIST SP 800-131A Rev.2
+      references:
+        - https://docs.oracle.com/en/java/javase/21/docs/specs/security/standard-names.html#cipher-algorithm-names
+    pattern-either:
+      - pattern: new javax.crypto.spec.DESKeySpec(...)
+      - pattern: new javax.crypto.spec.DESedeKeySpec(...)
+      # A Cipher transformation: a weak algorithm in any mode, a block cipher in
+      # ECB, or bare "AES" (= AES/ECB/PKCS5Padding). RSA/ECB/... is excluded: for
+      # RSA "ECB" is a placeholder, not a mode.
+      - patterns:
+          - pattern: javax.crypto.Cipher.getInstance("$ALG", ...)
+          - metavariable-regex:
+              metavariable: $ALG
+              regex: '(?i)^(?:(des|desede|tripledes|3des|des-?ede3?|rc2|rc4|arcfour|blowfish|idea|cast5|rc5|pbewith.*(des|rc2|rc4).*)(/.*)?|(aes|aes_?(128|192|256)|camellia|seed|aria)(/ecb/.*)?|(?!rsa)[a-z0-9_]+/ecb/.*)$'
+      # Key material for a weak algorithm. Here "AES" names a key type, not a
+      # mode, so only the weak algorithms count.
+      - patterns:
+          - pattern-either:
+              - pattern: javax.crypto.KeyGenerator.getInstance("$ALG", ...)
+              - pattern: javax.crypto.SecretKeyFactory.getInstance("$ALG", ...)
+              - pattern: new javax.crypto.spec.SecretKeySpec($K, "$ALG")
+          - metavariable-regex:
+              metavariable: $ALG
+              regex: '(?i)^(des|desede|tripledes|3des|des-?ede3?|rc2|rc4|arcfour|blowfish|idea|cast5|rc5|pbewith.*(des|rc2|rc4).*)(/.*)?$'
+
+  - id: aegis-java-weak-key-size
+    languages: [java]
+    severity: ERROR
+    message: >-
+      An RSA, DSA or Diffie-Hellman key pair shorter than 2048 bits is generated.
+      1024-bit keys are below every current minimum (NIST SP 800-57, 800-131A)
+      and within reach of well-resourced attackers. This needs no context.
+      Initialise the generator with 2048 bits or more (3072 for use beyond 2030),
+      or use an elliptic curve.
+    metadata:
+      cwe:
+        - "CWE-326: Inadequate Encryption Strength"
+      owasp:
+        - A02:2021 - Cryptographic Failures
+      category: security
+      subcategory: [vuln]
+      confidence: HIGH
+      likelihood: LOW
+      impact: HIGH
+      technology: [java]
+      written-from: CWE-326; java.security.KeyPairGenerator javadoc; NIST SP 800-57 Part 1 key-length tables
+      references:
+        - https://csrc.nist.gov/pubs/sp/800/57/pt1/r5/final
+    patterns:
+      - pattern-either:
+          - pattern: |
+              $G = java.security.KeyPairGenerator.getInstance("$ALG", ...);
+              ...
+              $G.initialize($N, ...);
+          - pattern: |
+              $T $G = java.security.KeyPairGenerator.getInstance("$ALG", ...);
+              ...
+              $G.initialize($N, ...);
+          - pattern: new java.security.spec.RSAKeyGenParameterSpec($N, ...)
+      - metavariable-comparison:
+          metavariable: $N
+          comparison: $N < 2048
+
+  - id: aegis-java-session-trust-boundary
+    mode: taint
+    languages: [java]
+    severity: WARNING
+    message: >-
+      Request data is written into the HttpSession in a way that lets the client
+      decide what the server will later trust: the request chooses WHICH session
+      attribute is written (it can overwrite any trusted one), or it sets a
+      privilege-shaped attribute (role, isAdmin, permissions, ...). Session
+      attributes are read back as server-established facts. Derive them from
+      verified state, or validate against an allow-list first.
+    metadata:
+      cwe:
+        - "CWE-501: Trust Boundary Violation"
+      owasp:
+        - A04:2021 - Insecure Design
+      category: security
+      subcategory: [vuln]
+      confidence: MEDIUM
+      likelihood: LOW
+      impact: HIGH
+      technology: [java, servlet, spring]
+      written-from: CWE-501; Servlet HttpSession.setAttribute javadoc
+      references:
+        - https://cwe.mitre.org/data/definitions/501.html
+    pattern-sources:
+      - pattern-either:
+          - pattern: $REQ.getParameter(...)
+          - pattern: $REQ.getParameterValues(...)
+          - pattern: $REQ.getParameterMap()
+          - pattern: $REQ.getParameterNames()
+          - pattern: $REQ.getHeader(...)
+          - pattern: $REQ.getHeaders(...)
+          - pattern: $REQ.getHeaderNames()
+          - pattern: $REQ.getQueryString()
+          - pattern: $REQ.getCookies()
+      - patterns:
+          - pattern-either:
+              - pattern: |
+                  $RT $M(..., @RequestParam(...) $T $SRC, ...) { ... }
+              - pattern: |
+                  $RT $M(..., @PathVariable(...) $T $SRC, ...) { ... }
+              - pattern: |
+                  $RT $M(..., @RequestHeader(...) $T $SRC, ...) { ... }
+              - pattern: |
+                  $RT $M(..., @CookieValue(...) $T $SRC, ...) { ... }
+          - focus-metavariable: $SRC
+    pattern-sanitizers:
+      # Reading the session back is not request data.
+      - pattern: $S.getAttribute(...)
+      # A value computed by a lookup / validation call is a server decision.
+      - exact: true
+        patterns:
+          - pattern-either:
+              - pattern: $F(...)
+              - pattern: $O.$F(...)
+          - metavariable-regex:
+              metavariable: $F
+              regex: ^(?!(?:.*\.)?(getParameter|getParameterValues|getParameterMap|getParameterNames|getHeader|getHeaders|getHeaderNames|getQueryString|getCookies|getValue|getName|getSession|setAttribute|putValue|trim|toLowerCase|toUpperCase|toString|valueOf|nextElement|get)$).*
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $S.setAttribute($KEY, $V)
+              - pattern: $S.putValue($KEY, $V)
+          - pattern-either:
+              - pattern-inside: $REQ.getSession(...).$SET(...)
+              - pattern-inside: (javax.servlet.http.HttpSession $SESS).$SET(...)
+              - pattern-inside: (jakarta.servlet.http.HttpSession $SESS).$SET(...)
+          - focus-metavariable: $KEY
+      - patterns:
+          - pattern-either:
+              - pattern: $S.setAttribute("$PRIV", $V)
+              - pattern: $S.putValue("$PRIV", $V)
+          - pattern-either:
+              - pattern-inside: $REQ.getSession(...).$SET(...)
+              - pattern-inside: (javax.servlet.http.HttpSession $SESS).$SET(...)
+              - pattern-inside: (jakarta.servlet.http.HttpSession $SESS).$SET(...)
+          - focus-metavariable: $V
+          - metavariable-regex:
+              metavariable: $PRIV
+              regex: (?i)^(is[-_]?)?(roles?|admin|administrator|superuser|staff|permissions?|privileges?|grants?|scopes?|access[-_]?level|user[-_]?level|user[-_]?role|user[-_]?group|groups?|authori[sz]ed|authenticated|logged[-_]?in)$

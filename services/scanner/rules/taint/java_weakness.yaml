@@ -1,0 +1,174 @@
+# Pass N3 (2026-10-22): Java weakness rules. Written by Aegis from the CWE
+# definitions and the JDK (java.util.Random, java.security, javax.crypto), Servlet
+# and Spring Security documentation; no registry, benchmark or vendor rule text
+# was used. Purpose-aware where purpose decides (random, hash, cookie, trust
+# boundary); context-free only where the primitive itself is broken (DES, RC4,
+# ECB, short RSA keys).
+rules:
+  - id: aegis-java-weak-random-secret
+    mode: taint
+    languages: [java]
+    severity: WARNING
+    message: >-
+      A value that has to be unguessable comes from java.util.Random,
+      Math.random() or ThreadLocalRandom. These are linear congruential
+      generators with 48 bits of state: two outputs are enough to recover it, so
+      tokens, session ids, salts and passwords built from them can be predicted.
+      Use java.security.SecureRandom. java.util.Random is fine for simulation,
+      shuffling and jitter, which this rule does not flag.
+    metadata:
+      cwe:
+        - "CWE-330: Use of Insufficiently Random Values"
+      owasp:
+        - A02:2021 - Cryptographic Failures
+      category: security
+      subcategory: [vuln]
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: HIGH
+      technology: [java]
+      written-from: CWE-330/CWE-338; java.util.Random javadoc ("not cryptographically secure ... consider SecureRandom")
+      references:
+        - https://docs.oracle.com/en/java/javase/21/docs/api/java.base/java/util/Random.html
+    pattern-sources:
+      - pattern-either:
+          - pattern: Math.random()
+          - pattern: (java.util.Random $R).$M(...)
+          - pattern: new java.util.Random(...).$M(...)
+          - pattern: java.util.concurrent.ThreadLocalRandom.current().$M(...)
+          # commons-lang 2.x RandomStringUtils is built on java.util.Random
+          - pattern: org.apache.commons.lang.RandomStringUtils.$M(...)
+    pattern-propagators:
+      - pattern: $SB.append($X)
+        from: $X
+        to: $SB
+    pattern-sanitizers:
+      # A value that mixes in SecureRandom output is not predictable.
+      - pattern: <... (java.security.SecureRandom $SR).$SM(...) ...>
+      # A call that is not a value transform ends the flow: a random number passed
+      # to some service does not make the service's answer a weak secret.
+      - exact: true
+        patterns:
+          - pattern-either:
+              - pattern: $F(...)
+              - pattern: $O.$F(...)
+          - pattern-not: Math.random()
+          - pattern-not: (java.util.Random $R).$M(...)
+          - pattern-not: new java.util.Random(...).$M(...)
+          - pattern-not: java.util.concurrent.ThreadLocalRandom.current().$M(...)
+          - pattern-not: java.util.concurrent.ThreadLocalRandom.current()
+          - pattern-not: org.apache.commons.lang.RandomStringUtils.$M(...)
+          - metavariable-regex:
+              metavariable: $F
+              regex: ^(?!(?:.*\.)?(valueOf|toString|toHexString|toBinaryString|toOctalString|format|substring|replace|replaceAll|toUpperCase|toLowerCase|getBytes|encode|encodeToString|encodeHexString|charAt|append|abs|floor|ceil|round|digest|md5Hex|sha1Hex|sha256Hex|nextInt|nextLong|nextDouble|nextFloat|nextBoolean|nextGaussian|current|ints|longs|doubles|random|randomAlphanumeric|randomAlphabetic|randomNumeric|randomAscii)$).*
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $T $NAME = $V;
+              - pattern: $NAME = $V;
+              - pattern: new Cookie($NAME, $V)
+              - pattern: $X.setAttribute($NAME, $V)
+              - pattern: $X.put($NAME, $V)
+          - focus-metavariable: $V
+          - metavariable-regex:
+              metavariable: $NAME
+              regex: &secret_name ^(?:.*(?:[^A-Za-z0-9]|(?<=[a-z0-9])(?=[A-Z])))?(?i:(?:csrf|xsrf|auth|access|reset|verification|verify|confirm|confirmation|activation|invite|invitation|api|bearer|session|login|remember(?:[-_]?me)?|magic|otp|mfa|oauth|signup|unsubscribe|email|password|secret|jwt)[-_]?tokens?|secrets?|salts?|otps?|totp|hotp|csrf|xsrf|passwords?|passwd|pwd|passphrase|passcode|api[-_]?keys?|(?:private|secret|signing|encryption|encrypt|auth|access|hmac|master|crypto|cipher|aes|jwt)[-_]?keys?|ivs?|remember[-_]?me|(?:code[-_]?)?verifier|(?:verification|verify|reset|activation|confirm|confirmation|invite|invitation|login|mfa|recovery|otp|one[-_]?time)[-_]?codes?|pins?)[_0-9]*['"`]?$
+      - patterns:
+          - pattern: $O.$SETTER($V)
+          - focus-metavariable: $V
+          - metavariable-regex:
+              metavariable: $SETTER
+              regex: ^(set|with)[A-Z].*
+          - metavariable-regex:
+              metavariable: $SETTER
+              regex: *secret_name
+      - patterns:
+          - pattern-inside: |
+              $RT $FN(...) { ... }
+          - pattern: return $V;
+          - focus-metavariable: $V
+          - metavariable-regex:
+              metavariable: $FN
+              regex: *secret_name
+          - metavariable-regex:
+              metavariable: $FN
+              regex: '^(?!(?:verify|check|validate|is|has|compare|match|parse|decode|read|load|count|test|Verify|Check|Validate|Is|Has|Compare|Match|Parse|Decode|Read|Load|Count|Test)(?:[A-Z_]|$)).*'
+
+  - id: aegis-java-insecure-session-cookie
+    languages: [java]
+    severity: WARNING
+    message: >-
+      A session or authentication cookie is added to the response without
+      HttpOnly or without Secure (or with one explicitly switched off). A Servlet
+      Cookie has neither by default. Without HttpOnly any XSS can read it; without
+      Secure it is sent over plain HTTP. Call setHttpOnly(true) and
+      setSecure(true). CSRF cookies, which must stay readable by script, are not
+      flagged.
+    metadata:
+      cwe:
+        - "CWE-614: Sensitive Cookie in HTTPS Session Without 'Secure' Attribute"
+        - "CWE-1004: Sensitive Cookie Without 'HttpOnly' Flag"
+      owasp:
+        - A05:2021 - Security Misconfiguration
+      category: security
+      subcategory: [vuln]
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: MEDIUM
+      technology: [java, servlet]
+      written-from: CWE-614, CWE-1004; Servlet API javadoc for Cookie.setSecure / Cookie.setHttpOnly (both default false)
+      references:
+        - https://jakarta.ee/specifications/servlet/6.0/apidocs/jakarta.servlet/jakarta/servlet/http/cookie
+    patterns:
+      - pattern-either:
+          - patterns:
+              - pattern-either:
+                  - pattern-inside: |
+                      $C = new Cookie($NAME, $V);
+                      ...
+                  - pattern-inside: |
+                      $T $C = new Cookie($NAME, $V);
+                      ...
+              - pattern-either:
+                  - pattern: $C.setSecure(false);
+                  - pattern: $C.setHttpOnly(false);
+          - patterns:
+              - pattern-either:
+                  - pattern-inside: |
+                      $C = new Cookie($NAME, $V);
+                      ...
+                  - pattern-inside: |
+                      $T $C = new Cookie($NAME, $V);
+                      ...
+              - pattern: $RESP.addCookie($C);
+              # setHttpOnly(...) was called before the cookie was added
+              - pattern-not-inside: |
+                  $C.setHttpOnly($H);
+                  ...
+          - patterns:
+              - pattern-either:
+                  - pattern-inside: |
+                      $C = new Cookie($NAME, $V);
+                      ...
+                  - pattern-inside: |
+                      $T $C = new Cookie($NAME, $V);
+                      ...
+              - pattern: $RESP.addCookie($C);
+              # setSecure(...) was called before the cookie was added
+              - pattern-not-inside: |
+                  $C.setSecure($S);
+                  ...
+      # deleting a cookie (max-age 0 / empty value) carries no secret
+      - pattern-not-inside: |
+          $C.setMaxAge(0);
+          ...
+      - pattern-not-inside: |
+          $T $C = new Cookie($NAME, "");
+          ...
+      - pattern-not-inside: |
+          $C = new Cookie($NAME, "");
+          ...
+      - metavariable-regex:
+          metavariable: $NAME
+          regex: (?i)^(?!.*(csrf|xsrf)).*(sess|sid|auth|token|jwt|remember|login|refresh|access|identity|credential).*$
+
