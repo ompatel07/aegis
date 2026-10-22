@@ -34,6 +34,7 @@ Two numbers are two different things, and this file keeps them apart:
 | **OWASP Benchmark v1.2** | 2,740 generated Java taint testcases (`benchmarks/owasp/`) | per `QUALITY_BENCHMARK.md` | `aa0121c`-era | semgrep 1.97.0 + Aegis Java taint rules — **superseded by N1 below** |
 | **N1 — sovereign rule set** | the same OWASP harness, 5 ground-truth repos (45 documented vulns), V2's 15 repos re-cloned, 114 hand-triaged findings — each run **before and after** the cut, same day, same checkout | 2026-09-19 | N1 (`b651c94` → N1) | semgrep 1.97.0; Aegis rules + njsscan (LGPL-3.0) only |
 | **N2b — njsscan triage** | every njsscan finding on V2's 15 repos + F1's 5 ground-truth repos (475, deduplicated), each read in source at the scanned commit; pack re-run on the same 285 files after the prune; ground truth re-scanned | 2026-10-22 | N2b (after `3eac2e8`) | semgrep 1.97.0; njsscan @ `b6ade853`, 114 → 89 rules |
+| **N3 — OWASP pattern categories** | 28 new Aegis rules run on V2's 15 repos (re-cloned at their recorded commits) + F1's DVWA/WebGoat/dvpwa + 21 further real repos; every finding hand-triaged; OWASP Benchmark and ground truth before/after through `/scan/sast` | 2026-10-22 | N3 (after N2b) | semgrep 1.97.0; 70 Aegis rules shipped (10 new) + 89 njsscan; 18 N3 rules staged, not shipped |
 | **P2 taint audit** | per-rule audit + FP fixes to `rules/taint/`, verified on minimal reproductions of each V1 FP shape | 2026-08-31 | `ad0dd66`+P2 | semgrep 1.97.0 |
 
 "P1"/"P2" = precision passes. P1 deleted the `ai-code-*` pack and suppressed
@@ -87,7 +88,7 @@ signal in every path — including documentation paths — and is regression-tes
 **Aegis makes no SAST benchmark claim.** The OWASP Benchmark comparison that stood here
 measured *synthetic Java* — the language Aegis lost most of when N1 removed the
 Semgrep-licensed rules, and one this file now classifies as `limited` coverage (seven
-rules, seven CWE classes). A number measured on the weakest thing we do is not a
+rules, seven CWE classes, at the time; nine and ten since N3). A number measured on the weakest thing we do is not a
 headline, in either direction:
 
 - the pre-N1 figures (F1 0.775 / Youden 0.459) are **not ours to cite** — they were
@@ -99,6 +100,15 @@ Both are preserved with their method and dates under
 [Superseded benchmark history](#superseded-benchmark-history) at the end of this file.
 They may be cited there, as history. They may **not** be used as a current capability
 claim in the README, a deck, or any customer-facing material.
+
+**N3 (2026-10-22) re-measured it and it is still not a claim.** With N3's shipped rules
+the Benchmark Youden is **0.175** (from 0.051; TPR 0.278, FPR 0.103), and **all** of the
+gain is the weakrand category: 175 of 218, which reach the rule only through the
+Benchmark's `"rememberMe" + n` cookie name, a sink that never occurs in the 39 real
+repositories N3 triaged. Crypto, hash, securecookie and trustbound stay at 0 with the
+shipped rules. The context-free Java cipher rule scores 130/130 there and fires on no
+real Java code, so it is not shipped. Full per-category table and the gaming check:
+`docs/OWASP_CATEGORIES_N3.md` §D.
 
 What replaces it: the **per-language coverage** table below (what we can and cannot
 read), the **ground-truth recall** in `docs/RULE_REMOVAL_N1.md` §C.2 (22 of 45
@@ -171,11 +181,11 @@ hand-triage (§C.4):
 
 | language | what runs | SAST findings kept (V2, before → after) | documented-vuln evidence | status |
 |---|---|---|---|---|
-| **PHP** | `aegis-php-*` (5 taint rules) | 247 → 45 (18 %) on the 4 repos that completed before; **Dolibarr now completes: 2,649** | DVWA 3/6 unchanged; M1: 25 of 31 DVWA findings TP | **real on vulnerable apps; see the Dolibarr caveat** — `aegis-php-xss` fires 2,362 times there, effectively all false (an app-wide WAF on `PHP_SELF`) |
+| **PHP** | `aegis-php-*` (5 taint rules + N3's 4: weak random, weak password hash, weak cipher, session cookie) | 247 → 45 (18 %) on the 4 repos that completed before; **Dolibarr now completes: 2,649** | DVWA 3/6 unchanged; M1: 25 of 31 DVWA findings TP | **real on vulnerable apps; see the Dolibarr caveat** — `aegis-php-xss` fires 2,362 times there, effectively all false (an app-wide WAF on `PHP_SELF`) |
 | **JS / TS** | `aegis-js-*` (11) + **njsscan** (89 of 114 since N2b, LGPL-3.0; javascript rules run on `.ts` too) | JavaScript 323 → 103 (32 %), TypeScript 173 → 130 (75 %) at N1; N2b then removed 446 of the 475 njsscan findings on these corpora | NodeGoat 5/7 unchanged; juice-shop 9 → **7**/25 (directory listing lost); both unchanged by N2b | **strongest** — our taint rules precise. njsscan: **4.5 % precise** as shipped through N2 (corpus-wide, 21/471), **59 %** after the N2b prune (16/27) |
-| **Java** | `aegis-java-*` (7 taint, intraprocedural) | 60 → 6 (10 %) | WebGoat 6/6 unchanged | **narrow** — injection, path traversal, SSRF only; OWASP Benchmark Youden 0.051 |
-| **Python** | `aegis-py-*` (8 taint + 4 H1 pattern) | 78 → 19 (24 %) | dvpwa 1/1 unchanged | **narrow** — H1's 17/17 TP stands |
-| **Go** | `aegis-go-*` (7 taint) | no Go repo in V2 | — | **narrow, unmeasured on real code** |
+| **Java** | `aegis-java-*` (7 taint, intraprocedural + N3's 2: weak random, session cookie) | 60 → 6 (10 %) | WebGoat 6/6 unchanged | **narrow** — injection, path traversal, SSRF only; OWASP Benchmark Youden 0.051 |
+| **Python** | `aegis-py-*` (8 taint + 4 H1 pattern + N3's session cookie) | 78 → 19 (24 %) | dvpwa 1/1 unchanged | **narrow** — H1's 17/17 TP stands |
+| **Go** | `aegis-go-*` (7 taint + N3's weak cipher) | no Go repo in V2 | — | **narrow, unmeasured on real code** |
 | **Ruby** | none | 582 → **0** | — | **no application-code SAST** |
 | **C#** | none | 26 → **0** | — | **no application-code SAST** |
 | **(any) CI/CD** | `aegis-cicd-*` (3) | 37 → 37 | H2: 32/32 TP | unchanged; the only SAST that fires on Ruby and C# repos |
@@ -187,6 +197,35 @@ vulnerability we detected before the cut. On Java, Python and Go they cover the 
 and little else. On Ruby and C# we do no application-code SAST at all. Everything outside SAST —
 SCA, secrets, IaC, quality, prioritisation, lifecycle — is unaffected. The rebuild plan, ranked by
 measured loss, is `docs/RULE_REMOVAL_N1.md` §E.
+
+### OWASP pattern categories — N3 (2026-10-22)
+
+Weak random, weak hash, weak cipher/key size, insecure cookie, trust boundary: 28 rules
+written from CWE definitions and API docs, gated on real code. Measured on 39 real
+repositories (V2's 15, F1's DVWA/WebGoat/dvpwa, 21 more), every finding hand-triaged:
+
+| shipped rule | real-repo TP / FP | where |
+|---|--:|---|
+| `aegis-php-weak-hash-credential` | 26 / 0 | DVWA, Dolibarr, TeamPass, FreshRSS |
+| `aegis-java-weak-random-secret` | 6 / 0 | WebGoat |
+| `aegis-php-insecure-session-cookie` | 5 / 0 | DVWA, TeamPass |
+| `aegis-php-weak-cipher` | 5 / 0 | DVWA, Dolibarr |
+| `aegis-go-weak-cipher` | 4 / 0 | vault |
+| `aegis-php-weak-random-secret` | 2 / 0 | DVWA, Dolibarr |
+| `aegis-js-insecure-session-cookie` | 2 / 0 | juice-shop |
+| `aegis-js-weak-random-secret` | 1 / 0 | FreshRSS |
+| `aegis-java-insecure-session-cookie` | 1 / 0 | WebGoat |
+| `aegis-py-insecure-session-cookie` | 1 / 0 | django-nV |
+| **10 rules** | **53 / 0** | 11 of the 53 protocol- or format-mandated (NTLM, PDF RC4, PEM, PKCS#7, Fever) |
+
+That 0 is after triage. **41 false positives** were found on the way (protocol
+nonces, race-cancellation "tokens", dead CSPRNG fallbacks, HTTP-Digest MD5, cookie
+flags set through a spread, ...), and each was removed by a constraint that names its
+mechanism. One true positive was lost doing so. 18 rules are **not shipped**: 2 fire
+only on the OWASP Benchmark (Java weak cipher, Java trust boundary), and 16 never
+fired on real code. **No trust-boundary rule ships in any language.** Ground truth is
+unchanged at 22/45. No coverage tier changed. Full record:
+`docs/OWASP_CATEGORIES_N3.md`; verdicts: `docs/owasp_n3/verdicts.json`.
 
 ---
 

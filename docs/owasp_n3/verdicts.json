@@ -1,0 +1,919 @@
+{
+ "corpus": "V2 (15 repos, recorded commits) + F1 DVWA/WebGoat/dvpwa + 21 extended repos; see docs/OWASP_CATEGORIES_N3.md",
+ "corpus_commits": {
+  "Dolibarr/dolibarr": "1348343c2f5703eeeb9c819285e23c40237f02b1",
+  "FreshRSS/FreshRSS": "3f12dcf2f60daa1aa81f670672e89c73c1b72012",
+  "OWASP/NodeGoat": "c5cb68a7084e4ae7dcc60e6a98768720a81841e8",
+  "WebGoat/WebGoat": "872d6149d4ef29e4929c2f4eda279f7fbedc52e8",
+  "chatwoot/chatwoot": "f7f7754511df38c33455d2a968f7541e82d15e5b",
+  "digininja/DVWA": "b496a5d3de6b967410155e1b7d3e51e9d035eb22",
+  "getredash/redash": "8f6b15d30da433ae881dd6376a38df17bb6c2663",
+  "jellyfin/jellyfin": "50866380c95758244f79bd4fbb01b9474e80bd81",
+  "juice-shop/juice-shop": "1618a611b173b4bf114028e6e02549950606e29d",
+  "librenms/librenms": "4381e1a98a83a7b72599045095f6d5ef37bda2e6",
+  "mastodon/mastodon": "2c92a56e5d0fb490cc2e49a0dd9652499000fcb4",
+  "n8n-io/n8n": "69b0c527fa2b36f7a1b1f55d59d17271d36fabbc",
+  "nilsteampassnet/TeamPass": "14e7d03b4d6e0e61ef5549f920f8d1b1c828e7c3",
+  "nocodb/nocodb": "28ecd7c239181111dd2f37778d48ed7996624e5a",
+  "nopSolutions/nopCommerce": "3204d8436664fb9f7d34624186933dc2d61e0e53",
+  "cmp-ansible": "8d63341579aa1c62024f3bce1a8af3f9a1b22a16",
+  "cmp-cobra": "adbc8813901bba65827259daa8e22ff94ec1f30e",
+  "cmp-consul": "7d6316305e8612066e0a23c7a1209e7dae5e7441",
+  "cmp-django": "65a9f14196c338d70889bd54753370606b3fb4eb",
+  "cmp-express": "ba006766fb964571723138708eacaba0f55759cd",
+  "cmp-fastapi": "7cb06f360dd44efac059848df1a9beee7643b018",
+  "cmp-flask": "36e4a824f340fdee7ed50937ba8e7f6bc7d17f81",
+  "cmp-gin": "34dac209ffb6ef85cc78c5d217bbb7ad001d68fd",
+  "cmp-guava": "486837d756e6d48864620e91b0761467e2abe744",
+  "cmp-jackson": "9ceb08d404b4c94928b802f5a101900d9b2e9a4a",
+  "cmp-kafka": "ac0d7e245b213c20ab66bcea211d1cbd5ed2c95a",
+  "cmp-nest": "926e3a4dc8b3bf9a96b275fe348b71246c303929",
+  "cmp-netty": "01c93eb988d56035e011fb795de5780f3b2e49ae",
+  "cmp-nextauth": "7b35fc393da5120cc3552f19d636b14980557444",
+  "cmp-prisma": "cda80a4488b7b551c36bf09ca2e8303ef9509da4",
+  "cmp-react": "c0c39a6b3907eaab35f43074949e2957a2a734c1",
+  "cmp-spring": "51045d1648dad955df586150c1a1a6e22ef400c2",
+  "cmp-terraform": "116d525a7242c2beb916f00ccb39ce070f4fac05",
+  "cmp-vault": "2b5ca5501c9fd570437a563662b8456cdbf59a1a",
+  "django-nV": "a48901f106da4888417339b7b44b8ed56b64c63f",
+  "spring-petclinic": "818c4136ea971c21674525f9053de0d9c7ad8cfe",
+  "F1 digininja/DVWA": "5d5c76cced604e54462b13723f5c69af58e78748",
+  "F1 WebGoat/WebGoat": "38096af4c90d74a770b1162edbd2259fcc03d20a",
+  "F1 anxolerd/dvpwa": "a1d8f89fac2e57093189853c6527c2b01fc1d9c1"
+ },
+ "final_findings": [
+  {
+   "repo": "digininja__DVWA",
+   "file": "dvwa/includes/dvwaPage.inc.php",
+   "line": 72,
+   "rule": "aegis-php-insecure-session-cookie",
+   "seen_in": [
+    "DVWA",
+    "digininja__DVWA"
+   ],
+   "verdict": "TP",
+   "confidence": "high",
+   "note": "session cookie without Secure/HttpOnly"
+  },
+  {
+   "repo": "digininja__DVWA",
+   "file": "dvwa/includes/dvwaPage.inc.php",
+   "line": 651,
+   "rule": "aegis-php-weak-random-secret",
+   "seen_in": [
+    "DVWA",
+    "digininja__DVWA"
+   ],
+   "verdict": "TP",
+   "confidence": "high",
+   "note": "mt_rand/uniqid builds a value that must be unguessable"
+  },
+  {
+   "repo": "digininja__DVWA",
+   "file": "login.php",
+   "line": 27,
+   "rule": "aegis-php-weak-hash-credential",
+   "seen_in": [
+    "DVWA",
+    "digininja__DVWA"
+   ],
+   "verdict": "TP",
+   "confidence": "high",
+   "note": "md5()/sha1() over a password-family value"
+  },
+  {
+   "repo": "digininja__DVWA",
+   "file": "vulnerabilities/brute/source/high.php",
+   "line": 16,
+   "rule": "aegis-php-weak-hash-credential",
+   "seen_in": [
+    "DVWA",
+    "digininja__DVWA"
+   ],
+   "verdict": "TP",
+   "confidence": "high",
+   "note": "md5()/sha1() over a password-family value"
+  },
+  {
+   "repo": "digininja__DVWA",
+   "file": "vulnerabilities/brute/source/impossible.php",
+   "line": 16,
+   "rule": "aegis-php-weak-hash-credential",
+   "seen_in": [
+    "DVWA",
+    "digininja__DVWA"
+   ],
+   "verdict": "TP",
+   "confidence": "high",
+   "note": "md5()/sha1() over a password-family value"
+  },
+  {
+   "repo": "digininja__DVWA",
+   "file": "vulnerabilities/brute/source/low.php",
+   "line": 9,
+   "rule": "aegis-php-weak-hash-credential",
+   "seen_in": [
+    "DVWA",
+    "digininja__DVWA"
+   ],
+   "verdict": "TP",
+   "confidence": "high",
+   "note": "md5()/sha1() over a password-family value"
+  },
+  {
+   "repo": "digininja__DVWA",
+   "file": "vulnerabilities/brute/source/medium.php",
+   "line": 11,
+   "rule": "aegis-php-weak-hash-credential",
+   "seen_in": [
+    "DVWA",
+    "digininja__DVWA"
+   ],
+   "verdict": "TP",
+   "confidence": "high",
+   "note": "md5()/sha1() over a password-family value"
+  },
+  {
+   "repo": "digininja__DVWA",
+   "file": "vulnerabilities/captcha/source/high.php",
+   "line": 27,
+   "rule": "aegis-php-weak-hash-credential",
+   "seen_in": [
+    "DVWA",
+    "digininja__DVWA"
+   ],
+   "verdict": "TP",
+   "confidence": "high",
+   "note": "md5()/sha1() over a password-family value"
+  },
+  {
+   "repo": "digininja__DVWA",
+   "file": "vulnerabilities/captcha/source/impossible.php",
+   "line": 14,
+   "rule": "aegis-php-weak-hash-credential",
+   "seen_in": [
+    "DVWA",
+    "digininja__DVWA"
+   ],
+   "verdict": "TP",
+   "confidence": "high",
+   "note": "md5()/sha1() over a password-family value"
+  },
+  {
+   "repo": "digininja__DVWA",
+   "file": "vulnerabilities/captcha/source/impossible.php",
+   "line": 19,
+   "rule": "aegis-php-weak-hash-credential",
+   "seen_in": [
+    "DVWA",
+    "digininja__DVWA"
+   ],
+   "verdict": "TP",
+   "confidence": "high",
+   "note": "md5()/sha1() over a password-family value"
+  },
+  {
+   "repo": "digininja__DVWA",
+   "file": "vulnerabilities/captcha/source/impossible.php",
+   "line": 24,
+   "rule": "aegis-php-weak-hash-credential",
+   "seen_in": [
+    "DVWA",
+    "digininja__DVWA"
+   ],
+   "verdict": "TP",
+   "confidence": "high",
+   "note": "md5()/sha1() over a password-family value"
+  },
+  {
+   "repo": "digininja__DVWA",
+   "file": "vulnerabilities/captcha/source/low.php",
+   "line": 57,
+   "rule": "aegis-php-weak-hash-credential",
+   "seen_in": [
+    "DVWA",
+    "digininja__DVWA"
+   ],
+   "verdict": "TP",
+   "confidence": "high",
+   "note": "md5()/sha1() over a password-family value"
+  },
+  {
+   "repo": "digininja__DVWA",
+   "file": "vulnerabilities/captcha/source/medium.php",
+   "line": 65,
+   "rule": "aegis-php-weak-hash-credential",
+   "seen_in": [
+    "DVWA",
+    "digininja__DVWA"
+   ],
+   "verdict": "TP",
+   "confidence": "high",
+   "note": "md5()/sha1() over a password-family value"
+  },
+  {
+   "repo": "digininja__DVWA",
+   "file": "vulnerabilities/cryptography/source/ecb_attack.php",
+   "line": 3,
+   "rule": "aegis-php-weak-cipher",
+   "seen_in": [
+    "DVWA",
+    "digininja__DVWA"
+   ],
+   "verdict": "TP",
+   "confidence": "high",
+   "note": "DES / RC4 / ECB"
+  },
+  {
+   "repo": "digininja__DVWA",
+   "file": "vulnerabilities/cryptography/source/ecb_attack.php",
+   "line": 10,
+   "rule": "aegis-php-weak-cipher",
+   "seen_in": [
+    "DVWA",
+    "digininja__DVWA"
+   ],
+   "verdict": "TP",
+   "confidence": "high",
+   "note": "DES / RC4 / ECB"
+  },
+  {
+   "repo": "digininja__DVWA",
+   "file": "vulnerabilities/cryptography/source/medium.php",
+   "line": 3,
+   "rule": "aegis-php-weak-cipher",
+   "seen_in": [
+    "DVWA",
+    "digininja__DVWA"
+   ],
+   "verdict": "TP",
+   "confidence": "high",
+   "note": "DES / RC4 / ECB"
+  },
+  {
+   "repo": "digininja__DVWA",
+   "file": "vulnerabilities/csrf/source/high.php",
+   "line": 39,
+   "rule": "aegis-php-weak-hash-credential",
+   "seen_in": [
+    "DVWA",
+    "digininja__DVWA"
+   ],
+   "verdict": "TP",
+   "confidence": "high",
+   "note": "md5()/sha1() over a password-family value"
+  },
+  {
+   "repo": "digininja__DVWA",
+   "file": "vulnerabilities/csrf/source/impossible.php",
+   "line": 15,
+   "rule": "aegis-php-weak-hash-credential",
+   "seen_in": [
+    "DVWA",
+    "digininja__DVWA"
+   ],
+   "verdict": "TP",
+   "confidence": "high",
+   "note": "md5()/sha1() over a password-family value"
+  },
+  {
+   "repo": "digininja__DVWA",
+   "file": "vulnerabilities/csrf/source/impossible.php",
+   "line": 29,
+   "rule": "aegis-php-weak-hash-credential",
+   "seen_in": [
+    "DVWA",
+    "digininja__DVWA"
+   ],
+   "verdict": "TP",
+   "confidence": "high",
+   "note": "md5()/sha1() over a password-family value"
+  },
+  {
+   "repo": "digininja__DVWA",
+   "file": "vulnerabilities/csrf/source/low.php",
+   "line": 12,
+   "rule": "aegis-php-weak-hash-credential",
+   "seen_in": [
+    "DVWA",
+    "digininja__DVWA"
+   ],
+   "verdict": "TP",
+   "confidence": "high",
+   "note": "md5()/sha1() over a password-family value"
+  },
+  {
+   "repo": "digininja__DVWA",
+   "file": "vulnerabilities/csrf/source/medium.php",
+   "line": 14,
+   "rule": "aegis-php-weak-hash-credential",
+   "seen_in": [
+    "DVWA",
+    "digininja__DVWA"
+   ],
+   "verdict": "TP",
+   "confidence": "high",
+   "note": "md5()/sha1() over a password-family value"
+  },
+  {
+   "repo": "digininja__DVWA",
+   "file": "vulnerabilities/csrf/test_credentials.php",
+   "line": 19,
+   "rule": "aegis-php-weak-hash-credential",
+   "seen_in": [
+    "DVWA",
+    "digininja__DVWA"
+   ],
+   "verdict": "TP",
+   "confidence": "high",
+   "note": "md5()/sha1() over a password-family value"
+  },
+  {
+   "repo": "digininja__DVWA",
+   "file": "vulnerabilities/weak_id/source/high.php",
+   "line": 11,
+   "rule": "aegis-php-insecure-session-cookie",
+   "seen_in": [
+    "DVWA",
+    "digininja__DVWA"
+   ],
+   "verdict": "TP",
+   "confidence": "high",
+   "note": "session cookie without Secure/HttpOnly"
+  },
+  {
+   "repo": "digininja__DVWA",
+   "file": "vulnerabilities/weak_id/source/low.php",
+   "line": 11,
+   "rule": "aegis-php-insecure-session-cookie",
+   "seen_in": [
+    "DVWA",
+    "digininja__DVWA"
+   ],
+   "verdict": "TP",
+   "confidence": "high",
+   "note": "session cookie without Secure/HttpOnly"
+  },
+  {
+   "repo": "digininja__DVWA",
+   "file": "vulnerabilities/weak_id/source/medium.php",
+   "line": 7,
+   "rule": "aegis-php-insecure-session-cookie",
+   "seen_in": [
+    "DVWA",
+    "digininja__DVWA"
+   ],
+   "verdict": "TP",
+   "confidence": "high",
+   "note": "session cookie without Secure/HttpOnly"
+  },
+  {
+   "repo": "Dolibarr__dolibarr",
+   "file": "htdocs/core/lib/security.lib.php",
+   "line": 134,
+   "rule": "aegis-php-weak-hash-credential",
+   "seen_in": [
+    "Dolibarr__dolibarr"
+   ],
+   "verdict": "TP",
+   "confidence": "high",
+   "note": "md5()/sha1() over a password-family value"
+  },
+  {
+   "repo": "Dolibarr__dolibarr",
+   "file": "htdocs/core/lib/security.lib.php",
+   "line": 138,
+   "rule": "aegis-php-weak-hash-credential",
+   "seen_in": [
+    "Dolibarr__dolibarr"
+   ],
+   "verdict": "TP",
+   "confidence": "high",
+   "note": "md5()/sha1() over a password-family value"
+  },
+  {
+   "repo": "Dolibarr__dolibarr",
+   "file": "htdocs/core/lib/security.lib.php",
+   "line": 140,
+   "rule": "aegis-php-weak-hash-credential",
+   "seen_in": [
+    "Dolibarr__dolibarr"
+   ],
+   "verdict": "TP",
+   "confidence": "high",
+   "note": "md5()/sha1() over a password-family value"
+  },
+  {
+   "repo": "Dolibarr__dolibarr",
+   "file": "htdocs/core/lib/security.lib.php",
+   "line": 142,
+   "rule": "aegis-php-weak-hash-credential",
+   "seen_in": [
+    "Dolibarr__dolibarr"
+   ],
+   "verdict": "TP",
+   "confidence": "high",
+   "note": "md5()/sha1() over a password-family value"
+  },
+  {
+   "repo": "Dolibarr__dolibarr",
+   "file": "htdocs/core/modules/security/generate/modGeneratePassPerso.class.php",
+   "line": 223,
+   "rule": "aegis-php-weak-random-secret",
+   "seen_in": [
+    "Dolibarr__dolibarr"
+   ],
+   "verdict": "TP",
+   "confidence": "high",
+   "note": "mt_rand/uniqid builds a value that must be unguessable"
+  },
+  {
+   "repo": "Dolibarr__dolibarr",
+   "file": "htdocs/includes/swiftmailer/lib/classes/Swift/Transport/Esmtp/Auth/NTLMAuthenticator.php",
+   "line": 552,
+   "rule": "aegis-php-weak-cipher",
+   "seen_in": [
+    "Dolibarr__dolibarr"
+   ],
+   "verdict": "TP",
+   "confidence": "high",
+   "note": "DES / RC4 / ECB",
+   "protocol_mandated": "NTLMv1 mandates DES"
+  },
+  {
+   "repo": "Dolibarr__dolibarr",
+   "file": "htdocs/includes/tecnickcom/tcpdf/include/tcpdf_static.php",
+   "line": 471,
+   "rule": "aegis-php-weak-cipher",
+   "seen_in": [
+    "Dolibarr__dolibarr"
+   ],
+   "verdict": "TP",
+   "confidence": "high",
+   "note": "DES / RC4 / ECB",
+   "protocol_mandated": "PDF standard security handler uses RC4"
+  },
+  {
+   "repo": "FreshRSS__FreshRSS",
+   "file": "app/Utils/feverUtil.php",
+   "line": 48,
+   "rule": "aegis-php-weak-hash-credential",
+   "seen_in": [
+    "FreshRSS__FreshRSS"
+   ],
+   "verdict": "TP",
+   "confidence": "high",
+   "note": "md5()/sha1() over a password-family value",
+   "protocol_mandated": "the Fever API defines api_key = md5(email:password); stored on disk"
+  },
+  {
+   "repo": "FreshRSS__FreshRSS",
+   "file": "p/scripts/extra.js",
+   "line": 12,
+   "rule": "aegis-js-weak-random-secret",
+   "seen_in": [
+    "FreshRSS__FreshRSS"
+   ],
+   "verdict": "TP",
+   "confidence": "medium",
+   "note": "Math.random() salt fallback (FreshRSS poormanSalt; N2b TP #4)"
+  },
+  {
+   "repo": "WebGoat__WebGoat",
+   "file": "src/main/java/org/owasp/webgoat/lessons/cryptography/EncodingAssignment.java",
+   "line": 37,
+   "rule": "aegis-java-weak-random-secret",
+   "seen_in": [
+    "WebGoat",
+    "WebGoat__WebGoat"
+   ],
+   "verdict": "TP",
+   "confidence": "medium",
+   "note": "java.util.Random picks a secret (WebGoat lesson code)"
+  },
+  {
+   "repo": "WebGoat__WebGoat",
+   "file": "src/main/java/org/owasp/webgoat/lessons/cryptography/HashingAssignment.java",
+   "line": 37,
+   "rule": "aegis-java-weak-random-secret",
+   "seen_in": [
+    "WebGoat",
+    "WebGoat__WebGoat"
+   ],
+   "verdict": "TP",
+   "confidence": "medium",
+   "note": "java.util.Random picks a secret (WebGoat lesson code)"
+  },
+  {
+   "repo": "WebGoat__WebGoat",
+   "file": "src/main/java/org/owasp/webgoat/lessons/cryptography/HashingAssignment.java",
+   "line": 55,
+   "rule": "aegis-java-weak-random-secret",
+   "seen_in": [
+    "WebGoat",
+    "WebGoat__WebGoat"
+   ],
+   "verdict": "TP",
+   "confidence": "medium",
+   "note": "java.util.Random picks a secret (WebGoat lesson code)"
+  },
+  {
+   "repo": "WebGoat__WebGoat",
+   "file": "src/main/java/org/owasp/webgoat/lessons/httpbasics/HttpBasicsExternal.java",
+   "line": 55,
+   "rule": "aegis-java-weak-random-secret",
+   "seen_in": [
+    "WebGoat",
+    "WebGoat__WebGoat"
+   ],
+   "verdict": "TP",
+   "confidence": "medium",
+   "note": "java.util.Random picks a secret (WebGoat lesson code)"
+  },
+  {
+   "repo": "WebGoat__WebGoat",
+   "file": "src/main/java/org/owasp/webgoat/lessons/jwt/JWTSecretKeyEndpoint.java",
+   "line": 38,
+   "rule": "aegis-java-weak-random-secret",
+   "seen_in": [
+    "WebGoat",
+    "WebGoat__WebGoat"
+   ],
+   "verdict": "TP",
+   "confidence": "medium",
+   "note": "java.util.Random picks a secret (WebGoat lesson code)"
+  },
+  {
+   "repo": "WebGoat__WebGoat",
+   "file": "src/main/java/org/owasp/webgoat/lessons/jwt/JWTSecretKeyEndpoint.java",
+   "line": 63,
+   "rule": "aegis-java-weak-random-secret",
+   "seen_in": [
+    "WebGoat",
+    "WebGoat__WebGoat"
+   ],
+   "verdict": "TP",
+   "confidence": "medium",
+   "note": "use site of the weak JWT_SECRET flagged at line 38 (same weakness, second location)"
+  },
+  {
+   "repo": "WebGoat__WebGoat",
+   "file": "src/main/java/org/owasp/webgoat/lessons/jwt/JWTVotesEndpoint.java",
+   "line": 121,
+   "rule": "aegis-java-insecure-session-cookie",
+   "seen_in": [
+    "WebGoat",
+    "WebGoat__WebGoat"
+   ],
+   "verdict": "TP",
+   "confidence": "high",
+   "note": "access_token cookie without Secure/HttpOnly"
+  },
+  {
+   "repo": "cmp-vault",
+   "file": "helper/pkcs7/decrypt.go",
+   "line": 197,
+   "rule": "aegis-go-weak-cipher",
+   "seen_in": [
+    "cmp-vault"
+   ],
+   "verdict": "TP",
+   "confidence": "high",
+   "note": "DES/3DES in vault's PKCS#7 (DES-CBC is that library's default content cipher)",
+   "protocol_mandated": "PKCS#7 DES/3DES content-encryption OIDs"
+  },
+  {
+   "repo": "cmp-vault",
+   "file": "helper/pkcs7/decrypt.go",
+   "line": 199,
+   "rule": "aegis-go-weak-cipher",
+   "seen_in": [
+    "cmp-vault"
+   ],
+   "verdict": "TP",
+   "confidence": "high",
+   "note": "DES/3DES in vault's PKCS#7 (DES-CBC is that library's default content cipher)",
+   "protocol_mandated": "PKCS#7 DES/3DES content-encryption OIDs"
+  },
+  {
+   "repo": "cmp-vault",
+   "file": "helper/pkcs7/encrypt.go",
+   "line": 188,
+   "rule": "aegis-go-weak-cipher",
+   "seen_in": [
+    "cmp-vault"
+   ],
+   "verdict": "TP",
+   "confidence": "high",
+   "note": "DES/3DES in vault's PKCS#7 (DES-CBC is that library's default content cipher)",
+   "protocol_mandated": "PKCS#7 DES/3DES content-encryption OIDs"
+  },
+  {
+   "repo": "cmp-vault",
+   "file": "helper/pkcs7/encrypt.go",
+   "line": 193,
+   "rule": "aegis-go-weak-cipher",
+   "seen_in": [
+    "cmp-vault"
+   ],
+   "verdict": "TP",
+   "confidence": "high",
+   "note": "DES/3DES in vault's PKCS#7 (DES-CBC is that library's default content cipher)",
+   "protocol_mandated": "PKCS#7 DES/3DES content-encryption OIDs"
+  },
+  {
+   "repo": "django-nV",
+   "file": "taskManager/settings.py",
+   "line": 110,
+   "rule": "aegis-py-insecure-session-cookie",
+   "seen_in": [
+    "django-nV"
+   ],
+   "verdict": "TP",
+   "confidence": "high",
+   "note": "SESSION_COOKIE_HTTPONLY = False (django-nV)"
+  },
+  {
+   "repo": "juice-shop__juice-shop",
+   "file": "lib/insecurity.ts",
+   "line": 192,
+   "rule": "aegis-js-insecure-session-cookie",
+   "seen_in": [
+    "juice-shop__juice-shop"
+   ],
+   "verdict": "TP",
+   "confidence": "high",
+   "note": "JWT 'token' cookie without flags (juice-shop)"
+  },
+  {
+   "repo": "juice-shop__juice-shop",
+   "file": "routes/updateUserProfile.ts",
+   "line": 42,
+   "rule": "aegis-js-insecure-session-cookie",
+   "seen_in": [
+    "juice-shop__juice-shop"
+   ],
+   "verdict": "TP",
+   "confidence": "high",
+   "note": "JWT 'token' cookie without flags (juice-shop)"
+  },
+  {
+   "repo": "nilsteampassnet__TeamPass",
+   "file": "app/includes/libraries/phpseclibV1/Crypt/RSA.php",
+   "line": 1040,
+   "rule": "aegis-php-weak-hash-credential",
+   "seen_in": [
+    "nilsteampassnet__TeamPass"
+   ],
+   "verdict": "TP",
+   "confidence": "high",
+   "note": "md5()/sha1() over a password-family value",
+   "protocol_mandated": "legacy PEM encryption (EVP_BytesToKey) derives the key with one MD5"
+  },
+  {
+   "repo": "nilsteampassnet__TeamPass",
+   "file": "app/includes/libraries/phpseclibV1/Crypt/RSA.php",
+   "line": 1041,
+   "rule": "aegis-php-weak-hash-credential",
+   "seen_in": [
+    "nilsteampassnet__TeamPass"
+   ],
+   "verdict": "TP",
+   "confidence": "high",
+   "note": "md5()/sha1() over a password-family value",
+   "protocol_mandated": "legacy PEM encryption (EVP_BytesToKey) derives the key with one MD5"
+  },
+  {
+   "repo": "nilsteampassnet__TeamPass",
+   "file": "app/includes/libraries/phpseclibV1/Crypt/RSA.php",
+   "line": 1213,
+   "rule": "aegis-php-weak-hash-credential",
+   "seen_in": [
+    "nilsteampassnet__TeamPass"
+   ],
+   "verdict": "TP",
+   "confidence": "high",
+   "note": "md5()/sha1() over a password-family value",
+   "protocol_mandated": "legacy PEM encryption (EVP_BytesToKey) derives the key with one MD5"
+  },
+  {
+   "repo": "nilsteampassnet__TeamPass",
+   "file": "app/includes/libraries/phpseclibV1/Crypt/RSA.php",
+   "line": 1214,
+   "rule": "aegis-php-weak-hash-credential",
+   "seen_in": [
+    "nilsteampassnet__TeamPass"
+   ],
+   "verdict": "TP",
+   "confidence": "high",
+   "note": "md5()/sha1() over a password-family value",
+   "protocol_mandated": "legacy PEM encryption (EVP_BytesToKey) derives the key with one MD5"
+  },
+  {
+   "repo": "nilsteampassnet__TeamPass",
+   "file": "public/install/upgrade.php",
+   "line": 43,
+   "rule": "aegis-php-insecure-session-cookie",
+   "seen_in": [
+    "nilsteampassnet__TeamPass"
+   ],
+   "verdict": "TP",
+   "confidence": "high",
+   "note": "session cookie without Secure/HttpOnly"
+  }
+ ],
+ "false_positives_removed": [
+  {
+   "repo": "Dolibarr",
+   "where": "htdocs/core/lib/security2.lib.php:537,561,564; modGeneratePassStandard.class.php:114",
+   "count": 4,
+   "rule": "aegis-php-weak-random-secret",
+   "mechanism": "mt_rand only in the `else` of function_exists('random_int') (dead since PHP 7)",
+   "constraint": "sources inside a random_int/random_bytes capability fallback or a random_bytes try/catch are not live"
+  },
+  {
+   "repo": "Dolibarr",
+   "where": "htdocs/includes/OAuth/OAuth1/Service/AbstractService.php:272",
+   "count": 1,
+   "rule": "aegis-php-weak-random-secret",
+   "mechanism": "OAuth1 client nonce: RFC 5849 requires uniqueness, not unpredictability",
+   "constraint": "`nonce` removed from the secret-name list"
+  },
+  {
+   "repo": "Dolibarr",
+   "where": "htdocs/includes/sabre/.../Auth/Digest.php:51",
+   "count": 1,
+   "rule": "aegis-php-weak-random-secret",
+   "mechanism": "HTTP Digest server nonce from uniqid()",
+   "constraint": "`nonce` removed"
+  },
+  {
+   "repo": "Dolibarr",
+   "where": "htdocs/includes/nusoap/lib/nusoap.php:2697,2703,2724",
+   "count": 3,
+   "rule": "aegis-php-weak-hash-credential",
+   "mechanism": "md5 inside setCredentials(): HTTP Digest (RFC 7616) mandates MD5",
+   "constraint": "method-name branch: verbs narrowed (no `set`), nouns narrowed (no `credentials`)"
+  },
+  {
+   "repo": "Dolibarr",
+   "where": "htdocs/includes/sabre/.../Auth/Digest.php:103",
+   "count": 1,
+   "rule": "aegis-php-weak-hash-credential",
+   "mechanism": "MD5(user:realm:password) computing a Digest response",
+   "constraint": "excluded: md5 over a `$x . ':' . $realm . ':' . $y` construction"
+  },
+  {
+   "repo": "Dolibarr",
+   "where": "htdocs/includes/swiftmailer/.../CramMd5Authenticator.php:60",
+   "count": 1,
+   "rule": "aegis-php-weak-hash-credential",
+   "mechanism": "HMAC key reduction for CRAM-MD5 (HMAC-MD5 is not broken)",
+   "constraint": "credential names narrowed to the password family (no `secret`)"
+  },
+  {
+   "repo": "Dolibarr",
+   "where": "htdocs/includes/tecnickcom/tcpdf/tcpdf.php:11031",
+   "count": 1,
+   "rule": "aegis-php-weak-hash-credential",
+   "mechanism": "$owner_pass = md5(random): md5 GENERATES a password, hashes none",
+   "constraint": "assignment branch limited to hash-denoting names (password_hash, ...)"
+  },
+  {
+   "repo": "FreshRSS",
+   "where": "app/Controllers/javascriptController.php:110",
+   "count": 1,
+   "rule": "aegis-php-weak-random-secret",
+   "mechanism": "decoy nonce for an unknown user",
+   "constraint": "`nonce` removed"
+  },
+  {
+   "repo": "FreshRSS",
+   "where": "lib/lib_install.php:116",
+   "count": 1,
+   "rule": "aegis-php-weak-random-secret",
+   "mechanism": "generateSalt mixes random_bytes(32) into the hash",
+   "constraint": "a value that mixes in CSPRNG output is sanitised"
+  },
+  {
+   "repo": "FreshRSS",
+   "where": "p/api/greader.php:195,220,242,258",
+   "count": 4,
+   "rule": "aegis-php-weak-hash-credential",
+   "mechanism": "sha1 over an already-bcrypt-hashed password: an API token, not storage",
+   "constraint": "credential inputs whose text contains `hash` are excluded"
+  },
+  {
+   "repo": "WebGoat",
+   "where": "lessons/jwt/JWTVotesEndpoint.java:126",
+   "count": 1,
+   "rule": "aegis-java-insecure-session-cookie",
+   "mechanism": "new Cookie(\"access_token\", \"\"): clearing the cookie",
+   "constraint": "empty-value cookies excluded"
+  },
+  {
+   "repo": "n8n",
+   "where": "ChatTrigger/shell.ts:111,174; Form/utils/utils.ts:908",
+   "count": 3,
+   "rule": "aegis-js-insecure-session-cookie",
+   "mechanism": "flags supplied by a spread options object",
+   "constraint": "options objects containing a spread are not inspected"
+  },
+  {
+   "repo": "n8n",
+   "where": "mcp/tools/execute-workflow.tool.ts:297; test-workflow.tool.ts:240",
+   "count": 2,
+   "rule": "aegis-js-weak-random-secret",
+   "mechanism": "mcpSessionId: a queue correlation id",
+   "constraint": "session-id names removed"
+  },
+  {
+   "repo": "redash",
+   "where": "ItemsSource.js:47,48; useDataSourceSchema.js:24",
+   "count": 3,
+   "rule": "aegis-js-weak-random-secret",
+   "mechanism": "fetch/refresh race-cancellation 'tokens'",
+   "constraint": "bare `token` requires a security qualifier (csrf/auth/reset/api/...)"
+  },
+  {
+   "repo": "librenms",
+   "where": "LibreNMS/Authentication/TwoFactor.php:154",
+   "count": 1,
+   "rule": "aegis-php-weak-random-secret",
+   "mechanism": "verifyHOTP returns a TOTP time counter",
+   "constraint": "functions whose verb verifies/parses (verify, check, validate, is, ...) are not generators"
+  },
+  {
+   "repo": "TeamPass",
+   "where": "csrfp/libs/csrf/csrfprotector.php:472",
+   "count": 1,
+   "rule": "aegis-php-weak-random-secret",
+   "mechanism": "mt_rand only after random_bytes and openssl fallbacks",
+   "constraint": "capability-fallback exclusion"
+  },
+  {
+   "repo": "TeamPass",
+   "where": "phpseclibV1/Crypt/Base.php:1940",
+   "count": 1,
+   "rule": "aegis-php-weak-cipher",
+   "mechanism": "ECB module opened as a primitive to build CFB",
+   "constraint": "mcrypt_module_open(..., ECB) no longer flagged; mcrypt_encrypt/decrypt with ECB still are"
+  },
+  {
+   "repo": "TeamPass",
+   "where": "yubico/Yubico.php:268",
+   "count": 1,
+   "rule": "aegis-php-weak-random-secret",
+   "mechanism": "Yubico API nonce (uniqueness only)",
+   "constraint": "`nonce` removed"
+  },
+  {
+   "repo": "TeamPass",
+   "where": "app/sources/backup.functions.php:743,3825,3966,5253; kb.queries.php:141",
+   "count": 5,
+   "rule": "aegis-php-weak-random-secret",
+   "mechanism": "uniqid() in the catch of random_bytes(); temp-dir name tokens",
+   "constraint": "random_bytes try/catch exclusion; bare `token` requires a qualifier"
+  },
+  {
+   "repo": "TeamPass",
+   "where": "app/sources/main.functions.php:12742",
+   "count": 1,
+   "rule": "aegis-php-weak-hash-credential",
+   "mechanism": "SHA-1 prefix for the Pwned Passwords k-anonymity API",
+   "constraint": "excluded: a SHA-1 digest whose 5-char prefix is taken"
+  },
+  {
+   "repo": "TeamPass",
+   "where": "public/install/js/crypt/aesctr.class.php:43; public/install/libs/aesctr.php:262",
+   "count": 2,
+   "rule": "aegis-php-weak-random-secret",
+   "mechanism": "CTR nonce from the clock (uniqueness only)",
+   "constraint": "`nonce` removed"
+  },
+  {
+   "repo": "cmp-django",
+   "where": "django/conf/global_settings.py:497",
+   "count": 1,
+   "rule": "aegis-py-insecure-session-cookie",
+   "mechanism": "Django's own defaults table, not an app's settings",
+   "constraint": "path exclusion for that framework file"
+  },
+  {
+   "repo": "cmp-vault",
+   "where": "command/base.go:243",
+   "count": 1,
+   "rule": "aegis-go-insecure-session-cookie",
+   "mechanism": "a cookie for the CLI's own HTTP client jar",
+   "constraint": "only cookies written to a response (http.SetCookie)"
+  }
+ ],
+ "true_positives_lost": [
+  {
+   "repo": "WebGoat",
+   "where": "lessons/cryptography/HashingAssignment.java:39",
+   "rule": "aegis-java-weak-hash-credential",
+   "why": "MD5 of a lesson 'secret' word; lost when credential names were narrowed to the password family (the CRAM-MD5 FP). The rule is staged anyway."
+  }
+ ]
+}
