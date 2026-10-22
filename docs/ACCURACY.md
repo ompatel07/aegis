@@ -35,6 +35,7 @@ Two numbers are two different things, and this file keeps them apart:
 | **N1 — sovereign rule set** | the same OWASP harness, 5 ground-truth repos (45 documented vulns), V2's 15 repos re-cloned, 114 hand-triaged findings — each run **before and after** the cut, same day, same checkout | 2026-09-19 | N1 (`b651c94` → N1) | semgrep 1.97.0; Aegis rules + njsscan (LGPL-3.0) only |
 | **N2b — njsscan triage** | every njsscan finding on V2's 15 repos + F1's 5 ground-truth repos (475, deduplicated), each read in source at the scanned commit; pack re-run on the same 285 files after the prune; ground truth re-scanned | 2026-10-22 | N2b (after `3eac2e8`) | semgrep 1.97.0; njsscan @ `b6ade853`, 114 → 89 rules |
 | **N3 — OWASP pattern categories** | 28 new Aegis rules run on V2's 15 repos (re-cloned at their recorded commits) + F1's DVWA/WebGoat/dvpwa + 21 further real repos; every finding hand-triaged; OWASP Benchmark and ground truth before/after through `/scan/sast` | 2026-10-22 | N3 (after N2b) | semgrep 1.97.0; 70 Aegis rules shipped (10 new) + 89 njsscan; 18 N3 rules staged, not shipped |
+| **N4 — ground truth for Java / Python / Go** | 24 candidate corpora checked; the 17 that publish a located vulnerability list scanned through `/scan/sast` and scored item by item (470 documented items); every one of the 118 findings hand-triaged | 2026-10-22 | N4 (after N3) | semgrep 1.97.0; 79 Aegis rules shipped (6 of them silent-clean, not counted) + 89 njsscan; 9 staged |
 | **P2 taint audit** | per-rule audit + FP fixes to `rules/taint/`, verified on minimal reproductions of each V1 FP shape | 2026-08-31 | `ad0dd66`+P2 | semgrep 1.97.0 |
 
 "P1"/"P2" = precision passes. P1 deleted the `ai-code-*` pack and suppressed
@@ -100,6 +101,11 @@ Both are preserved with their method and dates under
 [Superseded benchmark history](#superseded-benchmark-history) at the end of this file.
 They may be cited there, as history. They may **not** be used as a current capability
 claim in the README, a deck, or any customer-facing material.
+
+**N4 (2026-10-22): counted Youden 0.267** (TPR 0.370, FPR 0.103; silent-clean rules
+excluded, none of which fire there) after `aegis-java-weak-cipher` was proven on
+VulnerableApp (crypto 130/130). Still not a claim: the weakrand share below is unchanged,
+and VulnerableApp is itself built for benchmarking scanners.
 
 **N3 (2026-10-22) re-measured it and it is still not a claim.** With N3's shipped rules
 the Benchmark Youden is **0.175** (from 0.051; TPR 0.278, FPR 0.103), and **all** of the
@@ -183,9 +189,9 @@ hand-triage (§C.4):
 |---|---|---|---|---|
 | **PHP** | `aegis-php-*` (5 taint rules + N3's 4: weak random, weak password hash, weak cipher, session cookie) | 247 → 45 (18 %) on the 4 repos that completed before; **Dolibarr now completes: 2,649** | DVWA 3/6 unchanged; M1: 25 of 31 DVWA findings TP | **real on vulnerable apps; see the Dolibarr caveat** — `aegis-php-xss` fires 2,362 times there, effectively all false (an app-wide WAF on `PHP_SELF`) |
 | **JS / TS** | `aegis-js-*` (11) + **njsscan** (89 of 114 since N2b, LGPL-3.0; javascript rules run on `.ts` too) | JavaScript 323 → 103 (32 %), TypeScript 173 → 130 (75 %) at N1; N2b then removed 446 of the 475 njsscan findings on these corpora | NodeGoat 5/7 unchanged; juice-shop 9 → **7**/25 (directory listing lost); both unchanged by N2b | **strongest** — our taint rules precise. njsscan: **4.5 % precise** as shipped through N2 (corpus-wide, 21/471), **59 %** after the N2b prune (16/27) |
-| **Java** | `aegis-java-*` (7 taint, intraprocedural + N3's 2: weak random, session cookie) | 60 → 6 (10 %) | WebGoat 6/6 unchanged | **narrow** — injection, path traversal, SSRF only; OWASP Benchmark Youden 0.051 |
-| **Python** | `aegis-py-*` (8 taint + 4 H1 pattern + N3's session cookie) | 78 → 19 (24 %) | dvpwa 1/1 unchanged | **narrow** — H1's 17/17 TP stands |
-| **Go** | `aegis-go-*` (7 taint + N3's weak cipher) | no Go repo in V2 | — | **narrow, unmeasured on real code** |
+| **Java** | `aegis-java-*` (7 taint, intraprocedural + 3 N3/N4 weakness rules) | 60 → 6 (10 %) | WebGoat 6/6 unchanged; **N4: 31/209 in scope (15 %) on 6 corpora** | **strong since N4** (documented detections in 5 corpora) — recall 15 %; `aegis-java-xss` ~31 % precise on N4's corpora |
+| **Python** | `aegis-py-*` (8 taint + 4 H1 pattern + N3's session cookie) | 78 → 19 (24 %) | dvpwa 1/1 unchanged; **N4: 18/72 in scope (25 %) on 6 corpora** | **strong since N4** (documented detections in all 6) — H1's 17/17 TP stands |
+| **Go** | `aegis-go-*` (7 taint + 3 N3/N4 weakness rules) | no Go repo in V2 | **N4: 5/35 in scope (14 %) on 5 corpora** | **limited** — the taint pack caught documented items in one corpus only |
 | **Ruby** | none | 582 → **0** | — | **no application-code SAST** |
 | **C#** | none | 26 → **0** | — | **no application-code SAST** |
 | **(any) CI/CD** | `aegis-cicd-*` (3) | 37 → 37 | H2: 32/32 TP | unchanged; the only SAST that fires on Ruby and C# repos |
@@ -227,6 +233,36 @@ fired on real code. **No trust-boundary rule ships in any language.** Ground tru
 unchanged at 22/45. No coverage tier changed. Full record:
 `docs/OWASP_CATEGORIES_N3.md`; verdicts: `docs/owasp_n3/verdicts.json`.
 
+
+### Ground truth for Java, Python and Go — N4 (2026-10-22)
+
+17 corpora that publish their own located vulnerability list (5 Go, 6 Python, 6 Java;
+7 more candidates checked and rejected), scored item by item through the product:
+
+| language | in-scope recall | corpora with a documented detection | misses: rule gap / engine ceiling |
+|---|---|---|---|
+| Python | **18/72 (25 %)** | 6 of 6 | 38 / 16 |
+| Java | **31/209 (15 %)** (+ WebGoat 6/6, F1) | 4 of 6 (+ WebGoat) | 89 / 89 |
+| Go | **5/35 (14 %)** | 2 of 5 (the taint pack in 1) | 15 / 18 |
+
+All 118 findings on those corpora were triaged: **92 TP, 21 FP, 5 uncertain**. 18 of the
+FPs are `aegis-java-xss` (8 TP), which carries request taint through encoded values and
+lookup results.
+
+**Tiers:** Java and Python moved to **STRONG**: each taint pack caught documented
+vulnerabilities in more than one corpus, named per rule in `STRONG_EVIDENCE`. Go stays
+**LIMITED**. STRONG remains "proven where it aims", not a recall claim.
+
+**Repositories that change from "Not measured" to a confident score: 0** of V2's 15 and
+F1's 5. The unmeasured ones are Ruby and C#.
+
+PHP's STRONG rests on one documented corpus (DVWA) and would not meet N4's bar. This is
+flagged, not re-tiered.
+
+Three rules were promoted to PROVEN on this evidence (Java weak cipher; Go weak password
+hash and session cookie), and 6 API-shaped rules ship as **silent-clean**: they run, are
+labelled "recall unvalidated", and count toward nothing. Full record:
+`docs/GROUND_TRUTH_N4.md`; data: `docs/ground_truth_n4/`.
 ---
 
 ## SCA (trivy)

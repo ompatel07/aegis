@@ -1,0 +1,170 @@
+[
+ {
+  "repo": "Contrast-Security-OSS/go-test-bench",
+  "language": "go",
+  "verdict": "QUALIFIES",
+  "reason": "route registry in code (internal/*: common.Route + Sinks, an Unsafe branch per sink); an IAST test bench, closer to the OWASP Benchmark than to an application",
+  "commit": "92445700823205281369911a72b7127f18c8c9ed"
+ },
+ {
+  "repo": "0c34/govwa",
+  "language": "go",
+  "verdict": "QUALIFIES",
+  "reason": "the app's own menu lists SQLI 1/2, XSS 1/2, IDOR 1/2, CSA, each a handler under vulnerability/<class>/; the README itself has no list",
+  "commit": "4058f79f31eeb4a36d8f1e64bba1f0c899646e6f"
+ },
+ {
+  "repo": "minhthetroller/DVGA",
+  "language": "go",
+  "verdict": "QUALIFIES",
+  "reason": "README module table (14 web modules + 13 API scenarios) mapped to internal/modules/<cat>/<module>.go, DVWA-style difficulty levels",
+  "commit": "9f0d051ef819370ec78c4ad9fd6c15d122984054"
+ },
+ {
+  "repo": "TheHackerDev/damn-vulnerable-golang",
+  "language": "go",
+  "verdict": "QUALIFIES",
+  "reason": "every vulnerability annotated in code with gosec id + CWE; a SAST test target, and three items use constant inputs",
+  "commit": "fad5655a69879d37010b40044a5d4f4d305ee916"
+ },
+ {
+  "repo": "trailofbits/not-going-anywhere",
+  "language": "go",
+  "verdict": "QUALIFIES (weakly)",
+  "reason": "per-program READMEs document language pitfalls; the web demo is undocumented and excluded",
+  "commit": "3ea1a49de1c399633e513f0348752b7f0098b7c1"
+ },
+ {
+  "repo": "DioCGomes/damn-vulnerable-go-webapp",
+  "language": "go",
+  "verdict": "DOES NOT QUALIFY",
+  "reason": "README lists categories to explore, no locations; self-described as vibe-coded",
+  "commit": null
+ },
+ {
+  "repo": "controlplaneio/very-vulnerable",
+  "language": "go",
+  "verdict": "DOES NOT QUALIFY",
+  "reason": "container/SCA demo; its one code item ('use of md5 hash') has no location",
+  "commit": null
+ },
+ {
+  "repo": "sonatype-nexus-community/intentionally-vulnerable-golang-project",
+  "language": "go",
+  "verdict": "DOES NOT QUALIFY",
+  "reason": "vulnerable dependencies only (SCA), archived",
+  "commit": null
+ },
+ {
+  "repo": "adeyosemanputra/pygoat",
+  "language": "python",
+  "verdict": "QUALIFIES",
+  "reason": "per-lab READMEs under dockerized_labs/ + Solutions/solution.md; each lab is one app file",
+  "commit": "46fef968f3f44d1191363baf936aaa3335dc5c6d"
+ },
+ {
+  "repo": "stamparm/DSVW",
+  "language": "python",
+  "verdict": "QUALIFIES",
+  "reason": "the index page's attack-case table in dsvw.py; each case is a parameter branch at a known line",
+  "commit": "9ca3c9acf3defa0a6148d40e5f5cebeb5dcbb908"
+ },
+ {
+  "repo": "dolevf/Damn-Vulnerable-GraphQL-Application",
+  "language": "python",
+  "verdict": "QUALIFIES",
+  "reason": "README scenarios + per-scenario solution pages naming the GraphQL operation -> resolver",
+  "commit": "a961308c02d1fb462b192681c336b0739e432da7"
+ },
+ {
+  "repo": "NetSPI/django.nV",
+  "language": "python",
+  "verdict": "QUALIFIES",
+  "reason": "in-app tutorials, each naming the exact bug (F1 checkout reused)",
+  "commit": "a48901f106da4888417339b7b44b8ed56b64c63f"
+ },
+ {
+  "repo": "mpirnat/lets-be-bad-guys",
+  "language": "python",
+  "verdict": "QUALIFIES",
+  "reason": "OWASP-category exercises, one view + template each",
+  "commit": "7cbf11014bfc6dc9e199dc0b8a64e4597bc2338f"
+ },
+ {
+  "repo": "anxolerd/dvpwa",
+  "language": "python",
+  "verdict": "QUALIFIES (already F1)",
+  "reason": "README 'Vulnerabilities' section lists four; F1 scored only the SQLi; N4 scores all four separately",
+  "commit": "a1d8f89fac2e57093189853c6527c2b01fc1d9c1"
+ },
+ {
+  "repo": "we45/Vulnerable-Flask-App",
+  "language": "python",
+  "verdict": "DOES NOT QUALIFY",
+  "reason": "no published list (3-line README)",
+  "commit": null
+ },
+ {
+  "repo": "fportantier/vulpy",
+  "language": "python",
+  "verdict": "DOES NOT QUALIFY",
+  "reason": "'some of the vulnerabilities' by class only, no locations",
+  "commit": null
+ },
+ {
+  "repo": "SasanLabs/VulnerableApp",
+  "language": "java",
+  "verdict": "QUALIFIES",
+  "reason": "@AttackVector(vulnerabilityExposed=...) on every level method -- machine-readable; built 'for validating and benchmarking security scanners'",
+  "commit": "d80329e5f34975924e1e21b9d48749149b31c6a3"
+ },
+ {
+  "repo": "JoyChou93/java-sec-code",
+  "language": "java",
+  "verdict": "QUALIFIES",
+  "reason": "README links every vulnerability to its controller file; vuln/sec endpoint variants",
+  "commit": "4711f4e186258c6e0dd5c3863e7c9592e7e9026a"
+ },
+ {
+  "repo": "appsecco/dvja",
+  "language": "java",
+  "verdict": "QUALIFIES",
+  "reason": "docs/solution/*.md name the URL, the class and the vulnerable code",
+  "commit": "597ece1ab79ffffea7289d49b0c443bb2ebcbd16"
+ },
+ {
+  "repo": "CSPF-Founder/JavaVulnerableLab",
+  "language": "java",
+  "verdict": "QUALIFIES",
+  "reason": "README OWASP-2025 inventory + in-page comments; most locations are JSP",
+  "commit": "626a106a49777507beb51955d19ef9d271a9d4a5"
+ },
+ {
+  "repo": "defdeveu/code.java.Javulna",
+  "language": "java",
+  "verdict": "QUALIFIES",
+  "reason": "README exercises, one endpoint each",
+  "commit": "56f2102420a066a94152c99454fd4091aaeb4044"
+ },
+ {
+  "repo": "OWASP/SecurityShepherd",
+  "language": "java",
+  "verdict": "QUALIFIES",
+  "reason": "module table (coreSchema.sql) + per-level solution cheatsheets -> servlets/module/*",
+  "commit": "cff3958abf7a18cfc84fe6bed9dd6698631b2cee"
+ },
+ {
+  "repo": "snyk-labs/java-goof",
+  "language": "java",
+  "verdict": "DOES NOT QUALIFY",
+  "reason": "collection of SCA demo apps, no located list",
+  "commit": null
+ },
+ {
+  "repo": "ScaleSec/vulnado",
+  "language": "java",
+  "verdict": "DOES NOT QUALIFY",
+  "reason": "repository not found (HTTP 404)",
+  "commit": null
+ }
+]
