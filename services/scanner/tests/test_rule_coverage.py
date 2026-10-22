@@ -98,7 +98,8 @@ def test_java_only_repo_is_not_confident():
     assert cov is not None
     assert cov["confident"] is False
     assert cov["strong_fraction"] == 0.0
-    assert "Java" in cov["gap"] and "7 rules" in cov["gap"]
+    # the gap names the MEASURED rule count, not a constant (N3 moved it from 7)
+    assert "Java" in cov["gap"] and f"{rc.rule_index()['java'].rules} rules" in cov["gap"]
     assert cov["summary"] == "Java limited"
 
 

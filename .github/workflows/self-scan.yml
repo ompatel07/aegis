@@ -107,6 +107,7 @@ jobs:
             --config services/scanner/rules/cicd \
             --config services/scanner/rules/vendor \
             --exclude services/scanner/rules \
+            --exclude services/scanner/rules_staging \
             --exclude services/scanner/tests/fixtures \
             --exclude "**/.venv/**" --exclude "**/node_modules/**"
 

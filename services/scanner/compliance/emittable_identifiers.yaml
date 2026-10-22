@@ -19,6 +19,9 @@ declared:
   - CWE-295
   - CWE-319
   - CWE-327
+  - CWE-328
+  - CWE-330
+  - CWE-338
   - CWE-346
   - CWE-362
   - CWE-400

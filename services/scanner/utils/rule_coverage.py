@@ -20,17 +20,21 @@ distinct CWE classes. Nothing here is declared — it is counted from the files,
 moves when the rule set moves, and `tests/test_rule_coverage.py` fails if the tier
 table and the measured rule set disagree.
 
-Measured on the N2b rule set (60 Aegis rules + 89 njsscan, pruned from 114 --
-docs/NJSSCAN_TRIAGE_N2B.md):
+Measured on the N3 rule set (70 Aegis rules + 89 njsscan; N3's 18 unproven rules
+are in rules_staging/ and are not counted -- docs/OWASP_CATEGORIES_N3.md):
 
-    javascript   100 rules (taint 11, njsscan 89)    38 CWE classes
-    typescript   100 rules (taint 11, njsscan 89)    38 CWE classes   (see _ALSO_RUNS_ON)
-    python        12 rules (taint)                   10 CWE classes
-    java           7 rules (taint)                     7 CWE classes
-    go             7 rules (taint)                     7 CWE classes
-    php            5 rules (taint)                     5 CWE classes
+    javascript   102 rules (taint 13, njsscan 89)    39 CWE classes
+    typescript   102 rules (taint 13, njsscan 89)    39 CWE classes   (see _ALSO_RUNS_ON)
+    python        13 rules (taint)                   12 CWE classes
+    java           9 rules (taint)                   10 CWE classes
+    php            9 rules (taint)                   11 CWE classes
+    go             8 rules (taint)                    8 CWE classes
     ruby           0 rules                              0
     csharp         0 rules                              0
+
+(N2b: javascript/typescript 100 / 38, python 12 / 10, java 7 / 7, go 7 / 7, php
+5 / 5. N3 added 10 rules proven on real code; no tier changed, because no new rule
+adds a documented-vulnerability proof -- see STRONG_EVIDENCE.)
 
 (N1/N2 reported javascript 125 / 41 classes and typescript 11 / 9. N2b pruned 25
 njsscan rules, three of which had only ever been excluded at run time, and found

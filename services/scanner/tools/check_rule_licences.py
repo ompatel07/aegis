@@ -45,6 +45,9 @@ SCANNER = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RULES = os.path.join(SCANNER, "rules")
 VENDOR = os.path.join(RULES, "vendor")
 MANIFEST = os.path.join(RULES, "manifest.yaml")
+# N3: rules written but not yet proven on real code. Not loaded by the engine and not
+# counted as coverage -- but they are in the image, so they get the same checks.
+STAGING = os.path.join(SCANNER, "rules_staging")
 
 RESTRICTED = re.compile(r"semgrep rules license|affero|\bagpl\b|commons clause", re.IGNORECASE)
 REGISTRY_FINGERPRINTS = ("license", "source", "semgrep.dev")
@@ -70,7 +73,7 @@ FETCH_CONSTRUCTS = [
     (re.compile(r"""["']--config["']\s*,\s*["']auto["']"""), "`--config auto` fetches registry rules"),
     (re.compile(r"semgrep\.dev/c/"), "a semgrep.dev/c/ registry URL"),
 ]
-SOURCE_SKIP = {"tests", "tools", ".venv", "__pycache__", "rules", "node_modules"}
+SOURCE_SKIP = {"tests", "tools", ".venv", "__pycache__", "rules", "rules_staging", "node_modules"}
 
 
 def _rule_docs(path: str) -> list[dict] | None:
@@ -133,14 +136,17 @@ def main() -> int:
     restricted = restricted_fingerprints()
     if len(restricted) < 1000:
         problems.append(f"restricted_rule_fingerprints.txt holds only {len(restricted)} hashes; expected 1,141")
-    n_own = n_vendor = 0
-    for dirpath, _dirs, files in os.walk(RULES):
+    n_own = n_vendor = n_staged = 0
+    walk = [(RULES, d, f) for d, _s, f in os.walk(RULES)]
+    walk += [(STAGING, d, f) for d, _s, f in os.walk(STAGING)] if os.path.isdir(STAGING) else []
+    for root, dirpath, files in walk:
         in_vendor = os.path.normpath(dirpath).startswith(os.path.normpath(VENDOR))
+        staged = root == STAGING
         for name in files:
             if not name.endswith((".yaml", ".yml")):
                 continue
             path = os.path.join(dirpath, name)
-            rel = os.path.relpath(path, RULES)
+            rel = os.path.relpath(path, RULES if not staged else SCANNER)
             try:
                 rules = _rule_docs(path)
             except yaml.YAMLError as exc:
@@ -161,7 +167,10 @@ def main() -> int:
                 if in_vendor:
                     n_vendor += 1
                     continue
-                n_own += 1
+                if staged:
+                    n_staged += 1
+                else:
+                    n_own += 1
                 if not rid.startswith("aegis-"):
                     problems.append(f"{rel}: rule {rid!r} outside vendor/ must be Aegis-authored (aegis- id)")
                 marks = [k for k in REGISTRY_FINGERPRINTS if k in meta]
@@ -196,7 +205,8 @@ def main() -> int:
         return 1
 
     print(f"rule licences OK: {n_own} Aegis-authored rules, {n_vendor} vendored rules "
-          f"({', '.join(sorted(permitted))}), no registry fetch path")
+          f"({', '.join(sorted(permitted))}), {n_staged} staged (unshipped) Aegis rules, "
+          f"no registry fetch path")
     return 0
 
 
