@@ -1,0 +1,74 @@
+{
+ "seed_commit": "b07254804600f5aa849bdb8d7d574c0d1c85de11",
+ "excluded": {
+  "securityshepherd": "N4 fixed aegis-java-insecure-session-cookie on it; N5's aegis-java-xss precision work comes from its findings",
+  "pygoat": "N4 fixed aegis-py-insecure-session-cookie on it; N5's shell=True fix comes from it",
+  "vulnerableapp": "N4 promoted aegis-java-weak-cipher on its findings",
+  "dvga-go": "N4 promoted aegis-go-weak-hash-credential and aegis-go-insecure-session-cookie on its findings",
+  "dvpwa-full": "an F1 ground-truth corpus; every pass since F1 gates rule changes on it"
+ },
+ "languages": {
+  "go": {
+   "draw_order": [
+    "damn-vulnerable-golang",
+    "not-going-anywhere",
+    "govwa",
+    "go-test-bench"
+   ],
+   "need_in_scope": 18,
+   "held_out": [
+    "damn-vulnerable-golang",
+    "go-test-bench",
+    "govwa",
+    "not-going-anywhere"
+   ],
+   "held_out_in_scope": 25,
+   "tuning": [
+    "dvga-go"
+   ],
+   "tuning_in_scope": 10
+  },
+  "java": {
+   "draw_order": [
+    "dvja",
+    "java-sec-code",
+    "javavulnerablelab",
+    "javulna"
+   ],
+   "need_in_scope": 20,
+   "held_out": [
+    "dvja",
+    "java-sec-code"
+   ],
+   "held_out_in_scope": 34,
+   "tuning": [
+    "javavulnerablelab",
+    "javulna",
+    "securityshepherd",
+    "vulnerableapp"
+   ],
+   "tuning_in_scope": 175
+  },
+  "python": {
+   "draw_order": [
+    "lets-be-bad-guys",
+    "django-nv",
+    "dsvw",
+    "dvgraphql"
+   ],
+   "need_in_scope": 20,
+   "held_out": [
+    "django-nv",
+    "dsvw",
+    "lets-be-bad-guys"
+   ],
+   "held_out_in_scope": 38,
+   "tuning": [
+    "dvgraphql",
+    "dvpwa-full",
+    "pygoat"
+   ],
+   "tuning_in_scope": 34
+  }
+ }
+}
