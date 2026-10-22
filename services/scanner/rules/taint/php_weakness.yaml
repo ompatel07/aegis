@@ -1,0 +1,270 @@
+# Pass N3 (2026-10-22): PHP weakness rules. Written by Aegis from the CWE
+# definitions and the PHP manual (random, hash, openssl, mcrypt, setcookie,
+# session); no registry or vendor rule text was used.
+rules:
+  - id: aegis-php-weak-random-secret
+    mode: taint
+    languages: [php]
+    severity: WARNING
+    message: >-
+      A value that has to be unguessable is built from rand(), mt_rand(),
+      uniqid(), lcg_value(), microtime(), str_shuffle() or array_rand(). None of
+      these is cryptographically secure: mt_rand is a Mersenne Twister whose
+      state can be recovered from its output, and uniqid()/microtime() are the
+      clock. Hashing the result (md5(uniqid())) does not add entropy. Use
+      random_bytes() / random_int() (bin2hex(random_bytes(32)) for a token).
+      These functions are fine for non-security uses, which are not flagged.
+    metadata:
+      cwe:
+        - "CWE-330: Use of Insufficiently Random Values"
+      owasp:
+        - A02:2021 - Cryptographic Failures
+      category: security
+      subcategory: [vuln]
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: HIGH
+      technology: [php]
+      written-from: CWE-330/CWE-338; PHP manual for mt_rand and uniqid ("does not generate cryptographically secure values ... use random_bytes()")
+      references:
+        - https://www.php.net/manual/en/function.uniqid.php
+        - https://www.php.net/manual/en/function.random-bytes.php
+    pattern-sources:
+      - patterns:
+          - pattern-either:
+              - pattern: rand(...)
+              - pattern: mt_rand(...)
+              - pattern: uniqid(...)
+              - pattern: lcg_value()
+              - pattern: microtime(...)
+              - pattern: str_shuffle(...)
+              - pattern: array_rand(...)
+          # The pre-PHP-7 fallback idiom: `if (function_exists('random_int')) {...}
+          # else { mt_rand ... }` -- the else branch is dead on every supported PHP;
+          # likewise a `catch` around random_bytes(), which only throws when the OS
+          # has no entropy source.
+          - pattern-not-inside: |
+              if (function_exists('random_int')) { ... } else { ... }
+          - pattern-not-inside: |
+              if (function_exists('random_bytes')) { ... } else { ... }
+          - pattern-not-inside: |
+              if (function_exists('openssl_random_pseudo_bytes')) { ... } else { ... }
+          - pattern-not-inside: |
+              try { ... } catch ($E $X) { ... }
+    pattern-sanitizers:
+      # A value that mixes in CSPRNG output is not predictable.
+      - pattern: <... random_bytes(...) ...>
+      - pattern: <... random_int(...) ...>
+      - pattern: <... openssl_random_pseudo_bytes(...) ...>
+      # A call that is not a value transform ends the flow.
+      - exact: true
+        patterns:
+          - pattern: $F(...)
+          - metavariable-regex:
+              metavariable: $F
+              regex: ^(?!(rand|mt_rand|uniqid|lcg_value|microtime|str_shuffle|array_rand|md5|sha1|hash|crc32|substr|strval|intval|dechex|base_convert|bin2hex|base64_encode|str_pad|strtoupper|strtolower|implode|join|sprintf|number_format|str_replace|chr|ord|strrev|str_split|abs|floor|round)$).*
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $NAME = $V
+              - pattern: $ARR[$NAME] = $V
+              - pattern: '[..., $NAME => $V, ...]'
+              - pattern: array(..., $NAME => $V, ...)
+              - pattern: setcookie($NAME, $V, ...)
+          - focus-metavariable: $V
+          - metavariable-regex:
+              metavariable: $NAME
+              regex: &secret_name ^(?:.*(?:[^A-Za-z0-9]|(?<=[a-z0-9])(?=[A-Z])))?(?i:(?:csrf|xsrf|auth|access|reset|verification|verify|confirm|confirmation|activation|invite|invitation|api|bearer|session|login|remember(?:[-_]?me)?|magic|otp|mfa|oauth|signup|unsubscribe|email|password|secret|jwt)[-_]?tokens?|secrets?|salts?|otps?|totp|hotp|csrf|xsrf|passwords?|passwd|pwd|passphrase|passcode|api[-_]?keys?|(?:private|secret|signing|encryption|encrypt|auth|access|hmac|master|crypto|cipher|aes|jwt)[-_]?keys?|ivs?|remember[-_]?me|(?:code[-_]?)?verifier|(?:verification|verify|reset|activation|confirm|confirmation|invite|invitation|login|mfa|recovery|otp|one[-_]?time)[-_]?codes?|pins?)[_0-9]*['"`]?$
+      - patterns:
+          - pattern-inside: |
+              function $FN(...) { ... }
+          - pattern: return $V;
+          - focus-metavariable: $V
+          - metavariable-regex:
+              metavariable: $FN
+              regex: *secret_name
+          - metavariable-regex:
+              metavariable: $FN
+              regex: '^(?!(?:verify|check|validate|is|has|compare|match|parse|decode|read|load|count|test|Verify|Check|Validate|Is|Has|Compare|Match|Parse|Decode|Read|Load|Count|Test)(?:[A-Z_]|$)).*'
+
+  - id: aegis-php-weak-hash-credential
+    languages: [php]
+    severity: WARNING
+    message: >-
+      A password or other credential is hashed with md5() or sha1() (or hash()
+      with md5/sha1/md4), or the digest is stored as a password. Both are fast,
+      unsalted here, and broken for collision resistance: a password table built
+      on them falls to brute force and rainbow tables. Use password_hash() /
+      password_verify() (bcrypt or Argon2). md5() over a cache key or checksum is
+      not flagged.
+    metadata:
+      cwe:
+        - "CWE-328: Use of Weak Hash"
+        - "CWE-916: Use of Password Hash With Insufficient Computational Effort"
+      owasp:
+        - A02:2021 - Cryptographic Failures
+      category: security
+      subcategory: [vuln]
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: HIGH
+      technology: [php]
+      written-from: CWE-328, CWE-916; PHP manual for md5() ("not recommended to use this function to secure passwords") and password_hash()
+      references:
+        - https://www.php.net/manual/en/function.md5.php
+        - https://www.php.net/manual/en/function.password-hash.php
+    patterns:
+      - pattern-either:
+          - patterns:
+              - pattern-either:
+                  - pattern: md5(<... $CRED ...>, ...)
+                  - pattern: sha1(<... $CRED ...>, ...)
+                  - patterns:
+                      - pattern: hash("$ALG", <... $CRED ...>, ...)
+                      - metavariable-regex: {metavariable: $ALG, regex: '(?i)^(md2|md4|md5|sha1)$'}
+              # a password-family value that is not itself already a hash
+              - metavariable-regex:
+                  metavariable: $CRED
+                  regex: (?i)^(?!.*hash).*(password|passwd|pwd|(?<![a-z])pass(?![a-z])|passphrase).*
+          # the digest is stored under a name that says it is a password hash
+          # (reported on the call, so it merges with the branch above)
+          - patterns:
+              - pattern-either:
+                  - pattern-inside: $NAME = <... md5(...) ...>
+                  - pattern-inside: $NAME = <... sha1(...) ...>
+              - pattern-either:
+                  - pattern: md5(...)
+                  - pattern: sha1(...)
+              - metavariable-regex:
+                  metavariable: $NAME
+                  regex: (?i)^.*(password_?hash|pw_?hash|pwd_?hash|hashed_?password|pass_?hash)['"\]]*$
+          - patterns:
+              - pattern-inside: |
+                  function $FN(...) { ... }
+              - pattern-either:
+                  - pattern: md5(...)
+                  - pattern: sha1(...)
+              - metavariable-regex:
+                  metavariable: $FN
+                  regex: (?i)^(hash|encode|encrypt|crypt|digest|check|verify|match|make|create|store|compute|generate)[-_]?(user)?[-_]?(password|passwd|pwd|passphrase)s?$
+      # The Pwned Passwords k-anonymity range query: SHA-1 is the API's format and
+      # only a 5-character prefix leaves the process. Not password storage.
+      - pattern-not-inside: |
+          $H = <... sha1($P) ...>;
+          ...
+          $Q = substr($H, 0, 5);
+      # HTTP Digest (RFC 7616) mandates MD5(user:realm:password): the protocol
+      # computing its response, not a password store.
+      - pattern-not-inside: md5(<... $X . ':' . $REALM . ':' . $Y ...>)
+
+  - id: aegis-php-weak-cipher
+    languages: [php]
+    severity: ERROR
+    message: >-
+      A broken cipher or mode is used with openssl_* or mcrypt_*: DES (56-bit
+      key), 3DES (64-bit block, Sweet32; disallowed by NIST), RC2, RC4, Blowfish
+      or CAST5 (64-bit blocks), or ECB mode (equal blocks encrypt to equal
+      ciphertext). mcrypt itself was removed from PHP in 7.2. This needs no
+      context. Use openssl_encrypt with aes-256-gcm, or sodium_crypto_secretbox.
+    metadata:
+      cwe:
+        - "CWE-327: Use of a Broken or Risky Cryptographic Algorithm"
+      owasp:
+        - A02:2021 - Cryptographic Failures
+      category: security
+      subcategory: [vuln]
+      confidence: HIGH
+      likelihood: MEDIUM
+      impact: HIGH
+      technology: [php, openssl, mcrypt]
+      written-from: CWE-327; PHP manual for openssl_encrypt / openssl_get_cipher_methods and the mcrypt constants; NIST SP 800-131A Rev.2
+      references:
+        - https://www.php.net/manual/en/function.openssl-encrypt.php
+    pattern-either:
+      - patterns:
+          - pattern-either:
+              - pattern: openssl_encrypt($D, "$M", ...)
+              - pattern: openssl_decrypt($D, "$M", ...)
+          - metavariable-regex:
+              metavariable: $M
+              regex: (?i)^(des(-.*)?|des3|des-ede.*|rc2(-.*)?|rc4(-.*)?|bf(-.*)?|blowfish|cast5(-.*)?|idea(-.*)?|seed(-.*)?|.*-ecb)$
+      - patterns:
+          - pattern-either:
+              - pattern: mcrypt_encrypt($C, ...)
+              - pattern: mcrypt_decrypt($C, ...)
+              - pattern: mcrypt_module_open($C, ...)
+          - metavariable-regex:
+              metavariable: $C
+              regex: ^(MCRYPT_DES|MCRYPT_3DES|MCRYPT_TRIPLEDES|MCRYPT_BLOWFISH|MCRYPT_BLOWFISH_COMPAT|MCRYPT_RC2|MCRYPT_ARCFOUR|MCRYPT_CAST_128|MCRYPT_CAST_256|MCRYPT_IDEA|MCRYPT_XTEA|MCRYPT_GOST|MCRYPT_LOKI97|MCRYPT_SAFER64|MCRYPT_SAFER128|['"](des|tripledes|blowfish|rc2|arcfour|cast-128|xtea)['"])$
+      - pattern: mcrypt_encrypt($C, $K, $D, MCRYPT_MODE_ECB, ...)
+      - pattern: mcrypt_decrypt($C, $K, $D, MCRYPT_MODE_ECB, ...)
+
+  - id: aegis-php-insecure-session-cookie
+    languages: [php]
+    severity: WARNING
+    message: >-
+      A session or authentication cookie is set without HttpOnly or without
+      Secure, or PHP's session cookie has them switched off. setcookie() sets
+      neither unless asked. Without HttpOnly any XSS can read the cookie; without
+      Secure it is sent over plain HTTP. Pass ['secure' => true, 'httponly' =>
+      true, 'samesite' => 'Lax'], or set session.cookie_secure /
+      session.cookie_httponly. CSRF cookies, which must stay readable, are not
+      flagged.
+    metadata:
+      cwe:
+        - "CWE-614: Sensitive Cookie in HTTPS Session Without 'Secure' Attribute"
+        - "CWE-1004: Sensitive Cookie Without 'HttpOnly' Flag"
+      owasp:
+        - A05:2021 - Security Misconfiguration
+      category: security
+      subcategory: [vuln]
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: MEDIUM
+      technology: [php]
+      written-from: CWE-614, CWE-1004; PHP manual for setcookie() (positional and options-array forms), session_set_cookie_params() and the session.cookie_* ini directives
+      references:
+        - https://www.php.net/manual/en/function.setcookie.php
+    pattern-either:
+      - patterns:
+          - pattern-either:
+              # positional form: secure is argument 6, httponly argument 7
+              - pattern: setcookie($NAME, $V)
+              - patterns:
+                  - pattern: setcookie($NAME, $V, $EXP)
+                  - pattern-not: setcookie($NAME, $V, [...])
+                  - pattern-not: setcookie($NAME, $V, array(...))
+              - pattern: setcookie($NAME, $V, $EXP, $PATH)
+              - pattern: setcookie($NAME, $V, $EXP, $PATH, $DOMAIN)
+              - pattern: setcookie($NAME, $V, $EXP, $PATH, $DOMAIN, $SECURE)
+              - pattern: setcookie($NAME, $V, $EXP, $PATH, $DOMAIN, false, $HTTPONLY)
+              - pattern: setcookie($NAME, $V, $EXP, $PATH, $DOMAIN, $SECURE, false)
+              # options-array form (PHP 7.3+)
+              - patterns:
+                  - pattern: setcookie($NAME, $V, [...])
+                  - pattern-not: 'setcookie($NAME, $V, [..., "httponly" => $H, ...])'
+              - patterns:
+                  - pattern: setcookie($NAME, $V, [...])
+                  - pattern-not: 'setcookie($NAME, $V, [..., "secure" => $S, ...])'
+              - pattern: 'setcookie($NAME, $V, [..., "secure" => false, ...])'
+              - pattern: 'setcookie($NAME, $V, [..., "httponly" => false, ...])'
+          # deleting a cookie (empty value / expiry in the past) carries no secret
+          - pattern-not: setcookie($NAME, "", ...)
+          - pattern-not: setcookie($NAME, null, ...)
+          - pattern-not: setcookie($NAME, false, ...)
+          - metavariable-regex:
+              metavariable: $NAME
+              regex: (?i)^(?!.*(csrf|xsrf)).*(sess|sid|auth|token|jwt|remember|login|refresh|access|identity|credential).*$
+      # ini_set only when the value really means "off"
+      - patterns:
+          - pattern-either:
+              - pattern: ini_set("session.cookie_httponly", $OFF)
+              - pattern: ini_set("session.cookie_secure", $OFF)
+          - metavariable-regex:
+              metavariable: $OFF
+              regex: (?i)^(0|false|['"](0|off|false|)['"])$
+      - pattern: session_set_cookie_params($LIFE, $PATH, $DOMAIN, false, ...)
+      - pattern: session_set_cookie_params($LIFE, $PATH, $DOMAIN, $SECURE, false)
+      - pattern: 'session_set_cookie_params([..., "secure" => false, ...])'
+      - pattern: 'session_set_cookie_params([..., "httponly" => false, ...])'
+

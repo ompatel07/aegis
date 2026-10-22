@@ -1,0 +1,93 @@
+# Pass N3 (2026-10-22) -- STAGED, NOT SHIPPED (see README.md): PHP weakness rules. Written by Aegis from the CWE
+# definitions and the PHP manual (random, hash, openssl, mcrypt, setcookie,
+# session); no registry or vendor rule text was used.
+rules:
+  - id: aegis-php-weak-key-size
+    languages: [php]
+    severity: ERROR
+    message: >-
+      An RSA/DSA/DH key shorter than 2048 bits is generated with
+      openssl_pkey_new(). This is below every current minimum (NIST SP 800-57,
+      800-131A). This needs no context. Use 'private_key_bits' => 2048 or more,
+      or an EC key ('private_key_type' => OPENSSL_KEYTYPE_EC).
+    metadata:
+      cwe:
+        - "CWE-326: Inadequate Encryption Strength"
+      owasp:
+        - A02:2021 - Cryptographic Failures
+      category: security
+      subcategory: [vuln]
+      confidence: HIGH
+      likelihood: LOW
+      impact: HIGH
+      technology: [php, openssl]
+      written-from: CWE-326; PHP manual for openssl_pkey_new (private_key_bits); NIST SP 800-57 Part 1
+      references:
+        - https://www.php.net/manual/en/function.openssl-pkey-new.php
+    patterns:
+      - pattern-either:
+          - pattern: 'openssl_pkey_new([..., "private_key_bits" => $N, ...])'
+          - pattern: 'openssl_pkey_new(array(..., "private_key_bits" => $N, ...))'
+      - metavariable-comparison:
+          metavariable: $N
+          comparison: $N < 2048
+
+  - id: aegis-php-session-trust-boundary
+    mode: taint
+    languages: [php]
+    severity: WARNING
+    message: >-
+      Request data is written into $_SESSION in a way that lets the client decide
+      what the server will later trust: the request chooses WHICH session key is
+      written (it can overwrite any trusted entry), or it sets a privilege-shaped
+      key (role, admin, permissions, ...). $_SESSION is read back as
+      server-established fact. Derive these values from verified state, or
+      validate against an allow-list first.
+    metadata:
+      cwe:
+        - "CWE-501: Trust Boundary Violation"
+      owasp:
+        - A04:2021 - Insecure Design
+      category: security
+      subcategory: [vuln]
+      confidence: MEDIUM
+      likelihood: LOW
+      impact: HIGH
+      technology: [php]
+      written-from: CWE-501; PHP manual for $_SESSION
+      references:
+        - https://cwe.mitre.org/data/definitions/501.html
+    pattern-sources:
+      - pattern-either:
+          - pattern: $_GET
+          - pattern: $_POST
+          - pattern: $_REQUEST
+          - pattern: $_COOKIE
+          - pattern: $_GET[...]
+          - pattern: $_POST[...]
+          - pattern: $_REQUEST[...]
+          - pattern: $_COOKIE[...]
+    pattern-sanitizers:
+      # Reading the session back is not request data (semgrep's taint is not
+      # index-sensitive: one request-set entry would otherwise taint every read).
+      - exact: true
+        patterns:
+          - pattern: $_SESSION[...]
+          - pattern-not-inside: $_SESSION[...] = $X
+      # A value computed by a lookup / validation call is a server decision.
+      - exact: true
+        patterns:
+          - pattern: $F(...)
+          - metavariable-regex:
+              metavariable: $F
+              regex: ^(?!(trim|strtolower|strtoupper|strval|urldecode|rawurldecode|stripslashes|htmlspecialchars|filter_var)$).*
+    pattern-sinks:
+      - patterns:
+          - pattern: $_SESSION[$KEY] = $V
+          - focus-metavariable: $KEY
+      - patterns:
+          - pattern: $_SESSION[$PRIV] = $V
+          - focus-metavariable: $V
+          - metavariable-regex:
+              metavariable: $PRIV
+              regex: (?i)^['"](is[-_]?)?(roles?|admin|administrator|superuser|staff|permissions?|privileges?|grants?|scopes?|access[-_]?level|user[-_]?level|user[-_]?role|user[-_]?group|groups?|authori[sz]ed|authenticated|logged[-_]?in)['"]$
