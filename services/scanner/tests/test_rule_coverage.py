@@ -38,39 +38,30 @@ def test_javascript_rules_are_counted_for_typescript_because_semgrep_runs_them()
     assert rc.applies_to({"languages": ["javascript", "typescript"]}) == ["javascript", "typescript"]
 
 
-def test_every_strong_tier_still_ships_its_evidence():
-    """STRONG means proven on documented vulnerabilities. If a prune removes a rule
-    that proof rests on, the tier is no longer grounded and must be re-measured."""
-    assert rc.tier_evidence_gaps() == []
-    assert set(rc.STRONG_EVIDENCE) == set(rc.STRONG), "every STRONG tier must name its evidence"
+# N5: tiers are computed from evidence (utils/tier_bar.py). "A STRONG tier still ships
+# the rules it was proven with" is now tests/test_tier_bar.py::
+# test_every_rule_the_evidence_names_still_ships, and a prune dropping a tier is
+# test_removing_the_catching_rule_drops_the_tier_with_no_hand_edit.
 
 
-def test_tier_evidence_check_catches_a_prune_that_counts_would_miss():
-    """The N2b failure mode: drop node_ssrf (the only rule catching NodeGoat GT4) and
-    add one unrelated rule. Every count is unchanged; the evidence check must fail."""
-    shipped = rc.shipped_rule_languages()
-    pruned = {k: v for k, v in shipped.items() if not k.endswith(".node_ssrf")}
-    pruned["some-new-rule"] = {"javascript", "typescript"}
-    assert len(pruned) == len(shipped)
-    gaps = rc.tier_evidence_gaps(pruned)
-    assert len(gaps) == 1 and "GT4" in gaps[0] and gaps[0].startswith("javascript")
-    # A rule still shipped but no longer for that language is a gap too.
-    narrowed = dict(shipped)
-    narrowed["aegis-js-sql-injection"] = {"javascript"}
-    assert any(g.startswith("typescript") for g in rc.tier_evidence_gaps(narrowed))
+def _planted(monkeypatch, tiers: dict[str, str]):
+    """Plant tiers so the threshold logic is tested apart from the shipped evidence."""
+    from utils import tier_bar as tb
+
+    fake = {l: tb.LanguageEvidence(language=l, tier=t) for l, t in tiers.items()}
+    monkeypatch.setattr(rc, "measured_tiers", lambda: fake)
 
 
 def test_every_tiered_language_actually_has_rules():
     """A language may not be called strong or limited if nothing runs against it."""
     idx = rc.rule_index()
-    for lang in rc.STRONG + rc.LIMITED:
-        assert idx.get(lang) and idx[lang].rules > 0, (
-            f"{lang} is tiered {rc.tier_of(lang)} but ships 0 security rules"
-        )
+    for lang, ev in rc.measured_tiers().items():
+        assert ev.tier != rc.TIER_NONE
+        assert idx.get(lang) and idx[lang].rules > 0, f"{lang} is tiered {ev.tier} but ships 0 security rules"
 
 
 def test_no_language_with_rules_is_left_untiered():
-    """The converse: new rules for a language must be tiered, not silently ignored.
+    """The converse: new rules for a language are tiered by the bar, not ignored.
 
     Without this, adding (say) a Ruby pack would leave Ruby reported as uncovered and
     its code counted against the confidence threshold forever.
@@ -80,9 +71,7 @@ def test_no_language_with_rules_is_left_untiered():
         if lang in rc._NON_APPLICATION:
             continue  # cicd/iac rules run on YAML; YAML is not application code
         assert rc.tier_of(lang) != rc.TIER_NONE, (
-            f"{lang} ships {cov.rules} security rules but is tiered 'none'; "
-            f"add it to STRONG or LIMITED in utils/rule_coverage.py"
-        )
+            f"{lang} ships {cov.rules} security rules but is tiered 'none'")
 
 
 def test_languages_we_do_no_sast_on_are_tiered_none():
@@ -91,31 +80,21 @@ def test_languages_we_do_no_sast_on_are_tiered_none():
         assert rc.rule_index().get(lang) is None, f"{lang} now has rules; re-tier it"
 
 
-def test_limited_language_repo_is_not_confident():
+def test_limited_language_repo_is_not_confident(monkeypatch):
     """The scanner half of the N2 gate (the orchestrator half is
-    pipeline/coverage_confidence_test.go). N2 wrote it for Java; N4 moved Java to
-    STRONG, so it now holds for Go, the language still LIMITED."""
+    pipeline/coverage_confidence_test.go): a repository in a LIMITED language is not
+    confidently measured, and the gap names the MEASURED rule count."""
+    _planted(monkeypatch, {"go": rc.TIER_LIMITED})
     cov = rc.summarise({"go": 5000})
     assert cov is not None
     assert cov["confident"] is False
     assert cov["strong_fraction"] == 0.0
-    # the gap names the MEASURED rule count, not a constant
     assert "Go" in cov["gap"] and f"{rc.rule_index()['go'].rules} rules" in cov["gap"]
-    assert cov["summary"] == "Go limited"
+    assert cov["summary"].startswith("Go — limited · ")
 
 
-def test_java_and_python_are_strong_on_n4_ground_truth():
-    """N4: both taint packs caught documented vulnerabilities in more than one
-    ground-truth corpus. The proof is named per rule in STRONG_EVIDENCE and must ship."""
-    for lang in ("java", "python"):
-        assert rc.tier_of(lang) == rc.TIER_STRONG
-        assert rc.STRONG_EVIDENCE.get(lang), f"{lang} is STRONG with no named evidence"
-    assert rc.summarise({"java": 5000})["confident"] is True
-    assert rc.summarise({"python": 5000})["confident"] is True
-    assert rc.tier_of("go") == rc.TIER_LIMITED
-
-
-def test_strongly_covered_repos_are_confident():
+def test_strongly_covered_repos_are_confident(monkeypatch):
+    _planted(monkeypatch, {"php": rc.TIER_STRONG, "typescript": rc.TIER_STRONG, "javascript": rc.TIER_STRONG})
     assert rc.summarise({"php": 11000})["confident"] is True
     assert rc.summarise({"typescript": 60000, "javascript": 12000})["confident"] is True
 
@@ -128,10 +107,11 @@ def test_uncovered_majority_is_not_confident():
     assert "Ruby" in cov["gap"] and "no rules" in cov["gap"]
 
 
-def test_threshold_is_a_strong_majority():
+def test_threshold_is_a_strong_majority(monkeypatch):
     """Half strong / half uncovered is NOT confident: the threshold is a strict
     majority of strongly-covered code, so a thin majority cannot hide behind a
     well-covered minority."""
+    _planted(monkeypatch, {"php": rc.TIER_STRONG})
     assert rc.summarise({"php": 1000, "ruby": 1000})["confident"] is False
     assert rc.summarise({"php": 1001, "ruby": 999})["confident"] is True
     assert rc.CONFIDENT_STRONG_FRACTION == 0.5

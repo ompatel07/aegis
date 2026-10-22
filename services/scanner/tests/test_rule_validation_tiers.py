@@ -53,12 +53,18 @@ def test_silent_clean_rules_are_not_coverage():
 
 
 def test_silent_clean_rules_cannot_be_strong_evidence():
-    sc = rc.silent_clean_rule_ids()
-    for lang, rules in rc.STRONG_EVIDENCE.items():
-        assert not (set(rules) & sc), f"{lang} STRONG evidence rests on a silent-clean rule"
-    # A silent-clean rule named as evidence would show up as a gap, not as proof.
+    """A documented vulnerability caught only by a silent-clean rule is not evidence
+    for the bar: such a rule must be promoted first, on its own triaged findings."""
+    from utils import tier_bar as tb
+
+    sc = sorted(rc.silent_clean_rule_ids())
+    assert sc, "expected at least one silent-clean rule"
     shipped = rc.shipped_rule_languages()
     assert all(rid not in shipped for rid in sc)
+    gt = {"c": {"language": "java", "role": tb.HELD_OUT,
+                "items": [{"id": "x", "scope": "IN", "status": "DET", "rules": [sc[0]]}]}}
+    ev = tb.evaluate(gt, [], shipped, {"java"})["java"]
+    assert ev.held_out_detected == 0 and ev.detection_corpora == []
 
 
 def test_silent_clean_findings_are_labelled():

@@ -8,6 +8,7 @@ import {
   notMeasuredReason,
   coverageLabel,
   coverageBreakdown,
+  evidenceLabel,
   overallState,
   partialQualifier,
   NOT_MEASURED,
@@ -85,4 +86,23 @@ test("coverage is labelled and broken down for display", () => {
 test("a pre-N2 scan without coverage is unchanged", () => {
   assert.equal(notMeasuredReason({ engines_degraded: [] }, "security"), null);
   assert.equal(coverageLabel(undefined), null);
+});
+
+
+// N5 — the tier is computed from measured evidence, and the numbers travel with it.
+test("the per-language detail states held-out recall, precision and the failing criterion", () => {
+  const ev = {
+    tier: "limited" as const, failed: ["recall: held-out 4/34 = 12%, needs 25%"], corpora: 6,
+    held_out_corpora: 2, held_out_recall: 0.1176, held_out_detected: 4, held_out_in_scope: 34,
+    tuning_recall: 0.15, precision: 0.81, tp: 100, fp: 23, uncertain: 2,
+  };
+  assert.equal(
+    evidenceLabel(ev),
+    "held-out recall 12% (4/34, 2 corpora) · precision 81% (100/123) · fails recall",
+  );
+  assert.equal(
+    evidenceLabel({ ...ev, held_out_recall: null, held_out_corpora: 0, failed: [] }),
+    "no held-out corpus (6 tuning) · precision 81% (100/123)",
+  );
+  assert.equal(evidenceLabel(null), null, "pre-N5 scans carry no evidence and show none");
 });

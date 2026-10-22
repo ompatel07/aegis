@@ -4,7 +4,7 @@
 // identically. A null rating/score/grade must NEVER read as blank, 0, "A", "-", or
 // a grey "fine" placeholder; a degraded scan must NEVER render as clean anywhere.
 
-import type { Scan } from "./types";
+import type { Scan, CoverageEvidence } from "./types";
 
 // A value that may be "not measured". `measured=false` carries the mandatory
 // "Not measured" label so no caller can accidentally render null as blank/0/A.
@@ -137,6 +137,29 @@ export function coverageLabel(
 ): string | null {
   if (!coverage?.summary) return null;
   return `Security coverage: ${coverage.summary}`;
+}
+
+// N5: the measured evidence behind one language's tier, for the per-language detail:
+// "held-out recall 12% (4/34, 2 corpora) · precision 81% (100/124) · fails recall".
+// A tier name alone hides 15% against 50%, so the numbers travel with it.
+export function evidenceLabel(ev?: CoverageEvidence | null): string | null {
+  if (!ev) return null;
+  const pct = (x: number) => `${Math.round(x * 100)}%`;
+  const parts: string[] = [];
+  if (ev.held_out_recall != null) {
+    const n = ev.held_out_corpora;
+    parts.push(
+      `held-out recall ${pct(ev.held_out_recall)} (${ev.held_out_detected}/${ev.held_out_in_scope}, ` +
+        `${n} ${n === 1 ? "corpus" : "corpora"})`,
+    );
+  } else if (ev.corpora > 0) {
+    parts.push(`no held-out corpus (${ev.corpora} tuning)`);
+  } else {
+    parts.push("recall not measured");
+  }
+  if (ev.precision != null) parts.push(`precision ${pct(ev.precision)} (${ev.tp}/${ev.tp + ev.fp})`);
+  if (ev.failed.length) parts.push(`fails ${ev.failed.map((f) => f.split(":")[0]).join(", ")}`);
+  return parts.join(" · ");
 }
 
 // Percent of the repo's code (by LOC) in each coverage tier, for the detail view.

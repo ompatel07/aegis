@@ -14,7 +14,8 @@ import { ScanFeedback } from "@/components/dashboard/ScanFeedback";
 import { FindingsList } from "@/components/findings/FindingsList";
 import { Button } from "@/components/ui/button";
 import { cn, formatDate, formatDuration, gradeColor, scoreColor } from "@/lib/utils";
-import { ratingDisplay, filteredSecretsLabel, filteredSecretsTotal, excludedBundledLabel, notMeasuredReason, overallState, partialQualifier, coverageLabel, coverageBreakdown } from "@/lib/display";
+import { ratingDisplay, filteredSecretsLabel, filteredSecretsTotal, excludedBundledLabel, notMeasuredReason, overallState, partialQualifier, coverageLabel,
+  evidenceLabel, coverageBreakdown } from "@/lib/display";
 import type { Scan } from "@/lib/types";
 import { Download, FileText, HelpCircle } from "lucide-react";
 import { useState } from "react";
@@ -152,6 +153,9 @@ export default function ScanDetailPage() {
                           l.cwe_classes === 1 ? "" : "es"
                         })`
                       : " (no SAST rules)"}
+                    {evidenceLabel(l.evidence) ? (
+                      <span className="block">measured: {evidenceLabel(l.evidence)}</span>
+                    ) : null}
                   </li>
                 ))}
               </ul>

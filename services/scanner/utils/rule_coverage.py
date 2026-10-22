@@ -20,63 +20,39 @@ distinct CWE classes. Nothing here is declared — it is counted from the files,
 moves when the rule set moves, and `tests/test_rule_coverage.py` fails if the tier
 table and the measured rule set disagree.
 
-Measured on the N4 rule set (79 Aegis rules + 89 njsscan; 6 SILENT-CLEAN rules run but
-are not counted, 9 STAGED rules do not run -- docs/GROUND_TRUTH_N4.md):
+Measured on the N5 rule set (81 Aegis rules + 89 njsscan; 6 SILENT-CLEAN rules run but
+are not counted, 9 STAGED rules do not run -- docs/GROUND_TRUTH_N5.md). The tier column
+is not declared here; it is what utils/tier_bar.py computes from accuracy/:
 
-    javascript   102 rules (taint 13, njsscan 89)    39 CWE classes   strong
-    typescript   102 rules (taint 13, njsscan 89)    39 CWE classes   strong   (_ALSO_RUNS_ON)
-    python        13 rules (taint)                   12 CWE classes   strong   (since N4)
-    java          10 rules (taint)                   11 CWE classes   strong   (since N4)
+    javascript   102 rules (taint 13, njsscan 89)    39 CWE classes   limited
+    typescript   102 rules (taint 13, njsscan 89)    39 CWE classes   limited  (_ALSO_RUNS_ON)
+    python        15 rules (taint)                   15 CWE classes   limited
+    java          10 rules (taint)                   11 CWE classes   limited
     go            10 rules (taint)                   12 CWE classes   limited
-    php            9 rules (taint)                   11 CWE classes   strong
-    ruby           0 rules                              0
-    csharp         0 rules                              0
+    php            9 rules (taint)                   11 CWE classes   limited
+    ruby           0 rules                              0             none
+    csharp         0 rules                              0             none
 
-(N3: java 9 / 10, go 8 / 8. N4 promoted aegis-java-weak-cipher, aegis-go-weak-hash-
-credential and aegis-go-insecure-session-cookie to PROVEN on ground-truth findings.)
+(N4 declared php, javascript, typescript, java and python STRONG. Under the N5 bar each
+fails at least one criterion; the failing criteria travel with the tier.)
 
 WHERE THE TIERS COME FROM
 -------------------------
-The brief for this pass asked that tiers be grounded in the N1 per-language table
-(`docs/RULE_REMOVAL_N1.md` §C.3, `docs/ACCURACY.md` "Per-language SAST"), which was
-measured before and after the cut on 15 real repositories plus five
-documented-vulnerability corpora. They are:
+Nowhere in this file. Since N5 a tier is COMPUTED (utils/tier_bar.py) from the
+measured evidence that ships in the image, accuracy/gt_items.json (every documented
+vulnerability of every qualifying ground-truth corpus) and accuracy/triage.json (every
+hand-triaged finding of a shipped rule). A language is STRONG only if its shipped rules
+caught documented vulnerabilities in >= 2 corpora, its HELD-OUT recall is >= 25%, and
+their precision over every triaged finding is >= 70%. Any language with rules that
+fails a criterion is LIMITED, and the failing criterion is carried with the tier.
+Languages with zero shipped security rules are NONE.
 
-  STRONG  php, javascript, typescript
-      Our taint packs are proven to fire on the vulnerability classes they target,
-      across MORE THAN ONE real repository: PHP on DVWA (3/6 documented, +31 findings),
-      librenms and FreshRSS; JS on NodeGoat (5/7 documented); TS on juice-shop (7/25
-      documented) and nocodb. The rules each of those proofs rests on are named in
-      STRONG_EVIDENCE and tested to still ship.
+The coverage line carries the measured recall next to every language, so a tier name
+cannot hide 15% against 50% (docs/GROUND_TRUTH_N5.md).
 
-      Class breadth is NOT part of the claim. N1/N2 said JavaScript "has real class
-      breadth (41 CWE classes)". N2b measured it: of the 38 classes left after the
-      prune, 11 have a true positive on real code (V2 + F1 corpora; 13 at most), and
-      for 23 no rule of ours fired on any of the 20 repositories.
-      38 is how many classes we have rules for, not how many we have shown we find.
-
-  STRONG  java, python (since N4, 2026-10-22)
-      N4 built ground-truth corpora for both (docs/GROUND_TRUTH_N4.md). The taint pack
-      caught documented vulnerabilities in MORE THAN ONE corpus: Java in WebGoat,
-      Security Shepherd, java-sec-code, VulnerableApp and JavaVulnerableLab; Python in
-      PyGoat, DSVW, DVGraphQL, django.nV, lets-be-bad-guys and dvpwa. That is the bar.
-      It is NOT a recall claim: in-scope recall on those corpora is Java 31/209 (15%)
-      and Python 18/72 (25%), below TypeScript's 7/25 on juice-shop for Java. The
-      misses are listed and split into rule gaps and engine ceilings there.
-
-  LIMITED go
-      Rules exist and fire, but the taint pack's documented detections (path traversal,
-      SSRF) are all in ONE corpus (damn-vulnerable-golang); four other Go corpora
-      caught nothing through it -- their flows cross a function or file boundary
-      (go-test-bench, GoVWA, DVGA) or need a missing sink (template.HTML).
-
-  NONE    everything else (ruby, csharp, c, cpp, rust, kotlin, scala, …)
-      Zero shipped security rules. We do no application-code SAST on these at all.
-
-**"Strong" means proven, not broad.** PHP is five rules covering five CWE classes: a
-PHP repository with no findings may still hold deserialisation, XXE, SSRF or
-file-upload flaws we have no rule for. The tier says our rules work where they aim,
-not that they aim everywhere. That limit is stated on the report rather than hidden.
+**"Strong" means proven, not broad.** A STRONG language's rules work where they aim on
+code nobody tuned them on. It does not mean they aim everywhere: PHP's rules cover a
+handful of CWE classes, and the misses per corpus are listed in gt_items.json.
 
 THE CONFIDENCE THRESHOLD
 ------------------------
@@ -96,66 +72,16 @@ renormalises and renders as PARTIAL with a mandatory qualifier. No new state.
 """
 from __future__ import annotations
 
+import functools
 import os
 import re
 from dataclasses import dataclass, field
 
+from utils import tier_bar
+
 # Fraction of code (by LOC) that must be in STRONG-covered languages for the security
 # score to be presented as confidently measured. See module docstring.
 CONFIDENT_STRONG_FRACTION = 0.5
-
-# Tier per language. Grounded in the N1 per-language measurement (module docstring).
-# `tests/test_rule_coverage.py` asserts these against the shipped rule set: a language
-# named here must have rules, and a language with rules must be named here.
-# N4 (2026-10-22): java and python moved to STRONG on documented-vulnerability proof
-# from MORE THAN ONE ground-truth corpus caught by their taint packs (STRONG_EVIDENCE;
-# docs/GROUND_TRUTH_N4.md). go stays LIMITED: its taint pack's documented detections are
-# all in one corpus. "Strong" is proven, not broad -- see the recall caveat there.
-STRONG = ("php", "javascript", "typescript", "java", "python")
-LIMITED = ("go",)
-
-# What a STRONG tier actually rests on (N2b). STRONG is "proven on documented
-# vulnerabilities", so it is tied to the shipped rules that produced that proof: the
-# ground-truth items each rule catches (F2 / N1 C2 definitions, re-run in N2b). A
-# prune that removes one of these must re-measure and re-tier the language;
-# tests/test_rule_coverage.py fails until it does. Rule counts and CWE-class counts
-# are NOT the test -- N2b showed a count can fall by 25 without the evidence moving,
-# and could just as easily stay put while the evidence goes.
-STRONG_EVIDENCE: dict[str, dict[str, str]] = {
-    "php": {
-        "aegis-php-sql-injection": "DVWA sqli + sqli_blind (low.php)",
-        "aegis-php-command-injection": "DVWA exec (low.php)",
-    },
-    "javascript": {
-        "aegis-js-code-injection": "NodeGoat GT1 eval (contributions.js:32-34)",
-        "aegis-js-nosql-where-injection": "NodeGoat GT2 $where (allocations-dao.js:78)",
-        "ajinabraham.njsscan.redirect.open_redirect.express_open_redirect":
-            "NodeGoat GT3 open redirect (index.js:72) -- the only rule that catches it",
-        "ajinabraham.njsscan.ssrf.ssrf_node.node_ssrf":
-            "NodeGoat GT4 SSRF (research.js:15) -- the only rule that catches it",
-        "aegis-js-redos-nested-quantifier": "NodeGoat GT7 ReDoS (profile.js:59)",
-    },
-    "typescript": {
-        "aegis-js-sql-injection": "juice-shop login*/union/dbSchema challenges (5)",
-        "aegis-js-nosql-injection": "juice-shop noSqlReviews + forgedReview challenges",
-    },
-    # N4 ground-truth corpora (docs/GROUND_TRUTH_N4.md). Each rule below caught documented
-    # vulnerabilities in MORE THAN ONE corpus.
-    "java": {
-        "aegis-java-sql-injection":
-            "WebGoat SQLi challenges (F1); Security Shepherd SqlInjection 1-7/Email/Escaping/"
-            "StoredProcedure; java-sec-code SQLI; VulnerableApp error-based SQLi; "
-            "JavaVulnerableLab login bypass + blind SQLi",
-        "aegis-java-ssrf": "WebGoat SSRF JKU (F1); java-sec-code SSRF; VulnerableApp SIMPLE_SSRF levels 1-4",
-        "aegis-java-path-traversal": "WebGoat path traversal x2 (F1); java-sec-code FileUpload",
-    },
-    "python": {
-        "aegis-py-sql-injection": "PyGoat sql_injection_lab; django.nV upload() SQLi",
-        "aegis-py-code-injection": "PyGoat command_injection_lab lab2 (eval); lets-be-bad-guys code execution",
-        "aegis-py-path-traversal": "PyGoat ssrf_lab lab1; lets-be-bad-guys file access",
-        "aegis-py-sql-string-construction": "dvpwa SQLi (F1); DSVW blind/UNION SQLi + login bypass; DVGraphQL pastes filter",
-    },
-}
 
 # Semgrep applies a rule to more languages than it declares: a `languages:
 # [javascript]` rule also runs on .ts/.tsx (measured on semgrep 1.97.0 in N2b; a
@@ -164,9 +90,7 @@ STRONG_EVIDENCE: dict[str, dict[str, str]] = {
 # TypeScript was reported as 11 rules while all 114 njsscan rules ran on it.
 _ALSO_RUNS_ON = {"javascript": ("typescript",)}
 
-TIER_NONE = "none"
-TIER_LIMITED = "limited"
-TIER_STRONG = "strong"
+TIER_NONE, TIER_LIMITED, TIER_STRONG = tier_bar.TIER_NONE, tier_bar.TIER_LIMITED, tier_bar.TIER_STRONG
 
 _RULES_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "rules")
 _CWE = re.compile(r"CWE-\d+", re.IGNORECASE)
@@ -280,26 +204,23 @@ def shipped_rule_languages() -> dict[str, set[str]]:
     return out
 
 
-def tier_evidence_gaps(shipped: dict[str, set[str]] | None = None) -> list[str]:
-    """STRONG tiers whose evidence rules are no longer shipped for that language.
-    Empty means every STRONG tier still has the rules it was proven with."""
-    shipped = shipped_rule_languages() if shipped is None else shipped
-    gaps = []
-    for lang, rules in STRONG_EVIDENCE.items():
-        for rule_id, proves in rules.items():
-            if lang not in shipped.get(rule_id, ()):
-                gaps.append(f"{lang} is STRONG on '{proves}', but {rule_id} no longer ships "
-                            f"for {lang}: re-measure the ground truth and re-tier {lang}")
-    return gaps
+@functools.lru_cache(maxsize=1)
+def measured_tiers() -> dict[str, tier_bar.LanguageEvidence]:
+    """Every language with shipped security rules, tiered by the N5 bar from the
+    evidence in accuracy/. Nothing here is declared."""
+    shipped = shipped_rule_languages()
+    langs = {l for ls in shipped.values() for l in ls if l not in _NON_APPLICATION}
+    gt, triage = tier_bar.ledger()
+    return tier_bar.evaluate(gt, triage, shipped, langs)
 
 
 def tier_of(language: str) -> str:
-    lang = (language or "").lower()
-    if lang in STRONG:
-        return TIER_STRONG
-    if lang in LIMITED:
-        return TIER_LIMITED
-    return TIER_NONE
+    ev = measured_tiers().get((language or "").lower())
+    return ev.tier if ev else TIER_NONE
+
+
+def evidence_of(language: str) -> tier_bar.LanguageEvidence | None:
+    return measured_tiers().get((language or "").lower())
 
 
 def summarise(language_loc: dict[str, int], unreadable: dict[str, int] | None = None) -> dict | None:
@@ -322,10 +243,14 @@ def summarise(language_loc: dict[str, int], unreadable: dict[str, int] | None = 
         tier = tier_of(lang)
         by_tier[tier] += loc
         cov = index.get(lang)
+        ev = evidence_of(lang)
         langs.append({"language": lang, "tier": tier, "loc": loc,
                       "share": round(loc / total, 4),
                       "rules": cov.rules if cov else 0,
-                      "cwe_classes": cov.cwe_classes if cov else 0})
+                      "cwe_classes": cov.cwe_classes if cov else 0,
+                      # N5: the measured evidence behind the tier, so a tier name never
+                      # stands alone (15% and 50% recall are both "limited" otherwise).
+                      "evidence": ev.as_dict() if ev else None})
 
     strong_fraction = by_tier[TIER_STRONG] / total
     confident = strong_fraction > CONFIDENT_STRONG_FRACTION
@@ -360,10 +285,33 @@ def display_name(language: str) -> str:
     return _DISPLAY.get((language or "").lower(), (language or "").title())
 
 
+def recall_phrase(ev: dict | None) -> str:
+    """The measured recall behind a tier, e.g. "12% held-out recall on 2 corpora".
+
+    Held-out recall is the headline because it is the one the rules were not tuned on;
+    a language whose corpora were all used for tuning says so instead."""
+    if not ev or not ev.get("corpora"):
+        return "recall not measured"
+    if ev.get("held_out_recall") is not None:
+        n = ev["held_out_corpora"]
+        return f"{round(ev['held_out_recall'] * 100)}% held-out recall on {n} {'corpus' if n == 1 else 'corpora'}"
+    n = ev["corpora"]
+    pct = round(ev["tuning_recall"] * 100) if ev.get("tuning_recall") is not None else 0
+    return f"{pct}% recall on {n} tuning {'corpus' if n == 1 else 'corpora'}, none held out"
+
+
+def language_line(l: dict) -> str:
+    """e.g. "Java — limited · 12% held-out recall on 2 corpora"."""
+    name, tier = display_name(l["language"]), _TIER_WORD[l["tier"]]
+    if l["tier"] == TIER_NONE:
+        return f"{name} — none · no rules"
+    return f"{name} — {tier} · {recall_phrase(l.get('evidence'))}"
+
+
 def headline(langs: list[dict], limit: int = 4) -> str:
-    """e.g. "PHP strong; Java limited; Ruby none" -- what a customer is getting."""
-    parts = [f"{display_name(l['language'])} {_TIER_WORD[l['tier']]}"
-             for l in langs[:limit] if l["share"] >= 0.01]
+    """What a customer is getting, with the measured recall next to every tier, e.g.
+    "Java — limited · 15% held-out recall on 2 corpora; Ruby — none · no rules"."""
+    parts = [language_line(l) for l in langs[:limit] if l["share"] >= 0.01]
     if not parts:
         return "no application code detected"
     extra = len([l for l in langs if l["share"] >= 0.01]) - len(parts)

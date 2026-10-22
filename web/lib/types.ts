@@ -331,11 +331,31 @@ export interface Scan {
       share: number;
       rules: number;
       cwe_classes: number;
+      // N5: the measured evidence the tier was computed from (absent on pre-N5 scans).
+      evidence?: CoverageEvidence | null;
     }[];
     summary: string;
     gap?: string | null;
     always_on?: string[];
   };
+}
+
+// N5: a language's tier is computed from measured ground truth and triage, never
+// declared. STRONG needs documented detections in >= 2 corpora, held-out recall
+// >= 25% and precision >= 70%; `failed` names every criterion a language misses.
+export interface CoverageEvidence {
+  tier: "strong" | "limited" | "none";
+  failed: string[];
+  corpora: number;
+  held_out_corpora: number;
+  held_out_recall: number | null;
+  held_out_detected: number;
+  held_out_in_scope: number;
+  tuning_recall: number | null;
+  precision: number | null;
+  tp: number;
+  fp: number;
+  uncertain: number;
 }
 
 export interface Finding {
