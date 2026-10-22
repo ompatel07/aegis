@@ -1,0 +1,131 @@
+# Pass N3 (2026-10-22) -- STAGED, NOT SHIPPED (see README.md): JavaScript/TypeScript weakness rules for the categories
+# njsscan does NOT cover after N2b's prune. Written by Aegis from the CWE
+# definitions and the Node.js / Express / express-session documentation; no
+# registry, njsscan or vendor rule text was used.
+#
+# Design rule for every rule here (N2b's lesson): a rule fires on what makes the
+# code dangerous, never on an API name alone.
+#   * weak random      -- only when Math.random() reaches a value whose NAME says it
+#                         must be unpredictable (the identifier's head noun is token,
+#                         salt, nonce, ...), a session/auth cookie, or the return of a
+#                         function named for one. Shuffles, jitter, ids and colours
+#                         are silent.
+#   * session cookie   -- only cookies whose name is session/auth-shaped; CSRF
+#                         double-submit cookies are excluded (they must be readable).
+#   * trust boundary   -- only when the request chooses WHICH session key is written,
+#                         or writes a privilege-shaped key.
+rules:
+  - id: aegis-js-insecure-session-cookie-esm
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: >-
+      express-session / cookie-session is configured with its session cookie's
+      Secure flag off (or unset) or HttpOnly explicitly off. The session id then
+      travels over plain HTTP or is readable by script. Set cookie: { secure: true,
+      httpOnly: true }. (This rule covers the ES-module `import` form; the
+      CommonJS `require` form is covered by the njsscan cookie rules.)
+    metadata:
+      cwe:
+        - "CWE-614: Sensitive Cookie in HTTPS Session Without 'Secure' Attribute"
+        - "CWE-1004: Sensitive Cookie Without 'HttpOnly' Flag"
+      owasp:
+        - A05:2021 - Security Misconfiguration
+      category: security
+      subcategory: [vuln]
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: MEDIUM
+      technology: [express, express-session, cookie-session]
+      written-from: CWE-614, CWE-1004; express-session and cookie-session README option tables (cookie.secure defaults to false)
+      references:
+        - https://github.com/expressjs/session#cookiesecure
+    patterns:
+      - pattern-either:
+          - pattern-inside: |
+              import $SESSION from 'express-session'
+              ...
+          - pattern-inside: |
+              import $SESSION from 'cookie-session'
+              ...
+          - pattern-inside: |
+              import * as $SESSION from 'express-session'
+              ...
+      - pattern-either:
+          - pattern: '$SESSION({..., cookie: {..., secure: false, ...}, ...})'
+          - pattern: '$SESSION({..., cookie: {..., httpOnly: false, ...}, ...})'
+          - pattern: '$SESSION({..., secure: false, ...})'
+          - pattern: '$SESSION({..., httpOnly: false, ...})'
+          # an inline cookie object without `secure` (express-session defaults it off)
+          - patterns:
+              - pattern: '$SESSION({..., cookie: {...}, ...})'
+              - pattern-not: '$SESSION({..., cookie: {..., secure: $S, ...}, ...})'
+          # no cookie options at all (cookie-session takes `secure` at top level).
+          # A cookie options VARIABLE is not inspected.
+          - patterns:
+              - pattern: '$SESSION({...})'
+              - pattern-not: '$SESSION({..., cookie: $C, ...})'
+              - pattern-not: '$SESSION({..., secure: $S, ...})'
+
+  - id: aegis-js-session-trust-boundary
+    mode: taint
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: >-
+      Request data is written into the server-side session in a way that lets the
+      client decide what the server will later trust: either the request chooses
+      WHICH session key is written (it can overwrite any trusted attribute), or it
+      sets a privilege-shaped key (role, admin, permissions, ...). Session values
+      are treated as server-established facts; derive them from verified state, or
+      validate against an allow-list before storing.
+    metadata:
+      cwe:
+        - "CWE-501: Trust Boundary Violation"
+      owasp:
+        - A04:2021 - Insecure Design
+      category: security
+      subcategory: [vuln]
+      confidence: MEDIUM
+      likelihood: LOW
+      impact: HIGH
+      technology: [express, express-session]
+      written-from: CWE-501; express-session req.session API docs
+      references:
+        - https://cwe.mitre.org/data/definitions/501.html
+    pattern-sources:
+      - patterns:
+          - pattern-either:
+              - pattern: $REQ.body
+              - pattern: $REQ.query
+              - pattern: $REQ.params
+              - pattern: $REQ.headers
+              - pattern: $REQ.cookies
+          - metavariable-regex:
+              metavariable: $REQ
+              regex: ^(req|request)$
+    pattern-sanitizers:
+      # Reading the session back is not request data.
+      - exact: true
+        pattern: $REQ.session.$X
+      # A value computed by a lookup / validation call is a server decision.
+      - exact: true
+        patterns:
+          - pattern-either:
+              - pattern: $F(...)
+              - pattern: $O.$F(...)
+          - metavariable-regex:
+              metavariable: $F
+              regex: ^(?!(trim|toLowerCase|toUpperCase|toString|String|decodeURIComponent)$).*
+    pattern-sinks:
+      # The request picks the key.
+      - patterns:
+          - pattern: $REQ.session[$KEY] = $V
+          - focus-metavariable: $KEY
+      # A privilege-shaped key receives request data.
+      - patterns:
+          - pattern-either:
+              - pattern: $REQ.session.$PRIV = $V
+              - pattern: $REQ.session[$PRIV] = $V
+          - focus-metavariable: $V
+          - metavariable-regex:
+              metavariable: $PRIV
+              regex: &priv_key (?i)^['"]?(is_?)?(roles?|admin|administrator|superuser|is_?staff|permissions?|privileges?|grants?|scopes?|access_?level|user_?level|user_?role|user_?group|groups?|authori[sz]ed|is_?authenticated|authenticated|logged_?in|is_?logged_?in)['"]?$

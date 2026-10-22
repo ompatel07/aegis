@@ -1,0 +1,155 @@
+# Pass N3 (2026-10-22): JavaScript/TypeScript weakness rules for the categories
+# njsscan does NOT cover after N2b's prune. Written by Aegis from the CWE
+# definitions and the Node.js / Express / express-session documentation; no
+# registry, njsscan or vendor rule text was used.
+#
+# Design rule for every rule here (N2b's lesson): a rule fires on what makes the
+# code dangerous, never on an API name alone.
+#   * weak random      -- only when Math.random() reaches a value whose NAME says it
+#                         must be unpredictable (the identifier's head noun is token,
+#                         salt, nonce, ...), a session/auth cookie, or the return of a
+#                         function named for one. Shuffles, jitter, ids and colours
+#                         are silent.
+#   * session cookie   -- only cookies whose name is session/auth-shaped; CSRF
+#                         double-submit cookies are excluded (they must be readable).
+#   * trust boundary   -- only when the request chooses WHICH session key is written,
+#                         or writes a privilege-shaped key.
+rules:
+  - id: aegis-js-weak-random-secret
+    mode: taint
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: >-
+      A value that has to be unguessable is generated with Math.random(). Its
+      output is predictable: V8's generator (xorshift128+) can be reconstructed
+      from a handful of observed outputs, so tokens, salts, nonces and session ids
+      built from it can be predicted. Use crypto.randomBytes / crypto.randomUUID
+      (Node) or crypto.getRandomValues (browser). Math.random() is fine for
+      shuffles, jitter and UI ids, which this rule does not flag.
+    metadata:
+      cwe:
+        - "CWE-338: Use of Cryptographically Weak Pseudo-Random Number Generator (PRNG)"
+      owasp:
+        - A02:2021 - Cryptographic Failures
+      category: security
+      subcategory: [vuln]
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: HIGH
+      technology: [javascript, typescript, node.js]
+      written-from: CWE-338; ECMAScript Math.random() spec (not cryptographically secure); Node.js crypto docs
+      references:
+        - https://cwe.mitre.org/data/definitions/338.html
+        - https://nodejs.org/api/crypto.html#cryptorandombytessize-callback
+    pattern-sources:
+      - pattern: Math.random()
+    pattern-sanitizers:
+      # A value that mixes in CSPRNG output is not predictable.
+      - pattern: <... crypto.randomBytes(...) ...>
+      - pattern: <... crypto.getRandomValues(...) ...>
+      - pattern: <... crypto.randomUUID(...) ...>
+      - pattern: <... crypto.randomInt(...) ...>
+      # Any call that is not a pure value transform ends the flow: a random number
+      # passed to fetch() as a cache-buster does not make the response a weak token.
+      # exact: only the call's own value is cleaned, not its arguments.
+      - exact: true
+        patterns:
+          - pattern: $F(...)
+          - pattern-not: Math.$M(...)
+          - pattern-not: String(...)
+          - pattern-not: Number(...)
+          - pattern-not: parseInt(...)
+          - pattern-not: parseFloat(...)
+          - pattern-not: BigInt(...)
+          - pattern-not: btoa(...)
+          - pattern-not: encodeURIComponent(...)
+          - pattern-not: $X.$T(...)
+      - exact: true
+        patterns:
+          - pattern: $X.$T(...)
+          - metavariable-regex:
+              metavariable: $T
+              regex: ^(?!(toString|toFixed|toPrecision|slice|substring|substr|padStart|padEnd|replace|replaceAll|toUpperCase|toLowerCase|split|join|concat|charAt|charCodeAt|fromCharCode|codePointAt|map|reduce|repeat|trim|floor|ceil|round|trunc|abs|random|from|update|digest|createHash|createHmac|cookie)$).*
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $NAME = $V
+              - pattern: "{..., $NAME: $V, ...}"
+              - pattern: $RES.cookie($NAME, $V, ...)
+          - focus-metavariable: $V
+          - metavariable-regex:
+              metavariable: $NAME
+              regex: &secret_name ^(?:.*(?:[^A-Za-z0-9]|(?<=[a-z0-9])(?=[A-Z])))?(?i:(?:csrf|xsrf|auth|access|reset|verification|verify|confirm|confirmation|activation|invite|invitation|api|bearer|session|login|remember(?:[-_]?me)?|magic|otp|mfa|oauth|signup|unsubscribe|email|password|secret|jwt)[-_]?tokens?|secrets?|salts?|otps?|totp|hotp|csrf|xsrf|passwords?|passwd|pwd|passphrase|passcode|api[-_]?keys?|(?:private|secret|signing|encryption|encrypt|auth|access|hmac|master|crypto|cipher|aes|jwt)[-_]?keys?|ivs?|remember[-_]?me|(?:code[-_]?)?verifier|(?:verification|verify|reset|activation|confirm|confirmation|invite|invitation|login|mfa|recovery|otp|one[-_]?time)[-_]?codes?|pins?)[_0-9]*['"`]?$
+      - patterns:
+          - pattern-either:
+              - pattern-inside: function $FN(...) { ... }
+              - pattern-inside: $FN = (...) => { ... }
+              - pattern-inside: $FN = function (...) { ... }
+          - pattern: return $V
+          - focus-metavariable: $V
+          - metavariable-regex:
+              metavariable: $FN
+              regex: *secret_name
+          - metavariable-regex:
+              metavariable: $FN
+              regex: '^(?!(?:verify|check|validate|is|has|compare|match|parse|decode|read|load|count|test|Verify|Check|Validate|Is|Has|Compare|Match|Parse|Decode|Read|Load|Count|Test)(?:[A-Z_]|$)).*'
+      - patterns:
+          - pattern: $FN = (...) => $V
+          - focus-metavariable: $V
+          - metavariable-regex:
+              metavariable: $FN
+              regex: *secret_name
+          - metavariable-regex:
+              metavariable: $FN
+              regex: '^(?!(?:verify|check|validate|is|has|compare|match|parse|decode|read|load|count|test|Verify|Check|Validate|Is|Has|Compare|Match|Parse|Decode|Read|Load|Count|Test)(?:[A-Z_]|$)).*'
+
+  - id: aegis-js-insecure-session-cookie
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: >-
+      A session or authentication cookie is set without HttpOnly or without
+      Secure. Without HttpOnly any XSS can read it; without Secure it is sent over
+      plain HTTP and can be captured. Express's res.cookie() sets neither by
+      default. Set { httpOnly: true, secure: true } (and a sameSite policy). CSRF
+      double-submit cookies, which must stay readable by script, are not flagged.
+    metadata:
+      cwe:
+        - "CWE-1004: Sensitive Cookie Without 'HttpOnly' Flag"
+        - "CWE-614: Sensitive Cookie in HTTPS Session Without 'Secure' Attribute"
+      owasp:
+        - A05:2021 - Security Misconfiguration
+      category: security
+      subcategory: [vuln]
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: MEDIUM
+      technology: [express, node.js]
+      written-from: CWE-1004, CWE-614; Express res.cookie() API docs (httpOnly and secure default to false)
+      references:
+        - https://expressjs.com/en/api.html#res.cookie
+    patterns:
+      - pattern-either:
+          # no options at all: neither flag is set
+          - pattern: $RES.cookie($NAME, $VALUE)
+          - pattern: '$RES.cookie($NAME, $VALUE, {..., httpOnly: false, ...})'
+          - pattern: '$RES.cookie($NAME, $VALUE, {..., secure: false, ...})'
+          # an inline options object that leaves a flag out (an options VARIABLE is
+          # not inspected: we cannot see it, so we do not guess)
+          - patterns:
+              - pattern: $RES.cookie($NAME, $VALUE, {...})
+              - pattern-not: '$RES.cookie($NAME, $VALUE, {..., httpOnly: $H, ...})'
+          - patterns:
+              - pattern: $RES.cookie($NAME, $VALUE, {...})
+              - pattern-not: '$RES.cookie($NAME, $VALUE, {..., secure: $S, ...})'
+      # options built by spreading another object are not inspectable here
+      - pattern-not: '$RES.cookie($NAME, $VALUE, {..., ...$SPREAD, ...})'
+      # res.cookie(name, '', {expires: ...}) / clearCookie-style deletions carry no secret.
+      - pattern-not: $RES.cookie($NAME, "", ...)
+      - pattern-not: $RES.cookie($NAME, null, ...)
+      - metavariable-regex:
+          metavariable: $RES
+          regex: ^(res|response|reply|ctx\.res)$
+      - metavariable-regex:
+          metavariable: $NAME
+          regex: (?i)^(?!.*(csrf|xsrf)).*(sess|sid|auth|token|jwt|remember|login|refresh|access|identity|credential).*$
+
