@@ -1,0 +1,54 @@
+# Pass N3 (2026-10-22): Go weakness rules. Written by Aegis from the CWE
+# definitions and the Go standard library documentation (math/rand, crypto/*,
+# net/http.Cookie) plus gorilla/sessions and gin; no registry or vendor rule text
+# was used. math/rand and crypto/rand are both imported as `rand`, so every rule
+# that depends on the package is scoped by its import path.
+rules:
+  - id: aegis-go-weak-cipher
+    languages: [go]
+    severity: ERROR
+    message: >-
+      A broken cipher is used: DES (56-bit key), 3DES (64-bit block, Sweet32;
+      disallowed by NIST), RC4 (biased keystream), Blowfish or CAST5 (64-bit
+      blocks). This needs no context. Use crypto/aes in GCM mode (cipher.NewGCM)
+      or golang.org/x/crypto/chacha20poly1305.
+    metadata:
+      cwe:
+        - "CWE-327: Use of a Broken or Risky Cryptographic Algorithm"
+      owasp:
+        - A02:2021 - Cryptographic Failures
+      category: security
+      subcategory: [vuln]
+      confidence: HIGH
+      likelihood: MEDIUM
+      impact: HIGH
+      technology: [go]
+      written-from: CWE-327; crypto/des and crypto/rc4 package docs (rc4 "cryptographically broken"); NIST SP 800-131A Rev.2
+      references:
+        - https://pkg.go.dev/crypto/rc4
+    pattern-either:
+      - patterns:
+          - pattern-inside: |
+              import "crypto/des"
+              ...
+          - pattern-either:
+              - pattern: des.NewCipher(...)
+              - pattern: des.NewTripleDESCipher(...)
+      - patterns:
+          - pattern-inside: |
+              import "crypto/rc4"
+              ...
+          - pattern: rc4.NewCipher(...)
+      - patterns:
+          - pattern-inside: |
+              import "golang.org/x/crypto/blowfish"
+              ...
+          - pattern-either:
+              - pattern: blowfish.NewCipher(...)
+              - pattern: blowfish.NewSaltedCipher(...)
+      - patterns:
+          - pattern-inside: |
+              import "golang.org/x/crypto/cast5"
+              ...
+          - pattern: cast5.NewCipher(...)
+

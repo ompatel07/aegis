@@ -1,0 +1,334 @@
+# Pass N3 (2026-10-22) -- STAGED, NOT SHIPPED (see README.md): Go weakness rules. Written by Aegis from the CWE
+# definitions and the Go standard library documentation (math/rand, crypto/*,
+# net/http.Cookie) plus gorilla/sessions and gin; no registry or vendor rule text
+# was used. math/rand and crypto/rand are both imported as `rand`, so every rule
+# that depends on the package is scoped by its import path.
+rules:
+  - id: aegis-go-weak-random-secret
+    mode: taint
+    languages: [go]
+    severity: WARNING
+    message: >-
+      A value that has to be unguessable comes from math/rand. math/rand is a
+      deterministic generator (and before Go 1.20 its global source was seeded
+      with 1 unless the program seeded it), so tokens, session ids, salts and
+      passwords built from it can be predicted. Use crypto/rand (rand.Read,
+      rand.Text, rand.Int). math/rand is fine for shuffles, jitter and
+      simulations, which this rule does not flag.
+    metadata:
+      cwe:
+        - "CWE-338: Use of Cryptographically Weak Pseudo-Random Number Generator (PRNG)"
+      owasp:
+        - A02:2021 - Cryptographic Failures
+      category: security
+      subcategory: [vuln]
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: HIGH
+      technology: [go]
+      written-from: CWE-338; math/rand package docs ("must not be used for security-sensitive work ... use crypto/rand")
+      references:
+        - https://pkg.go.dev/math/rand
+    pattern-sources:
+      - patterns:
+          - pattern-either:
+              - pattern-inside: |
+                  import "math/rand"
+                  ...
+              - pattern-inside: |
+                  import "math/rand/v2"
+                  ...
+          - pattern-either:
+              - pattern: rand.$F(...)
+              - patterns:
+                  - pattern-either:
+                      - pattern-inside: |
+                          $R := rand.New(...)
+                          ...
+                      - pattern-inside: |
+                          $R = rand.New(...)
+                          ...
+                  - pattern: $R.$F(...)
+          - metavariable-regex:
+              metavariable: $F
+              regex: ^(Int|Intn|IntN|Int31|Int31n|Int32|Int32N|Int63|Int63n|Int64|Int64N|Uint32|Uint32N|Uint64|Uint64N|UintN|Uint|Float32|Float64|Perm|N|ExpFloat64|NormFloat64)$
+      # math/rand.Read fills its argument.
+      - by-side-effect: true
+        patterns:
+          - pattern-inside: |
+              import "math/rand"
+              ...
+          - pattern: rand.Read($B)
+          - focus-metavariable: $B
+    pattern-sanitizers:
+      # A call that is not a value transform ends the flow.
+      - exact: true
+        patterns:
+          - pattern-either:
+              - pattern: $F(...)
+              - pattern: $P.$F(...)
+          - pattern-not: rand.$X(...)
+          - metavariable-regex:
+              metavariable: $F
+              regex: ^(?!(?:.*\.)?(string|Sprintf|Sprint|FormatInt|FormatUint|Itoa|EncodeToString|String|ToUpper|ToLower|Repeat|Join|byte|rune|int|int64|uint64|len)$).*
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $NAME := $V
+              - pattern: $NAME = $V
+              - pattern: var $NAME = $V
+              - pattern: var $NAME $T = $V
+              - pattern: "$S{..., $NAME: $V, ...}"
+          - focus-metavariable: $V
+          - metavariable-regex:
+              metavariable: $NAME
+              regex: &secret_name ^(?:.*(?:[^A-Za-z0-9]|(?<=[a-z0-9])(?=[A-Z])))?(?i:(?:csrf|xsrf|auth|access|reset|verification|verify|confirm|confirmation|activation|invite|invitation|api|bearer|session|login|remember(?:[-_]?me)?|magic|otp|mfa|oauth|signup|unsubscribe|email|password|secret|jwt)[-_]?tokens?|secrets?|salts?|otps?|totp|hotp|csrf|xsrf|passwords?|passwd|pwd|passphrase|passcode|api[-_]?keys?|(?:private|secret|signing|encryption|encrypt|auth|access|hmac|master|crypto|cipher|aes|jwt)[-_]?keys?|ivs?|remember[-_]?me|(?:code[-_]?)?verifier|(?:verification|verify|reset|activation|confirm|confirmation|invite|invitation|login|mfa|recovery|otp|one[-_]?time)[-_]?codes?|pins?)[_0-9]*['"`]?$
+      - patterns:
+          - pattern-inside: |
+              func $FN(...) $RT { ... }
+          - pattern: return $V
+          - focus-metavariable: $V
+          - metavariable-regex:
+              metavariable: $FN
+              regex: *secret_name
+          - metavariable-regex:
+              metavariable: $FN
+              regex: '^(?!(?:verify|check|validate|is|has|compare|match|parse|decode|read|load|count|test|Verify|Check|Validate|Is|Has|Compare|Match|Parse|Decode|Read|Load|Count|Test)(?:[A-Z_]|$)).*'
+
+  - id: aegis-go-weak-hash-credential
+    languages: [go]
+    severity: WARNING
+    message: >-
+      A credential is hashed with MD5 or SHA-1, or inside a function whose name
+      says it handles passwords. Both are fast and broken for collision
+      resistance, so a password store built on them falls to brute force. Use
+      golang.org/x/crypto/argon2, bcrypt or scrypt for passwords and
+      crypto/hmac with SHA-256 for integrity. An MD5 checksum or cache key is
+      not flagged.
+    metadata:
+      cwe:
+        - "CWE-328: Use of Weak Hash"
+        - "CWE-916: Use of Password Hash With Insufficient Computational Effort"
+      owasp:
+        - A02:2021 - Cryptographic Failures
+      category: security
+      subcategory: [vuln]
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: HIGH
+      technology: [go]
+      written-from: CWE-328, CWE-916; crypto/md5 and crypto/sha1 package docs ("cryptographically broken")
+      references:
+        - https://pkg.go.dev/crypto/md5
+    patterns:
+      - pattern-either:
+          - pattern-inside: |
+              import "crypto/md5"
+              ...
+          - pattern-inside: |
+              import "crypto/sha1"
+              ...
+      - pattern-either:
+          - patterns:
+              - pattern-either:
+                  - pattern: md5.Sum(<... $CRED ...>)
+                  - pattern: sha1.Sum(<... $CRED ...>)
+                  - pattern: |
+                      $H := md5.New()
+                      ...
+                      $H.Write(<... $CRED ...>)
+                  - pattern: |
+                      $H := sha1.New()
+                      ...
+                      $H.Write(<... $CRED ...>)
+                  - pattern: |
+                      $H := md5.New()
+                      ...
+                      io.WriteString($H, <... $CRED ...>)
+                  - pattern: |
+                      $H := sha1.New()
+                      ...
+                      io.WriteString($H, <... $CRED ...>)
+              - metavariable-regex:
+                  metavariable: $CRED
+                  regex: (?i)^(?!.*hash).*(password|passwd|pwd|(?<![a-z])pass(?![a-z])|passphrase).*
+          - patterns:
+              - pattern-inside: |
+                  func $FN(...) $RT { ... }
+              - pattern-either:
+                  - pattern: md5.Sum(...)
+                  - pattern: sha1.Sum(...)
+                  - pattern: md5.New()
+                  - pattern: sha1.New()
+              - metavariable-regex:
+                  metavariable: $FN
+                  regex: (?i)^(hash|encode|encrypt|crypt|digest|check|verify|match|make|create|store|compute|generate)[-_]?(user)?[-_]?(password|passwd|pwd|passphrase)s?$
+
+  - id: aegis-go-weak-key-size
+    languages: [go]
+    severity: ERROR
+    message: >-
+      An RSA key shorter than 2048 bits is generated (or DSA with 1024-bit
+      parameters). This is below every current minimum (NIST SP 800-57,
+      800-131A); since Go 1.24 crypto/rsa refuses keys under 1024 bits for this
+      reason. This needs no context. Use 2048 bits or more, or an
+      elliptic-curve key.
+    metadata:
+      cwe:
+        - "CWE-326: Inadequate Encryption Strength"
+      owasp:
+        - A02:2021 - Cryptographic Failures
+      category: security
+      subcategory: [vuln]
+      confidence: HIGH
+      likelihood: LOW
+      impact: HIGH
+      technology: [go]
+      written-from: CWE-326; crypto/rsa GenerateKey docs; NIST SP 800-57 Part 1
+      references:
+        - https://pkg.go.dev/crypto/rsa#GenerateKey
+    pattern-either:
+      - patterns:
+          - pattern-either:
+              - pattern: rsa.GenerateKey($R, $N)
+              - pattern: rsa.GenerateMultiPrimeKey($R, $P, $N)
+          - metavariable-comparison:
+              metavariable: $N
+              comparison: $N < 2048
+      - pattern: dsa.GenerateParameters($P, $R, dsa.L1024N160)
+
+  - id: aegis-go-insecure-session-cookie
+    languages: [go]
+    severity: WARNING
+    message: >-
+      A session or authentication cookie is built without HttpOnly or without
+      Secure (or with one explicitly false). net/http's Cookie defaults both to
+      false. Without HttpOnly any XSS can read it; without Secure it is sent over
+      plain HTTP. Set HttpOnly: true and Secure: true. CSRF cookies, which must
+      stay readable by script, are not flagged.
+    metadata:
+      cwe:
+        - "CWE-614: Sensitive Cookie in HTTPS Session Without 'Secure' Attribute"
+        - "CWE-1004: Sensitive Cookie Without 'HttpOnly' Flag"
+      owasp:
+        - A05:2021 - Security Misconfiguration
+      category: security
+      subcategory: [vuln]
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: MEDIUM
+      technology: [go, net/http, gin]
+      written-from: CWE-614, CWE-1004; net/http.Cookie struct docs; gin Context.SetCookie signature
+      references:
+        - https://pkg.go.dev/net/http#Cookie
+    pattern-either:
+      - patterns:
+          - pattern-either:
+              - pattern: 'http.Cookie{..., Name: $NAME, ...}'
+          # Only a cookie written to a response: HttpOnly/Secure are attributes a
+          # browser enforces, meaningless on a client-side cookie jar (vault CLI).
+          - pattern-either:
+              - pattern-inside: http.SetCookie($W, <... $X ...>)
+              - pattern-inside: |
+                  $C := &http.Cookie{...}
+                  ...
+                  http.SetCookie($W, $C)
+              - pattern-inside: |
+                  $C := http.Cookie{...}
+                  ...
+                  http.SetCookie($W, &$C)
+          - pattern-either:
+              - pattern: 'http.Cookie{..., HttpOnly: false, ...}'
+              - pattern: 'http.Cookie{..., Secure: false, ...}'
+              - patterns:
+                  - pattern: 'http.Cookie{...}'
+                  - pattern-not: 'http.Cookie{..., HttpOnly: $H, ...}'
+                  - pattern-not-inside: |
+                      $C := &http.Cookie{...}
+                      ...
+                      $C.HttpOnly = $X
+                  - pattern-not-inside: |
+                      $C := http.Cookie{...}
+                      ...
+                      $C.HttpOnly = $X
+              - patterns:
+                  - pattern: 'http.Cookie{...}'
+                  - pattern-not: 'http.Cookie{..., Secure: $S, ...}'
+                  - pattern-not-inside: |
+                      $C := &http.Cookie{...}
+                      ...
+                      $C.Secure = $X
+                  - pattern-not-inside: |
+                      $C := http.Cookie{...}
+                      ...
+                      $C.Secure = $X
+          # MaxAge < 0 / an empty Value deletes the cookie
+          - pattern-not: 'http.Cookie{..., MaxAge: -1, ...}'
+          - pattern-not: 'http.Cookie{..., Value: "", ...}'
+          - metavariable-regex:
+              metavariable: $NAME
+              regex: (?i)^(?!.*(csrf|xsrf)).*(sess|sid|auth|token|jwt|remember|login|refresh|access|identity|credential).*$
+      - patterns:
+          - pattern-either:
+              - pattern: $CTX.SetCookie($NAME, $V, $AGE, $PATH, $DOMAIN, false, $HTTPONLY)
+              - pattern: $CTX.SetCookie($NAME, $V, $AGE, $PATH, $DOMAIN, $SECURE, false)
+          - pattern-not: $CTX.SetCookie($NAME, "", ...)
+          - metavariable-regex:
+              metavariable: $NAME
+              regex: (?i)^(?!.*(csrf|xsrf)).*(sess|sid|auth|token|jwt|remember|login|refresh|access|identity|credential).*$
+
+  - id: aegis-go-session-trust-boundary
+    mode: taint
+    languages: [go]
+    severity: WARNING
+    message: >-
+      Request data is written into a server-side session (gorilla/sessions
+      Values) in a way that lets the client decide what the server will later
+      trust: the request chooses WHICH session key is written, or it sets a
+      privilege-shaped key (role, admin, permissions, ...). Derive session values
+      from verified state, or validate against an allow-list first.
+    metadata:
+      cwe:
+        - "CWE-501: Trust Boundary Violation"
+      owasp:
+        - A04:2021 - Insecure Design
+      category: security
+      subcategory: [vuln]
+      confidence: MEDIUM
+      likelihood: LOW
+      impact: HIGH
+      technology: [go, gorilla/sessions]
+      written-from: CWE-501; gorilla/sessions Session.Values docs
+      references:
+        - https://cwe.mitre.org/data/definitions/501.html
+    pattern-sources:
+      - pattern-either:
+          - pattern: $R.URL.Query().Get(...)
+          - pattern: $R.FormValue(...)
+          - pattern: $R.PostFormValue(...)
+          - pattern: $R.Header.Get(...)
+          - pattern: $C.Query("...")
+          - pattern: $C.DefaultQuery("...", ...)
+          - pattern: $C.Param("...")
+          - pattern: $C.PostForm("...")
+          - pattern: mux.Vars($R)[...]
+    pattern-sanitizers:
+      # A value computed by a lookup / validation call is a server decision.
+      - exact: true
+        patterns:
+          - pattern-either:
+              - pattern: $F(...)
+              - pattern: $O.$F(...)
+          - metavariable-regex:
+              metavariable: $F
+              regex: ^(?!(?:.*\.)?(Get|FormValue|PostFormValue|Query|DefaultQuery|Param|PostForm|Vars|TrimSpace|ToLower|ToUpper)$).*
+    pattern-sinks:
+      - patterns:
+          - pattern: $S.Values[$KEY] = $V
+          - focus-metavariable: $KEY
+      - patterns:
+          - pattern: $S.Values["$PRIV"] = $V
+          - focus-metavariable: $V
+          - metavariable-regex:
+              metavariable: $PRIV
+              regex: (?i)^(is[-_]?)?(roles?|admin|administrator|superuser|staff|permissions?|privileges?|grants?|scopes?|access[-_]?level|user[-_]?level|user[-_]?role|user[-_]?group|groups?|authori[sz]ed|authenticated|logged[-_]?in)$
