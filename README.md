@@ -16,14 +16,20 @@ untrusted repositories.
 
 Aegis's SAST runs only rules we wrote, plus the LGPL-licensed njsscan pack for Node — no
 third-party commercial rule sets (the Semgrep-registry packs were removed on 2026-09-19; see
-[`docs/RULE_REMOVAL_N1.md`](docs/RULE_REMOVAL_N1.md)). That makes code-level detection
-**strongest on PHP and JavaScript/TypeScript**, where our taint packs are proven against
-documented vulnerabilities (DVWA, NodeGoat, juice-shop), **real but narrower on Java, Python and
-Go** (injection, path traversal and SSRF taint; Python adds four pattern rules), and **absent for
-Ruby and C#** beyond the language-independent CI/CD rules. It is not a broad pattern library, and
-it has no rules yet for weak-crypto, weak-random or insecure-cookie classes. **Every scan reports
-its own per-language coverage**, and where most of a repository is in a language we cover thinly
-the security score is withheld as *Not measured* rather than presented as a clean result.
+[`docs/RULE_REMOVAL_N1.md`](docs/RULE_REMOVAL_N1.md)). Each language's tier is **computed** from
+measured evidence, not declared. A language is STRONG only if its rules caught documented
+vulnerabilities in at least two ground-truth corpora, reach **25 % recall on corpora no rule was
+written from**, and are **70 % precise** across every hand-triaged finding. **As of 2026-10-23 no
+language meets that bar** ([`docs/GROUND_TRUTH_N5.md`](docs/GROUND_TRUTH_N5.md)):
+- PHP has 42 % held-out recall but 62 % precision;
+- Java has 84 % precision but 15 % held-out recall;
+- Python, Go and JavaScript/TypeScript fail more than one criterion;
+- Ruby and C# have no application-code SAST beyond the language-independent CI/CD rules.
+
+So the security score is reported as *Not measured*, never as a clean result. **Every scan shows,
+next to each language, its measured recall**: held-out recall where a held-out corpus exists, and
+otherwise tuning recall, labelled "none held out".
+
 Everything outside code-level SAST is
 **unaffected by that**: dependency CVEs with reachability and KEV/EPSS, secrets, infrastructure-as-code,
 code quality, and the whole prioritisation and lifecycle layer (fingerprinted findings tracked

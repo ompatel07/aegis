@@ -36,6 +36,7 @@ Two numbers are two different things, and this file keeps them apart:
 | **N2b — njsscan triage** | every njsscan finding on V2's 15 repos + F1's 5 ground-truth repos (475, deduplicated), each read in source at the scanned commit; pack re-run on the same 285 files after the prune; ground truth re-scanned | 2026-10-22 | N2b (after `3eac2e8`) | semgrep 1.97.0; njsscan @ `b6ade853`, 114 → 89 rules |
 | **N3 — OWASP pattern categories** | 28 new Aegis rules run on V2's 15 repos (re-cloned at their recorded commits) + F1's DVWA/WebGoat/dvpwa + 21 further real repos; every finding hand-triaged; OWASP Benchmark and ground truth before/after through `/scan/sast` | 2026-10-22 | N3 (after N2b) | semgrep 1.97.0; 70 Aegis rules shipped (10 new) + 89 njsscan; 18 N3 rules staged, not shipped |
 | **N4 — ground truth for Java / Python / Go** | 24 candidate corpora checked; the 17 that publish a located vulnerability list scanned through `/scan/sast` and scored item by item (470 documented items); every one of the 118 findings hand-triaged | 2026-10-22 | N4 (after N3) | semgrep 1.97.0; 79 Aegis rules shipped (6 of them silent-clean, not counted) + 89 njsscan; 9 staged |
+| **N5 — the STRONG bar, computed** | holdout drawn and committed before any rule change (`bee2e15`); 3 PHP ground-truth corpora added (25 in all); every corpus re-scanned on the frozen N5 rules through `/scan/sast`; the 34-repository real corpus re-scanned before and after; **every one of 1,048 security findings triaged** | 2026-10-23 | N5 (after `bee2e15`) | semgrep 1.97.0; 81 Aegis rules shipped (6 silent-clean, not counted) + 89 njsscan; 9 staged |
 | **P2 taint audit** | per-rule audit + FP fixes to `rules/taint/`, verified on minimal reproductions of each V1 FP shape | 2026-08-31 | `ad0dd66`+P2 | semgrep 1.97.0 |
 
 "P1"/"P2" = precision passes. P1 deleted the `ai-code-*` pack and suppressed
@@ -101,6 +102,10 @@ Both are preserved with their method and dates under
 [Superseded benchmark history](#superseded-benchmark-history) at the end of this file.
 They may be cited there, as history. They may **not** be used as a current capability
 claim in the README, a deck, or any customer-facing material.
+
+**N5 (2026-10-23): counted Youden 0.2685** (TPR 0.370, FPR 0.101). The N5 Java XSS
+changes remove 2 Benchmark XSS FPs (35 → 33) and no TP. Still not a claim, for the same
+reasons as below.
 
 **N4 (2026-10-22): counted Youden 0.267** (TPR 0.370, FPR 0.103; silent-clean rules
 excluded, none of which fire there) after `aegis-java-weak-cipher` was proven on
@@ -178,7 +183,7 @@ rules are gone**; njsscan's `node_secret`/`node_password` survived N1, were meas
 1 TP in 50 findings across the four name-based credential rules, and were not shipped
 from N2b on (CORRECTION 12). Hardcoded credentials are the secrets pillar's job.
 
-### Per-language SAST — what ships (N1, 2026-09-19)
+### Per-language SAST — what ships (N1, 2026-09-19; status column N5, 2026-10-23)
 
 Since N1 there are no registry rules to be "additive over": for most languages our own packs
 **are** the whole of SAST. Measured on V2's 15 repositories, each cloned once and scanned with the
@@ -187,11 +192,11 @@ hand-triage (§C.4):
 
 | language | what runs | SAST findings kept (V2, before → after) | documented-vuln evidence | status |
 |---|---|---|---|---|
-| **PHP** | `aegis-php-*` (5 taint rules + N3's 4: weak random, weak password hash, weak cipher, session cookie) | 247 → 45 (18 %) on the 4 repos that completed before; **Dolibarr now completes: 2,649** | DVWA 3/6 unchanged; M1: 25 of 31 DVWA findings TP | **real on vulnerable apps; see the Dolibarr caveat** — `aegis-php-xss` fires 2,362 times there, effectively all false (an app-wide WAF on `PHP_SELF`) |
-| **JS / TS** | `aegis-js-*` (11) + **njsscan** (89 of 114 since N2b, LGPL-3.0; javascript rules run on `.ts` too) | JavaScript 323 → 103 (32 %), TypeScript 173 → 130 (75 %) at N1; N2b then removed 446 of the 475 njsscan findings on these corpora | NodeGoat 5/7 unchanged; juice-shop 9 → **7**/25 (directory listing lost); both unchanged by N2b | **strongest** — our taint rules precise. njsscan: **4.5 % precise** as shipped through N2 (corpus-wide, 21/471), **59 %** after the N2b prune (16/27) |
-| **Java** | `aegis-java-*` (7 taint, intraprocedural + 3 N3/N4 weakness rules) | 60 → 6 (10 %) | WebGoat 6/6 unchanged; **N4: 31/209 in scope (15 %) on 6 corpora** | **strong since N4** (documented detections in 5 corpora) — recall 15 %; `aegis-java-xss` ~31 % precise on N4's corpora |
-| **Python** | `aegis-py-*` (8 taint + 4 H1 pattern + N3's session cookie) | 78 → 19 (24 %) | dvpwa 1/1 unchanged; **N4: 18/72 in scope (25 %) on 6 corpora** | **strong since N4** (documented detections in all 6) — H1's 17/17 TP stands |
-| **Go** | `aegis-go-*` (7 taint + 3 N3/N4 weakness rules) | no Go repo in V2 | **N4: 5/35 in scope (14 %) on 5 corpora** | **limited** — the taint pack caught documented items in one corpus only |
+| **PHP** | `aegis-php-*` (5 taint rules + N3's 4: weak random, weak password hash, weak cipher, session cookie) | 247 → 45 (18 %) on the 4 repos that completed before; **Dolibarr now completes: 2,649** | DVWA 3/6 unchanged; M1: 25 of 31 DVWA findings TP | **limited since N5: fails precision** (240/388 = 62 %; `aegis-php-xss` 112 TP / 111 FP) — held-out recall 42 % on bWAPP, Mutillidae II, XVWA. Dolibarr caveat stands: `aegis-php-xss` fired 2,362 times there at N1 |
+| **JS / TS** | `aegis-js-*` (11) + **njsscan** (89 of 114 since N2b, LGPL-3.0; javascript rules run on `.ts` too) | JavaScript 323 → 103 (32 %), TypeScript 173 → 130 (75 %) at N1; N2b then removed 446 of the 475 njsscan findings on these corpora | NodeGoat 5/7 unchanged; juice-shop 9 → **7**/25 (directory listing lost); both unchanged by N2b | **limited since N5: fails all three criteria** — one documented corpus each (NodeGoat; juice-shop), none held out, precision JS 18/48 = 38 %, TS 34/103 = 33 % (N5 triaged every JS/TS finding on the 34-repo real corpus and both corpora) |
+| **Java** | `aegis-java-*` (7 taint, intraprocedural + 3 N3/N4 weakness rules) | 60 → 6 (10 %) | WebGoat 6/6 unchanged; **N4: 31/209 in scope (15 %) on 6 corpora** | **limited since N5: fails held-out recall** (5/34 = 15 %); passes the other two (detections in 5 corpora; precision 76/90 = 84 %, `aegis-java-xss` 19 TP / 10 FP) |
+| **Python** | `aegis-py-*` (8 taint + 4 H1 pattern + N3's session cookie) | 78 → 19 (24 %) | dvpwa 1/1 unchanged; **N4: 18/72 in scope (25 %) on 6 corpora** | **limited since N5: fails held-out recall** (8/38 = 21 %) **and precision** (51/158 = 32 %; `aegis-py-sql-string-construction` 6 TP / 101 FP on real code) |
+| **Go** | `aegis-go-*` (7 taint + 3 N3/N4 weakness rules) | no Go repo in V2 | **N4: 5/35 in scope (14 %) on 5 corpora** | **limited: fails corpora** (documented detections in 1) **and held-out recall** (4/25 = 16 %); precision 11/14 = 79 % |
 | **Ruby** | none | 582 → **0** | — | **no application-code SAST** |
 | **C#** | none | 26 → **0** | — | **no application-code SAST** |
 | **(any) CI/CD** | `aegis-cicd-*` (3) | 37 → 37 | H2: 32/32 TP | unchanged; the only SAST that fires on Ruby and C# repos |
@@ -249,9 +254,10 @@ All 118 findings on those corpora were triaged: **92 TP, 21 FP, 5 uncertain**. 1
 FPs are `aegis-java-xss` (8 TP), which carries request taint through encoded values and
 lookup results.
 
-**Tiers:** Java and Python moved to **STRONG**: each taint pack caught documented
+**Tiers (superseded by N5):** Java and Python moved to **STRONG**: each taint pack caught documented
 vulnerabilities in more than one corpus, named per rule in `STRONG_EVIDENCE`. Go stays
-**LIMITED**. STRONG remains "proven where it aims", not a recall claim.
+**LIMITED**. STRONG remains "proven where it aims", not a recall claim. N5 replaced that
+existence test with a computed bar, and both are LIMITED under it (below).
 
 **Repositories that change from "Not measured" to a confident score: 0** of V2's 15 and
 F1's 5. The unmeasured ones are Ruby and C#.
@@ -263,6 +269,46 @@ Three rules were promoted to PROVEN on this evidence (Java weak cipher; Go weak 
 hash and session cookie), and 6 API-shaped rules ship as **silent-clean**: they run, are
 labelled "recall unvalidated", and count toward nothing. Full record:
 `docs/GROUND_TRUTH_N4.md`; data: `docs/ground_truth_n4/`.
+
+### The STRONG bar, computed — N5 (2026-10-23)
+
+A tier is no longer declared. It is computed (`utils/tier_bar.py`) from the evidence
+that ships in the scanner image, `accuracy/gt_items.json` and `accuracy/triage.json`.
+A language is STRONG only if all three hold:
+- its shipped rules caught documented vulnerabilities in **≥ 2 corpora**;
+- its **held-out** recall is **≥ 25 %**;
+- its precision over **every** triaged finding is **≥ 70 %**.
+
+Held-out corpora were drawn by a seeded shuffle and committed before any N5 rule change.
+
+**Headline — held-out recall** (corpora no rule was written from; 95 % Wilson interval):
+
+| language | held-out recall | tuning recall | precision (TP / TP+FP; uncertain excluded) | tier | fails |
+|---|--:|--:|--:|---|---|
+| **PHP** | **68/160 = 42 %** (35–50 %) — bWAPP, Mutillidae II, XVWA | 3/6 | **240/388 = 62 %** | limited | precision |
+| **Python** | **8/38 = 21 %** (11–36 %) — DSVW, django.nV, lets-be-bad-guys | 17/34 | **51/158 = 32 %** | limited | recall, precision |
+| **Go** | **4/25 = 16 %** (6–35 %) — 4 corpora | 1/10 | 11/14 = 79 % | limited | corpora, recall |
+| **Java** | **5/34 = 15 %** (6–30 %) — java-sec-code, dvja | 48/181 | 76/90 = 84 % | limited | recall |
+| **JavaScript** | **none held out** | 5/7 | **18/48 = 38 %** | limited | corpora, recall, precision |
+| **TypeScript** | **none held out** | 7/12 | **34/103 = 33 %** | limited | corpora, recall, precision |
+
+**No language meets the bar. 16 of V2/F1's 20 repositories move from a measured
+security score to "Not measured"** (V2 11 of 15, F1 5 of 5); none moves the other way.
+
+**The N5 rule work, judged on held-out recall:**
+- **Python:** 8/38 before and after. The Python rules fit the corpora they were written
+  from (tuning 10/34 → 17/34).
+- **Java:** 4/34 → 5/34. One held-out item, through the new Spring response-body sink.
+- **Java precision:** 74 % → 84 %; `aegis-java-xss` went from 8 TP / 18 FP to
+  19 TP / 10 FP, keeping every earlier TP.
+- **Real repositories:** the N5 rules added no finding on any of the 34 (0 TP / 0 FP).
+
+**PHP was measured on three new corpora** (all publish located lists). It passes recall
+and corpora and fails on precision, which `aegis-php-xss` drives.
+
+The original five ground-truth corpora are **22/45 before and after** (N1 definitions).
+Full record: `docs/GROUND_TRUTH_N5.md`; data: `services/scanner/accuracy/` and
+`docs/ground_truth_n5/`.
 ---
 
 ## SCA (trivy)
