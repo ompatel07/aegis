@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SeverityBadge } from "@/components/findings/SeverityBadge";
 import { cn, formatDate, gradeColor } from "@/lib/utils";
 import { overallState, partialQualifier } from "@/lib/display";
+import { RECALL_UNVALIDATED_EXPLANATION, RECALL_UNVALIDATED_LABEL } from "@/lib/validation";
 import { Download, FileText } from "lucide-react";
 
 export default function ExecutiveReportPage() {
@@ -124,7 +125,17 @@ export default function ExecutiveReportPage() {
               <div key={i} className="flex items-start gap-3">
                 <SeverityBadge severity={risk.severity} />
                 <div className="min-w-0">
-                  <p className="font-medium">{risk.title}</p>
+                  <p className="font-medium">
+                    {risk.title}
+                    {risk.recall_unvalidated ? (
+                      <span
+                        className="ml-2 rounded border border-sky-500/40 bg-sky-500/10 px-1.5 py-0.5 text-xs font-normal text-sky-700 dark:text-sky-400"
+                        title={RECALL_UNVALIDATED_EXPLANATION}
+                      >
+                        {RECALL_UNVALIDATED_LABEL}
+                      </span>
+                    ) : null}
+                  </p>
                   {risk.impact ? <p className="text-sm text-muted-foreground">{risk.impact}</p> : null}
                   <p className="text-xs text-muted-foreground">{risk.file}</p>
                   {risk.reproduction ? (

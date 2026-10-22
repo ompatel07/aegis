@@ -52,3 +52,37 @@ rules:
               ...
           - pattern: cast5.NewCipher(...)
 
+  - id: aegis-go-weak-key-size
+    languages: [go]
+    severity: ERROR
+    message: >-
+      An RSA key shorter than 2048 bits is generated (or DSA with 1024-bit
+      parameters). This is below every current minimum (NIST SP 800-57,
+      800-131A); since Go 1.24 crypto/rsa refuses keys under 1024 bits for this
+      reason. This needs no context. Use 2048 bits or more, or an
+      elliptic-curve key.
+    metadata:
+      aegis-validation: silent-clean   # N4: API-shaped, 0 FP on the N3 corpus, never fired on real code; recall unvalidated, not counted as coverage
+      cwe:
+        - "CWE-326: Inadequate Encryption Strength"
+      owasp:
+        - A02:2021 - Cryptographic Failures
+      category: security
+      subcategory: [vuln]
+      confidence: HIGH
+      likelihood: LOW
+      impact: HIGH
+      technology: [go]
+      written-from: CWE-326; crypto/rsa GenerateKey docs; NIST SP 800-57 Part 1
+      references:
+        - https://pkg.go.dev/crypto/rsa#GenerateKey
+    pattern-either:
+      - patterns:
+          - pattern-either:
+              - pattern: rsa.GenerateKey($R, $N)
+              - pattern: rsa.GenerateMultiPrimeKey($R, $P, $N)
+          - metavariable-comparison:
+              metavariable: $N
+              comparison: $N < 2048
+      - pattern: dsa.GenerateParameters($P, $R, dsa.L1024N160)
+

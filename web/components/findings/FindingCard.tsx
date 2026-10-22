@@ -10,6 +10,7 @@ import { ReachabilityBadge, ReachabilityDetail } from "./ReachabilityBadge";
 import { useApi } from "@/lib/use-api";
 import { useToast } from "@/lib/use-toast";
 import { cn } from "@/lib/utils";
+import { isRecallUnvalidated, RECALL_UNVALIDATED_EXPLANATION, RECALL_UNVALIDATED_LABEL } from "@/lib/validation";
 import type { Finding, StepsToReproduce, SoRNode } from "@/lib/types";
 import { ArrowDown, Check, Clock, Copy, FileCode2, Package, ShieldAlert, Sparkles, Wrench, Route } from "lucide-react";
 
@@ -109,6 +110,20 @@ function KEVBadge({ metadata }: { metadata?: Record<string, unknown> }) {
       title="CISA KEV — a real-world exploit campaign is actively using this vulnerability"
     >
       <ShieldAlert className="mr-1 h-3 w-3" /> actively exploited
+    </Badge>
+  );
+}
+
+// N4: a finding from a SILENT-CLEAN rule -- real, but the rule's recall on real code
+// is unvalidated. Labelled, never hidden, and never counted as coverage.
+function RecallUnvalidatedBadge({ metadata }: { metadata?: Record<string, unknown> }) {
+  if (!isRecallUnvalidated({ metadata })) return null;
+  return (
+    <Badge
+      className="border-sky-500/40 bg-sky-500/10 text-sky-700 dark:text-sky-400"
+      title={RECALL_UNVALIDATED_EXPLANATION}
+    >
+      {RECALL_UNVALIDATED_LABEL}
     </Badge>
   );
 }
@@ -319,6 +334,7 @@ export function FindingCard({ finding, onUpdated }: { finding: Finding; onUpdate
               <OwnershipBadge metadata={finding.metadata} />
               <ReachabilityBadge metadata={finding.metadata} />
               <SecretContextBadge metadata={finding.metadata} />
+              <RecallUnvalidatedBadge metadata={finding.metadata} />
               <LikelyFPBadge
                 p={finding.false_positive_probability}
                 severity={finding.severity}

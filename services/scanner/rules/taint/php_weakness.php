@@ -1,5 +1,6 @@
 <?php
 // Fixtures for rules/taint/php_weakness.yaml (Pass N3).
+// Fixtures for rules_staging/php_weakness.yaml (Pass N3, staged).
 
 // ── weak random ─────────────────────────────────────────────────────────────
 function weak_random_bad($user)
@@ -158,7 +159,9 @@ function ciphers($data, $key, $iv)
 
 function keys()
 {
+    // ruleid: aegis-php-weak-key-size
     $weak = openssl_pkey_new(['private_key_bits' => 1024, 'private_key_type' => OPENSSL_KEYTYPE_RSA]);
+    // ok: aegis-php-weak-key-size
     $ok = openssl_pkey_new(['private_key_bits' => 4096, 'private_key_type' => OPENSSL_KEYTYPE_RSA]);
     return [$weak, $ok];
 }

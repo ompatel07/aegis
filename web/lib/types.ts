@@ -451,6 +451,8 @@ export interface ExecRiskItem {
   impact?: string;
   file: string;
   reproduction?: ExecReproduction;
+  // N4: from a silent-clean rule (recall unvalidated); labelled, never hidden
+  recall_unvalidated?: boolean;
 }
 
 export interface ExecTrend {

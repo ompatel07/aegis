@@ -43,10 +43,17 @@ with open(CSV) as fh:
         if name.startswith("BenchmarkTest"):
             expected[name] = (cat, real.lower() == "true", cwe)
 
-# findings grouped per test file
+# findings grouped per test file.
+# N4: findings from SILENT-CLEAN rules do not count toward the Benchmark (their recall
+# is unvalidated on real code). Set AEGIS_BENCH_INCLUDE_SILENT_CLEAN=1 for the raw score.
+INCLUDE_SILENT = os.environ.get("AEGIS_BENCH_INCLUDE_SILENT_CLEAN") == "1"
 by_file = {}  # name -> {"cwes": set, "cats": set}
+skipped_silent = 0
 with open(FINDINGS) as fh:
     for f in json.load(fh):
+        if f.get("validation") == "silent-clean" and not INCLUDE_SILENT:
+            skipped_silent += 1
+            continue
         name = test_name(f.get("file"))
         if not name:
             continue
@@ -86,6 +93,7 @@ def score(mode):
             "TPR": round(tpr, 4), "FPR": round(fpr, 4), "F1": round(f1, 4),
             "youden": round(tpr - fpr, 4), "by_cat": cats}
 
+print(f"silent-clean findings {'INCLUDED (raw score)' if INCLUDE_SILENT else 'excluded'}: {skipped_silent}")
 for mode in ("cwe", "lenient"):
     s = score(mode)
     print(f"\n=== MODE={mode} ===")

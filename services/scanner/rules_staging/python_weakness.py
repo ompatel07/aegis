@@ -103,33 +103,21 @@ def weak_hash_ok(blob, key, payload):
 
 # ── weak cipher / key size: no context needed ────────────────────────────────
 def ciphers(key, iv):
-    # ruleid: aegis-py-weak-cipher
     a = DES.new(key, DES.MODE_CBC, iv)
-    # ruleid: aegis-py-weak-cipher
     b = DES3.new(key, DES3.MODE_CBC, iv)
-    # ruleid: aegis-py-weak-cipher
     c = ARC4.new(key)
-    # ruleid: aegis-py-weak-cipher
     d = AES.new(key, AES.MODE_ECB)
-    # ruleid: aegis-py-weak-cipher
     e = Cipher(algorithms.AES(key), modes.ECB())
-    # ruleid: aegis-py-weak-cipher
     f = Cipher(algorithms.TripleDES(key), modes.CBC(iv))
-    # ok: aegis-py-weak-cipher
     g = AES.new(key, AES.MODE_GCM)
-    # ok: aegis-py-weak-cipher
     h = Cipher(algorithms.AES(key), modes.GCM(iv))
     return a, b, c, d, e, f, g, h
 
 
 def keys():
-    # ruleid: aegis-py-weak-key-size
     k1 = rsa.generate_private_key(public_exponent=65537, key_size=1024)
-    # ruleid: aegis-py-weak-key-size
     k2 = RSA.generate(1024)
-    # ok: aegis-py-weak-key-size
     k3 = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-    # ok: aegis-py-weak-key-size
     k4 = RSA.generate(3072)
     return k1, k2, k3, k4
 

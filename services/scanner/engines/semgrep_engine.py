@@ -809,6 +809,12 @@ def _parse(raw: dict, root: str) -> list[Finding]:
                     "iac_type": metadata.get("iac_type"),  # e.g. docker-compose (Phase 2E)
                     "technology": metadata.get("technology"),
                     "lines": normalizer.truncate(extra.get("lines"), 2000),
+                    # N4: a finding from a SILENT-CLEAN rule (API-shaped, 0 FP on the
+                    # measured corpus, never fired there) is real but its rule's
+                    # recall is unvalidated. The UI and reports label it; coverage
+                    # never counts the rule (utils.rule_coverage.counts_as_coverage).
+                    **({"validation": "silent-clean", "recall_unvalidated": True}
+                       if metadata.get("aegis-validation") == "silent-clean" else {}),
                 },
             )
         )

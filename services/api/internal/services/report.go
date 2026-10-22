@@ -63,6 +63,25 @@ type RiskItem struct {
 	Impact       string   `json:"impact"`
 	File         string   `json:"file"`
 	Reproduction *ExecSoR `json:"reproduction,omitempty"` // taint findings only
+	// N4: the finding came from a SILENT-CLEAN rule -- real, but the rule's recall
+	// on real code is unvalidated. Shown as a label; never dropped.
+	RecallUnvalidated bool `json:"recall_unvalidated,omitempty"`
+}
+
+// recallUnvalidated reports whether a finding's metadata carries the N4
+// silent-clean label set by the scanner. Absent or unreadable metadata means the
+// finding came from a proven rule (the scanner only ever ADDS this label).
+func recallUnvalidated(m models.JSONB) bool {
+	if len(m) == 0 {
+		return false
+	}
+	var v struct {
+		RecallUnvalidated bool `json:"recall_unvalidated"`
+	}
+	if err := json.Unmarshal(m, &v); err != nil {
+		return false
+	}
+	return v.RecallUnvalidated
 }
 
 // ExecSoR is a compact steps-to-reproduce for the executive report, extracted
@@ -188,6 +207,9 @@ func (s *ReportService) Compliance(ctx context.Context, scanID, userID, framewor
 			// and a regression (reopened) from a first sighting.
 			"lifecycle_status": derefStr(f.LifecycleStatus),
 			"fingerprint":      derefStr(f.Fingerprint),
+			// N4: findings from a silent-clean rule are labelled, not counted as
+			// evidence of coverage.
+			"recall_unvalidated": recallUnvalidated(f.Metadata),
 		})
 	}
 
@@ -351,6 +373,7 @@ func topRisks(findings []models.Finding, n int) []RiskItem {
 		out = append(out, RiskItem{
 			Title: firstNonEmpty(derefStr(f.TitleHuman), f.Title), Severity: f.Severity,
 			Impact: derefStr(f.Impact), File: f.FilePath, Reproduction: execSoR(f.ContextMetadata),
+			RecallUnvalidated: recallUnvalidated(f.Metadata),
 		})
 		if len(out) >= n {
 			break
@@ -438,7 +461,11 @@ func metadataDigest(project string, scan *models.Scan, findings []models.Finding
 	}
 	b.WriteString("\nTop findings (title | severity):\n")
 	for i, r := range topRisks(findings, 10) {
-		fmt.Fprintf(&b, "%d. %s | %s\n", i+1, r.Title, r.Severity)
+		label := ""
+		if r.RecallUnvalidated {
+			label = " | rule recall unvalidated"
+		}
+		fmt.Fprintf(&b, "%d. %s | %s%s\n", i+1, r.Title, r.Severity, label)
 	}
 	return b.String()
 }

@@ -18,8 +18,11 @@ fs = res.get("findings") or []
 print(f"status={res.get('status')} findings={len(fs)} elapsed={int(time.time()-t0)}s", flush=True)
 
 # keep only what scoring needs
+# N4: keep each finding's validation tier so score.py can leave SILENT-CLEAN rules
+# (recall unvalidated on real code) out of the counted score.
 slim = [{"file": f.get("file_path"), "cwe": f.get("cwe_id"),
-         "rule": f.get("rule_id"), "owasp": f.get("owasp_category")} for f in fs]
+         "rule": f.get("rule_id"), "owasp": f.get("owasp_category"),
+         "validation": (f.get("metadata") or {}).get("validation")} for f in fs]
 with open("/v/_aegis_findings.json", "w") as fh:
     json.dump(slim, fh)
 print("wrote /v/_aegis_findings.json", flush=True)

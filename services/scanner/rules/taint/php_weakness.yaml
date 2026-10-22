@@ -268,3 +268,34 @@ rules:
       - pattern: 'session_set_cookie_params([..., "secure" => false, ...])'
       - pattern: 'session_set_cookie_params([..., "httponly" => false, ...])'
 
+  - id: aegis-php-weak-key-size
+    languages: [php]
+    severity: ERROR
+    message: >-
+      An RSA/DSA/DH key shorter than 2048 bits is generated with
+      openssl_pkey_new(). This is below every current minimum (NIST SP 800-57,
+      800-131A). This needs no context. Use 'private_key_bits' => 2048 or more,
+      or an EC key ('private_key_type' => OPENSSL_KEYTYPE_EC).
+    metadata:
+      aegis-validation: silent-clean   # N4: API-shaped, 0 FP on the N3 corpus, never fired on real code; recall unvalidated, not counted as coverage
+      cwe:
+        - "CWE-326: Inadequate Encryption Strength"
+      owasp:
+        - A02:2021 - Cryptographic Failures
+      category: security
+      subcategory: [vuln]
+      confidence: HIGH
+      likelihood: LOW
+      impact: HIGH
+      technology: [php, openssl]
+      written-from: CWE-326; PHP manual for openssl_pkey_new (private_key_bits); NIST SP 800-57 Part 1
+      references:
+        - https://www.php.net/manual/en/function.openssl-pkey-new.php
+    patterns:
+      - pattern-either:
+          - pattern: 'openssl_pkey_new([..., "private_key_bits" => $N, ...])'
+          - pattern: 'openssl_pkey_new(array(..., "private_key_bits" => $N, ...))'
+      - metavariable-comparison:
+          metavariable: $N
+          comparison: $N < 2048
+

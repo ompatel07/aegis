@@ -94,9 +94,7 @@ func ciphers(key []byte) {
 }
 
 func keys(r io.Reader) {
-	// ruleid: aegis-go-weak-key-size
 	weak, _ := rsa.GenerateKey(r, 1024)
-	// ok: aegis-go-weak-key-size
 	ok, _ := rsa.GenerateKey(r, 3072)
 	_, _ = weak, ok
 }

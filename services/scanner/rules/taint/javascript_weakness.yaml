@@ -153,3 +153,55 @@ rules:
           metavariable: $NAME
           regex: (?i)^(?!.*(csrf|xsrf)).*(sess|sid|auth|token|jwt|remember|login|refresh|access|identity|credential).*$
 
+  - id: aegis-js-insecure-session-cookie-esm
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: >-
+      express-session / cookie-session is configured with its session cookie's
+      Secure flag off (or unset) or HttpOnly explicitly off. The session id then
+      travels over plain HTTP or is readable by script. Set cookie: { secure: true,
+      httpOnly: true }. (This rule covers the ES-module `import` form; the
+      CommonJS `require` form is covered by the njsscan cookie rules.)
+    metadata:
+      aegis-validation: silent-clean   # N4: API-shaped, 0 FP on the N3 corpus, never fired on real code; recall unvalidated, not counted as coverage
+      cwe:
+        - "CWE-614: Sensitive Cookie in HTTPS Session Without 'Secure' Attribute"
+        - "CWE-1004: Sensitive Cookie Without 'HttpOnly' Flag"
+      owasp:
+        - A05:2021 - Security Misconfiguration
+      category: security
+      subcategory: [vuln]
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: MEDIUM
+      technology: [express, express-session, cookie-session]
+      written-from: CWE-614, CWE-1004; express-session and cookie-session README option tables (cookie.secure defaults to false)
+      references:
+        - https://github.com/expressjs/session#cookiesecure
+    patterns:
+      - pattern-either:
+          - pattern-inside: |
+              import $SESSION from 'express-session'
+              ...
+          - pattern-inside: |
+              import $SESSION from 'cookie-session'
+              ...
+          - pattern-inside: |
+              import * as $SESSION from 'express-session'
+              ...
+      - pattern-either:
+          - pattern: '$SESSION({..., cookie: {..., secure: false, ...}, ...})'
+          - pattern: '$SESSION({..., cookie: {..., httpOnly: false, ...}, ...})'
+          - pattern: '$SESSION({..., secure: false, ...})'
+          - pattern: '$SESSION({..., httpOnly: false, ...})'
+          # an inline cookie object without `secure` (express-session defaults it off)
+          - patterns:
+              - pattern: '$SESSION({..., cookie: {...}, ...})'
+              - pattern-not: '$SESSION({..., cookie: {..., secure: $S, ...}, ...})'
+          # no cookie options at all (cookie-session takes `secure` at top level).
+          # A cookie options VARIABLE is not inspected.
+          - patterns:
+              - pattern: '$SESSION({...})'
+              - pattern-not: '$SESSION({..., cookie: $C, ...})'
+              - pattern-not: '$SESSION({..., secure: $S, ...})'
+

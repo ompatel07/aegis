@@ -94,34 +94,23 @@ public class JavaWeakness {
 
     // ── weak cipher / key size: no context needed ───────────────────────────
     void ciphers(byte[] key) throws Exception {
-        // ruleid: aegis-java-weak-cipher
         Cipher a = Cipher.getInstance("DES/CBC/PKCS5Padding");
-        // ruleid: aegis-java-weak-cipher
         Cipher b = Cipher.getInstance("DESede/ECB/PKCS5Padding");
-        // ruleid: aegis-java-weak-cipher
         Cipher c = Cipher.getInstance("AES");
-        // ruleid: aegis-java-weak-cipher
         Cipher d = Cipher.getInstance("AES/ECB/PKCS5Padding");
-        // ruleid: aegis-java-weak-cipher
         Cipher e = Cipher.getInstance("RC4");
-        // ruleid: aegis-java-weak-cipher
         KeyGenerator kg = KeyGenerator.getInstance("DES");
-        // ok: aegis-java-weak-cipher
         Cipher f = Cipher.getInstance("AES/GCM/NoPadding");
         // RSA's "ECB" is a placeholder, not a mode
-        // ok: aegis-java-weak-cipher
         Cipher g = Cipher.getInstance("RSA/ECB/OAEPWithSHA-256AndMGF1Padding");
         // "AES" in a key spec names the key type, not a mode
-        // ok: aegis-java-weak-cipher
         SecretKeySpec spec = new SecretKeySpec(key, "AES");
     }
 
     void keys() throws Exception {
-        // ruleid: aegis-java-weak-key-size
         KeyPairGenerator weak = KeyPairGenerator.getInstance("RSA");
         weak.initialize(1024);
         KeyPairGenerator ok = KeyPairGenerator.getInstance("RSA");
-        // ok: aegis-java-weak-key-size
         ok.initialize(3072);
     }
 

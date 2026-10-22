@@ -199,7 +199,7 @@ def rule_index() -> dict[str, LanguageCoverage]:
     cwes: dict[str, set[str]] = {}
     for family, rule in _iter_rule_docs():
         meta = rule.get("metadata") or {}
-        if meta.get("pillar") == "quality":
+        if not counts_as_coverage(rule):
             continue
         found = {m.group(0).upper() for m in _CWE.finditer(str(meta.get("cwe", "")))}
         for lang in applies_to(rule):
@@ -211,6 +211,29 @@ def rule_index() -> dict[str, LanguageCoverage]:
         cov.cwe_classes = len(cwes.get(lang, ()))
         cov.tier = tier_of(lang)
     return out
+
+
+# N4 three-tier staging policy. A shipped rule is either PROVEN (fired on real code,
+# 0 FP after triage) or SILENT-CLEAN: API-shaped, fixtures pass, ran on the whole
+# measured corpus with 0 FP, but never fired -- so its recall is unvalidated. A
+# silent-clean rule runs and its findings are labelled, but it is NOT coverage: it
+# does not count toward a language's rules, CWE classes, tier evidence or any claim.
+# (STAGED rules live in rules_staging/ and never run.)
+SILENT_CLEAN = "silent-clean"
+
+
+def validation_of(rule: dict) -> str:
+    return str((rule.get("metadata") or {}).get("aegis-validation") or "proven")
+
+
+def counts_as_coverage(rule: dict) -> bool:
+    """Quality-pillar rules and silent-clean rules are not security coverage."""
+    meta = rule.get("metadata") or {}
+    return meta.get("pillar") != "quality" and validation_of(rule) != SILENT_CLEAN
+
+
+def silent_clean_rule_ids() -> set[str]:
+    return {str(r.get("id")) for _f, r in _iter_rule_docs() if validation_of(r) == SILENT_CLEAN}
 
 
 def applies_to(rule: dict) -> list[str]:
@@ -228,7 +251,7 @@ def shipped_rule_languages() -> dict[str, set[str]]:
     """rule id -> languages it runs on, for every shipped security rule."""
     out: dict[str, set[str]] = {}
     for _family, rule in _iter_rule_docs():
-        if (rule.get("metadata") or {}).get("pillar") == "quality":
+        if not counts_as_coverage(rule):
             continue
         out.setdefault(str(rule.get("id")), set()).update(applies_to(rule))
     return out
