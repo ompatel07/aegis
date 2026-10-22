@@ -1,0 +1,324 @@
+# Pass N3 (2026-10-22) -- STAGED, NOT SHIPPED (see README.md): Python weakness rules. Written by Aegis from the CWE
+# definitions and the Python stdlib / pycryptodome / cryptography / Flask /
+# Django documentation; no registry or vendor rule text was used.
+#
+# Purpose-aware where purpose decides (random, hash, cookie, trust boundary);
+# context-free only where the primitive itself is broken (DES, RC4, ECB, short
+# RSA keys) -- each rule says which it is.
+rules:
+  - id: aegis-py-weak-random-secret
+    mode: taint
+    languages: [python]
+    severity: WARNING
+    message: >-
+      A value that has to be unguessable comes from the `random` module (or
+      uuid1, which is built from the clock and the host's MAC address). `random`
+      is a Mersenne Twister: 624 observed outputs reconstruct its state, so
+      tokens, salts, passwords and nonces built from it can be predicted. Use the
+      `secrets` module (secrets.token_urlsafe, secrets.choice) or os.urandom.
+      `random` is fine for sampling, shuffling and jitter, which this rule does
+      not flag.
+    metadata:
+      cwe:
+        - "CWE-338: Use of Cryptographically Weak Pseudo-Random Number Generator (PRNG)"
+      owasp:
+        - A02:2021 - Cryptographic Failures
+      category: security
+      subcategory: [vuln]
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: HIGH
+      technology: [python]
+      written-from: CWE-338; Python `random` module docs ("should not be used for security purposes"); `secrets` module docs
+      references:
+        - https://docs.python.org/3/library/random.html
+        - https://docs.python.org/3/library/secrets.html
+    pattern-sources:
+      - pattern-either:
+          - pattern: random.random()
+          - pattern: random.randint(...)
+          - pattern: random.randrange(...)
+          - pattern: random.choice(...)
+          - pattern: random.choices(...)
+          - pattern: random.sample(...)
+          - pattern: random.getrandbits(...)
+          - pattern: random.uniform(...)
+          - pattern: random.randbytes(...)
+          - pattern: random.Random(...)
+          - pattern: uuid.uuid1(...)
+          # Comprehensions and generator expressions do not carry taint in semgrep,
+          # so the idiomatic "".join(random.choice(...) for ...) is a source itself.
+          - pattern: $S.join(<... random.$R(...) ...>)
+    pattern-sanitizers:
+      # A value that mixes in CSPRNG output is not predictable.
+      - pattern: <... secrets.$S(...) ...>
+      - pattern: <... os.urandom(...) ...>
+      # Calls that are not value transforms end the flow (see the JS rule).
+      # exact: only the call's own value is cleaned, not its arguments, so a
+      # keyword-argument sink inside the call still sees the taint.
+      - exact: true
+        patterns:
+          - pattern: $F(...)
+          - pattern-not: str(...)
+          - pattern-not: int(...)
+          - pattern-not: hex(...)
+          - pattern-not: bytes(...)
+          - pattern-not: chr(...)
+          - pattern-not: format(...)
+          - pattern-not: hashlib.$H(...)
+          - pattern-not: base64.$B(...)
+          - pattern-not: binascii.$B(...)
+          - pattern-not: random.$R(...)
+          - pattern-not: uuid.uuid1(...)
+          - pattern-not: $X.$M(...)
+      - exact: true
+        patterns:
+          - pattern: $X.$M(...)
+          - pattern-not: random.$R(...)
+          - pattern-not: uuid.uuid1(...)
+          - pattern-not: hashlib.$H(...)
+          - pattern-not: base64.$B(...)
+          - pattern-not: binascii.$B(...)
+          - metavariable-regex:
+              metavariable: $M
+              regex: ^(?!(join|encode|decode|hexdigest|digest|update|upper|lower|replace|strip|zfill|format|hex|to_bytes|choice|choices|sample|randint|randrange|random|getrandbits|randbytes|uniform)$).*
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: $NAME = $V
+              - pattern: "{..., $NAME: $V, ...}"
+              - pattern: $D[$NAME] = $V
+              - pattern: $F(..., $NAME=$V, ...)
+              - pattern: $RESP.set_cookie($NAME, $V, ...)
+          - focus-metavariable: $V
+          - metavariable-regex:
+              metavariable: $NAME
+              regex: &secret_name ^(?:.*(?:[^A-Za-z0-9]|(?<=[a-z0-9])(?=[A-Z])))?(?i:(?:csrf|xsrf|auth|access|reset|verification|verify|confirm|confirmation|activation|invite|invitation|api|bearer|session|login|remember(?:[-_]?me)?|magic|otp|mfa|oauth|signup|unsubscribe|email|password|secret|jwt)[-_]?tokens?|secrets?|salts?|otps?|totp|hotp|csrf|xsrf|passwords?|passwd|pwd|passphrase|passcode|api[-_]?keys?|(?:private|secret|signing|encryption|encrypt|auth|access|hmac|master|crypto|cipher|aes|jwt)[-_]?keys?|ivs?|remember[-_]?me|(?:code[-_]?)?verifier|(?:verification|verify|reset|activation|confirm|confirmation|invite|invitation|login|mfa|recovery|otp|one[-_]?time)[-_]?codes?|pins?)[_0-9]*['"`]?$
+      - patterns:
+          - pattern-inside: |
+              def $FN(...):
+                ...
+          - pattern: return $V
+          - focus-metavariable: $V
+          - metavariable-regex:
+              metavariable: $FN
+              regex: *secret_name
+          - metavariable-regex:
+              metavariable: $FN
+              regex: '^(?!(?:verify|check|validate|is|has|compare|match|parse|decode|read|load|count|test|Verify|Check|Validate|Is|Has|Compare|Match|Parse|Decode|Read|Load|Count|Test)(?:[A-Z_]|$)).*'
+
+  - id: aegis-py-weak-hash-security-use
+    languages: [python]
+    severity: WARNING
+    message: >-
+      An MD5 or SHA-1 digest is used where its strength matters: it is stored as
+      a password, or used as a signature, MAC or token. MD5 has practical
+      collisions and SHA-1 has demonstrated ones, and both are too fast to
+      protect a password. Use hmac with SHA-256 for integrity and argon2, scrypt
+      or bcrypt for passwords. (aegis-py-weak-hash-credential covers hashing a
+      credential-named input; this rule covers what the digest is used FOR.
+      usedforsecurity=False is respected.)
+    metadata:
+      cwe:
+        - "CWE-328: Use of Weak Hash"
+      owasp:
+        - A02:2021 - Cryptographic Failures
+      category: security
+      subcategory: [vuln]
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: HIGH
+      technology: [python]
+      written-from: CWE-328; Python hashlib docs (usedforsecurity flag); NIST SP 800-131A on SHA-1
+      references:
+        - https://docs.python.org/3/library/hashlib.html
+    patterns:
+      - pattern-either:
+          - pattern: $NAME = <... hashlib.$ALG($ARG, ...) ...>
+          - pattern: $NAME = <... hashlib.new("$ALG", $ARG, ...) ...>
+          - pattern: $F(..., $NAME=<... hashlib.$ALG($ARG, ...) ...>, ...)
+          - patterns:
+              - pattern-inside: |
+                  def $NAME(...):
+                    ...
+              - pattern: return <... hashlib.$ALG($ARG, ...) ...>
+      - metavariable-regex:
+          metavariable: $ALG
+          regex: ^(md5|sha1)$
+      - pattern-not: $NAME = <... hashlib.$ALG(..., usedforsecurity=False) ...>
+      - pattern-not: return <... hashlib.$ALG(..., usedforsecurity=False) ...>
+      # hmac.new(key, msg, hashlib.md5): HMAC-MD5 is a different construction and is
+      # not broken by MD5's collisions.
+      - pattern-not: $NAME = <... hmac.new(...) ...>
+      - pattern-not: return <... hmac.new(...) ...>
+      # A credential-named INPUT is aegis-py-weak-hash-credential's finding (H1):
+      # not reported twice.
+      - metavariable-regex:
+          metavariable: $ARG
+          regex: (?i)^(?!.*(password|passwd|pwd|secret|token|credential|api_?key|private_?key|passphrase)).*
+      - metavariable-regex:
+          metavariable: $NAME
+          regex: ^(?:.*(?:[^A-Za-z0-9]|(?<=[a-z0-9])(?=[A-Z])))?(?i:password_?hash(?:es)?|pw_?hash|pwd_?hash|hashed_?password|signatures?|sigs?|macs?|hash_?password|check_?password|verify_?password|make_?password|encrypt_?password|sign|signed)[_0-9]*$
+
+  - id: aegis-py-weak-cipher
+    languages: [python]
+    severity: ERROR
+    message: >-
+      A broken cipher or mode is used: DES (56-bit key, brute-forced in hours),
+      3DES (64-bit block, Sweet32; withdrawn by NIST), RC4/ARC4 (biased
+      keystream), RC2, Blowfish/CAST5/IDEA (64-bit blocks), or ECB mode (equal
+      plaintext blocks give equal ciphertext blocks, so structure leaks). This
+      needs no context: there is no safe use of these for confidentiality. Use
+      AES-GCM or ChaCha20-Poly1305 (an AEAD).
+    metadata:
+      cwe:
+        - "CWE-327: Use of a Broken or Risky Cryptographic Algorithm"
+      owasp:
+        - A02:2021 - Cryptographic Failures
+      category: security
+      subcategory: [vuln]
+      confidence: HIGH
+      likelihood: MEDIUM
+      impact: HIGH
+      technology: [python, pycryptodome, cryptography]
+      written-from: CWE-327; NIST SP 800-131A Rev.2 (3DES disallowed); pycryptodome and cryptography (hazmat) cipher docs
+      references:
+        - https://csrc.nist.gov/pubs/sp/800/131/a/r2/final
+    pattern-either:
+      - pattern: Crypto.Cipher.DES.new(...)
+      - pattern: Crypto.Cipher.DES3.new(...)
+      - pattern: Crypto.Cipher.ARC4.new(...)
+      - pattern: Crypto.Cipher.ARC2.new(...)
+      - pattern: Crypto.Cipher.Blowfish.new(...)
+      - pattern: Crypto.Cipher.CAST.new(...)
+      - pattern: Crypto.Cipher.XOR.new(...)
+      - pattern: Cryptodome.Cipher.DES.new(...)
+      - pattern: Cryptodome.Cipher.DES3.new(...)
+      - pattern: Cryptodome.Cipher.ARC4.new(...)
+      - pattern: Cryptodome.Cipher.ARC2.new(...)
+      - pattern: Cryptodome.Cipher.Blowfish.new(...)
+      - pattern: Cryptodome.Cipher.CAST.new(...)
+      - pattern: Crypto.Cipher.$C.new($K, Crypto.Cipher.$C.MODE_ECB, ...)
+      - pattern: Cryptodome.Cipher.$C.new($K, Cryptodome.Cipher.$C.MODE_ECB, ...)
+      - pattern: $C.new($K, $C.MODE_ECB, ...)
+      - pattern: $C.new($K, mode=$C.MODE_ECB, ...)
+      - pattern: cryptography.hazmat.primitives.ciphers.algorithms.TripleDES(...)
+      - pattern: cryptography.hazmat.primitives.ciphers.algorithms.ARC4(...)
+      - pattern: cryptography.hazmat.primitives.ciphers.algorithms.Blowfish(...)
+      - pattern: cryptography.hazmat.primitives.ciphers.algorithms.CAST5(...)
+      - pattern: cryptography.hazmat.primitives.ciphers.algorithms.IDEA(...)
+      - pattern: cryptography.hazmat.primitives.ciphers.algorithms.SEED(...)
+      - pattern: cryptography.hazmat.decrepit.ciphers.algorithms.$ALG(...)
+      - pattern: cryptography.hazmat.primitives.ciphers.modes.ECB(...)
+      - pattern: pyDes.des(...)
+      - pattern: pyDes.triple_des(...)
+
+  - id: aegis-py-weak-key-size
+    languages: [python]
+    severity: ERROR
+    message: >-
+      An RSA or DSA key shorter than 2048 bits is generated. 1024-bit RSA is
+      within reach of well-resourced attackers and below every current minimum
+      (NIST SP 800-57, 800-131A). This needs no context. Generate 2048-bit keys
+      or larger (3072 for use beyond 2030), or use an elliptic-curve key.
+    metadata:
+      cwe:
+        - "CWE-326: Inadequate Encryption Strength"
+      owasp:
+        - A02:2021 - Cryptographic Failures
+      category: security
+      subcategory: [vuln]
+      confidence: HIGH
+      likelihood: LOW
+      impact: HIGH
+      technology: [python, pycryptodome, cryptography]
+      written-from: CWE-326; NIST SP 800-57 Part 1 key-length tables; cryptography and pycryptodome key-generation docs
+      references:
+        - https://csrc.nist.gov/pubs/sp/800/57/pt1/r5/final
+    patterns:
+      - pattern-either:
+          - pattern: cryptography.hazmat.primitives.asymmetric.rsa.generate_private_key(..., key_size=$N, ...)
+          - pattern: cryptography.hazmat.primitives.asymmetric.rsa.generate_private_key($E, $N, ...)
+          - pattern: cryptography.hazmat.primitives.asymmetric.dsa.generate_private_key(..., key_size=$N, ...)
+          - pattern: cryptography.hazmat.primitives.asymmetric.dsa.generate_private_key($N, ...)
+          - pattern: Crypto.PublicKey.RSA.generate($N, ...)
+          - pattern: Crypto.PublicKey.DSA.generate($N, ...)
+          - pattern: Cryptodome.PublicKey.RSA.generate($N, ...)
+          - pattern: Cryptodome.PublicKey.DSA.generate($N, ...)
+          - pattern: Crypto.PublicKey.RSA.generate(bits=$N, ...)
+      - metavariable-comparison:
+          metavariable: $N
+          comparison: $N < 2048
+
+  - id: aegis-py-session-trust-boundary
+    mode: taint
+    languages: [python]
+    severity: WARNING
+    message: >-
+      Request data is written into the server-side session in a way that lets the
+      client decide what the server will later trust: the request chooses WHICH
+      session key is written, or it sets a privilege-shaped key (role, is_admin,
+      permissions, ...). Session values are read back as server-established facts.
+      Derive them from verified state, or validate against an allow-list first.
+    metadata:
+      cwe:
+        - "CWE-501: Trust Boundary Violation"
+      owasp:
+        - A04:2021 - Insecure Design
+      category: security
+      subcategory: [vuln]
+      confidence: MEDIUM
+      likelihood: LOW
+      impact: HIGH
+      technology: [python, flask, django]
+      written-from: CWE-501; Flask `session` and Django `request.session` docs
+      references:
+        - https://cwe.mitre.org/data/definitions/501.html
+    pattern-sources:
+      - pattern-either:
+          - pattern: flask.request.args
+          - pattern: flask.request.form
+          - pattern: flask.request.values
+          - pattern: flask.request.json
+          - pattern: flask.request.cookies
+          - pattern: flask.request.headers
+          - pattern: flask.request.get_json(...)
+          - pattern: $REQ.GET
+          - pattern: $REQ.POST
+          - pattern: $REQ.COOKIES
+          - pattern: $REQ.data
+          - pattern: $REQ.query_params
+    pattern-sanitizers:
+      # Reading the session back is not request data.
+      - exact: true
+        patterns:
+          - pattern-either:
+              - pattern: flask.session[...]
+              - pattern: $REQ.session[...]
+              - pattern: $REQ.session.get(...)
+          - pattern-not-inside: flask.session[...] = $X
+          - pattern-not-inside: $REQ.session[...] = $X
+      # A value computed by a lookup / validation call is a server decision.
+      # (dict .get() on the request is not: it IS the request value.)
+      - exact: true
+        patterns:
+          - pattern-either:
+              - pattern: $F(...)
+              - pattern: $O.$F(...)
+          - metavariable-regex:
+              metavariable: $F
+              regex: ^(?!(?:.*\.)?(get|getlist|get_json|strip|lower|upper|str)$).*
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: flask.session[$KEY] = $V
+              - pattern: $REQ.session[$KEY] = $V
+          - focus-metavariable: $KEY
+      - patterns:
+          - pattern-either:
+              - pattern: flask.session[$PRIV] = $V
+              - pattern: $REQ.session[$PRIV] = $V
+          - focus-metavariable: $V
+          - metavariable-regex:
+              metavariable: $PRIV
+              regex: (?i)^['"](is_?)?(roles?|admin|administrator|superuser|is_?staff|permissions?|privileges?|grants?|scopes?|access_?level|user_?level|user_?role|user_?group|groups?|authori[sz]ed|is_?authenticated|authenticated|logged_?in|is_?logged_?in)['"]$

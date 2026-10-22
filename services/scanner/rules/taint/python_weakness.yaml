@@ -1,0 +1,68 @@
+# Pass N3 (2026-10-22): Python weakness rules. Written by Aegis from the CWE
+# definitions and the Python stdlib / pycryptodome / cryptography / Flask /
+# Django documentation; no registry or vendor rule text was used.
+#
+# Purpose-aware where purpose decides (random, hash, cookie, trust boundary);
+# context-free only where the primitive itself is broken (DES, RC4, ECB, short
+# RSA keys) -- each rule says which it is.
+rules:
+  - id: aegis-py-insecure-session-cookie
+    languages: [python]
+    # Django's own conf/global_settings.py is the framework's defaults table, not an
+    # application's settings module.
+    paths:
+      exclude:
+        - "**/django/conf/global_settings.py"
+    severity: WARNING
+    message: >-
+      A session or authentication cookie is set without HttpOnly or without
+      Secure, or the framework's session cookie has them switched off. Without
+      HttpOnly any XSS can read it; without Secure it is sent over plain HTTP.
+      Flask's and Django's set_cookie() default both to off. Pass secure=True,
+      httponly=True (and samesite). CSRF cookies, which must stay readable, are
+      not flagged.
+    metadata:
+      cwe:
+        - "CWE-614: Sensitive Cookie in HTTPS Session Without 'Secure' Attribute"
+        - "CWE-1004: Sensitive Cookie Without 'HttpOnly' Flag"
+      owasp:
+        - A05:2021 - Security Misconfiguration
+      category: security
+      subcategory: [vuln]
+      confidence: MEDIUM
+      likelihood: MEDIUM
+      impact: MEDIUM
+      technology: [python, flask, django, werkzeug]
+      written-from: CWE-614, CWE-1004; Werkzeug Response.set_cookie and Django HttpResponse.set_cookie signatures; Django SESSION_COOKIE_* and Flask SESSION_COOKIE_* / REMEMBER_COOKIE_* settings docs
+      references:
+        - https://docs.djangoproject.com/en/stable/ref/request-response/#django.http.HttpResponse.set_cookie
+        - https://flask.palletsprojects.com/en/stable/config/#SESSION_COOKIE_SECURE
+    pattern-either:
+      - patterns:
+          - pattern-either:
+              - pattern: $R.set_cookie($NAME, ...)
+              - pattern: $R.set_cookie(key=$NAME, ...)
+          - pattern-not: $R.set_cookie(..., **$KW)
+          - pattern-either:
+              - pattern: $R.set_cookie(..., secure=False, ...)
+              - pattern: $R.set_cookie(..., httponly=False, ...)
+              - patterns:
+                  - pattern: $R.set_cookie(...)
+                  - pattern-not: $R.set_cookie(..., secure=$S, ...)
+              - patterns:
+                  - pattern: $R.set_cookie(...)
+                  - pattern-not: $R.set_cookie(..., httponly=$H, ...)
+          - metavariable-regex:
+              metavariable: $NAME
+              regex: (?i)^(?!.*(csrf|xsrf)).*(sess|sid|auth|token|jwt|remember|login|refresh|access|identity|credential).*$
+      - pattern: SESSION_COOKIE_SECURE = False
+      - pattern: SESSION_COOKIE_HTTPONLY = False
+      - pattern: REMEMBER_COOKIE_SECURE = False
+      - pattern: REMEMBER_COOKIE_HTTPONLY = False
+      - pattern: $APP.config["SESSION_COOKIE_SECURE"] = False
+      - pattern: $APP.config["SESSION_COOKIE_HTTPONLY"] = False
+      - pattern: $APP.config["REMEMBER_COOKIE_SECURE"] = False
+      - pattern: $APP.config["REMEMBER_COOKIE_HTTPONLY"] = False
+      - pattern: $APP.config.update(..., SESSION_COOKIE_SECURE=False, ...)
+      - pattern: $APP.config.update(..., SESSION_COOKIE_HTTPONLY=False, ...)
+
