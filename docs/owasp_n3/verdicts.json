@@ -1,46 +1,163 @@
 {
  "corpus": "V2 (15 repos, recorded commits) + F1 DVWA/WebGoat/dvpwa + 21 extended repos; see docs/OWASP_CATEGORIES_N3.md",
- "corpus_commits": {
-  "Dolibarr/dolibarr": "1348343c2f5703eeeb9c819285e23c40237f02b1",
-  "FreshRSS/FreshRSS": "3f12dcf2f60daa1aa81f670672e89c73c1b72012",
-  "OWASP/NodeGoat": "c5cb68a7084e4ae7dcc60e6a98768720a81841e8",
-  "WebGoat/WebGoat": "872d6149d4ef29e4929c2f4eda279f7fbedc52e8",
-  "chatwoot/chatwoot": "f7f7754511df38c33455d2a968f7541e82d15e5b",
-  "digininja/DVWA": "b496a5d3de6b967410155e1b7d3e51e9d035eb22",
-  "getredash/redash": "8f6b15d30da433ae881dd6376a38df17bb6c2663",
-  "jellyfin/jellyfin": "50866380c95758244f79bd4fbb01b9474e80bd81",
-  "juice-shop/juice-shop": "1618a611b173b4bf114028e6e02549950606e29d",
-  "librenms/librenms": "4381e1a98a83a7b72599045095f6d5ef37bda2e6",
-  "mastodon/mastodon": "2c92a56e5d0fb490cc2e49a0dd9652499000fcb4",
-  "n8n-io/n8n": "69b0c527fa2b36f7a1b1f55d59d17271d36fabbc",
-  "nilsteampassnet/TeamPass": "14e7d03b4d6e0e61ef5549f920f8d1b1c828e7c3",
-  "nocodb/nocodb": "28ecd7c239181111dd2f37778d48ed7996624e5a",
-  "nopSolutions/nopCommerce": "3204d8436664fb9f7d34624186933dc2d61e0e53",
-  "cmp-ansible": "8d63341579aa1c62024f3bce1a8af3f9a1b22a16",
-  "cmp-cobra": "adbc8813901bba65827259daa8e22ff94ec1f30e",
-  "cmp-consul": "7d6316305e8612066e0a23c7a1209e7dae5e7441",
-  "cmp-django": "65a9f14196c338d70889bd54753370606b3fb4eb",
-  "cmp-express": "ba006766fb964571723138708eacaba0f55759cd",
-  "cmp-fastapi": "7cb06f360dd44efac059848df1a9beee7643b018",
-  "cmp-flask": "36e4a824f340fdee7ed50937ba8e7f6bc7d17f81",
-  "cmp-gin": "34dac209ffb6ef85cc78c5d217bbb7ad001d68fd",
-  "cmp-guava": "486837d756e6d48864620e91b0761467e2abe744",
-  "cmp-jackson": "9ceb08d404b4c94928b802f5a101900d9b2e9a4a",
-  "cmp-kafka": "ac0d7e245b213c20ab66bcea211d1cbd5ed2c95a",
-  "cmp-nest": "926e3a4dc8b3bf9a96b275fe348b71246c303929",
-  "cmp-netty": "01c93eb988d56035e011fb795de5780f3b2e49ae",
-  "cmp-nextauth": "7b35fc393da5120cc3552f19d636b14980557444",
-  "cmp-prisma": "cda80a4488b7b551c36bf09ca2e8303ef9509da4",
-  "cmp-react": "c0c39a6b3907eaab35f43074949e2957a2a734c1",
-  "cmp-spring": "51045d1648dad955df586150c1a1a6e22ef400c2",
-  "cmp-terraform": "116d525a7242c2beb916f00ccb39ce070f4fac05",
-  "cmp-vault": "2b5ca5501c9fd570437a563662b8456cdbf59a1a",
-  "django-nV": "a48901f106da4888417339b7b44b8ed56b64c63f",
-  "spring-petclinic": "818c4136ea971c21674525f9053de0d9c7ad8cfe",
-  "F1 digininja/DVWA": "5d5c76cced604e54462b13723f5c69af58e78748",
-  "F1 WebGoat/WebGoat": "38096af4c90d74a770b1162edbd2259fcc03d20a",
-  "F1 anxolerd/dvpwa": "a1d8f89fac2e57093189853c6527c2b01fc1d9c1"
- },
+ "corpus_commits": [
+  {
+   "repo": "Dolibarr/dolibarr",
+   "commit": "1348343c2f5703eeeb9c819285e23c40237f02b1"
+  },
+  {
+   "repo": "FreshRSS/FreshRSS",
+   "commit": "3f12dcf2f60daa1aa81f670672e89c73c1b72012"
+  },
+  {
+   "repo": "OWASP/NodeGoat",
+   "commit": "c5cb68a7084e4ae7dcc60e6a98768720a81841e8"
+  },
+  {
+   "repo": "WebGoat/WebGoat",
+   "commit": "872d6149d4ef29e4929c2f4eda279f7fbedc52e8"
+  },
+  {
+   "repo": "chatwoot/chatwoot",
+   "commit": "f7f7754511df38c33455d2a968f7541e82d15e5b"
+  },
+  {
+   "repo": "digininja/DVWA",
+   "commit": "b496a5d3de6b967410155e1b7d3e51e9d035eb22"
+  },
+  {
+   "repo": "getredash/redash",
+   "commit": "8f6b15d30da433ae881dd6376a38df17bb6c2663"
+  },
+  {
+   "repo": "jellyfin/jellyfin",
+   "commit": "50866380c95758244f79bd4fbb01b9474e80bd81"
+  },
+  {
+   "repo": "juice-shop/juice-shop",
+   "commit": "1618a611b173b4bf114028e6e02549950606e29d"
+  },
+  {
+   "repo": "librenms/librenms",
+   "commit": "4381e1a98a83a7b72599045095f6d5ef37bda2e6"
+  },
+  {
+   "repo": "mastodon/mastodon",
+   "commit": "2c92a56e5d0fb490cc2e49a0dd9652499000fcb4"
+  },
+  {
+   "repo": "n8n-io/n8n",
+   "commit": "69b0c527fa2b36f7a1b1f55d59d17271d36fabbc"
+  },
+  {
+   "repo": "nilsteampassnet/TeamPass",
+   "commit": "14e7d03b4d6e0e61ef5549f920f8d1b1c828e7c3"
+  },
+  {
+   "repo": "nocodb/nocodb",
+   "commit": "28ecd7c239181111dd2f37778d48ed7996624e5a"
+  },
+  {
+   "repo": "nopSolutions/nopCommerce",
+   "commit": "3204d8436664fb9f7d34624186933dc2d61e0e53"
+  },
+  {
+   "repo": "cmp-ansible",
+   "commit": "8d63341579aa1c62024f3bce1a8af3f9a1b22a16"
+  },
+  {
+   "repo": "cmp-cobra",
+   "commit": "adbc8813901bba65827259daa8e22ff94ec1f30e"
+  },
+  {
+   "repo": "cmp-consul",
+   "commit": "7d6316305e8612066e0a23c7a1209e7dae5e7441"
+  },
+  {
+   "repo": "cmp-django",
+   "commit": "65a9f14196c338d70889bd54753370606b3fb4eb"
+  },
+  {
+   "repo": "cmp-express",
+   "commit": "ba006766fb964571723138708eacaba0f55759cd"
+  },
+  {
+   "repo": "cmp-fastapi",
+   "commit": "7cb06f360dd44efac059848df1a9beee7643b018"
+  },
+  {
+   "repo": "cmp-flask",
+   "commit": "36e4a824f340fdee7ed50937ba8e7f6bc7d17f81"
+  },
+  {
+   "repo": "cmp-gin",
+   "commit": "34dac209ffb6ef85cc78c5d217bbb7ad001d68fd"
+  },
+  {
+   "repo": "cmp-guava",
+   "commit": "486837d756e6d48864620e91b0761467e2abe744"
+  },
+  {
+   "repo": "cmp-jackson",
+   "commit": "9ceb08d404b4c94928b802f5a101900d9b2e9a4a"
+  },
+  {
+   "repo": "cmp-kafka",
+   "commit": "ac0d7e245b213c20ab66bcea211d1cbd5ed2c95a"
+  },
+  {
+   "repo": "cmp-nest",
+   "commit": "926e3a4dc8b3bf9a96b275fe348b71246c303929"
+  },
+  {
+   "repo": "cmp-netty",
+   "commit": "01c93eb988d56035e011fb795de5780f3b2e49ae"
+  },
+  {
+   "repo": "cmp-nextauth",
+   "commit": "7b35fc393da5120cc3552f19d636b14980557444"
+  },
+  {
+   "repo": "cmp-prisma",
+   "commit": "cda80a4488b7b551c36bf09ca2e8303ef9509da4"
+  },
+  {
+   "repo": "cmp-react",
+   "commit": "c0c39a6b3907eaab35f43074949e2957a2a734c1"
+  },
+  {
+   "repo": "cmp-spring",
+   "commit": "51045d1648dad955df586150c1a1a6e22ef400c2"
+  },
+  {
+   "repo": "cmp-terraform",
+   "commit": "116d525a7242c2beb916f00ccb39ce070f4fac05"
+  },
+  {
+   "repo": "cmp-vault",
+   "commit": "2b5ca5501c9fd570437a563662b8456cdbf59a1a"
+  },
+  {
+   "repo": "django-nV",
+   "commit": "a48901f106da4888417339b7b44b8ed56b64c63f"
+  },
+  {
+   "repo": "spring-petclinic",
+   "commit": "818c4136ea971c21674525f9053de0d9c7ad8cfe"
+  },
+  {
+   "repo": "F1 digininja/DVWA",
+   "commit": "5d5c76cced604e54462b13723f5c69af58e78748"
+  },
+  {
+   "repo": "F1 WebGoat/WebGoat",
+   "commit": "38096af4c90d74a770b1162edbd2259fcc03d20a"
+  },
+  {
+   "repo": "F1 anxolerd/dvpwa",
+   "commit": "a1d8f89fac2e57093189853c6527c2b01fc1d9c1"
+  }
+ ],
  "final_findings": [
   {
    "repo": "digininja__DVWA",
