@@ -1,0 +1,142 @@
+{
+ "seed_commit": "65d29f94e958277b916aed8d3bbc23bef620a748",
+ "languages": {
+  "javascript": {
+   "draw_order": [
+    "dvna",
+    "vulnerable-node",
+    "dvws-node"
+   ],
+   "need_in_scope": 20,
+   "held_out": [
+    "dvna",
+    "vulnerable-node"
+   ],
+   "held_out_in_scope": 23,
+   "tuning": [
+    "dvws-node",
+    "nodegoat"
+   ],
+   "tuning_in_scope": 29
+  },
+  "typescript": {
+   "draw_order": [
+    "oopssec-store",
+    "vunapi"
+   ],
+   "need_in_scope": 15,
+   "held_out": [
+    "oopssec-store",
+    "vunapi"
+   ],
+   "held_out_in_scope": 17,
+   "tuning": [
+    "juice-shop"
+   ],
+   "tuning_in_scope": 12
+  }
+ },
+ "precision": {
+  "real_corpus": [
+   "Dolibarr__dolibarr",
+   "FreshRSS__FreshRSS",
+   "chatwoot__chatwoot",
+   "cmp-ansible",
+   "cmp-cobra",
+   "cmp-consul",
+   "cmp-django",
+   "cmp-express",
+   "cmp-fastapi",
+   "cmp-flask",
+   "cmp-gin",
+   "cmp-guava",
+   "cmp-jackson",
+   "cmp-kafka",
+   "cmp-nest",
+   "cmp-netty",
+   "cmp-nextauth",
+   "cmp-prisma",
+   "cmp-react",
+   "cmp-spring",
+   "cmp-terraform",
+   "cmp-vault",
+   "getredash__redash",
+   "jellyfin__jellyfin",
+   "librenms__librenms",
+   "mastodon__mastodon",
+   "n8n-io__n8n",
+   "nilsteampassnet__TeamPass",
+   "nocodb__nocodb",
+   "nopSolutions__nopCommerce",
+   "spring-petclinic"
+  ],
+  "draw_order": [
+   "Dolibarr__dolibarr",
+   "cmp-cobra",
+   "cmp-vault",
+   "cmp-nest",
+   "nilsteampassnet__TeamPass",
+   "cmp-jackson",
+   "librenms__librenms",
+   "cmp-spring",
+   "cmp-prisma",
+   "mastodon__mastodon",
+   "spring-petclinic",
+   "cmp-netty",
+   "nopSolutions__nopCommerce",
+   "n8n-io__n8n",
+   "getredash__redash",
+   "cmp-flask",
+   "cmp-nextauth",
+   "nocodb__nocodb",
+   "cmp-gin",
+   "jellyfin__jellyfin",
+   "cmp-consul",
+   "cmp-express",
+   "cmp-django",
+   "cmp-guava",
+   "FreshRSS__FreshRSS",
+   "cmp-terraform",
+   "cmp-kafka",
+   "cmp-fastapi",
+   "cmp-ansible",
+   "chatwoot__chatwoot",
+   "cmp-react"
+  ],
+  "held_out": [
+   "Dolibarr__dolibarr",
+   "cmp-cobra",
+   "cmp-flask",
+   "cmp-jackson",
+   "cmp-nest",
+   "cmp-netty",
+   "cmp-prisma",
+   "cmp-spring",
+   "cmp-vault",
+   "getredash__redash",
+   "librenms__librenms",
+   "mastodon__mastodon",
+   "n8n-io__n8n",
+   "nilsteampassnet__TeamPass",
+   "nopSolutions__nopCommerce",
+   "spring-petclinic"
+  ],
+  "tuning": [
+   "FreshRSS__FreshRSS",
+   "chatwoot__chatwoot",
+   "cmp-ansible",
+   "cmp-consul",
+   "cmp-django",
+   "cmp-express",
+   "cmp-fastapi",
+   "cmp-gin",
+   "cmp-guava",
+   "cmp-kafka",
+   "cmp-nextauth",
+   "cmp-react",
+   "cmp-terraform",
+   "jellyfin__jellyfin",
+   "nocodb__nocodb"
+  ]
+ }
+}
