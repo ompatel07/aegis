@@ -3,15 +3,16 @@
 N5 made one bar certify a clean result and a reported problem at once, and it withheld
 every score. N6 gates each claim on its own evidence (docs/SECURITY_GATES_N6.md):
 
-  recall gate     documented detections in >= 2 corpora, and held-out recall at least
-                  CodeQL's on the same items (or an uncalibrated 25% where CodeQL could
-                  not run) -> certifies a CLEAN result
-  precision gate  >= 70% on the held-out half of the REAL-repository corpus
-                  -> certifies a reported PROBLEM
+  recall gate     documented detections in >= 2 corpora, and the 95% Wilson lower bound
+                  of held-out recall at least CodeQL's recall on the same items (or an
+                  uncalibrated 25% where CodeQL could not run) -> certifies a CLEAN result
+  precision gate  95% Wilson lower bound >= 70% on the held-out half of the
+                  REAL-repository corpus -> certifies a reported PROBLEM
 
-These tests plant evidence that clears each gate, then drop each criterion just below
-its line and assert that gate -- and only that gate -- fails. Then they hold the shipped
-tiers to the shipped evidence.
+P3 gates on the lower bound, not the point estimate: a rate sitting exactly on its line
+fails, and a small sample has to be very good to pass. These tests plant evidence that
+clears each gate, then move each criterion below its line and assert that gate -- and
+only that gate -- fails. Then they hold the shipped tiers to the shipped evidence.
 """
 from __future__ import annotations
 
@@ -43,9 +44,9 @@ def _triage(tp, fp, unc=0, untriaged=0, rule="r-sql", kind=tb.REAL, role=tb.HELD
 
 
 def _passing():
-    gt = {"a": _corpus(tb.HELD_OUT, 5, 20),   # 25% held-out recall, uncalibrated, on the line
+    gt = {"a": _corpus(tb.HELD_OUT, 300, 1000),  # 30% held-out recall, lower bound 27%, uncalibrated
           "b": _corpus(tb.TUNING, 1, 10)}
-    return gt, _triage(tp=70, fp=30)          # 70% real held-out precision, on the line
+    return gt, _triage(tp=750, fp=250)           # 75% real held-out precision, lower bound 72%
 
 
 def _ev(gt, triage, shipped=SHIPPED):
@@ -60,7 +61,7 @@ def test_planted_evidence_on_every_line_passes_both_gates():
     ev = _ev(*_passing())
     assert ev.recall_ok and ev.precision_ok, ev.failed
     assert ev.quadrant == tb.Q_FULL and ev.tier == tb.TIER_STRONG
-    assert ev.held_out_recall == 0.25 and ev.precision == 0.70 and not ev.calibrated
+    assert ev.held_out_recall == 0.30 and ev.precision == 0.75 and not ev.calibrated
 
 
 # ── the recall gate: certifies a CLEAN result ───────────────────────────────────
@@ -80,11 +81,13 @@ def test_a_promotions_own_evidence_does_not_count_as_a_corpus():
     assert ev.tuning_detected == 1, "it still counts as a detection for recall"
 
 
-def test_uncalibrated_recall_below_25_fails_the_recall_gate():
+def test_uncalibrated_recall_on_25_fails_the_recall_gate():
+    """25% exactly, on 1,000 items: the lower bound (22%) is below the line."""
     gt, triage = _passing()
-    gt["a"] = _corpus(tb.HELD_OUT, 4, 17)  # 23.5%, no CodeQL reference
+    gt["a"] = _corpus(tb.HELD_OUT, 250, 1000)  # no CodeQL reference
     ev = _ev(gt, triage)
     assert _gates(ev) == (["recall"], []) and "uncalibrated" in ev.recall_failed[0]
+    assert "lower bound 22%" in ev.recall_failed[0]
 
 
 def test_calibrated_recall_below_codeql_fails_even_above_25():
@@ -96,21 +99,36 @@ def test_calibrated_recall_below_codeql_fails_even_above_25():
     assert _gates(ev) == (["recall"], []) and "CodeQL" in ev.recall_failed[0]
 
 
-def test_calibrated_recall_at_codeql_parity_passes_even_below_25():
-    """Parity with the reference passes, whatever the absolute number: 10% vs CodeQL's 10%."""
+def test_calibrated_recall_above_codeql_on_a_small_sample_fails():
+    """50% vs CodeQL's 45% on 20 items: ahead on the point, not on the lower bound (30%)."""
     gt, triage = _passing()
-    gt["a"] = _corpus(tb.HELD_OUT, 2, 20, codeql=2)
+    gt["a"] = _corpus(tb.HELD_OUT, 10, 20, codeql=9)
     ev = _ev(gt, triage)
-    assert ev.recall_ok and ev.calibrated and ev.held_out_recall == 0.10
+    assert _gates(ev) == (["recall"], [])
+
+
+def test_calibrated_recall_at_codeql_parity_fails_on_the_point_estimate():
+    gt, triage = _passing()
+    gt["a"] = _corpus(tb.HELD_OUT, 100, 1000, codeql=100)
+    assert _gates(_ev(gt, triage)) == (["recall"], [])
+
+
+def test_calibrated_recall_clearly_above_codeql_passes_even_below_25():
+    """Clearing the reference passes, whatever the absolute number: 20% (lower bound 18%)
+    vs CodeQL's 10%."""
+    gt, triage = _passing()
+    gt["a"] = _corpus(tb.HELD_OUT, 200, 1000, codeql=100)
+    ev = _ev(gt, triage)
+    assert ev.recall_ok and ev.calibrated and ev.held_out_recall == 0.20
 
 
 def test_only_corpora_codeql_ran_on_are_the_comparison():
     gt, triage = _passing()
-    gt["a"] = _corpus(tb.HELD_OUT, 1, 10, codeql=1)      # parity here...
-    gt["c"] = _corpus(tb.HELD_OUT, 0, 10)                 # ...a held-out corpus CodeQL could not run on
+    gt["a"] = _corpus(tb.HELD_OUT, 300, 1000, codeql=100)  # clears CodeQL here...
+    gt["c"] = _corpus(tb.HELD_OUT, 0, 100)                  # ...a held-out corpus CodeQL could not run on
     ev = _ev(gt, triage)
-    assert ev.reference_in_scope == 10 and ev.reference_corpora == ["a"]
-    assert ev.held_out_in_scope == 20 and ev.recall_ok
+    assert ev.reference_in_scope == 1000 and ev.reference_corpora == ["a"]
+    assert ev.held_out_in_scope == 1100 and ev.recall_ok
 
 
 def test_tuning_recall_cannot_stand_in_for_held_out_recall():
@@ -123,15 +141,39 @@ def test_out_of_scope_items_do_not_dilute_or_pad_recall():
     gt, triage = _passing()
     for _ in range(50):
         gt["a"]["items"].append({"id": "x", "scope": "OUT:authorization", "status": "n/a", "rules": []})
-    assert _ev(gt, triage).held_out_recall == 0.25
+    assert _ev(gt, triage).held_out_recall == 0.30
 
 
 # ── the precision gate: certifies a reported PROBLEM ────────────────────────────
-def test_real_precision_below_the_line_fails_the_precision_gate_only():
+def test_real_precision_on_the_line_fails_the_precision_gate_only():
+    """70% exactly, on 1,000 findings: the lower bound (67%) is below the line."""
     gt, _ = _passing()
-    ev = _ev(gt, _triage(tp=69, fp=31))
+    ev = _ev(gt, _triage(tp=700, fp=300))
     assert _gates(ev) == ([], ["precision"])
-    assert ev.quadrant == tb.Q_CLEAN
+    assert ev.quadrant == tb.Q_CLEAN and "lower bound 67%" in ev.precision_failed[0]
+
+
+def test_go_4_of_5_fails_the_precision_gate():
+    """N6 passed Go on 4/5 = 80%. Its lower bound is 38%: five findings certify nothing."""
+    gt, _ = _passing()
+    ev = _ev(gt, _triage(tp=4, fp=1))
+    assert _gates(ev) == ([], ["precision"]) and "lower bound 38%" in ev.precision_failed[0]
+    lo, hi = tb.wilson(4, 5)
+    assert round(lo, 3) == 0.376 and round(hi, 3) == 0.964
+
+
+def test_a_small_perfect_sample_fails_and_a_large_clean_one_passes():
+    gt, _ = _passing()
+    assert not _ev(gt, _triage(tp=7, fp=0)).precision_ok      # 7/7: lower bound 65%
+    assert _ev(gt, _triage(tp=11, fp=0)).precision_ok         # 11/11: lower bound 74%
+    assert _ev(gt, _triage(tp=400, fp=20)).precision_ok       # 95%: lower bound 93%
+
+
+def test_wilson_interval():
+    assert tb.wilson(0, 0) is None
+    assert tb.wilson(0, 10)[0] == 0.0 and round(tb.wilson(10, 10)[1], 9) == 1.0
+    lo, hi = tb.wilson(18, 67)
+    assert round(lo, 3) == 0.177 and round(hi, 3) == 0.385
 
 
 def test_stress_precision_gates_nothing():
@@ -140,7 +182,7 @@ def test_stress_precision_gates_nothing():
     gt, real = _passing()
     for stress in (_triage(tp=0, fp=500, kind=tb.GROUND_TRUTH), _triage(tp=500, fp=0, kind=tb.GROUND_TRUTH)):
         ev = _ev(gt, real + stress)
-        assert ev.precision_ok and ev.precision == 0.70
+        assert ev.precision_ok and ev.precision == 0.75
     ev = _ev(gt, _triage(tp=500, fp=0, kind=tb.GROUND_TRUTH))
     assert "precision: no triaged finding on held-out real repositories" in ev.precision_failed
     assert ev.stress.tp == 500
@@ -163,8 +205,8 @@ def test_an_untriaged_real_finding_fails_the_precision_gate():
 
 def test_uncertain_is_reported_but_not_in_the_rate():
     gt, _ = _passing()
-    ev = _ev(gt, _triage(tp=70, fp=30, unc=40))
-    assert ev.precision_ok and ev.uncertain == 40 and ev.precision == 0.70
+    ev = _ev(gt, _triage(tp=750, fp=250, unc=40))
+    assert ev.precision_ok and ev.uncertain == 40 and ev.precision == 0.75
 
 
 # ── the four quadrants ───────────────────────────────────────────────────────────
@@ -344,11 +386,13 @@ def test_real_findings_carry_the_precision_holdout_drawn_first():
             assert t["role"] == (tb.HELD_OUT if t["corpus"] in held else tb.TUNING), t
 
 
-# ── the measured N6 outcome. These pin the shipped evidence's verdict; they change
+# ── the measured outcome. These pin the shipped evidence's verdict; they change
 # when the evidence changes, never by editing a tier. ─────────────────────────────
-def test_n6_quadrants_are_the_measured_ones():
+def test_measured_quadrants():
+    """P3 Part A (lower-bound gating), before any rule edit: Go's 4/5 no longer certifies
+    a problem, and Python's 8/38 (lower bound 11%) no longer clears CodeQL's 5/38."""
     q = {l: rc.evidence_of(l).quadrant for l in ("php", "python", "go", "java", "javascript", "typescript")}
-    assert q == {"php": tb.Q_CLEAN, "python": tb.Q_CLEAN, "go": tb.Q_PROBLEM,
+    assert q == {"php": tb.Q_CLEAN, "python": tb.Q_WITHHELD, "go": tb.Q_WITHHELD,
                  "java": tb.Q_WITHHELD, "javascript": tb.Q_WITHHELD, "typescript": tb.Q_WITHHELD}, q
 
 

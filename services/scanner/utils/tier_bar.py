@@ -21,21 +21,28 @@ THE RECALL GATE (certifies a clean result)
 ------------------------------------------
   1. corpora   documented vulnerabilities caught by shipped rules in >= MIN_CORPORA
                corpora (a promotion's own evidence excluded: that would be circular).
-  2. recall    on HELD-OUT corpora, Aegis's in-scope recall is at least CodeQL's
-               (security-extended) on the same items -- parity with the market
-               reference. Where CodeQL ran on no held-out corpus of the language
-               (unsupported language; no OSI-licensed corpus), the floor is the absolute
-               UNCALIBRATED_MIN_RECALL and the gate says it is uncalibrated. No held-out
-               corpus at all fails the gate.
+  2. recall    on HELD-OUT corpora, the Wilson 95% lower bound of Aegis's in-scope
+               recall is at least CodeQL's (security-extended) recall on the same items
+               -- parity with the market reference. Where CodeQL ran on no held-out
+               corpus of the language (unsupported language; no OSI-licensed corpus),
+               the floor is the absolute UNCALIBRATED_MIN_RECALL and the gate says it is
+               uncalibrated. No held-out corpus at all fails the gate.
 
 THE PRECISION GATE (certifies a reported problem)
 -------------------------------------------------
-  TP / (TP + FP) >= MIN_PRECISION over every triaged finding of the language's shipped
-  rules on the HELD-OUT half of the REAL-repository corpus. UNCERTAIN is excluded from
-  the rate (N2b) and reported; an UNTRIAGED finding fails the gate, and so does a
-  language with no triaged finding there (a problem claim with no evidence is not
-  certified). Teaching corpora are built to trap tools: their precision is reported as
+  The Wilson 95% lower bound of TP / (TP + FP) >= MIN_PRECISION over every triaged
+  finding of the language's shipped rules on the HELD-OUT half of the REAL-repository
+  corpus. UNCERTAIN is excluded from the rate (N2b) and reported; an UNTRIAGED finding
+  fails the gate, and so does a language with no triaged finding there (a problem claim
+  with no evidence is not certified). Teaching corpora are built to trap tools: their precision is reported as
   a stress figure and gates nothing.
+
+WHY A LOWER BOUND (P3)
+----------------------
+A point estimate cannot tell 4/5 from 400/500. Both gates compare the Wilson score
+interval's 95% lower bound with the floor, so a small sample has to be very good to pass
+and a large one passes on its rate. This replaces a minimum-sample rule: there is none.
+(MIN_CORPORA is not one -- it asks for detections in two independent codebases.)
 
 QUADRANTS
 ---------
@@ -52,12 +59,14 @@ from __future__ import annotations
 import functools
 import json
 import logging
+import math
 import os
 from dataclasses import dataclass, field
 
 MIN_CORPORA = 2
 UNCALIBRATED_MIN_RECALL = 0.25
 MIN_PRECISION = 0.70
+WILSON_Z = 1.959964  # two-sided 95%
 
 TIER_NONE = "none"
 TIER_LIMITED = "limited"
@@ -70,6 +79,26 @@ HELD_OUT = "held_out"
 TUNING = "tuning"
 REAL = "real"
 GROUND_TRUTH = "ground-truth"
+
+
+def wilson(k: int, n: int, z: float = WILSON_Z) -> tuple[float, float] | None:
+    """Wilson score interval for k successes in n trials; None when n is 0."""
+    if n <= 0:
+        return None
+    p = k / n
+    d = 1 + z * z / n
+    c = p + z * z / (2 * n)
+    r = z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n))
+    return max(0.0, (c - r) / d), min(1.0, (c + r) / d)
+
+
+def lower_bound(k: int, n: int) -> float | None:
+    w = wilson(k, n)
+    return None if w is None else w[0]
+
+
+def _pct(x: float) -> str:
+    return f"{x:.0%}"
 
 
 def quadrant(recall_ok: bool, precision_ok: bool) -> str:
@@ -104,6 +133,10 @@ class Counts:
         n = self.tp + self.fp
         return self.tp / n if n else None
 
+    @property
+    def precision_interval(self) -> tuple[float, float] | None:
+        return wilson(self.tp, self.tp + self.fp)
+
 
 @dataclass
 class LanguageEvidence:
@@ -130,6 +163,14 @@ class LanguageEvidence:
     @property
     def held_out_recall(self) -> float | None:
         return self.held_out_detected / self.held_out_in_scope if self.held_out_in_scope else None
+
+    @property
+    def held_out_recall_interval(self) -> tuple[float, float] | None:
+        return wilson(self.held_out_detected, self.held_out_in_scope)
+
+    @property
+    def reference_aegis_interval(self) -> tuple[float, float] | None:
+        return wilson(self.reference_aegis, self.reference_in_scope)
 
     @property
     def tuning_recall(self) -> float | None:
@@ -182,7 +223,9 @@ class LanguageEvidence:
 
     def as_dict(self) -> dict:
         r = lambda x: None if x is None else round(x, 4)
-        c = lambda k: {"tp": k.tp, "fp": k.fp, "uncertain": k.uncertain, "precision": r(k.precision)}
+        ci = lambda w: None if w is None else [round(w[0], 4), round(w[1], 4)]
+        c = lambda k: {"tp": k.tp, "fp": k.fp, "uncertain": k.uncertain, "precision": r(k.precision),
+                       "precision_interval": ci(k.precision_interval)}
         return {
             "language": self.language, "tier": self.tier, "quadrant": self.quadrant,
             "recall_gate": self.recall_ok, "precision_gate": self.precision_ok,
@@ -190,13 +233,16 @@ class LanguageEvidence:
             "corpora": len(self.corpora), "detection_corpora": len(self.detection_corpora),
             "held_out_corpora": len(self.held_out),
             "held_out_recall": r(self.held_out_recall),
+            "held_out_recall_interval": ci(self.held_out_recall_interval),
             "held_out_detected": self.held_out_detected, "held_out_in_scope": self.held_out_in_scope,
             "tuning_recall": r(self.tuning_recall),
             "tuning_detected": self.tuning_detected, "tuning_in_scope": self.tuning_in_scope,
             "calibrated": self.calibrated, "reference": "codeql security-extended" if self.calibrated else None,
             "reference_in_scope": self.reference_in_scope, "reference_aegis": self.reference_aegis,
             "reference_codeql": self.reference_codeql, "reference_recall": r(self.reference_recall),
-            "precision": r(self.precision), "tp": self.tp, "fp": self.fp,
+            "reference_aegis_interval": ci(self.reference_aegis_interval),
+            "precision": r(self.precision), "precision_interval": ci(self.real.precision_interval),
+            "tp": self.tp, "fp": self.fp,
             "uncertain": self.uncertain, "untriaged": self.untriaged,
             "real_tuning": c(self.real_tuning), "stress": c(self.stress),
         }
@@ -255,24 +301,29 @@ def evaluate(gt: dict, triage: list[dict], shipped: dict[str, set[str]],
             ev.recall_failed.append(f"corpora: documented detections in {len(ev.detection_corpora)} "
                                     f"corpus(es), needs {MIN_CORPORA}")
         if ev.calibrated:
-            if ev.reference_aegis < ev.reference_codeql:
-                n = ev.reference_in_scope
-                ev.recall_failed.append(f"recall: held-out {ev.reference_aegis}/{n} below CodeQL's "
-                                        f"{ev.reference_codeql}/{n} on the same items")
+            n, a, q = ev.reference_in_scope, ev.reference_aegis, ev.reference_codeql
+            lo = lower_bound(a, n)
+            if lo < q / n:
+                ev.recall_failed.append(f"recall: held-out {a}/{n}, 95% lower bound {_pct(lo)}, below "
+                                        f"CodeQL's {q}/{n} = {_pct(q / n)} on the same items")
         elif ev.held_out_recall is None:
             ev.recall_failed.append("recall: no held-out corpus")
-        elif ev.held_out_recall < UNCALIBRATED_MIN_RECALL:
-            ev.recall_failed.append(f"recall: held-out {ev.held_out_detected}/{ev.held_out_in_scope} = "
-                                    f"{ev.held_out_recall:.0%}, needs {UNCALIBRATED_MIN_RECALL:.0%} "
-                                    f"(uncalibrated: no CodeQL reference)")
+        else:
+            lo = lower_bound(ev.held_out_detected, ev.held_out_in_scope)
+            if lo < UNCALIBRATED_MIN_RECALL:
+                ev.recall_failed.append(f"recall: held-out {ev.held_out_detected}/{ev.held_out_in_scope}, "
+                                        f"95% lower bound {_pct(lo)}, needs {_pct(UNCALIBRATED_MIN_RECALL)} "
+                                        f"(uncalibrated: no CodeQL reference)")
         if ev.real.untriaged:
             ev.precision_failed.append(f"precision: {ev.real.untriaged} real-repo finding(s) untriaged")
         elif ev.real.precision is None:
             ev.precision_failed.append("precision: no triaged finding on held-out real repositories")
-        elif ev.real.precision < MIN_PRECISION:
-            ev.precision_failed.append(f"precision: {ev.real.tp}/{ev.real.tp + ev.real.fp} = "
-                                       f"{ev.real.precision:.0%} on held-out real repositories, "
-                                       f"needs {MIN_PRECISION:.0%}")
+        else:
+            k, n = ev.real.tp, ev.real.tp + ev.real.fp
+            lo = lower_bound(k, n)
+            if lo < MIN_PRECISION:
+                ev.precision_failed.append(f"precision: {k}/{n} = {_pct(k / n)}, 95% lower bound {_pct(lo)}, "
+                                           f"on held-out real repositories, needs {_pct(MIN_PRECISION)}")
         ev.tier = TIER_STRONG if not ev.failed else TIER_LIMITED
     return out
 
