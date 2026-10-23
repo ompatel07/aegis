@@ -116,3 +116,137 @@ scanned.
 - **JavaScript tuning:** dvws-node and NodeGoat (29).
 - **TypeScript held out:** OopsSec and VuNAPI (17).
 - **TypeScript tuning:** juice-shop (12).
+
+---
+
+## Results (computed after §0 was committed in `42413ce`)
+
+**The commercial number.** 6 of V2/F1's 20 repositories now show a security result,
+against 0 under N5:
+- **V2:** 5 of 15 — Dolibarr, FreshRSS, DVWA, librenms, TeamPass;
+- **F1:** 1 of 5 — DVWA.
+
+All six are clean-only: PHP-majority repositories, whose recall is certified and whose
+precision is not. Every one has critical or high findings. So each shows its findings
+with the precision caveat and **no grade**: a bad grade there would rest on findings we
+cannot certify. The other 14 stay withheld. None is full or problem-only.
+
+| quadrant | V2 (15) | F1 (5) |
+|---|--:|--:|
+| full | 0 | 0 |
+| problem-only | 0 | 0 |
+| clean-only | 5 | 1 |
+| withheld | 10 | 4 |
+
+### E. Per language
+
+| language | held-out recall: Aegis vs CodeQL, same items | real-repo precision (held-out half, the gate) | stress precision (teaching corpora) | quadrant |
+|---|---|---|---|---|
+| **PHP** | 68/160 = **42 %** (CodeQL has no PHP support: **uncalibrated**, ≥ 25 % floor) | **18/67 = 27 %** (18–39 %) | 221/313 = 71 % | **clean-only** |
+| **Python** | **8/38 vs 5/38** | **1/19 = 5 %** (1–25 %) | 49/50 = 98 % | **clean-only** |
+| **Go** | **4/21 vs 4/21** (parity); held-out 4/25 | **4/5 = 80 %** (38–96 %) | 7/8 | **problem-only** for Go code (fails corpora: detections in 1 corpus) |
+| **Java** | **0/8 vs 3/8** (dvja only); held-out 5/34 | **no finding** on real repositories | 76/90 = 84 % | withheld |
+| **JavaScript** | **10/23 vs 18/23** | **0/15** (+36 uncertain) | 73/152 = 48 % | withheld |
+| **TypeScript** | **2/17 vs 3/17** | **0/10** | 35/77 = 45 % | withheld |
+
+Intervals are 95 % Wilson. The tuning half of the real corpus (reported, never gated):
+PHP 1/8, Python 1/89, JS 5/16, TS 1/20, Go 0/1, Java none.
+
+**Read this before trusting the Python pass.** Python's recall gate passes on DSVW alone.
+There, CodeQL raised no alert at all, and Aegis caught 5 of 22 documented items. The
+reason is that DSVW serves requests from a raw `http.server` handler, which neither
+tool models as a source. Aegis's five come from `aegis-py-sql-string-construction`, a
+context-free pattern rule. That rule is also behind Python's precision failure: 6 TP /
+101 FP on real code. Without DSVW, Python would be 3/16 against CodeQL's 5/16 and would
+fail. So the clean claim it certifies rests on the same rule that sinks its precision.
+
+**Go's precision pass rests on five findings** (four true-positive weak-cipher
+findings in vault, and one false positive). The interval is 38–96 %. It is the gate as specified in §0, and
+too small to lean on.
+
+### C. CodeQL comparison, per corpus
+
+CodeQL CLI 2.27.3, `security-extended`, default configuration, run by hand per its
+license (§0.4). Each item is judged by the rule Aegis is judged by: an alert of the
+item's class at the item, or at the helper or route file the corpus documents for it.
+Decisions with the query and line are in `docs/ground_truth_n6/codeql_decisions.py`.
+
+| corpus | language | Aegis | CodeQL | notes |
+|---|---|--:|--:|---|
+| DSVW | Python | 5/22 | **0/22** | CodeQL raised 0 alerts: raw `http.server` source |
+| django.nV | Python | 1/7 | 2/7 | CodeQL adds the redirect |
+| lets-be-bad-guys | Python | 2/9 | 3/9 | CodeQL adds the redirect |
+| DVNA | JS | 5/9 | 6/9 | CodeQL adds reflected XSS in the `.ejs` view |
+| vulnerable-node | JS | 5/14 | **12/14** | CodeQL follows SQL across the route → model call (3 items), plus logging, prototype pollution, debug |
+| OopsSec Store | TS | 2/14 | 1/14 | both miss the Next.js App Router sources |
+| VuNAPI | TS | 0/3 | 2/3 | CodeQL models NestJS decorator parameters |
+| dvja | Java | 0/8 | 3/8 | CodeQL with build-free extraction: SQLi in a service, command injection, sensitive log |
+| java-sec-code | Java | 5/26 | NOT RUN | no license file |
+| damn-vulnerable-golang | Go | 4/8 | 4/8 | different items each: CodeQL TLS + integer conversion; Aegis DES + RC4 |
+| go-test-bench | Go | 0/10 | 0/10 | the dispatcher defeats both |
+| not-going-anywhere | Go | 0/3 | 0/3 | |
+| GoVWA | Go | 0/4 | NOT RUN | no license file |
+| bWAPP, Mutillidae II, XVWA | PHP | 68/160 | NOT RUN | CodeQL has no PHP support |
+
+Go needed CodeQL to build the code (autobuild). That is our measurement harness on
+licensed test corpora, never customer code.
+
+**The floor, against the data.** CodeQL's own held-out recall ranges from 0 % (DSVW)
+to 86 % (vulnerable-node). The reference does not set one absolute bar. It says where a
+mainstream tool already does better than us on the same documented vulnerabilities:
+- JavaScript, Java and TypeScript: we are below it, so a clean grade there would
+  promise more than the market reference delivers.
+- Python and Go: we are at or above it, with the Python caveat above.
+
+### B. Precision on real repositories
+
+Measured as §0.2 fixed it. The result is lower than N5's, where teaching-corpus TPs
+counted toward precision:
+- **PHP:** 62 % under N5 → **27 %** on real code. `aegis-php-xss` and
+  `aegis-php-sql-injection` on Dolibarr do not model its escapers.
+- **Python:** 5 %; `aegis-py-sql-string-construction` again.
+- **JS / TS:** 0 % on the held-out half. The 36 uncertain JS findings are ReDoS
+  shapes in vendored client libraries.
+- **Java:** no finding on any of the 31 real repositories, so a problem claim has no
+  evidence.
+
+No precision fix was made in N6; the holdout is in place for the pass that makes one.
+
+### D. JS/TS ground truth
+
+Five corpora qualify (§0.5): 134 documented items, 62 in scope. Item statuses and the
+triage of all 148 findings on them are in `docs/ground_truth_n6/score_jsts.py`.
+
+| corpus | role | in scope | Aegis detected | misses: rule gap / ceiling |
+|---|---|--:|--:|---|
+| DVNA | held out | 9 | 5 | 1 / 3 (template-side and client-side XSS) |
+| vulnerable-node | held out | 14 | 5 | 5 / 4 (SQL built in a model function; template XSS) |
+| dvws-node | tuning | 22 | 11 | 11 / 0 (XPath, LDAP, SOAP / XML injection, CORS, log injection, prototype pollution, upload, cookies, GraphQL) |
+| OopsSec Store | held out | 14 | 2 | 8 / 4 (Next.js App Router requests and Prisma `$queryRawUnsafe` not modelled) |
+| VuNAPI | held out | 3 | 0 | 3 / 0 (NestJS `@Query` / `@Body` parameters not modelled) |
+
+### A. What shipped
+
+- **Scanner:**
+  - `utils/tier_bar.py`: two gates per language, the CodeQL reference, and real-repo
+    versus stress precision.
+  - `utils/rule_coverage.py`: per-gate code fractions, the repository's quadrant, the
+    clean label, and the precision caveat.
+- **Orchestrator:**
+  - `pipeline/aggregator.go` `securityShown`: shows the score or rating only where the
+    certified claim backs it.
+  - `types.SecurityCoverage`: new quadrant fields.
+  - `LanguageCoverage.Evidence`: carried through. **This fixes an N5 defect:** the
+    orchestrator dropped the per-language evidence, so it never reached a real scan.
+- **API:** the report's coverage sentence names the certified claim.
+- **Web:** `securityPresentation`. The Security card shows "No issues found in what we
+  check · X% held-out recall" in place of an A or B, and "Findings shown, no grade" with
+  the caveat in place of a bad grade.
+- **Tests:**
+  - scanner: planted evidence for every gate and quadrant, and the measured outcome;
+  - orchestrator: one test per quadrant, including **a limited-recall repository with
+    zero findings never renders A**;
+  - web: the same, on the card.
+
+**Unchanged:** no rule changed. The original five corpora are at **22/45**; the licence
+guard is green (81 Aegis + 89 njsscan + 9 staged).

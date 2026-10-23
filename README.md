@@ -16,19 +16,25 @@ untrusted repositories.
 
 Aegis's SAST runs only rules we wrote, plus the LGPL-licensed njsscan pack for Node — no
 third-party commercial rule sets (the Semgrep-registry packs were removed on 2026-09-19; see
-[`docs/RULE_REMOVAL_N1.md`](docs/RULE_REMOVAL_N1.md)). Each language's tier is **computed** from
-measured evidence, not declared. A language is STRONG only if its rules caught documented
-vulnerabilities in at least two ground-truth corpora, reach **25 % recall on corpora no rule was
-written from**, and are **70 % precise** across every hand-triaged finding. **As of 2026-10-23 no
-language meets that bar** ([`docs/GROUND_TRUTH_N5.md`](docs/GROUND_TRUTH_N5.md)):
-- PHP has 42 % held-out recall but 62 % precision;
-- Java has 84 % precision but 15 % held-out recall;
-- Python, Go and JavaScript/TypeScript fail more than one criterion;
+[`docs/RULE_REMOVAL_N1.md`](docs/RULE_REMOVAL_N1.md)). Each language earns two claims separately, both measured, never declared
+([`docs/SECURITY_GATES_N6.md`](docs/SECURITY_GATES_N6.md)):
+- a **clean** result ("no significant issues") needs **recall**: our recall on documented
+  vulnerabilities in apps no rule was written from must be at least GitHub CodeQL's on the
+  same apps (or 25 % where CodeQL cannot run, as for PHP, labelled uncalibrated);
+- a reported **problem** needs **precision**: at least 70 % of our findings on ordinary
+  open-source projects must be real.
+
+**As of 2026-10-23:**
+- **PHP and Python earn the clean claim but not the problem claim** (real-code precision
+  27 % and 5 %). A clean result there is shown; findings carry a precision caveat and no
+  bad grade.
+- **Go earns the problem claim only.**
+- **Java, JavaScript and TypeScript earn neither**, so their security score is "Not
+  measured".
 - Ruby and C# have no application-code SAST beyond the language-independent CI/CD rules.
 
-So the security score is reported as *Not measured*, never as a clean result. **Every scan shows,
-next to each language, its measured recall**: held-out recall where a held-out corpus exists, and
-otherwise tuning recall, labelled "none held out".
+**Every scan shows, next to each language, its measured recall**: held-out recall where a
+held-out corpus exists, and otherwise tuning recall, labelled "none held out".
 
 Everything outside code-level SAST is
 **unaffected by that**: dependency CVEs with reachability and KEV/EPSS, secrets, infrastructure-as-code,
