@@ -14,7 +14,7 @@ import { ScanFeedback } from "@/components/dashboard/ScanFeedback";
 import { FindingsList } from "@/components/findings/FindingsList";
 import { Button } from "@/components/ui/button";
 import { cn, formatDate, formatDuration, gradeColor, scoreColor } from "@/lib/utils";
-import { ratingDisplay, filteredSecretsLabel, filteredSecretsTotal, excludedBundledLabel, notMeasuredReason, overallState, partialQualifier, coverageLabel,
+import { ratingDisplay, filteredSecretsLabel, filteredSecretsTotal, excludedBundledLabel, notMeasuredReason, securityPresentation, securityQuadrant, overallState, partialQualifier, coverageLabel,
   evidenceLabel, coverageBreakdown } from "@/lib/display";
 import type { Scan } from "@/lib/types";
 import { Download, FileText, HelpCircle } from "lucide-react";
@@ -134,9 +134,14 @@ export default function ScanDetailPage() {
                 .join(" · ")}{" "}
               of {scan.security_coverage.total_code_lines.toLocaleString()} lines.
             </p>
-            {!scan.security_coverage.confident ? (
+            {securityQuadrant(scan.security_coverage) === "withheld" ? (
               <p className="font-medium text-amber-700 dark:text-amber-400">
                 Security is reported as Not measured: {scan.security_coverage.gap}
+              </p>
+            ) : null}
+            {scan.security_coverage.precision_caveat ? (
+              <p className="font-medium text-amber-700 dark:text-amber-400">
+                Precision caveat: {scan.security_coverage.precision_caveat}.
               </p>
             ) : null}
             <details className="mt-1">
@@ -241,7 +246,7 @@ export default function ScanDetailPage() {
               captioning a measurement that never ran. */}
           <div className="grid gap-4 sm:grid-cols-3">
             <RatingCard title="Reliability" rating={scan.reliability_rating} reason={notMeasuredReason(scan, "reliability")} />
-            <RatingCard title="Security" rating={scan.security_rating} score={scan.security_score} reason={notMeasuredReason(scan, "security")} />
+            <SecurityCard scan={scan} />
             <RatingCard title="Maintainability" rating={scan.maintainability_rating} reason={notMeasuredReason(scan, "maintainability")} />
           </div>
 
@@ -399,6 +404,35 @@ const RATING_CLASS: Record<string, string> = {
   D: "text-orange-600 dark:text-orange-400",
   E: "text-red-600 dark:text-red-400",
 };
+
+// The Security card (N6). A grade when the certified claim backs it; otherwise what
+// stands in its place: the clean label ("No issues found in what we check · X%
+// held-out recall") where only problems are certified, the precision caveat where only
+// a clean result is, and "Not measured" where neither is. Never a bare A.
+function SecurityCard({ scan }: { scan: Scan }) {
+  const p = securityPresentation(scan);
+  if (p.kind === "grade" || p.kind === "not-measured") {
+    return (
+      <RatingCard
+        title="Security"
+        rating={scan.security_rating ?? undefined}
+        score={scan.security_score ?? undefined}
+        reason={p.kind === "not-measured" ? p.reason : null}
+      />
+    );
+  }
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-medium text-muted-foreground">Security</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-1">
+        <p className="text-base font-semibold text-foreground">{p.headline}</p>
+        {p.detail ? <p className="text-xs text-muted-foreground">{p.detail}</p> : null}
+      </CardContent>
+    </Card>
+  );
+}
 
 // A–E rating card. Measured → the letter (+ Security's density score), no method
 // jargon (C3). null → a weighted "Not measured" with the REASON it could not be

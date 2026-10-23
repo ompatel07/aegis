@@ -106,3 +106,72 @@ test("the per-language detail states held-out recall, precision and the failing 
   );
   assert.equal(evidenceLabel(null), null, "pre-N5 scans carry no evidence and show none");
 });
+
+// N6 — two claims, two gates. One test per quadrant on what the Security card shows.
+import { securityPresentation, securityQuadrant } from "./display.ts";
+
+const n6cov = (quadrant: "full" | "problem-only" | "clean-only" | "withheld") => ({
+  ...javaOnly,
+  confident: quadrant === "full",
+  quadrant,
+  clean_label: "No issues found in what we check · Java 15% held-out recall",
+  precision_caveat:
+    quadrant === "clean-only" || quadrant === "withheld"
+      ? "findings are not certified: on held-out real repositories our findings were PHP 25% precise (19/75)"
+      : null,
+});
+
+test("THE GATE: a limited-recall repo with zero findings never renders A", () => {
+  // The orchestrator withholds the favourable rating; the card must say what we checked.
+  const scan = { engines_degraded: [], security_rating: undefined, security_coverage: n6cov("problem-only") };
+  const p = securityPresentation(scan);
+  assert.equal(p.kind, "clean-label");
+  if (p.kind === "clean-label") {
+    assert.equal(p.headline, "No issues found in what we check");
+    assert.match(p.detail, /15% held-out recall/);
+    assert.notEqual(p.headline, "A");
+  }
+  assert.notEqual(ratingDisplay(scan.security_rating).text, "A");
+});
+
+test("full quadrant: the grade is shown", () => {
+  const scan = { engines_degraded: [], security_rating: "A", security_coverage: n6cov("full") };
+  assert.equal(securityPresentation(scan).kind, "grade");
+});
+
+test("problem-only quadrant with an unfavourable rating: the grade and findings are shown", () => {
+  const scan = { engines_degraded: [], security_rating: "E", security_coverage: n6cov("problem-only") };
+  assert.equal(securityPresentation(scan).kind, "grade");
+});
+
+test("clean-only quadrant: a withheld bad grade reads as a precision caveat, not Not measured", () => {
+  const scan = { engines_degraded: [], security_rating: undefined, security_coverage: n6cov("clean-only") };
+  const p = securityPresentation(scan);
+  assert.equal(p.kind, "caveat");
+  if (p.kind === "caveat") assert.match(p.detail, /not certified/);
+  // ...while a clean result there IS shown
+  assert.equal(securityPresentation({ ...scan, security_rating: "A" }).kind, "grade");
+});
+
+test("withheld quadrant: Not measured, with the gap as the reason", () => {
+  const scan = { engines_degraded: [], security_rating: undefined, security_coverage: { ...n6cov("withheld"), gap: "neither claim certified" } };
+  const p = securityPresentation(scan);
+  assert.equal(p.kind, "not-measured");
+  if (p.kind === "not-measured") assert.equal(p.reason, "neither claim certified");
+});
+
+test("a degraded security engine wins over the quadrant", () => {
+  const scan = {
+    engines_degraded: [{ engine: "trivy", reason: "timed out" }],
+    security_rating: undefined,
+    security_coverage: n6cov("problem-only"),
+  };
+  const p = securityPresentation(scan as never);
+  assert.equal(p.kind, "not-measured");
+});
+
+test("pre-N6 coverage falls back to confident", () => {
+  assert.equal(securityQuadrant({ confident: true }), "full");
+  assert.equal(securityQuadrant({ confident: false }), "withheld");
+  assert.equal(securityQuadrant(null), "full");
+});

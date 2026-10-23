@@ -4,7 +4,7 @@
 // identically. A null rating/score/grade must NEVER read as blank, 0, "A", "-", or
 // a grey "fine" placeholder; a degraded scan must NEVER render as clean anywhere.
 
-import type { Scan, CoverageEvidence } from "./types";
+import type { Scan, CoverageEvidence, SecurityQuadrant } from "./types";
 
 // A value that may be "not measured". `measured=false` carries the mandatory
 // "Not measured" label so no caller can accidentally render null as blank/0/A.
@@ -124,10 +124,56 @@ export function notMeasuredReason(
   // N2: thin per-language coverage withholds the security score too, and it is not a
   // degraded engine — nothing malfunctioned, we simply cannot read most of this code.
   // Without this the pillar would read "Not measured" with no reason at all.
-  if (pillar === "security" && scan.security_coverage && !scan.security_coverage.confident) {
-    return scan.security_coverage.gap ?? coverageLabel(scan.security_coverage);
+  if (pillar === "security" && scan.security_coverage) {
+    const q = securityQuadrant(scan.security_coverage);
+    if (q === "problem-only") return scan.security_coverage.clean_label ?? "No issues found in what we check";
+    if (q === "clean-only") return scan.security_coverage.precision_caveat ?? null;
+    if (q === "withheld") return scan.security_coverage.gap ?? coverageLabel(scan.security_coverage);
   }
   return null;
+}
+
+// N6: the coverage quadrant, falling back to `confident` for pre-N6 scans (mirrors
+// the orchestrator's EffectiveQuadrant).
+export function securityQuadrant(
+  coverage?: Pick<Scan["security_coverage"] & object, "quadrant" | "confident"> | null,
+): SecurityQuadrant {
+  if (!coverage) return "full";
+  if (coverage.quadrant) return coverage.quadrant;
+  return coverage.confident ? "full" : "withheld";
+}
+
+// What the Security card shows (N6). Two claims, two gates: a CLEAN result needs
+// certified recall, a reported PROBLEM needs certified precision. The orchestrator has
+// already withheld whatever the certified claim cannot back; this names what stands in
+// its place, so a withheld favourable grade reads as a statement of what we checked,
+// and a withheld bad grade as a caveat on the findings -- never as a blank or an A.
+export type SecurityPresentation =
+  | { kind: "grade" }
+  | { kind: "clean-label"; headline: string; detail: string }
+  | { kind: "caveat"; headline: string; detail: string }
+  | { kind: "not-measured"; reason: string | null };
+
+export function securityPresentation(
+  scan: Pick<Scan, "engines_degraded" | "security_coverage" | "security_rating">,
+): SecurityPresentation {
+  if (scan.security_rating) return { kind: "grade" };
+  for (const d of scan.engines_degraded ?? []) {
+    if (PILLAR_ENGINES.security.includes(d.engine)) {
+      return { kind: "not-measured", reason: `${d.engine}: ${d.reason}` };
+    }
+  }
+  const cov = scan.security_coverage;
+  const q = securityQuadrant(cov);
+  if (q === "problem-only") {
+    const label = cov?.clean_label ?? "No issues found in what we check";
+    const [headline, ...rest] = label.split(" · ");
+    return { kind: "clean-label", headline, detail: rest.join(" · ") };
+  }
+  if (q === "clean-only") {
+    return { kind: "caveat", headline: "Findings shown, no grade", detail: cov?.precision_caveat ?? "" };
+  }
+  return { kind: "not-measured", reason: notMeasuredReason(scan, "security") };
 }
 
 // "Security coverage: PHP strong; Java limited" — what a customer is and is not

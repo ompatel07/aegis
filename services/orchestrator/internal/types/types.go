@@ -5,6 +5,8 @@
 // names match the scanner's JSON so unmarshaling is direct.
 package types
 
+import "encoding/json"
+
 // Severity levels (lowercase, matching the DB CHECK constraint).
 const (
 	SeverityCritical = "critical"
@@ -90,20 +92,20 @@ type SeveritySummary struct {
 
 // QualityMetrics holds the quality sub-scores + raw measurements.
 type QualityMetrics struct {
-	ComplexityScore       float64 `json:"complexity_score"`
-	DuplicationScore      float64 `json:"duplication_score"`
-	MaintainabilityScore  float64 `json:"maintainability_score"`
+	ComplexityScore      float64 `json:"complexity_score"`
+	DuplicationScore     float64 `json:"duplication_score"`
+	MaintainabilityScore float64 `json:"maintainability_score"`
 	// nil = coverage not measured (no report shipped); excluded from the composite
 	// quality score rather than counted as 0. A pointer so JSON null round-trips.
 	TestCoverageScore     *float64 `json:"test_coverage_score"`
 	DocumentationScore    float64  `json:"documentation_score"`
-	AvgCyclomatic         float64 `json:"avg_cyclomatic_complexity"`
-	MaxCyclomatic         int     `json:"max_cyclomatic_complexity"`
-	DuplicatedLinePercent float64 `json:"duplicated_line_percentage"`
-	CommentDensity        float64 `json:"comment_density"`
-	TotalFunctions        int     `json:"total_functions"`
-	TotalCodeLines        int     `json:"total_code_lines"`
-	HasTests              bool    `json:"has_tests"`
+	AvgCyclomatic         float64  `json:"avg_cyclomatic_complexity"`
+	MaxCyclomatic         int      `json:"max_cyclomatic_complexity"`
+	DuplicatedLinePercent float64  `json:"duplicated_line_percentage"`
+	CommentDensity        float64  `json:"comment_density"`
+	TotalFunctions        int      `json:"total_functions"`
+	TotalCodeLines        int      `json:"total_code_lines"`
+	HasTests              bool     `json:"has_tests"`
 }
 
 // DeploymentStep is one stage of the deployment check.
@@ -176,16 +178,56 @@ type EngineResult struct {
 // degraded engine (P4b/C1); thin coverage is a known limit, not a malfunction, so it
 // does not claim an engine failed.
 type SecurityCoverage struct {
-	TotalCodeLines    int                 `json:"total_code_lines"`
-	StrongFraction    float64             `json:"strong_fraction"`
-	LimitedFraction   float64             `json:"limited_fraction"`
-	UncoveredFraction float64             `json:"uncovered_fraction"`
-	Confident         bool                `json:"confident"`
-	Threshold         float64             `json:"threshold"`
-	Languages         []LanguageCoverage  `json:"languages"`
-	Summary           string              `json:"summary"`
-	Gap               string              `json:"gap"`
-	AlwaysOn          []string            `json:"always_on"`
+	TotalCodeLines    int                `json:"total_code_lines"`
+	StrongFraction    float64            `json:"strong_fraction"`
+	LimitedFraction   float64            `json:"limited_fraction"`
+	UncoveredFraction float64            `json:"uncovered_fraction"`
+	Confident         bool               `json:"confident"`
+	Threshold         float64            `json:"threshold"`
+	Languages         []LanguageCoverage `json:"languages"`
+	Summary           string             `json:"summary"`
+	Gap               string             `json:"gap"`
+	AlwaysOn          []string           `json:"always_on"`
+	// N6: two claims, two gates. CleanClaim: the repository's code is mostly in
+	// languages whose RECALL is certified (a clean result may be shown). ProblemClaim:
+	// mostly in languages whose PRECISION is certified (reported issues are trusted).
+	// Quadrant is full | problem-only | clean-only | withheld. Empty on pre-N6 scans,
+	// which fall back to Confident (full or withheld).
+	RecallFraction    float64 `json:"recall_fraction"`
+	PrecisionFraction float64 `json:"precision_fraction"`
+	CleanClaim        bool    `json:"clean_claim"`
+	ProblemClaim      bool    `json:"problem_claim"`
+	Quadrant          string  `json:"quadrant"`
+	// CleanLabel replaces a favourable grade the recall cannot certify:
+	// "No issues found in what we check · PHP 42% held-out recall".
+	CleanLabel string `json:"clean_label"`
+	// PrecisionCaveat travels with findings whose precision is not certified.
+	PrecisionCaveat string `json:"precision_caveat"`
+}
+
+// Coverage quadrants (scanner utils/tier_bar.py).
+const (
+	QuadrantFull     = "full"
+	QuadrantProblem  = "problem-only"
+	QuadrantClean    = "clean-only"
+	QuadrantWithheld = "withheld"
+)
+
+// EffectiveQuadrant is the coverage's quadrant, falling back to Confident for scans
+// from scanners that predate N6. A nil coverage (no application code) is full: there
+// is nothing our rules failed to read.
+func (c *SecurityCoverage) EffectiveQuadrant() string {
+	if c == nil {
+		return QuadrantFull
+	}
+	switch c.Quadrant {
+	case QuadrantFull, QuadrantProblem, QuadrantClean, QuadrantWithheld:
+		return c.Quadrant
+	}
+	if c.Confident {
+		return QuadrantFull
+	}
+	return QuadrantWithheld
 }
 
 // LanguageCoverage is one language's share of the repository and how well we cover it.
@@ -196,6 +238,10 @@ type LanguageCoverage struct {
 	Share      float64 `json:"share"`
 	Rules      int     `json:"rules"`
 	CWEClasses int     `json:"cwe_classes"`
+	// The measured evidence behind the tier (N5). Carried through untouched: before
+	// N6 this struct had no field for it, so the orchestrator dropped it and the web's
+	// per-language evidence never reached a real scan.
+	Evidence json.RawMessage `json:"evidence,omitempty"`
 }
 
 // LifecycleEvidence records which detectors actually ran on a scan, so lifecycle

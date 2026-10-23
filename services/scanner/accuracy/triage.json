@@ -6007,7 +6007,8 @@
 "line": 71,
 "rule": "aegis-cicd-workflow-script-injection",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6017,7 +6018,8 @@
 "line": 105,
 "rule": "aegis-cicd-workflow-script-injection",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6027,7 +6029,8 @@
 "line": 181,
 "rule": "aegis-php-sql-injection",
 "verdict": "FP",
-"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it"
+"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6037,7 +6040,8 @@
 "line": 195,
 "rule": "aegis-php-sql-injection",
 "verdict": "FP",
-"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it"
+"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6047,7 +6051,8 @@
 "line": 155,
 "rule": "aegis-php-sql-injection",
 "verdict": "FP",
-"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it"
+"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6057,7 +6062,8 @@
 "line": 193,
 "rule": "aegis-php-sql-injection",
 "verdict": "FP",
-"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it"
+"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6067,7 +6073,8 @@
 "line": 279,
 "rule": "aegis-php-sql-injection",
 "verdict": "FP",
-"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it"
+"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6077,7 +6084,8 @@
 "line": 552,
 "rule": "aegis-php-weak-cipher",
 "verdict": "TP",
-"why": "DES / RC4 / ECB"
+"why": "DES / RC4 / ECB",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6087,7 +6095,8 @@
 "line": 471,
 "rule": "aegis-php-weak-cipher",
 "verdict": "TP",
-"why": "DES / RC4 / ECB"
+"why": "DES / RC4 / ECB",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6097,7 +6106,8 @@
 "line": 162,
 "rule": "aegis-php-sql-injection",
 "verdict": "FP",
-"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it"
+"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6107,7 +6117,8 @@
 "line": 373,
 "rule": "aegis-php-sql-injection",
 "verdict": "FP",
-"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it"
+"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6117,7 +6128,8 @@
 "line": 408,
 "rule": "aegis-php-sql-injection",
 "verdict": "FP",
-"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it"
+"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6127,7 +6139,8 @@
 "line": 530,
 "rule": "aegis-php-sql-injection",
 "verdict": "FP",
-"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it"
+"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6137,7 +6150,8 @@
 "line": 549,
 "rule": "aegis-php-sql-injection",
 "verdict": "FP",
-"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it"
+"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6147,7 +6161,8 @@
 "line": 590,
 "rule": "aegis-php-sql-injection",
 "verdict": "FP",
-"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it"
+"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6157,7 +6172,8 @@
 "line": 637,
 "rule": "aegis-php-sql-injection",
 "verdict": "FP",
-"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it"
+"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6167,7 +6183,8 @@
 "line": 1014,
 "rule": "aegis-php-sql-injection",
 "verdict": "FP",
-"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it"
+"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6177,7 +6194,8 @@
 "line": 1080,
 "rule": "aegis-php-sql-injection",
 "verdict": "FP",
-"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it"
+"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6187,7 +6205,8 @@
 "line": 1277,
 "rule": "aegis-php-sql-injection",
 "verdict": "FP",
-"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it"
+"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6197,7 +6216,8 @@
 "line": 1702,
 "rule": "aegis-php-sql-injection",
 "verdict": "FP",
-"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it"
+"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6207,7 +6227,8 @@
 "line": 304,
 "rule": "aegis-php-sql-injection",
 "verdict": "FP",
-"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it"
+"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6217,7 +6238,8 @@
 "line": 308,
 "rule": "aegis-php-sql-injection",
 "verdict": "FP",
-"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it"
+"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6227,7 +6249,8 @@
 "line": 324,
 "rule": "aegis-php-sql-injection",
 "verdict": "FP",
-"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it"
+"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6237,7 +6260,8 @@
 "line": 894,
 "rule": "aegis-php-sql-injection",
 "verdict": "FP",
-"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it"
+"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6247,7 +6271,8 @@
 "line": 1252,
 "rule": "aegis-php-sql-injection",
 "verdict": "FP",
-"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it"
+"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6257,7 +6282,8 @@
 "line": 195,
 "rule": "aegis-php-sql-injection",
 "verdict": "FP",
-"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it"
+"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6267,7 +6293,8 @@
 "line": 1064,
 "rule": "aegis-php-xss",
 "verdict": "TP",
-"why": "HTTP_REFERER printed unescaped into an attribute"
+"why": "HTTP_REFERER printed unescaped into an attribute",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6277,7 +6304,8 @@
 "line": 1388,
 "rule": "aegis-php-xss",
 "verdict": "TP",
-"why": "HTTP_REFERER printed unescaped into an attribute"
+"why": "HTTP_REFERER printed unescaped into an attribute",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6287,7 +6315,8 @@
 "line": 1642,
 "rule": "ajinabraham.njsscan.xss.xss_dom.dom_xss",
 "verdict": "FP",
-"why": "N2b"
+"why": "N2b",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6297,7 +6326,8 @@
 "line": 565,
 "rule": "aegis-php-xss",
 "verdict": "TP",
-"why": "REQUEST_URI-derived $currenturi printed unencoded"
+"why": "REQUEST_URI-derived $currenturi printed unencoded",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6307,7 +6337,8 @@
 "line": 89,
 "rule": "aegis-php-xss",
 "verdict": "FP",
-"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it; or a translated / configured string"
+"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it; or a translated / configured string",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6317,7 +6348,8 @@
 "line": 179,
 "rule": "aegis-php-xss",
 "verdict": "FP",
-"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it; or a translated / configured string"
+"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it; or a translated / configured string",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6327,7 +6359,8 @@
 "line": 125,
 "rule": "aegis-php-xss",
 "verdict": "FP",
-"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it; or a translated / configured string"
+"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it; or a translated / configured string",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6337,7 +6370,8 @@
 "line": 301,
 "rule": "aegis-php-xss",
 "verdict": "FP",
-"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it; or a translated / configured string"
+"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it; or a translated / configured string",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6347,7 +6381,8 @@
 "line": 1,
 "rule": "ajinabraham.njsscan.xss.xss_dom.dom_xss",
 "verdict": "FP",
-"why": "vendored minified highlight.js"
+"why": "vendored minified highlight.js",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6357,7 +6392,8 @@
 "line": 1,
 "rule": "ajinabraham.njsscan.xss.xss_dom.dom_xss",
 "verdict": "FP",
-"why": "vendored minified highlight.js"
+"why": "vendored minified highlight.js",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6367,7 +6403,8 @@
 "line": 666,
 "rule": "aegis-php-xss",
 "verdict": "TP",
-"why": "REQUEST_URI printed unencoded in the installer"
+"why": "REQUEST_URI printed unencoded in the installer",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6377,7 +6414,8 @@
 "line": 426,
 "rule": "aegis-php-xss",
 "verdict": "FP",
-"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it; or a translated / configured string"
+"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it; or a translated / configured string",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6387,7 +6425,8 @@
 "line": 427,
 "rule": "aegis-php-xss",
 "verdict": "FP",
-"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it; or a translated / configured string"
+"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it; or a translated / configured string",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6397,7 +6436,8 @@
 "line": 532,
 "rule": "aegis-php-xss",
 "verdict": "FP",
-"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it; or a translated / configured string"
+"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it; or a translated / configured string",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6407,7 +6447,8 @@
 "line": 561,
 "rule": "aegis-php-xss",
 "verdict": "FP",
-"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it; or a translated / configured string"
+"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it; or a translated / configured string",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6417,7 +6458,8 @@
 "line": 562,
 "rule": "aegis-php-xss",
 "verdict": "FP",
-"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it; or a translated / configured string"
+"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it; or a translated / configured string",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6427,7 +6469,8 @@
 "line": 935,
 "rule": "aegis-php-xss",
 "verdict": "FP",
-"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it; or a translated / configured string"
+"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it; or a translated / configured string",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6437,7 +6480,8 @@
 "line": 936,
 "rule": "aegis-php-xss",
 "verdict": "FP",
-"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it; or a translated / configured string"
+"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it; or a translated / configured string",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6447,7 +6491,8 @@
 "line": 1378,
 "rule": "aegis-php-xss",
 "verdict": "FP",
-"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it; or a translated / configured string"
+"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it; or a translated / configured string",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6457,7 +6502,8 @@
 "line": 1413,
 "rule": "aegis-php-xss",
 "verdict": "FP",
-"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it; or a translated / configured string"
+"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it; or a translated / configured string",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6467,7 +6513,8 @@
 "line": 1775,
 "rule": "aegis-php-xss",
 "verdict": "FP",
-"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it; or a translated / configured string"
+"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it; or a translated / configured string",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6477,7 +6524,8 @@
 "line": 1777,
 "rule": "aegis-php-xss",
 "verdict": "FP",
-"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it; or a translated / configured string"
+"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it; or a translated / configured string",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6487,7 +6535,8 @@
 "line": 1779,
 "rule": "aegis-php-xss",
 "verdict": "FP",
-"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it; or a translated / configured string"
+"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it; or a translated / configured string",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6497,7 +6546,8 @@
 "line": 1782,
 "rule": "aegis-php-xss",
 "verdict": "FP",
-"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it; or a translated / configured string"
+"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it; or a translated / configured string",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6507,7 +6557,8 @@
 "line": 1789,
 "rule": "aegis-php-xss",
 "verdict": "FP",
-"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it; or a translated / configured string"
+"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it; or a translated / configured string",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6517,7 +6568,8 @@
 "line": 282,
 "rule": "aegis-php-xss",
 "verdict": "FP",
-"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it; or a translated / configured string"
+"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it; or a translated / configured string",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6527,7 +6579,8 @@
 "line": 285,
 "rule": "aegis-php-xss",
 "verdict": "FP",
-"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it; or a translated / configured string"
+"why": "values pass through the project's escaper (DoliDB::escape, dol_escape_js) or an int cast; the rule does not model it; or a translated / configured string",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6537,7 +6590,8 @@
 "line": 60,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6547,7 +6601,8 @@
 "line": 46,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6557,7 +6612,8 @@
 "line": 105,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6567,7 +6623,8 @@
 "line": 198,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6577,7 +6634,8 @@
 "line": 19,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6587,7 +6645,8 @@
 "line": 38,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6597,7 +6656,8 @@
 "line": 60,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6607,7 +6667,8 @@
 "line": 19,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6617,7 +6678,8 @@
 "line": 49,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6627,7 +6689,8 @@
 "line": 47,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6637,7 +6700,8 @@
 "line": 105,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6647,7 +6711,8 @@
 "line": 173,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6657,7 +6722,8 @@
 "line": 134,
 "rule": "aegis-php-weak-hash-credential",
 "verdict": "TP",
-"why": "md5()/sha1() over a password-family value"
+"why": "md5()/sha1() over a password-family value",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6667,7 +6733,8 @@
 "line": 138,
 "rule": "aegis-php-weak-hash-credential",
 "verdict": "TP",
-"why": "md5()/sha1() over a password-family value"
+"why": "md5()/sha1() over a password-family value",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6677,7 +6744,8 @@
 "line": 140,
 "rule": "aegis-php-weak-hash-credential",
 "verdict": "TP",
-"why": "md5()/sha1() over a password-family value"
+"why": "md5()/sha1() over a password-family value",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6687,7 +6755,8 @@
 "line": 142,
 "rule": "aegis-php-weak-hash-credential",
 "verdict": "TP",
-"why": "md5()/sha1() over a password-family value"
+"why": "md5()/sha1() over a password-family value",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6697,7 +6766,8 @@
 "line": 223,
 "rule": "aegis-php-weak-random-secret",
 "verdict": "TP",
-"why": "mt_rand/uniqid builds a value that must be unguessable"
+"why": "mt_rand/uniqid builds a value that must be unguessable",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6707,7 +6777,8 @@
 "line": 1,
 "rule": "aegis-js-redos-nested-quantifier",
 "verdict": "UNCERTAIN",
-"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified"
+"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6717,7 +6788,8 @@
 "line": 1,
 "rule": "aegis-js-redos-nested-quantifier",
 "verdict": "UNCERTAIN",
-"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified"
+"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6727,7 +6799,8 @@
 "line": 1,
 "rule": "aegis-js-redos-nested-quantifier",
 "verdict": "UNCERTAIN",
-"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified"
+"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6737,7 +6810,8 @@
 "line": 1,
 "rule": "aegis-js-redos-nested-quantifier",
 "verdict": "UNCERTAIN",
-"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified"
+"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6747,7 +6821,8 @@
 "line": 1,
 "rule": "aegis-js-redos-nested-quantifier",
 "verdict": "UNCERTAIN",
-"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified"
+"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6757,7 +6832,8 @@
 "line": 1,
 "rule": "aegis-js-redos-nested-quantifier",
 "verdict": "UNCERTAIN",
-"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified"
+"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6767,7 +6843,8 @@
 "line": 1,
 "rule": "aegis-js-redos-nested-quantifier",
 "verdict": "UNCERTAIN",
-"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified"
+"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6777,7 +6854,8 @@
 "line": 1,
 "rule": "aegis-js-redos-nested-quantifier",
 "verdict": "UNCERTAIN",
-"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified"
+"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6787,7 +6865,8 @@
 "line": 1,
 "rule": "aegis-js-redos-nested-quantifier",
 "verdict": "UNCERTAIN",
-"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified"
+"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6797,7 +6876,8 @@
 "line": 1,
 "rule": "aegis-js-redos-nested-quantifier",
 "verdict": "UNCERTAIN",
-"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified"
+"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6807,7 +6887,8 @@
 "line": 1,
 "rule": "aegis-js-redos-nested-quantifier",
 "verdict": "UNCERTAIN",
-"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified"
+"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6817,7 +6898,8 @@
 "line": 1,
 "rule": "aegis-js-redos-nested-quantifier",
 "verdict": "UNCERTAIN",
-"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified"
+"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6827,7 +6909,8 @@
 "line": 1,
 "rule": "aegis-js-redos-nested-quantifier",
 "verdict": "UNCERTAIN",
-"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified"
+"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6837,7 +6920,8 @@
 "line": 1,
 "rule": "aegis-js-redos-nested-quantifier",
 "verdict": "UNCERTAIN",
-"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified"
+"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6847,7 +6931,8 @@
 "line": 1,
 "rule": "aegis-js-redos-nested-quantifier",
 "verdict": "UNCERTAIN",
-"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified"
+"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6857,7 +6942,8 @@
 "line": 1,
 "rule": "aegis-js-redos-nested-quantifier",
 "verdict": "UNCERTAIN",
-"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified"
+"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6867,7 +6953,8 @@
 "line": 1,
 "rule": "aegis-js-redos-nested-quantifier",
 "verdict": "UNCERTAIN",
-"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified"
+"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6877,7 +6964,8 @@
 "line": 1,
 "rule": "aegis-js-redos-nested-quantifier",
 "verdict": "UNCERTAIN",
-"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified"
+"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6887,7 +6975,8 @@
 "line": 1,
 "rule": "aegis-js-redos-nested-quantifier",
 "verdict": "UNCERTAIN",
-"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified"
+"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6897,7 +6986,8 @@
 "line": 1,
 "rule": "aegis-js-redos-nested-quantifier",
 "verdict": "UNCERTAIN",
-"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified"
+"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6907,7 +6997,8 @@
 "line": 1,
 "rule": "aegis-js-redos-nested-quantifier",
 "verdict": "UNCERTAIN",
-"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified"
+"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified",
+"role": "held_out"
 },
 {
 "corpus": "Dolibarr__dolibarr",
@@ -6917,7 +7008,8 @@
 "line": 24,
 "rule": "aegis-js-redos-nested-quantifier",
 "verdict": "FP",
-"why": "not catastrophic: each repetition needs a separator, so matching is linear"
+"why": "not catastrophic: each repetition needs a separator, so matching is linear",
+"role": "held_out"
 },
 {
 "corpus": "FreshRSS__FreshRSS",
@@ -6927,7 +7019,8 @@
 "line": 29,
 "rule": "aegis-php-path-traversal",
 "verdict": "FP",
-"why": "the key is validated (hex format) or the path is built from a hash / MIME map"
+"why": "the key is validated (hex format) or the path is built from a hash / MIME map",
+"role": "tuning"
 },
 {
 "corpus": "FreshRSS__FreshRSS",
@@ -6937,7 +7030,8 @@
 "line": 43,
 "rule": "aegis-php-path-traversal",
 "verdict": "FP",
-"why": "the key is validated (hex format) or the path is built from a hash / MIME map"
+"why": "the key is validated (hex format) or the path is built from a hash / MIME map",
+"role": "tuning"
 },
 {
 "corpus": "FreshRSS__FreshRSS",
@@ -6947,7 +7041,8 @@
 "line": 46,
 "rule": "aegis-php-path-traversal",
 "verdict": "FP",
-"why": "the key is validated (hex format) or the path is built from a hash / MIME map"
+"why": "the key is validated (hex format) or the path is built from a hash / MIME map",
+"role": "tuning"
 },
 {
 "corpus": "FreshRSS__FreshRSS",
@@ -6957,7 +7052,8 @@
 "line": 61,
 "rule": "aegis-php-path-traversal",
 "verdict": "FP",
-"why": "the key is validated (hex format) or the path is built from a hash / MIME map"
+"why": "the key is validated (hex format) or the path is built from a hash / MIME map",
+"role": "tuning"
 },
 {
 "corpus": "FreshRSS__FreshRSS",
@@ -6967,7 +7063,8 @@
 "line": 116,
 "rule": "aegis-php-path-traversal",
 "verdict": "FP",
-"why": "the key is validated (hex format) or the path is built from a hash / MIME map"
+"why": "the key is validated (hex format) or the path is built from a hash / MIME map",
+"role": "tuning"
 },
 {
 "corpus": "FreshRSS__FreshRSS",
@@ -6977,7 +7074,8 @@
 "line": 49,
 "rule": "aegis-php-path-traversal",
 "verdict": "FP",
-"why": "the key is validated (hex format) or the path is built from a hash / MIME map"
+"why": "the key is validated (hex format) or the path is built from a hash / MIME map",
+"role": "tuning"
 },
 {
 "corpus": "FreshRSS__FreshRSS",
@@ -6987,7 +7085,8 @@
 "line": 80,
 "rule": "aegis-php-path-traversal",
 "verdict": "FP",
-"why": "the key is validated (hex format) or the path is built from a hash / MIME map"
+"why": "the key is validated (hex format) or the path is built from a hash / MIME map",
+"role": "tuning"
 },
 {
 "corpus": "FreshRSS__FreshRSS",
@@ -6997,7 +7096,8 @@
 "line": 26,
 "rule": "ajinabraham.njsscan.xss.xss_dom.dom_xss",
 "verdict": "FP",
-"why": "FreshRSS integration.js: share template built from its own DOM"
+"why": "FreshRSS integration.js: share template built from its own DOM",
+"role": "tuning"
 },
 {
 "corpus": "FreshRSS__FreshRSS",
@@ -7007,7 +7107,8 @@
 "line": 2378,
 "rule": "ajinabraham.njsscan.xss.xss_dom.dom_xss",
 "verdict": "FP",
-"why": "N2b"
+"why": "N2b",
+"role": "tuning"
 },
 {
 "corpus": "FreshRSS__FreshRSS",
@@ -7017,7 +7118,8 @@
 "line": 48,
 "rule": "aegis-php-weak-hash-credential",
 "verdict": "TP",
-"why": "md5()/sha1() over a password-family value"
+"why": "md5()/sha1() over a password-family value",
+"role": "tuning"
 },
 {
 "corpus": "FreshRSS__FreshRSS",
@@ -7027,7 +7129,8 @@
 "line": 12,
 "rule": "aegis-js-weak-random-secret",
 "verdict": "TP",
-"why": "Math.random() salt fallback (FreshRSS poormanSalt; N2b TP #4)"
+"why": "Math.random() salt fallback (FreshRSS poormanSalt; N2b TP #4)",
+"role": "tuning"
 },
 {
 "corpus": "chatwoot__chatwoot",
@@ -7037,7 +7140,8 @@
 "line": 24,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "chatwoot__chatwoot",
@@ -7047,7 +7151,8 @@
 "line": 28,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "chatwoot__chatwoot",
@@ -7057,7 +7162,8 @@
 "line": 21,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "chatwoot__chatwoot",
@@ -7067,7 +7173,8 @@
 "line": 24,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "chatwoot__chatwoot",
@@ -7077,7 +7184,8 @@
 "line": 18,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "chatwoot__chatwoot",
@@ -7087,7 +7195,8 @@
 "line": 28,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "chatwoot__chatwoot",
@@ -7097,7 +7206,8 @@
 "line": 46,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "chatwoot__chatwoot",
@@ -7107,7 +7217,8 @@
 "line": 61,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "chatwoot__chatwoot",
@@ -7117,7 +7228,8 @@
 "line": 104,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "chatwoot__chatwoot",
@@ -7127,7 +7239,8 @@
 "line": 109,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "chatwoot__chatwoot",
@@ -7137,7 +7250,8 @@
 "line": 52,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "chatwoot__chatwoot",
@@ -7147,7 +7261,8 @@
 "line": 26,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "chatwoot__chatwoot",
@@ -7157,7 +7272,8 @@
 "line": 30,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "chatwoot__chatwoot",
@@ -7167,7 +7283,8 @@
 "line": 129,
 "rule": "aegis-js-redos-nested-quantifier",
 "verdict": "FP",
-"why": "not catastrophic: each repetition needs a separator, so matching is linear"
+"why": "not catastrophic: each repetition needs a separator, so matching is linear",
+"role": "tuning"
 },
 {
 "corpus": "chatwoot__chatwoot",
@@ -7177,7 +7294,8 @@
 "line": 85,
 "rule": "aegis-js-redos-nested-quantifier",
 "verdict": "FP",
-"why": "not catastrophic: each repetition needs a separator, so matching is linear"
+"why": "not catastrophic: each repetition needs a separator, so matching is linear",
+"role": "tuning"
 },
 {
 "corpus": "cmp-ansible",
@@ -7187,7 +7305,8 @@
 "line": 199,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "developer tooling run by an operator with its own arguments; no attacker input"
+"why": "developer tooling run by an operator with its own arguments; no attacker input",
+"role": "tuning"
 },
 {
 "corpus": "cmp-ansible",
@@ -7197,7 +7316,8 @@
 "line": 200,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "developer tooling run by an operator with its own arguments; no attacker input"
+"why": "developer tooling run by an operator with its own arguments; no attacker input",
+"role": "tuning"
 },
 {
 "corpus": "cmp-ansible",
@@ -7207,7 +7327,8 @@
 "line": 209,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "developer tooling run by an operator with its own arguments; no attacker input"
+"why": "developer tooling run by an operator with its own arguments; no attacker input",
+"role": "tuning"
 },
 {
 "corpus": "cmp-ansible",
@@ -7217,7 +7338,8 @@
 "line": 199,
 "rule": "aegis-py-shell-command-construction",
 "verdict": "FP",
-"why": "developer tooling run by an operator with its own arguments; no attacker input"
+"why": "developer tooling run by an operator with its own arguments; no attacker input",
+"role": "tuning"
 },
 {
 "corpus": "cmp-ansible",
@@ -7227,7 +7349,8 @@
 "line": 245,
 "rule": "aegis-py-shell-command-construction",
 "verdict": "FP",
-"why": "developer tooling run by an operator with its own arguments; no attacker input"
+"why": "developer tooling run by an operator with its own arguments; no attacker input",
+"role": "tuning"
 },
 {
 "corpus": "cmp-ansible",
@@ -7237,7 +7360,8 @@
 "line": 280,
 "rule": "aegis-py-shell-command-construction",
 "verdict": "FP",
-"why": "developer tooling run by an operator with its own arguments; no attacker input"
+"why": "developer tooling run by an operator with its own arguments; no attacker input",
+"role": "tuning"
 },
 {
 "corpus": "cmp-ansible",
@@ -7247,7 +7371,8 @@
 "line": 282,
 "rule": "aegis-py-shell-command-construction",
 "verdict": "FP",
-"why": "developer tooling run by an operator with its own arguments; no attacker input"
+"why": "developer tooling run by an operator with its own arguments; no attacker input",
+"role": "tuning"
 },
 {
 "corpus": "cmp-cobra",
@@ -7257,7 +7382,8 @@
 "line": 50,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-cobra",
@@ -7267,7 +7393,8 @@
 "line": 107,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-consul",
@@ -7277,7 +7404,8 @@
 "line": 55,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "cmp-consul",
@@ -7287,7 +7415,8 @@
 "line": 38,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "cmp-consul",
@@ -7297,7 +7426,8 @@
 "line": 76,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "cmp-consul",
@@ -7307,7 +7437,8 @@
 "line": 166,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "cmp-consul",
@@ -7317,7 +7448,8 @@
 "line": 293,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "cmp-consul",
@@ -7327,7 +7459,8 @@
 "line": 330,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "cmp-consul",
@@ -7337,7 +7470,8 @@
 "line": 128,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "cmp-consul",
@@ -7347,7 +7481,8 @@
 "line": 196,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "cmp-consul",
@@ -7357,7 +7492,8 @@
 "line": 333,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "cmp-consul",
@@ -7367,7 +7503,8 @@
 "line": 424,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "cmp-consul",
@@ -7377,7 +7514,8 @@
 "line": 173,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "cmp-consul",
@@ -7387,7 +7525,8 @@
 "line": 309,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "cmp-consul",
@@ -7397,7 +7536,8 @@
 "line": 398,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "cmp-consul",
@@ -7407,7 +7547,8 @@
 "line": 159,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "cmp-consul",
@@ -7417,7 +7558,8 @@
 "line": 124,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "cmp-consul",
@@ -7427,7 +7569,8 @@
 "line": 138,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "cmp-consul",
@@ -7437,7 +7580,8 @@
 "line": 226,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "cmp-consul",
@@ -7447,7 +7591,8 @@
 "line": 391,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "cmp-consul",
@@ -7457,7 +7602,8 @@
 "line": 598,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -7467,7 +7613,8 @@
 "line": 665,
 "rule": "aegis-py-weak-hash-credential",
 "verdict": "TP",
-"why": "Django's legacy salted-MD5 password hasher: md5 of a password"
+"why": "Django's legacy salted-MD5 password hasher: md5 of a password",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -7477,7 +7624,8 @@
 "line": 17,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -7487,7 +7635,8 @@
 "line": 73,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -7497,7 +7646,8 @@
 "line": 86,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -7507,7 +7657,8 @@
 "line": 341,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -7517,7 +7668,8 @@
 "line": 161,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -7527,7 +7679,8 @@
 "line": 70,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -7537,7 +7690,8 @@
 "line": 77,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -7547,7 +7701,8 @@
 "line": 103,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -7557,7 +7712,8 @@
 "line": 150,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -7567,7 +7723,8 @@
 "line": 162,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -7577,7 +7734,8 @@
 "line": 175,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -7587,7 +7745,8 @@
 "line": 186,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -7597,7 +7756,8 @@
 "line": 30,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -7607,7 +7767,8 @@
 "line": 52,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -7617,7 +7778,8 @@
 "line": 204,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -7627,7 +7789,8 @@
 "line": 215,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -7637,7 +7800,8 @@
 "line": 303,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -7647,7 +7811,8 @@
 "line": 326,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -7657,7 +7822,8 @@
 "line": 76,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -7667,7 +7833,8 @@
 "line": 136,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -7677,7 +7844,8 @@
 "line": 151,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -7687,7 +7855,8 @@
 "line": 177,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -7697,7 +7866,8 @@
 "line": 185,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -7707,7 +7877,8 @@
 "line": 196,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -7717,7 +7888,8 @@
 "line": 233,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -7727,7 +7899,8 @@
 "line": 254,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -7737,7 +7910,8 @@
 "line": 272,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -7747,7 +7921,8 @@
 "line": 284,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -7757,7 +7932,8 @@
 "line": 289,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -7767,7 +7943,8 @@
 "line": 302,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -7777,7 +7954,8 @@
 "line": 215,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -7787,7 +7965,8 @@
 "line": 253,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -7797,7 +7976,8 @@
 "line": 353,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -7807,7 +7987,8 @@
 "line": 560,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -7817,7 +7998,8 @@
 "line": 720,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -7827,7 +8009,8 @@
 "line": 742,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -7837,7 +8020,8 @@
 "line": 752,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -7847,7 +8031,8 @@
 "line": 1217,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -7857,7 +8042,8 @@
 "line": 1232,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -7867,7 +8053,8 @@
 "line": 1244,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -7877,7 +8064,8 @@
 "line": 1304,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -7887,7 +8075,8 @@
 "line": 340,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -7897,7 +8086,8 @@
 "line": 55,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -7907,7 +8097,8 @@
 "line": 160,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -7917,7 +8108,8 @@
 "line": 350,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -7927,7 +8119,8 @@
 "line": 94,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -7937,7 +8130,8 @@
 "line": 324,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -7947,7 +8141,8 @@
 "line": 338,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -7957,7 +8152,8 @@
 "line": 179,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -7967,7 +8163,8 @@
 "line": 354,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -7977,7 +8174,8 @@
 "line": 55,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -7987,7 +8185,8 @@
 "line": 146,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -7997,7 +8196,8 @@
 "line": 233,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -8007,7 +8207,8 @@
 "line": 83,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -8017,7 +8218,8 @@
 "line": 120,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -8027,7 +8229,8 @@
 "line": 209,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -8037,7 +8240,8 @@
 "line": 276,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -8047,7 +8251,8 @@
 "line": 288,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -8057,7 +8262,8 @@
 "line": 295,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -8067,7 +8273,8 @@
 "line": 331,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -8077,7 +8284,8 @@
 "line": 92,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -8087,7 +8295,8 @@
 "line": 159,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -8097,7 +8306,8 @@
 "line": 181,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -8107,7 +8317,8 @@
 "line": 347,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -8117,7 +8328,8 @@
 "line": 369,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -8127,7 +8339,8 @@
 "line": 257,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -8137,7 +8350,8 @@
 "line": 290,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -8147,7 +8361,8 @@
 "line": 456,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -8157,7 +8372,8 @@
 "line": 649,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -8167,7 +8383,8 @@
 "line": 2001,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -8177,7 +8394,8 @@
 "line": 2253,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input (Django's own backends quote names with quote_name())",
+"role": "tuning"
 },
 {
 "corpus": "cmp-django",
@@ -8187,7 +8405,8 @@
 "line": 71,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "cmp-gin",
@@ -8197,7 +8416,8 @@
 "line": 27,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "cmp-gin",
@@ -8207,7 +8427,8 @@
 "line": 81,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "cmp-gin",
@@ -8217,7 +8438,8 @@
 "line": 24,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "cmp-gin",
@@ -8227,7 +8449,8 @@
 "line": 30,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "cmp-gin",
@@ -8237,7 +8460,8 @@
 "line": 47,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "cmp-kafka",
@@ -8247,7 +8471,8 @@
 "line": 50,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "a shell command passed to a function named execute(); not SQL"
+"why": "a shell command passed to a function named execute(); not SQL",
+"role": "tuning"
 },
 {
 "corpus": "cmp-kafka",
@@ -8257,7 +8482,8 @@
 "line": 51,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "a shell command passed to a function named execute(); not SQL"
+"why": "a shell command passed to a function named execute(); not SQL",
+"role": "tuning"
 },
 {
 "corpus": "cmp-kafka",
@@ -8267,7 +8493,8 @@
 "line": 52,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "a shell command passed to a function named execute(); not SQL"
+"why": "a shell command passed to a function named execute(); not SQL",
+"role": "tuning"
 },
 {
 "corpus": "cmp-kafka",
@@ -8277,7 +8504,8 @@
 "line": 64,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "a shell command passed to a function named execute(); not SQL"
+"why": "a shell command passed to a function named execute(); not SQL",
+"role": "tuning"
 },
 {
 "corpus": "cmp-kafka",
@@ -8287,7 +8515,8 @@
 "line": 103,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "a shell command passed to a function named execute(); not SQL"
+"why": "a shell command passed to a function named execute(); not SQL",
+"role": "tuning"
 },
 {
 "corpus": "cmp-kafka",
@@ -8297,7 +8526,8 @@
 "line": 113,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "a shell command passed to a function named execute(); not SQL"
+"why": "a shell command passed to a function named execute(); not SQL",
+"role": "tuning"
 },
 {
 "corpus": "cmp-kafka",
@@ -8307,7 +8537,8 @@
 "line": 34,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "a shell command passed to a function named execute(); not SQL"
+"why": "a shell command passed to a function named execute(); not SQL",
+"role": "tuning"
 },
 {
 "corpus": "cmp-kafka",
@@ -8317,7 +8548,8 @@
 "line": 56,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "a shell command passed to a function named execute(); not SQL"
+"why": "a shell command passed to a function named execute(); not SQL",
+"role": "tuning"
 },
 {
 "corpus": "cmp-kafka",
@@ -8327,7 +8559,8 @@
 "line": 63,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "a shell command passed to a function named execute(); not SQL"
+"why": "a shell command passed to a function named execute(); not SQL",
+"role": "tuning"
 },
 {
 "corpus": "cmp-kafka",
@@ -8337,7 +8570,8 @@
 "line": 90,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "a shell command passed to a function named execute(); not SQL"
+"why": "a shell command passed to a function named execute(); not SQL",
+"role": "tuning"
 },
 {
 "corpus": "cmp-nest",
@@ -8347,7 +8581,8 @@
 "line": 30,
 "rule": "ajinabraham.njsscan.xss.xss_node.express_xss",
 "verdict": "FP",
-"why": "framework internals: an error message written by the streaming helper"
+"why": "framework internals: an error message written by the streaming helper",
+"role": "held_out"
 },
 {
 "corpus": "cmp-nest",
@@ -8357,7 +8592,8 @@
 "line": 364,
 "rule": "ajinabraham.njsscan.headers.header_injection.generic_header_injection",
 "verdict": "FP",
-"why": "a DI provider token, not an HTTP header"
+"why": "a DI provider token, not an HTTP header",
+"role": "held_out"
 },
 {
 "corpus": "cmp-netty",
@@ -8367,7 +8603,8 @@
 "line": 63,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-netty",
@@ -8377,7 +8614,8 @@
 "line": 56,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-netty",
@@ -8387,7 +8625,8 @@
 "line": 65,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-netty",
@@ -8397,7 +8636,8 @@
 "line": 84,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-netty",
@@ -8407,7 +8647,8 @@
 "line": 89,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-netty",
@@ -8417,7 +8658,8 @@
 "line": 92,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-netty",
@@ -8427,7 +8669,8 @@
 "line": 97,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-netty",
@@ -8437,7 +8680,8 @@
 "line": 163,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-netty",
@@ -8447,7 +8691,8 @@
 "line": 80,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-nextauth",
@@ -8457,7 +8702,8 @@
 "line": 91,
 "rule": "ajinabraham.njsscan.headers.header_injection.generic_header_injection",
 "verdict": "FP",
-"why": "framework adapter copying a Response's own status and headers"
+"why": "framework adapter copying a Response's own status and headers",
+"role": "tuning"
 },
 {
 "corpus": "cmp-nextauth",
@@ -8467,7 +8713,8 @@
 "line": 95,
 "rule": "ajinabraham.njsscan.xss.xss_node.express_xss",
 "verdict": "FP",
-"why": "framework adapter writing a Response body it was handed"
+"why": "framework adapter writing a Response body it was handed",
+"role": "tuning"
 },
 {
 "corpus": "cmp-nextauth",
@@ -8477,7 +8724,8 @@
 "line": 19,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "cmp-nextauth",
@@ -8487,7 +8735,8 @@
 "line": 70,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "cmp-nextauth",
@@ -8497,7 +8746,8 @@
 "line": 129,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "cmp-nextauth",
@@ -8507,7 +8757,8 @@
 "line": 150,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "cmp-nextauth",
@@ -8517,7 +8768,8 @@
 "line": 175,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "cmp-nextauth",
@@ -8527,7 +8779,8 @@
 "line": 196,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "cmp-nextauth",
@@ -8537,7 +8790,8 @@
 "line": 214,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "cmp-nextauth",
@@ -8547,7 +8801,8 @@
 "line": 14,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "cmp-nextauth",
@@ -8557,7 +8812,8 @@
 "line": 19,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "cmp-prisma",
@@ -8567,7 +8823,8 @@
 "line": 548,
 "rule": "aegis-js-sql-injection",
 "verdict": "FP",
-"why": "Prisma Studio's local query console executes queries by design"
+"why": "Prisma Studio's local query console executes queries by design",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -8577,7 +8834,8 @@
 "line": 17,
 "rule": "ajinabraham.njsscan.database.sql_injection.node_sqli_injection",
 "verdict": "FP",
-"why": "an integration-test fixture's setup SQL"
+"why": "an integration-test fixture's setup SQL",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -8587,7 +8845,8 @@
 "line": 7,
 "rule": "ajinabraham.njsscan.xss.xss_node.express_xss",
 "verdict": "FP",
-"why": "a CLI writing to a stream, not an HTTP response"
+"why": "a CLI writing to a stream, not an HTTP response",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -8597,7 +8856,8 @@
 "line": 22,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -8607,7 +8867,8 @@
 "line": 21,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -8617,7 +8878,8 @@
 "line": 69,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -8627,7 +8889,8 @@
 "line": 84,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -8637,7 +8900,8 @@
 "line": 75,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -8647,7 +8911,8 @@
 "line": 96,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -8657,7 +8922,8 @@
 "line": 123,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -8667,7 +8933,8 @@
 "line": 39,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -8677,7 +8944,8 @@
 "line": 11,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -8687,7 +8955,8 @@
 "line": 10,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -8697,7 +8966,8 @@
 "line": 14,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -8707,7 +8977,8 @@
 "line": 164,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -8717,7 +8988,8 @@
 "line": 182,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -8727,7 +8999,8 @@
 "line": 123,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -8737,7 +9010,8 @@
 "line": 149,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -8747,7 +9021,8 @@
 "line": 175,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -8757,7 +9032,8 @@
 "line": 201,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -8767,7 +9043,8 @@
 "line": 243,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -8777,7 +9054,8 @@
 "line": 269,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -8787,7 +9065,8 @@
 "line": 310,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -8797,7 +9076,8 @@
 "line": 336,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -8807,7 +9087,8 @@
 "line": 365,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -8817,7 +9098,8 @@
 "line": 391,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -8827,7 +9109,8 @@
 "line": 426,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -8837,7 +9120,8 @@
 "line": 477,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -8847,7 +9131,8 @@
 "line": 514,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -8857,7 +9142,8 @@
 "line": 639,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -8867,7 +9153,8 @@
 "line": 675,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -8877,7 +9164,8 @@
 "line": 713,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -8887,7 +9175,8 @@
 "line": 751,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -8897,7 +9186,8 @@
 "line": 1055,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -8907,7 +9197,8 @@
 "line": 1276,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -8917,7 +9208,8 @@
 "line": 51,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -8927,7 +9219,8 @@
 "line": 68,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -8937,7 +9230,8 @@
 "line": 92,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -8947,7 +9241,8 @@
 "line": 110,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -8957,7 +9252,8 @@
 "line": 117,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -8967,7 +9263,8 @@
 "line": 134,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -8977,7 +9274,8 @@
 "line": 32,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -8987,7 +9285,8 @@
 "line": 65,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -8997,7 +9296,8 @@
 "line": 74,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -9007,7 +9307,8 @@
 "line": 83,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -9017,7 +9318,8 @@
 "line": 92,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -9027,7 +9329,8 @@
 "line": 115,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -9037,7 +9340,8 @@
 "line": 149,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -9047,7 +9351,8 @@
 "line": 163,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -9057,7 +9362,8 @@
 "line": 207,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -9067,7 +9373,8 @@
 "line": 18,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -9077,7 +9384,8 @@
 "line": 41,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -9087,7 +9395,8 @@
 "line": 72,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -9097,7 +9406,8 @@
 "line": 57,
 "rule": "aegis-js-redos-nested-quantifier",
 "verdict": "FP",
-"why": "not catastrophic: each repetition needs a separator, so matching is linear"
+"why": "not catastrophic: each repetition needs a separator, so matching is linear",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -9107,7 +9417,8 @@
 "line": 5983,
 "rule": "ajinabraham.njsscan.crypto.crypto_node.node_sha1",
 "verdict": "FP",
-"why": "a test computing a buffer checksum"
+"why": "a test computing a buffer checksum",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -9117,7 +9428,8 @@
 "line": 5984,
 "rule": "ajinabraham.njsscan.crypto.crypto_node.node_sha1",
 "verdict": "FP",
-"why": "a test computing a buffer checksum"
+"why": "a test computing a buffer checksum",
+"role": "held_out"
 },
 {
 "corpus": "cmp-prisma",
@@ -9127,7 +9439,8 @@
 "line": 676,
 "rule": "aegis-js-redos-nested-quantifier",
 "verdict": "FP",
-"why": "not catastrophic: each repetition needs a separator, so matching is linear"
+"why": "not catastrophic: each repetition needs a separator, so matching is linear",
+"role": "held_out"
 },
 {
 "corpus": "cmp-react",
@@ -9137,7 +9450,8 @@
 "line": 72,
 "rule": "ajinabraham.njsscan.headers.header_injection.generic_header_injection",
 "verdict": "FP",
-"why": "Map.set in the compiler, not an HTTP header"
+"why": "Map.set in the compiler, not an HTTP header",
+"role": "tuning"
 },
 {
 "corpus": "cmp-react",
@@ -9147,7 +9461,8 @@
 "line": 363,
 "rule": "ajinabraham.njsscan.headers.header_injection.generic_header_injection",
 "verdict": "FP",
-"why": "Map.set in the compiler, not an HTTP header"
+"why": "Map.set in the compiler, not an HTTP header",
+"role": "tuning"
 },
 {
 "corpus": "cmp-react",
@@ -9157,7 +9472,8 @@
 "line": 387,
 "rule": "ajinabraham.njsscan.headers.header_injection.generic_header_injection",
 "verdict": "FP",
-"why": "Map.set in the compiler, not an HTTP header"
+"why": "Map.set in the compiler, not an HTTP header",
+"role": "tuning"
 },
 {
 "corpus": "cmp-react",
@@ -9167,7 +9483,8 @@
 "line": 403,
 "rule": "ajinabraham.njsscan.headers.header_injection.generic_header_injection",
 "verdict": "FP",
-"why": "Map.set in the compiler, not an HTTP header"
+"why": "Map.set in the compiler, not an HTTP header",
+"role": "tuning"
 },
 {
 "corpus": "cmp-react",
@@ -9177,7 +9494,8 @@
 "line": 52,
 "rule": "ajinabraham.njsscan.headers.header_injection.generic_header_injection",
 "verdict": "FP",
-"why": "Map.set in the compiler, not an HTTP header"
+"why": "Map.set in the compiler, not an HTTP header",
+"role": "tuning"
 },
 {
 "corpus": "cmp-react",
@@ -9187,7 +9505,8 @@
 "line": 332,
 "rule": "ajinabraham.njsscan.headers.header_injection.generic_header_injection",
 "verdict": "FP",
-"why": "Map.set in the compiler, not an HTTP header"
+"why": "Map.set in the compiler, not an HTTP header",
+"role": "tuning"
 },
 {
 "corpus": "cmp-react",
@@ -9197,7 +9516,8 @@
 "line": 50,
 "rule": "ajinabraham.njsscan.traversal.path_traversal.generic_path_traversal",
 "verdict": "TP",
-"why": "a dev fixture server reads join(dir, request.url): traversal as written"
+"why": "a dev fixture server reads join(dir, request.url): traversal as written",
+"role": "tuning"
 },
 {
 "corpus": "cmp-react",
@@ -9207,7 +9527,8 @@
 "line": 127,
 "rule": "ajinabraham.njsscan.xss.xss_node.express_xss",
 "verdict": "FP",
-"why": "a JSON response (Content-type: application/json)"
+"why": "a JSON response (Content-type: application/json)",
+"role": "tuning"
 },
 {
 "corpus": "cmp-react",
@@ -9217,7 +9538,8 @@
 "line": 192,
 "rule": "aegis-js-xss",
 "verdict": "FP",
-"why": "JSON.stringify of a source map written as JSON"
+"why": "JSON.stringify of a source map written as JSON",
+"role": "tuning"
 },
 {
 "corpus": "cmp-react",
@@ -9227,7 +9549,8 @@
 "line": 281,
 "rule": "ajinabraham.njsscan.xss.xss_node.express_xss",
 "verdict": "FP",
-"why": "a JSON response (Content-type: application/json)"
+"why": "a JSON response (Content-type: application/json)",
+"role": "tuning"
 },
 {
 "corpus": "cmp-react",
@@ -9237,7 +9560,8 @@
 "line": 346,
 "rule": "aegis-js-xss",
 "verdict": "FP",
-"why": "JSON.stringify of a source map written as JSON"
+"why": "JSON.stringify of a source map written as JSON",
+"role": "tuning"
 },
 {
 "corpus": "cmp-react",
@@ -9247,7 +9571,8 @@
 "line": 1932,
 "rule": "ajinabraham.njsscan.headers.header_injection.generic_header_injection",
 "verdict": "FP",
-"why": "Map.set in the compiler, not an HTTP header"
+"why": "Map.set in the compiler, not an HTTP header",
+"role": "tuning"
 },
 {
 "corpus": "cmp-react",
@@ -9257,7 +9582,8 @@
 "line": 28,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "cmp-react",
@@ -9267,7 +9593,8 @@
 "line": 32,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "cmp-react",
@@ -9277,7 +9604,8 @@
 "line": 16,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "cmp-react",
@@ -9287,7 +9615,8 @@
 "line": 33,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "cmp-react",
@@ -9297,7 +9626,8 @@
 "line": 28,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "cmp-react",
@@ -9307,7 +9637,8 @@
 "line": 30,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "cmp-react",
@@ -9317,7 +9648,8 @@
 "line": 29,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "cmp-react",
@@ -9327,7 +9659,8 @@
 "line": 765,
 "rule": "aegis-js-redos-nested-quantifier",
 "verdict": "FP",
-"why": "not catastrophic: each repetition needs a separator, so matching is linear"
+"why": "not catastrophic: each repetition needs a separator, so matching is linear",
+"role": "tuning"
 },
 {
 "corpus": "cmp-react",
@@ -9337,7 +9670,8 @@
 "line": 51,
 "rule": "ajinabraham.njsscan.traversal.resolve_path_traversal.join_resolve_path_traversal",
 "verdict": "TP",
-"why": "a dev / bench server reads join(dir, request.url): traversal as written"
+"why": "a dev / bench server reads join(dir, request.url): traversal as written",
+"role": "tuning"
 },
 {
 "corpus": "cmp-react",
@@ -9347,7 +9681,8 @@
 "line": 32,
 "rule": "ajinabraham.njsscan.crypto.crypto_node.node_md5",
 "verdict": "FP",
-"why": "a cache / content hash, not a security use"
+"why": "a cache / content hash, not a security use",
+"role": "tuning"
 },
 {
 "corpus": "cmp-react",
@@ -9357,7 +9692,8 @@
 "line": 328,
 "rule": "ajinabraham.njsscan.crypto.crypto_node.node_sha1",
 "verdict": "FP",
-"why": "a cache / content hash, not a security use"
+"why": "a cache / content hash, not a security use",
+"role": "tuning"
 },
 {
 "corpus": "cmp-react",
@@ -9367,7 +9703,8 @@
 "line": 240,
 "rule": "ajinabraham.njsscan.crypto.crypto_node.node_md5",
 "verdict": "FP",
-"why": "a cache / content hash, not a security use"
+"why": "a cache / content hash, not a security use",
+"role": "tuning"
 },
 {
 "corpus": "cmp-react",
@@ -9377,7 +9714,8 @@
 "line": 20,
 "rule": "ajinabraham.njsscan.traversal.resolve_path_traversal.join_resolve_path_traversal",
 "verdict": "TP",
-"why": "a dev / bench server reads join(dir, request.url): traversal as written"
+"why": "a dev / bench server reads join(dir, request.url): traversal as written",
+"role": "tuning"
 },
 {
 "corpus": "cmp-react",
@@ -9387,7 +9725,8 @@
 "line": 20,
 "rule": "ajinabraham.njsscan.traversal.resolve_path_traversal.join_resolve_path_traversal",
 "verdict": "TP",
-"why": "a dev / bench server reads join(dir, request.url): traversal as written"
+"why": "a dev / bench server reads join(dir, request.url): traversal as written",
+"role": "tuning"
 },
 {
 "corpus": "cmp-spring",
@@ -9397,7 +9736,8 @@
 "line": 21,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-spring",
@@ -9407,7 +9747,8 @@
 "line": 29,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-terraform",
@@ -9417,7 +9758,8 @@
 "line": 108,
 "rule": "aegis-go-ssrf",
 "verdict": "FP",
-"why": "a test mock browser following its own test server's redirects"
+"why": "a test mock browser following its own test server's redirects",
+"role": "tuning"
 },
 {
 "corpus": "cmp-vault",
@@ -9427,7 +9769,8 @@
 "line": 197,
 "rule": "aegis-go-weak-cipher",
 "verdict": "TP",
-"why": "DES/3DES in vault's PKCS#7 (DES-CBC is that library's default content cipher)"
+"why": "DES/3DES in vault's PKCS#7 (DES-CBC is that library's default content cipher)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-vault",
@@ -9437,7 +9780,8 @@
 "line": 199,
 "rule": "aegis-go-weak-cipher",
 "verdict": "TP",
-"why": "DES/3DES in vault's PKCS#7 (DES-CBC is that library's default content cipher)"
+"why": "DES/3DES in vault's PKCS#7 (DES-CBC is that library's default content cipher)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-vault",
@@ -9447,7 +9791,8 @@
 "line": 188,
 "rule": "aegis-go-weak-cipher",
 "verdict": "TP",
-"why": "DES/3DES in vault's PKCS#7 (DES-CBC is that library's default content cipher)"
+"why": "DES/3DES in vault's PKCS#7 (DES-CBC is that library's default content cipher)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-vault",
@@ -9457,7 +9802,8 @@
 "line": 193,
 "rule": "aegis-go-weak-cipher",
 "verdict": "TP",
-"why": "DES/3DES in vault's PKCS#7 (DES-CBC is that library's default content cipher)"
+"why": "DES/3DES in vault's PKCS#7 (DES-CBC is that library's default content cipher)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-vault",
@@ -9467,7 +9813,8 @@
 "line": 192,
 "rule": "aegis-go-xss",
 "verdict": "FP",
-"why": "websocket messages written to the CLI's stdout, not an HTTP response"
+"why": "websocket messages written to the CLI's stdout, not an HTTP response",
+"role": "held_out"
 },
 {
 "corpus": "cmp-vault",
@@ -9477,7 +9824,8 @@
 "line": 40,
 "rule": "aegis-js-ssrf",
 "verdict": "FP",
-"why": "a service worker re-issuing the page's own same-origin request"
+"why": "a service worker re-issuing the page's own same-origin request",
+"role": "held_out"
 },
 {
 "corpus": "cmp-vault",
@@ -9487,7 +9835,8 @@
 "line": 124,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-vault",
@@ -9497,7 +9846,8 @@
 "line": 137,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-vault",
@@ -9507,7 +9857,8 @@
 "line": 25,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "cmp-vault",
@@ -9517,7 +9868,8 @@
 "line": 108,
 "rule": "aegis-js-redos-nested-quantifier",
 "verdict": "FP",
-"why": "not catastrophic: each repetition needs a separator, so matching is linear"
+"why": "not catastrophic: each repetition needs a separator, so matching is linear",
+"role": "held_out"
 },
 {
 "corpus": "cmp-vault",
@@ -9527,7 +9879,8 @@
 "line": 42,
 "rule": "aegis-js-nosql-injection",
 "verdict": "FP",
-"why": "Mirage, the UI test suite's in-memory mock server"
+"why": "Mirage, the UI test suite's in-memory mock server",
+"role": "held_out"
 },
 {
 "corpus": "cmp-vault",
@@ -9537,7 +9890,8 @@
 "line": 29,
 "rule": "aegis-js-nosql-injection",
 "verdict": "FP",
-"why": "Mirage, the UI test suite's in-memory mock server"
+"why": "Mirage, the UI test suite's in-memory mock server",
+"role": "held_out"
 },
 {
 "corpus": "cmp-vault",
@@ -9547,7 +9901,8 @@
 "line": 33,
 "rule": "aegis-js-nosql-injection",
 "verdict": "FP",
-"why": "Mirage, the UI test suite's in-memory mock server"
+"why": "Mirage, the UI test suite's in-memory mock server",
+"role": "held_out"
 },
 {
 "corpus": "cmp-vault",
@@ -9557,7 +9912,8 @@
 "line": 26,
 "rule": "aegis-js-nosql-injection",
 "verdict": "FP",
-"why": "Mirage, the UI test suite's in-memory mock server"
+"why": "Mirage, the UI test suite's in-memory mock server",
+"role": "held_out"
 },
 {
 "corpus": "cmp-vault",
@@ -9567,7 +9923,8 @@
 "line": 115,
 "rule": "aegis-js-nosql-injection",
 "verdict": "FP",
-"why": "Mirage, the UI test suite's in-memory mock server"
+"why": "Mirage, the UI test suite's in-memory mock server",
+"role": "held_out"
 },
 {
 "corpus": "cmp-vault",
@@ -9577,7 +9934,8 @@
 "line": 205,
 "rule": "aegis-js-nosql-injection",
 "verdict": "FP",
-"why": "Mirage, the UI test suite's in-memory mock server"
+"why": "Mirage, the UI test suite's in-memory mock server",
+"role": "held_out"
 },
 {
 "corpus": "cmp-vault",
@@ -9587,7 +9945,8 @@
 "line": 261,
 "rule": "aegis-js-nosql-injection",
 "verdict": "FP",
-"why": "Mirage, the UI test suite's in-memory mock server"
+"why": "Mirage, the UI test suite's in-memory mock server",
+"role": "held_out"
 },
 {
 "corpus": "cmp-vault",
@@ -9597,7 +9956,8 @@
 "line": 268,
 "rule": "aegis-js-nosql-injection",
 "verdict": "FP",
-"why": "Mirage, the UI test suite's in-memory mock server"
+"why": "Mirage, the UI test suite's in-memory mock server",
+"role": "held_out"
 },
 {
 "corpus": "getredash__redash",
@@ -9607,7 +9967,8 @@
 "line": 73,
 "rule": "aegis-py-tls-verification-disabled",
 "verdict": "TP",
-"why": "release upload with TLS verification switched off"
+"why": "release upload with TLS verification switched off",
+"role": "held_out"
 },
 {
 "corpus": "getredash__redash",
@@ -9617,7 +9978,8 @@
 "line": 43,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input",
+"role": "held_out"
 },
 {
 "corpus": "getredash__redash",
@@ -9627,7 +9989,8 @@
 "line": 89,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input",
+"role": "held_out"
 },
 {
 "corpus": "getredash__redash",
@@ -9637,7 +10000,8 @@
 "line": 98,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input",
+"role": "held_out"
 },
 {
 "corpus": "getredash__redash",
@@ -9647,7 +10011,8 @@
 "line": 90,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input",
+"role": "held_out"
 },
 {
 "corpus": "getredash__redash",
@@ -9657,7 +10022,8 @@
 "line": 91,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input",
+"role": "held_out"
 },
 {
 "corpus": "getredash__redash",
@@ -9667,7 +10033,8 @@
 "line": 95,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input",
+"role": "held_out"
 },
 {
 "corpus": "getredash__redash",
@@ -9677,7 +10044,8 @@
 "line": 96,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input",
+"role": "held_out"
 },
 {
 "corpus": "getredash__redash",
@@ -9687,7 +10055,8 @@
 "line": 126,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input",
+"role": "held_out"
 },
 {
 "corpus": "getredash__redash",
@@ -9697,7 +10066,8 @@
 "line": 134,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input",
+"role": "held_out"
 },
 {
 "corpus": "getredash__redash",
@@ -9707,7 +10077,8 @@
 "line": 152,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input",
+"role": "held_out"
 },
 {
 "corpus": "getredash__redash",
@@ -9717,7 +10088,8 @@
 "line": 153,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input",
+"role": "held_out"
 },
 {
 "corpus": "getredash__redash",
@@ -9727,7 +10099,8 @@
 "line": 170,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input",
+"role": "held_out"
 },
 {
 "corpus": "getredash__redash",
@@ -9737,7 +10110,8 @@
 "line": 88,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "getredash__redash",
@@ -9747,7 +10121,8 @@
 "line": 116,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "getredash__redash",
@@ -9757,7 +10132,8 @@
 "line": 150,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "getredash__redash",
@@ -9767,7 +10143,8 @@
 "line": 68,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "getredash__redash",
@@ -9777,7 +10154,8 @@
 "line": 18,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "getredash__redash",
@@ -9787,7 +10165,8 @@
 "line": 20,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "getredash__redash",
@@ -9797,7 +10176,8 @@
 "line": 28,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "jellyfin__jellyfin",
@@ -9807,7 +10187,8 @@
 "line": 21,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "librenms__librenms",
@@ -9817,7 +10198,8 @@
 "line": 639,
 "rule": "aegis-py-shell-command-construction",
 "verdict": "FP",
-"why": "the command string is built internally from the poller's own job list"
+"why": "the command string is built internally from the poller's own job list",
+"role": "held_out"
 },
 {
 "corpus": "librenms__librenms",
@@ -9827,7 +10209,8 @@
 "line": 433,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input",
+"role": "held_out"
 },
 {
 "corpus": "librenms__librenms",
@@ -9837,7 +10220,8 @@
 "line": 453,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input",
+"role": "held_out"
 },
 {
 "corpus": "librenms__librenms",
@@ -9847,7 +10231,8 @@
 "line": 476,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input",
+"role": "held_out"
 },
 {
 "corpus": "librenms__librenms",
@@ -9857,7 +10242,8 @@
 "line": 572,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input",
+"role": "held_out"
 },
 {
 "corpus": "librenms__librenms",
@@ -9867,7 +10253,8 @@
 "line": 577,
 "rule": "aegis-py-sql-string-construction",
 "verdict": "FP",
-"why": "SQL text built from internal identifiers or administrator configuration, no request input"
+"why": "SQL text built from internal identifiers or administrator configuration, no request input",
+"role": "held_out"
 },
 {
 "corpus": "librenms__librenms",
@@ -9877,7 +10264,8 @@
 "line": 253,
 "rule": "aegis-php-xss",
 "verdict": "FP",
-"why": "server data printed (a query result or configuration), not request data; or numbers (pagination) and URL-helper output"
+"why": "server data printed (a query result or configuration), not request data; or numbers (pagination) and URL-helper output",
+"role": "held_out"
 },
 {
 "corpus": "librenms__librenms",
@@ -9887,7 +10275,8 @@
 "line": 260,
 "rule": "aegis-php-xss",
 "verdict": "FP",
-"why": "server data printed (a query result or configuration), not request data; or numbers (pagination) and URL-helper output"
+"why": "server data printed (a query result or configuration), not request data; or numbers (pagination) and URL-helper output",
+"role": "held_out"
 },
 {
 "corpus": "librenms__librenms",
@@ -9897,7 +10286,8 @@
 "line": 267,
 "rule": "aegis-php-xss",
 "verdict": "FP",
-"why": "server data printed (a query result or configuration), not request data; or numbers (pagination) and URL-helper output"
+"why": "server data printed (a query result or configuration), not request data; or numbers (pagination) and URL-helper output",
+"role": "held_out"
 },
 {
 "corpus": "librenms__librenms",
@@ -9907,7 +10297,8 @@
 "line": 157,
 "rule": "aegis-php-xss",
 "verdict": "FP",
-"why": "server data printed (a query result or configuration), not request data; or numbers (pagination) and URL-helper output"
+"why": "server data printed (a query result or configuration), not request data; or numbers (pagination) and URL-helper output",
+"role": "held_out"
 },
 {
 "corpus": "librenms__librenms",
@@ -9917,7 +10308,8 @@
 "line": 157,
 "rule": "aegis-php-xss",
 "verdict": "FP",
-"why": "server data printed (a query result or configuration), not request data; or numbers (pagination) and URL-helper output"
+"why": "server data printed (a query result or configuration), not request data; or numbers (pagination) and URL-helper output",
+"role": "held_out"
 },
 {
 "corpus": "librenms__librenms",
@@ -9927,7 +10319,8 @@
 "line": 168,
 "rule": "aegis-php-xss",
 "verdict": "FP",
-"why": "server data printed (a query result or configuration), not request data; or numbers (pagination) and URL-helper output"
+"why": "server data printed (a query result or configuration), not request data; or numbers (pagination) and URL-helper output",
+"role": "held_out"
 },
 {
 "corpus": "librenms__librenms",
@@ -9937,7 +10330,8 @@
 "line": 487,
 "rule": "aegis-php-xss",
 "verdict": "FP",
-"why": "server data printed (a query result or configuration), not request data; or numbers (pagination) and URL-helper output"
+"why": "server data printed (a query result or configuration), not request data; or numbers (pagination) and URL-helper output",
+"role": "held_out"
 },
 {
 "corpus": "librenms__librenms",
@@ -9947,7 +10341,8 @@
 "line": 224,
 "rule": "ajinabraham.njsscan.xss.xss_dom.dom_xss",
 "verdict": "UNCERTAIN",
-"why": "librenms popup.js: data-popup-content attribute -> innerHTML"
+"why": "librenms popup.js: data-popup-content attribute -> innerHTML",
+"role": "held_out"
 },
 {
 "corpus": "librenms__librenms",
@@ -9957,7 +10352,8 @@
 "line": 55,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "librenms__librenms",
@@ -9967,7 +10363,8 @@
 "line": 61,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "librenms__librenms",
@@ -9977,7 +10374,8 @@
 "line": 21,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "librenms__librenms",
@@ -9987,7 +10385,8 @@
 "line": 68,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "librenms__librenms",
@@ -9997,7 +10396,8 @@
 "line": 181,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "librenms__librenms",
@@ -10007,7 +10407,8 @@
 "line": 192,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "librenms__librenms",
@@ -10017,7 +10418,8 @@
 "line": 85,
 "rule": "aegis-js-redos-nested-quantifier",
 "verdict": "FP",
-"why": "not catastrophic: each repetition needs a separator, so matching is linear"
+"why": "not catastrophic: each repetition needs a separator, so matching is linear",
+"role": "held_out"
 },
 {
 "corpus": "nilsteampassnet__TeamPass",
@@ -10027,7 +10429,8 @@
 "line": 281,
 "rule": "aegis-php-xss",
 "verdict": "TP",
-"why": "PHP_SELF (attacker-controllable path) printed into an attribute"
+"why": "PHP_SELF (attacker-controllable path) printed into an attribute",
+"role": "held_out"
 },
 {
 "corpus": "nilsteampassnet__TeamPass",
@@ -10037,7 +10440,8 @@
 "line": 553,
 "rule": "aegis-php-xss",
 "verdict": "TP",
-"why": "PHP_SELF (attacker-controllable path) printed into a link"
+"why": "PHP_SELF (attacker-controllable path) printed into a link",
+"role": "held_out"
 },
 {
 "corpus": "nilsteampassnet__TeamPass",
@@ -10047,7 +10451,8 @@
 "line": 181,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "nilsteampassnet__TeamPass",
@@ -10057,7 +10462,8 @@
 "line": 200,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "nilsteampassnet__TeamPass",
@@ -10067,7 +10473,8 @@
 "line": 60,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "nilsteampassnet__TeamPass",
@@ -10077,7 +10484,8 @@
 "line": 83,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "nilsteampassnet__TeamPass",
@@ -10087,7 +10495,8 @@
 "line": 123,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "nilsteampassnet__TeamPass",
@@ -10097,7 +10506,8 @@
 "line": 1040,
 "rule": "aegis-php-weak-hash-credential",
 "verdict": "TP",
-"why": "md5()/sha1() over a password-family value"
+"why": "md5()/sha1() over a password-family value",
+"role": "held_out"
 },
 {
 "corpus": "nilsteampassnet__TeamPass",
@@ -10107,7 +10517,8 @@
 "line": 1041,
 "rule": "aegis-php-weak-hash-credential",
 "verdict": "TP",
-"why": "md5()/sha1() over a password-family value"
+"why": "md5()/sha1() over a password-family value",
+"role": "held_out"
 },
 {
 "corpus": "nilsteampassnet__TeamPass",
@@ -10117,7 +10528,8 @@
 "line": 1213,
 "rule": "aegis-php-weak-hash-credential",
 "verdict": "TP",
-"why": "md5()/sha1() over a password-family value"
+"why": "md5()/sha1() over a password-family value",
+"role": "held_out"
 },
 {
 "corpus": "nilsteampassnet__TeamPass",
@@ -10127,7 +10539,8 @@
 "line": 1214,
 "rule": "aegis-php-weak-hash-credential",
 "verdict": "TP",
-"why": "md5()/sha1() over a password-family value"
+"why": "md5()/sha1() over a password-family value",
+"role": "held_out"
 },
 {
 "corpus": "nilsteampassnet__TeamPass",
@@ -10137,7 +10550,8 @@
 "line": 43,
 "rule": "aegis-php-insecure-session-cookie",
 "verdict": "TP",
-"why": "session cookie without Secure/HttpOnly"
+"why": "session cookie without Secure/HttpOnly",
+"role": "held_out"
 },
 {
 "corpus": "nilsteampassnet__TeamPass",
@@ -10147,7 +10561,8 @@
 "line": 1076,
 "rule": "aegis-js-redos-nested-quantifier",
 "verdict": "UNCERTAIN",
-"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified"
+"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified",
+"role": "held_out"
 },
 {
 "corpus": "nilsteampassnet__TeamPass",
@@ -10157,7 +10572,8 @@
 "line": 1085,
 "rule": "aegis-js-redos-nested-quantifier",
 "verdict": "UNCERTAIN",
-"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified"
+"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified",
+"role": "held_out"
 },
 {
 "corpus": "nilsteampassnet__TeamPass",
@@ -10167,7 +10583,8 @@
 "line": 1150,
 "rule": "aegis-js-redos-nested-quantifier",
 "verdict": "UNCERTAIN",
-"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified"
+"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified",
+"role": "held_out"
 },
 {
 "corpus": "nilsteampassnet__TeamPass",
@@ -10177,7 +10594,8 @@
 "line": 1185,
 "rule": "aegis-js-redos-nested-quantifier",
 "verdict": "UNCERTAIN",
-"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified"
+"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified",
+"role": "held_out"
 },
 {
 "corpus": "nilsteampassnet__TeamPass",
@@ -10187,7 +10605,8 @@
 "line": 1187,
 "rule": "aegis-js-redos-nested-quantifier",
 "verdict": "UNCERTAIN",
-"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified"
+"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified",
+"role": "held_out"
 },
 {
 "corpus": "nilsteampassnet__TeamPass",
@@ -10197,7 +10616,8 @@
 "line": 1191,
 "rule": "aegis-js-redos-nested-quantifier",
 "verdict": "UNCERTAIN",
-"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified"
+"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified",
+"role": "held_out"
 },
 {
 "corpus": "nilsteampassnet__TeamPass",
@@ -10207,7 +10627,8 @@
 "line": 1202,
 "rule": "aegis-js-redos-nested-quantifier",
 "verdict": "UNCERTAIN",
-"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified"
+"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified",
+"role": "held_out"
 },
 {
 "corpus": "nilsteampassnet__TeamPass",
@@ -10217,7 +10638,8 @@
 "line": 1204,
 "rule": "aegis-js-redos-nested-quantifier",
 "verdict": "UNCERTAIN",
-"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified"
+"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified",
+"role": "held_out"
 },
 {
 "corpus": "nilsteampassnet__TeamPass",
@@ -10227,7 +10649,8 @@
 "line": 1207,
 "rule": "aegis-js-redos-nested-quantifier",
 "verdict": "UNCERTAIN",
-"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified"
+"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified",
+"role": "held_out"
 },
 {
 "corpus": "nilsteampassnet__TeamPass",
@@ -10237,7 +10660,8 @@
 "line": 1208,
 "rule": "aegis-js-redos-nested-quantifier",
 "verdict": "UNCERTAIN",
-"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified"
+"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified",
+"role": "held_out"
 },
 {
 "corpus": "nilsteampassnet__TeamPass",
@@ -10247,7 +10671,8 @@
 "line": 1219,
 "rule": "aegis-js-redos-nested-quantifier",
 "verdict": "UNCERTAIN",
-"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified"
+"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified",
+"role": "held_out"
 },
 {
 "corpus": "nilsteampassnet__TeamPass",
@@ -10257,7 +10682,8 @@
 "line": 1222,
 "rule": "aegis-js-redos-nested-quantifier",
 "verdict": "UNCERTAIN",
-"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified"
+"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified",
+"role": "held_out"
 },
 {
 "corpus": "nilsteampassnet__TeamPass",
@@ -10267,7 +10693,8 @@
 "line": 1230,
 "rule": "aegis-js-redos-nested-quantifier",
 "verdict": "UNCERTAIN",
-"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified"
+"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified",
+"role": "held_out"
 },
 {
 "corpus": "nilsteampassnet__TeamPass",
@@ -10277,7 +10704,8 @@
 "line": 1235,
 "rule": "aegis-js-redos-nested-quantifier",
 "verdict": "UNCERTAIN",
-"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified"
+"why": "catastrophic or unreadable (minified) shape, but the input is the browser's own data; no attacker input identified",
+"role": "held_out"
 },
 {
 "corpus": "nocodb__nocodb",
@@ -10287,7 +10715,8 @@
 "line": 267,
 "rule": "ajinabraham.njsscan.redirect.open_redirect.express_open_redirect",
 "verdict": "TP",
-"why": "nocodb Noco.ts: redirect(req.path.slice(...)) -> '//evil.com' is protocol-relative"
+"why": "nocodb Noco.ts: redirect(req.path.slice(...)) -> '//evil.com' is protocol-relative",
+"role": "tuning"
 },
 {
 "corpus": "nocodb__nocodb",
@@ -10297,7 +10726,8 @@
 "line": 121,
 "rule": "ajinabraham.njsscan.redirect.open_redirect.express_open_redirect",
 "verdict": "FP",
-"why": "N2b"
+"why": "N2b",
+"role": "tuning"
 },
 {
 "corpus": "nocodb__nocodb",
@@ -10307,7 +10737,8 @@
 "line": 58,
 "rule": "ajinabraham.njsscan.xss.xss_templates.handlebars_noescape",
 "verdict": "FP",
-"why": "N2b"
+"why": "N2b",
+"role": "tuning"
 },
 {
 "corpus": "nocodb__nocodb",
@@ -10317,7 +10748,8 @@
 "line": 49,
 "rule": "ajinabraham.njsscan.redirect.open_redirect.express_open_redirect",
 "verdict": "FP",
-"why": "N2b"
+"why": "N2b",
+"role": "tuning"
 },
 {
 "corpus": "nocodb__nocodb",
@@ -10327,7 +10759,8 @@
 "line": 20,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "nocodb__nocodb",
@@ -10337,7 +10770,8 @@
 "line": 24,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "nocodb__nocodb",
@@ -10347,7 +10781,8 @@
 "line": 14,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "nocodb__nocodb",
@@ -10357,7 +10792,8 @@
 "line": 16,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "nocodb__nocodb",
@@ -10367,7 +10803,8 @@
 "line": 34,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "nocodb__nocodb",
@@ -10377,7 +10814,8 @@
 "line": 28,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "nocodb__nocodb",
@@ -10387,7 +10825,8 @@
 "line": 14,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "tuning"
 },
 {
 "corpus": "nocodb__nocodb",
@@ -10397,7 +10836,8 @@
 "line": 140,
 "rule": "aegis-js-redos-nested-quantifier",
 "verdict": "FP",
-"why": "not catastrophic: each repetition needs a separator, so matching is linear"
+"why": "not catastrophic: each repetition needs a separator, so matching is linear",
+"role": "tuning"
 },
 {
 "corpus": "nocodb__nocodb",
@@ -10407,7 +10847,8 @@
 "line": 732,
 "rule": "aegis-js-nosql-injection",
 "verdict": "FP",
-"why": "Array.prototype.find over an in-memory list, not a database query"
+"why": "Array.prototype.find over an in-memory list, not a database query",
+"role": "tuning"
 },
 {
 "corpus": "nocodb__nocodb",
@@ -10417,7 +10858,8 @@
 "line": 16,
 "rule": "ajinabraham.njsscan.crypto.crypto_node.node_md5",
 "verdict": "FP",
-"why": "nocodb socket.gateway getHash: md5 of a telemetry client id"
+"why": "nocodb socket.gateway getHash: md5 of a telemetry client id",
+"role": "tuning"
 },
 {
 "corpus": "nocodb__nocodb",
@@ -10427,7 +10869,8 @@
 "line": 1326,
 "rule": "aegis-js-nosql-injection",
 "verdict": "FP",
-"why": "Array.prototype.find over an in-memory list, not a database query"
+"why": "Array.prototype.find over an in-memory list, not a database query",
+"role": "tuning"
 },
 {
 "corpus": "nocodb__nocodb",
@@ -10437,7 +10880,8 @@
 "line": 35,
 "rule": "aegis-js-nosql-injection",
 "verdict": "FP",
-"why": "Array.prototype.find over an in-memory list, not a database query"
+"why": "Array.prototype.find over an in-memory list, not a database query",
+"role": "tuning"
 },
 {
 "corpus": "nocodb__nocodb",
@@ -10447,7 +10891,8 @@
 "line": 38,
 "rule": "aegis-js-redos-nested-quantifier",
 "verdict": "FP",
-"why": "not catastrophic: each repetition needs a separator, so matching is linear"
+"why": "not catastrophic: each repetition needs a separator, so matching is linear",
+"role": "tuning"
 },
 {
 "corpus": "nopSolutions__nopCommerce",
@@ -10457,7 +10902,8 @@
 "line": 335,
 "rule": "aegis-js-redos-nested-quantifier",
 "verdict": "FP",
-"why": "not catastrophic: each repetition needs a separator, so matching is linear"
+"why": "not catastrophic: each repetition needs a separator, so matching is linear",
+"role": "held_out"
 },
 {
 "corpus": "spring-petclinic",
@@ -10467,7 +10913,8 @@
 "line": 21,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
 },
 {
 "corpus": "spring-petclinic",
@@ -10477,6 +10924,1487 @@
 "line": 29,
 "rule": "aegis-cicd-action-unpinned-ref",
 "verdict": "TP",
-"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)"
+"why": "per rule semantics (unpinned action tag / 0.0.0.0 bind)",
+"role": "held_out"
+},
+{
+"corpus": "dvna",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "core/appHandler.js",
+"line": 11,
+"rule": "aegis-js-sql-injection",
+"verdict": "TP",
+"why": ""
+},
+{
+"corpus": "dvna",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "core/appHandler.js",
+"line": 39,
+"rule": "aegis-js-command-injection",
+"verdict": "TP",
+"why": ""
+},
+{
+"corpus": "dvna",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "core/appHandler.js",
+"line": 188,
+"rule": "ajinabraham.njsscan.redirect.open_redirect.express_open_redirect",
+"verdict": "TP",
+"why": ""
+},
+{
+"corpus": "dvna",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "core/appHandler.js",
+"line": 218,
+"rule": "ajinabraham.njsscan.eval.eval_deserialize.node_deserialize",
+"verdict": "TP",
+"why": ""
+},
+{
+"corpus": "dvna",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "core/appHandler.js",
+"line": 235,
+"rule": "ajinabraham.njsscan.xml.xxe_node.node_xxe",
+"verdict": "TP",
+"why": ""
+},
+{
+"corpus": "dvna",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "config/db.js",
+"line": 1,
+"rule": "ajinabraham.njsscan.database.sequelize_tls.sequelize_tls",
+"verdict": "UNCERTAIN",
+"why": "database connection without TLS: depends on deployment"
+},
+{
+"corpus": "dvna",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "core/appHandler.js",
+"line": 85,
+"rule": "aegis-js-nosql-injection",
+"verdict": "FP",
+"why": "Sequelize find with a request value: SQL ORM, values are bound"
+},
+{
+"corpus": "dvna",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "core/appHandler.js",
+"line": 107,
+"rule": "aegis-js-nosql-injection",
+"verdict": "FP",
+"why": "Sequelize find with a request value: SQL ORM, values are bound"
+},
+{
+"corpus": "dvna",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "core/appHandler.js",
+"line": 145,
+"rule": "aegis-js-nosql-injection",
+"verdict": "FP",
+"why": "Sequelize find with a request value: SQL ORM, values are bound"
+},
+{
+"corpus": "dvna",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "core/authHandler.js",
+"line": 21,
+"rule": "aegis-js-nosql-injection",
+"verdict": "FP",
+"why": "Sequelize find with a request value: SQL ORM, values are bound"
+},
+{
+"corpus": "dvna",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "core/authHandler.js",
+"line": 43,
+"rule": "aegis-js-nosql-injection",
+"verdict": "FP",
+"why": "Sequelize find with a request value: SQL ORM, values are bound"
+},
+{
+"corpus": "dvna",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "core/authHandler.js",
+"line": 72,
+"rule": "aegis-js-nosql-injection",
+"verdict": "FP",
+"why": "Sequelize find with a request value: SQL ORM, values are bound"
+},
+{
+"corpus": "dvna",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "routes/app.js",
+"line": 23,
+"rule": "ajinabraham.njsscan.traversal.express_hbs_lfr.express_lfr_warning",
+"verdict": "FP",
+"why": "res.render with a constant template; request data only in the locals"
+},
+{
+"corpus": "dvna",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "routes/app.js",
+"line": 37,
+"rule": "ajinabraham.njsscan.traversal.express_hbs_lfr.express_lfr_warning",
+"verdict": "FP",
+"why": "res.render with a constant template; request data only in the locals"
+},
+{
+"corpus": "dvna",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "server.js",
+"line": 23,
+"rule": "ajinabraham.njsscan.headers.header_cookie.cookie_session_no_samesite",
+"verdict": "TP",
+"why": "express-session without SameSite"
+},
+{
+"corpus": "dvna",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "server.js",
+"line": 23,
+"rule": "ajinabraham.njsscan.headers.header_cookie.cookie_session_no_secure",
+"verdict": "TP",
+"why": "express-session without Secure"
+},
+{
+"corpus": "dvna",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "server.js",
+"line": 23,
+"rule": "ajinabraham.njsscan.headers.header_cookie.cookie_session_default",
+"verdict": "TP",
+"why": "default session cookie name"
+},
+{
+"corpus": "vulnerable-node",
+"kind": "ground-truth",
+"language": "yaml",
+"file": ".github/workflows/ci.yml",
+"line": 49,
+"rule": "aegis-cicd-workflow-script-injection",
+"verdict": "UNTRIAGED",
+"why": ""
+},
+{
+"corpus": "vulnerable-node",
+"kind": "ground-truth",
+"language": "yaml",
+"file": ".github/workflows/ci.yml",
+"line": 55,
+"rule": "aegis-cicd-workflow-script-injection",
+"verdict": "UNTRIAGED",
+"why": ""
+},
+{
+"corpus": "vulnerable-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "routes/extras.js",
+"line": 33,
+"rule": "aegis-js-command-injection",
+"verdict": "TP",
+"why": ""
+},
+{
+"corpus": "vulnerable-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "sast/seeds/deserialization.js",
+"line": 21,
+"rule": "aegis-js-command-injection",
+"verdict": "TP",
+"why": ""
+},
+{
+"corpus": "vulnerable-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "sast/seeds/eval-code.js",
+"line": 16,
+"rule": "aegis-js-code-injection",
+"verdict": "TP",
+"why": ""
+},
+{
+"corpus": "vulnerable-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "db/init.js",
+"line": 12,
+"rule": "ajinabraham.njsscan.database.sql_injection.node_sqli_injection",
+"verdict": "FP",
+"why": "runs the bundled init.sql file"
+},
+{
+"corpus": "vulnerable-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "middleware/auth.js",
+"line": 8,
+"rule": "ajinabraham.njsscan.redirect.open_redirect.express_open_redirect",
+"verdict": "FP",
+"why": "redirects to the app's own /login with the URL encoded"
+},
+{
+"corpus": "vulnerable-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "model/db.js",
+"line": 114,
+"rule": "ajinabraham.njsscan.database.sql_injection.node_sqli_injection",
+"verdict": "TP",
+"why": "UPDATE column names taken from request body keys"
+},
+{
+"corpus": "vulnerable-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "routes/auth.js",
+"line": 34,
+"rule": "ajinabraham.njsscan.redirect.open_redirect.express_open_redirect",
+"verdict": "TP",
+"why": "documented VULN: redirect target from the request"
+},
+{
+"corpus": "vulnerable-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "routes/auth.js",
+"line": 38,
+"rule": "ajinabraham.njsscan.redirect.open_redirect.express_open_redirect",
+"verdict": "FP",
+"why": "redirects to the app's own /login with the value encoded"
+},
+{
+"corpus": "vulnerable-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "routes/extras.js",
+"line": 17,
+"rule": "aegis-js-path-traversal",
+"verdict": "TP",
+"why": ""
+},
+{
+"corpus": "vulnerable-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "routes/extras.js",
+"line": 32,
+"rule": "ajinabraham.njsscan.exec.exec_os_command.generic_os_command_exec",
+"verdict": "TP",
+"why": ""
+},
+{
+"corpus": "vulnerable-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "routes/progress.js",
+"line": 62,
+"rule": "ajinabraham.njsscan.traversal.path_traversal.generic_path_traversal",
+"verdict": "UNCERTAIN",
+"why": "lab-progress file read; validation not traced"
+},
+{
+"corpus": "vulnerable-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "routes/progress.js",
+"line": 67,
+"rule": "aegis-js-path-traversal",
+"verdict": "UNCERTAIN",
+"why": "lab-progress file read; validation not traced"
+},
+{
+"corpus": "vulnerable-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "routes/shop.js",
+"line": 84,
+"rule": "ajinabraham.njsscan.redirect.open_redirect.express_open_redirect",
+"verdict": "FP",
+"why": "redirects to the app's own /products/<id>"
+},
+{
+"corpus": "vulnerable-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "routes/tools.js",
+"line": 21,
+"rule": "aegis-js-ssrf",
+"verdict": "TP",
+"why": ""
+},
+{
+"corpus": "vulnerable-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "routes/tools.js",
+"line": 41,
+"rule": "ajinabraham.njsscan.dos.regex_injection.regex_injection_dos",
+"verdict": "TP",
+"why": ""
+},
+{
+"corpus": "vulnerable-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "sast/seeds/clean-escaped.js",
+"line": 14,
+"rule": "ajinabraham.njsscan.xss.xss_node.express_xss",
+"verdict": "FP",
+"why": "the 'clean' seed: escapeHtml applied"
+},
+{
+"corpus": "vulnerable-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "sast/seeds/clean-escaped.js",
+"line": 18,
+"rule": "ajinabraham.njsscan.redirect.open_redirect.express_open_redirect",
+"verdict": "FP",
+"why": "the 'clean' seed"
+},
+{
+"corpus": "vulnerable-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "sast/seeds/deserialization.js",
+"line": 11,
+"rule": "ajinabraham.njsscan.eval.eval_deserialize.node_deserialize",
+"verdict": "TP",
+"why": ""
+},
+{
+"corpus": "vulnerable-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "sast/seeds/deserialization.js",
+"line": 21,
+"rule": "ajinabraham.njsscan.exec.exec_os_command.generic_os_command_exec",
+"verdict": "TP",
+"why": ""
+},
+{
+"corpus": "vulnerable-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "sast/seeds/eval-code.js",
+"line": 16,
+"rule": "ajinabraham.njsscan.xss.xss_node.express_xss",
+"verdict": "FP",
+"why": "new Function, not an HTML response (code injection is the TP here)"
+},
+{
+"corpus": "vulnerable-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "sast/seeds/eval-code.js",
+"line": 16,
+"rule": "ajinabraham.njsscan.eval.eval_node.eval_nodejs",
+"verdict": "TP",
+"why": ""
+},
+{
+"corpus": "vulnerable-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "sast/seeds/eval-code.js",
+"line": 17,
+"rule": "aegis-js-xss",
+"verdict": "TP",
+"why": "the request value is reflected in the response"
+},
+{
+"corpus": "vulnerable-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "sast/seeds/hardcoded-secret.js",
+"line": 2,
+"rule": "ajinabraham.njsscan.jwt.jwt_hardcoded.hardcoded_jwt_secret",
+"verdict": "TP",
+"why": ""
+},
+{
+"corpus": "vulnerable-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "sast/seeds/open-redirect.js",
+"line": 6,
+"rule": "ajinabraham.njsscan.redirect.open_redirect.express_open_redirect",
+"verdict": "TP",
+"why": ""
+},
+{
+"corpus": "vulnerable-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "sast/seeds/path-traversal.js",
+"line": 12,
+"rule": "aegis-js-xss",
+"verdict": "FP",
+"why": "image/png body"
+},
+{
+"corpus": "vulnerable-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "sast/seeds/path-traversal.js",
+"line": 12,
+"rule": "aegis-js-path-traversal",
+"verdict": "TP",
+"why": ""
+},
+{
+"corpus": "vulnerable-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "sast/seeds/ssrf-fetch.js",
+"line": 14,
+"rule": "aegis-js-xss",
+"verdict": "FP",
+"why": "text body of a fetched page"
+},
+{
+"corpus": "vulnerable-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "sast/seeds/xss-raw-echo.js",
+"line": 6,
+"rule": "ajinabraham.njsscan.xss.xss_node.express_xss",
+"verdict": "TP",
+"why": ""
+},
+{
+"corpus": "vulnerable-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "sast/seeds/xss-raw-echo.js",
+"line": 7,
+"rule": "aegis-js-xss",
+"verdict": "TP",
+"why": ""
+},
+{
+"corpus": "vulnerable-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "sast/seeds/xss-raw-echo.js",
+"line": 17,
+"rule": "aegis-js-xss",
+"verdict": "TP",
+"why": ""
+},
+{
+"corpus": "vulnerable-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "routes/account.js",
+"line": 15,
+"rule": "ajinabraham.njsscan.traversal.express_hbs_lfr.express_lfr_warning",
+"verdict": "FP",
+"why": "res.render with a constant template; request data only in the locals"
+},
+{
+"corpus": "vulnerable-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "routes/auth.js",
+"line": 8,
+"rule": "ajinabraham.njsscan.traversal.express_hbs_lfr.express_lfr_warning",
+"verdict": "FP",
+"why": "res.render with a constant template; request data only in the locals"
+},
+{
+"corpus": "vulnerable-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "routes/extras.js",
+"line": 15,
+"rule": "ajinabraham.njsscan.traversal.resolve_path_traversal.join_resolve_path_traversal",
+"verdict": "TP",
+"why": ""
+},
+{
+"corpus": "vulnerable-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "routes/extras.js",
+"line": 32,
+"rule": "ajinabraham.njsscan.traversal.express_hbs_lfr.express_lfr_warning",
+"verdict": "FP",
+"why": "res.render with a constant template; request data only in the locals"
+},
+{
+"corpus": "vulnerable-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "routes/orders.js",
+"line": 51,
+"rule": "ajinabraham.njsscan.traversal.express_hbs_lfr.express_lfr_warning",
+"verdict": "FP",
+"why": "res.render with a constant template; request data only in the locals"
+},
+{
+"corpus": "vulnerable-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "routes/pages.js",
+"line": 44,
+"rule": "ajinabraham.njsscan.traversal.express_hbs_lfr.express_lfr_warning",
+"verdict": "FP",
+"why": "res.render with a constant template; request data only in the locals"
+},
+{
+"corpus": "vulnerable-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "routes/progress.js",
+"line": 62,
+"rule": "ajinabraham.njsscan.traversal.resolve_path_traversal.join_resolve_path_traversal",
+"verdict": "UNCERTAIN",
+"why": "lab-progress file read; validation not traced"
+},
+{
+"corpus": "vulnerable-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "routes/shop.js",
+"line": 20,
+"rule": "ajinabraham.njsscan.traversal.express_hbs_lfr.express_lfr_warning",
+"verdict": "FP",
+"why": "res.render with a constant template; request data only in the locals"
+},
+{
+"corpus": "vulnerable-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "routes/shop.js",
+"line": 41,
+"rule": "aegis-js-nosql-injection",
+"verdict": "TP",
+"why": "operator objects from the JSON body reach Mongo"
+},
+{
+"corpus": "vulnerable-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "routes/shop.js",
+"line": 58,
+"rule": "aegis-js-nosql-injection",
+"verdict": "TP",
+"why": "operator objects from the JSON body reach Mongo"
+},
+{
+"corpus": "vulnerable-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "routes/tools.js",
+"line": 21,
+"rule": "ajinabraham.njsscan.traversal.express_hbs_lfr.express_lfr_warning",
+"verdict": "FP",
+"why": "res.render with a constant template; request data only in the locals"
+},
+{
+"corpus": "vulnerable-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "routes/tools.js",
+"line": 26,
+"rule": "ajinabraham.njsscan.traversal.express_hbs_lfr.express_lfr_warning",
+"verdict": "FP",
+"why": "res.render with a constant template; request data only in the locals"
+},
+{
+"corpus": "vulnerable-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "routes/tools.js",
+"line": 41,
+"rule": "ajinabraham.njsscan.traversal.express_hbs_lfr.express_lfr_warning",
+"verdict": "FP",
+"why": "res.render with a constant template; request data only in the locals"
+},
+{
+"corpus": "vulnerable-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "routes/tools.js",
+"line": 42,
+"rule": "ajinabraham.njsscan.traversal.express_hbs_lfr.express_lfr_warning",
+"verdict": "FP",
+"why": "res.render with a constant template; request data only in the locals"
+},
+{
+"corpus": "vulnerable-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "sast/seeds/crypto-weak.js",
+"line": 5,
+"rule": "ajinabraham.njsscan.crypto.crypto_node.node_md5",
+"verdict": "TP",
+"why": "md5 of a password"
+},
+{
+"corpus": "vulnerable-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "server.js",
+"line": 55,
+"rule": "ajinabraham.njsscan.headers.header_cookie.cookie_session_no_samesite",
+"verdict": "TP",
+"why": ""
+},
+{
+"corpus": "vulnerable-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "server.js",
+"line": 55,
+"rule": "ajinabraham.njsscan.headers.header_cookie.cookie_session_no_secure",
+"verdict": "TP",
+"why": ""
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/notes.js",
+"line": 79,
+"rule": "aegis-js-command-injection",
+"verdict": "TP",
+"why": ""
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/notes.js",
+"line": 173,
+"rule": "aegis-js-nosql-where-injection",
+"verdict": "TP",
+"why": ""
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/passphrase.js",
+"line": 45,
+"rule": "aegis-js-sql-injection",
+"verdict": "TP",
+"why": ""
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/passphrase.js",
+"line": 59,
+"rule": "aegis-js-sql-injection",
+"verdict": "TP",
+"why": ""
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/routes/notes.js",
+"line": 25,
+"rule": "aegis-js-code-injection",
+"verdict": "TP",
+"why": ""
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/integrations.js",
+"line": 25,
+"rule": "ajinabraham.njsscan.eval.eval_yaml_deserialize.yaml_deserialize",
+"verdict": "TP",
+"why": ""
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/integrations.js",
+"line": 46,
+"rule": "aegis-js-path-traversal",
+"verdict": "TP",
+"why": ""
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/notes.js",
+"line": 59,
+"rule": "aegis-js-xss",
+"verdict": "FP",
+"why": "a JSON / object body (or text/plain), not HTML"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/notes.js",
+"line": 79,
+"rule": "ajinabraham.njsscan.exec.exec_os_command.generic_os_command_exec",
+"verdict": "TP",
+"why": ""
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/notes.js",
+"line": 170,
+"rule": "ajinabraham.njsscan.database.nosql_injection.node_nosqli_js_injection",
+"verdict": "TP",
+"why": ""
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/notes.js",
+"line": 176,
+"rule": "aegis-js-xss",
+"verdict": "FP",
+"why": "a JSON / object body (or text/plain), not HTML"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/notes.js",
+"line": 213,
+"rule": "ajinabraham.njsscan.xss.xss_node.express_xss",
+"verdict": "FP",
+"why": "pattern on an assignment; the value reaches no HTML response"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/notes.js",
+"line": 257,
+"rule": "aegis-js-xss",
+"verdict": "FP",
+"why": "a JSON / object body (or text/plain), not HTML"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/passphrase.js",
+"line": 58,
+"rule": "ajinabraham.njsscan.xss.xss_node.express_xss",
+"verdict": "FP",
+"why": "pattern on an assignment; the value reaches no HTML response"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/passphrase.js",
+"line": 62,
+"rule": "aegis-js-xss",
+"verdict": "FP",
+"why": "a JSON / object body (or text/plain), not HTML"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/passphrase.js",
+"line": 85,
+"rule": "ajinabraham.njsscan.database.nosql_find_injection.node_nosqli_injection",
+"verdict": "TP",
+"why": "username from the JSON body: an operator object reaches Mongoose"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/passphrase.js",
+"line": 96,
+"rule": "ajinabraham.njsscan.eval.eval_deserialize.node_deserialize",
+"verdict": "TP",
+"why": ""
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/users.js",
+"line": 71,
+"rule": "ajinabraham.njsscan.database.nosql_find_injection.node_nosqli_injection",
+"verdict": "TP",
+"why": "username from the JSON body: an operator object reaches Mongoose"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/users.js",
+"line": 75,
+"rule": "aegis-js-xss",
+"verdict": "FP",
+"why": "a JSON / object body (or text/plain), not HTML"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/users.js",
+"line": 93,
+"rule": "aegis-js-xss",
+"verdict": "FP",
+"why": "a JSON / object body (or text/plain), not HTML"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/users.js",
+"line": 117,
+"rule": "aegis-js-xss",
+"verdict": "FP",
+"why": "a JSON / object body (or text/plain), not HTML"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/users.js",
+"line": 122,
+"rule": "aegis-js-xss",
+"verdict": "FP",
+"why": "a JSON / object body (or text/plain), not HTML"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/users.js",
+"line": 129,
+"rule": "ajinabraham.njsscan.redirect.open_redirect.express_open_redirect",
+"verdict": "TP",
+"why": ""
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/users.js",
+"line": 148,
+"rule": "ajinabraham.njsscan.database.nosql_find_injection.node_nosqli_injection",
+"verdict": "TP",
+"why": "username from the JSON body: an operator object reaches Mongoose"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/users.js",
+"line": 193,
+"rule": "aegis-js-xss",
+"verdict": "FP",
+"why": "a JSON / object body (or text/plain), not HTML"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/users.js",
+"line": 198,
+"rule": "aegis-js-xss",
+"verdict": "FP",
+"why": "a JSON / object body (or text/plain), not HTML"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/users.js",
+"line": 204,
+"rule": "aegis-js-xss",
+"verdict": "FP",
+"why": "a JSON / object body (or text/plain), not HTML"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/users.js",
+"line": 210,
+"rule": "aegis-js-xss",
+"verdict": "FP",
+"why": "a JSON / object body (or text/plain), not HTML"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/users.js",
+"line": 222,
+"rule": "ajinabraham.njsscan.database.nosql_find_injection.node_nosqli_injection",
+"verdict": "TP",
+"why": "username from the JSON body: an operator object reaches Mongoose"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/users.js",
+"line": 224,
+"rule": "aegis-js-xss",
+"verdict": "FP",
+"why": "a JSON / object body (or text/plain), not HTML"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/users.js",
+"line": 236,
+"rule": "aegis-js-xss",
+"verdict": "FP",
+"why": "a JSON / object body (or text/plain), not HTML"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/users.js",
+"line": 275,
+"rule": "ajinabraham.njsscan.xss.xss_node.express_xss",
+"verdict": "FP",
+"why": "pattern on an assignment; the value reaches no HTML response"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/users.js",
+"line": 276,
+"rule": "ajinabraham.njsscan.xss.xss_node.express_xss",
+"verdict": "FP",
+"why": "pattern on an assignment; the value reaches no HTML response"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/users.js",
+"line": 288,
+"rule": "aegis-js-xss",
+"verdict": "UNCERTAIN",
+"why": "an XML body built from request values"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/users.js",
+"line": 321,
+"rule": "aegis-js-xss",
+"verdict": "FP",
+"why": "a JSON / object body (or text/plain), not HTML"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/users.js",
+"line": 324,
+"rule": "aegis-js-xss",
+"verdict": "FP",
+"why": "a JSON / object body (or text/plain), not HTML"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/users.js",
+"line": 342,
+"rule": "ajinabraham.njsscan.xss.xss_node.express_xss",
+"verdict": "FP",
+"why": "pattern on an assignment; the value reaches no HTML response"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/users.js",
+"line": 351,
+"rule": "ajinabraham.njsscan.database.nosql_find_injection.node_nosqli_injection",
+"verdict": "FP",
+"why": "the value is a string (decoded token, parsed XML or route param)"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/users.js",
+"line": 365,
+"rule": "aegis-js-xss",
+"verdict": "FP",
+"why": "a JSON / object body (or text/plain), not HTML"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/users.js",
+"line": 373,
+"rule": "ajinabraham.njsscan.xss.xss_node.express_xss",
+"verdict": "FP",
+"why": "pattern on an assignment; the value reaches no HTML response"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/users.js",
+"line": 388,
+"rule": "aegis-js-xss",
+"verdict": "FP",
+"why": "a JSON / object body (or text/plain), not HTML"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/users.js",
+"line": 398,
+"rule": "ajinabraham.njsscan.xss.xss_node.express_xss",
+"verdict": "FP",
+"why": "pattern on a query, no HTML response"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/users.js",
+"line": 398,
+"rule": "ajinabraham.njsscan.database.nosql_find_injection.node_nosqli_injection",
+"verdict": "TP",
+"why": "email from the JSON body"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/users.js",
+"line": 401,
+"rule": "aegis-js-xss",
+"verdict": "FP",
+"why": "a JSON / object body (or text/plain), not HTML"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/users.js",
+"line": 421,
+"rule": "aegis-js-xss",
+"verdict": "FP",
+"why": "a JSON / object body (or text/plain), not HTML"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/users.js",
+"line": 434,
+"rule": "ajinabraham.njsscan.xss.xss_node.express_xss",
+"verdict": "FP",
+"why": "pattern on an assignment; the value reaches no HTML response"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/users.js",
+"line": 449,
+"rule": "ajinabraham.njsscan.xss.xss_node.express_xss",
+"verdict": "FP",
+"why": "pattern on an assignment; the value reaches no HTML response"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/users.js",
+"line": 479,
+"rule": "ajinabraham.njsscan.xss.xss_node.express_xss",
+"verdict": "FP",
+"why": "pattern on an assignment; the value reaches no HTML response"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/users.js",
+"line": 479,
+"rule": "aegis-js-xss",
+"verdict": "FP",
+"why": "a JSON / object body (or text/plain), not HTML"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/users.js",
+"line": 557,
+"rule": "aegis-js-xss",
+"verdict": "FP",
+"why": "a JSON / object body (or text/plain), not HTML"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/users.js",
+"line": 580,
+"rule": "ajinabraham.njsscan.database.nosql_find_injection.node_nosqli_injection",
+"verdict": "FP",
+"why": "the value is a string (decoded token, parsed XML or route param)"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/users.js",
+"line": 593,
+"rule": "ajinabraham.njsscan.database.nosql_find_injection.node_nosqli_injection",
+"verdict": "FP",
+"why": "the value is a string (decoded token, parsed XML or route param)"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/users.js",
+"line": 602,
+"rule": "aegis-js-xss",
+"verdict": "FP",
+"why": "a JSON / object body (or text/plain), not HTML"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/users.js",
+"line": 648,
+"rule": "aegis-js-xss",
+"verdict": "FP",
+"why": "a JSON / object body (or text/plain), not HTML"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/routes/notes.js",
+"line": 22,
+"rule": "ajinabraham.njsscan.eval.eval_node.eval_nodejs",
+"verdict": "TP",
+"why": ""
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/routes/notes.js",
+"line": 26,
+"rule": "aegis-js-xss",
+"verdict": "FP",
+"why": "a JSON / object body (or text/plain), not HTML"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/services/soap/user-service.js",
+"line": 49,
+"rule": "ajinabraham.njsscan.database.nosql_find_injection.node_nosqli_injection",
+"verdict": "FP",
+"why": "the value is a string (decoded token, parsed XML or route param)"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/services/soap/user-service.js",
+"line": 73,
+"rule": "aegis-js-xss",
+"verdict": "TP",
+"why": "documented XSS in the SOAP response"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/services/xml-rpc/server.js",
+"line": 28,
+"rule": "ajinabraham.njsscan.ssrf.ssrf_node.node_ssrf",
+"verdict": "TP",
+"why": ""
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "yaml",
+"file": "docker-compose.tls.yml",
+"line": 5,
+"rule": "aegis-compose-port-all-interfaces",
+"verdict": "UNTRIAGED",
+"why": ""
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "yaml",
+"file": "docker-compose.yml",
+"line": 25,
+"rule": "aegis-compose-port-all-interfaces",
+"verdict": "UNTRIAGED",
+"why": ""
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/files.js",
+"line": 90,
+"rule": "ajinabraham.njsscan.traversal.resolve_path_traversal.join_resolve_path_traversal",
+"verdict": "TP",
+"why": ""
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/integrations.js",
+"line": 43,
+"rule": "ajinabraham.njsscan.traversal.resolve_path_traversal.join_resolve_path_traversal",
+"verdict": "TP",
+"why": ""
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/notes.js",
+"line": 58,
+"rule": "aegis-js-nosql-injection",
+"verdict": "FP",
+"why": "the value is a string (decoded token, parsed XML or route param)"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/notes.js",
+"line": 142,
+"rule": "aegis-js-nosql-injection",
+"verdict": "FP",
+"why": "the value is a string (decoded token, parsed XML or route param)"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/notes.js",
+"line": 152,
+"rule": "aegis-js-nosql-injection",
+"verdict": "FP",
+"why": "the value is a string (decoded token, parsed XML or route param)"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/notes.js",
+"line": 175,
+"rule": "aegis-js-nosql-injection",
+"verdict": "TP",
+"why": "the documented $where query"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/passphrase.js",
+"line": 85,
+"rule": "aegis-js-nosql-injection",
+"verdict": "TP",
+"why": "username from the JSON body: an operator object reaches Mongoose"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/users.js",
+"line": 71,
+"rule": "aegis-js-nosql-injection",
+"verdict": "TP",
+"why": "username from the JSON body: an operator object reaches Mongoose"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/users.js",
+"line": 148,
+"rule": "aegis-js-nosql-injection",
+"verdict": "TP",
+"why": "username from the JSON body: an operator object reaches Mongoose"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/users.js",
+"line": 222,
+"rule": "aegis-js-nosql-injection",
+"verdict": "TP",
+"why": "username from the JSON body: an operator object reaches Mongoose"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/users.js",
+"line": 315,
+"rule": "aegis-js-nosql-injection",
+"verdict": "FP",
+"why": "the value is a string (decoded token, parsed XML or route param)"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/users.js",
+"line": 351,
+"rule": "aegis-js-nosql-injection",
+"verdict": "FP",
+"why": "the value is a string (decoded token, parsed XML or route param)"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/users.js",
+"line": 398,
+"rule": "aegis-js-nosql-injection",
+"verdict": "TP",
+"why": "email from the JSON body"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/users.js",
+"line": 580,
+"rule": "aegis-js-nosql-injection",
+"verdict": "FP",
+"why": "the value is a string (decoded token, parsed XML or route param)"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/controllers/users.js",
+"line": 593,
+"rule": "aegis-js-nosql-injection",
+"verdict": "FP",
+"why": "the value is a string (decoded token, parsed XML or route param)"
+},
+{
+"corpus": "dvws-node",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "src/services/soap/user-service.js",
+"line": 49,
+"rule": "aegis-js-nosql-injection",
+"verdict": "FP",
+"why": "the value is a string (decoded token, parsed XML or route param)"
+},
+{
+"corpus": "oopssec-store",
+"kind": "ground-truth",
+"language": "typescript",
+"file": "app/api/admin/suppliers/import-order/route.ts",
+"line": 12,
+"rule": "ajinabraham.njsscan.xml.xxe_node.node_xxe",
+"verdict": "TP",
+"why": ""
+},
+{
+"corpus": "oopssec-store",
+"kind": "ground-truth",
+"language": "typescript",
+"file": "cypress.config.ts",
+"line": 20,
+"rule": "ajinabraham.njsscan.crypto.crypto_node.node_md5",
+"verdict": "FP",
+"why": "md5 in a test / seed helper, not a security use"
+},
+{
+"corpus": "oopssec-store",
+"kind": "ground-truth",
+"language": "typescript",
+"file": "lib/server-auth.ts",
+"line": 15,
+"rule": "ajinabraham.njsscan.crypto.crypto_node.node_md5",
+"verdict": "TP",
+"why": "hashMD5 used for credentials (documented weak MD5 hashing)"
+},
+{
+"corpus": "oopssec-store",
+"kind": "ground-truth",
+"language": "javascript",
+"file": "packages/create-oss-store/bin/create-oss-store.js",
+"line": 31,
+"rule": "aegis-js-redos-nested-quantifier",
+"verdict": "FP",
+"why": "each repetition needs a / separator: linear"
+},
+{
+"corpus": "oopssec-store",
+"kind": "ground-truth",
+"language": "typescript",
+"file": "prisma/seed.ts",
+"line": 11,
+"rule": "ajinabraham.njsscan.crypto.crypto_node.node_md5",
+"verdict": "FP",
+"why": "md5 in a test / seed helper, not a security use"
 }
 ]

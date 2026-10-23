@@ -337,15 +337,36 @@ export interface Scan {
     summary: string;
     gap?: string | null;
     always_on?: string[];
+    // N6: two claims, two gates. clean_claim = recall certified (a clean result may
+    // show); problem_claim = precision certified (reported issues are trusted).
+    // Absent on pre-N6 scans, which fall back to `confident`.
+    recall_fraction?: number;
+    precision_fraction?: number;
+    clean_claim?: boolean;
+    problem_claim?: boolean;
+    quadrant?: SecurityQuadrant;
+    clean_label?: string | null;
+    precision_caveat?: string | null;
   };
 }
 
 // N5: a language's tier is computed from measured ground truth and triage, never
 // declared. STRONG needs documented detections in >= 2 corpora, held-out recall
 // >= 25% and precision >= 70%; `failed` names every criterion a language misses.
+export type SecurityQuadrant = "full" | "problem-only" | "clean-only" | "withheld";
+
 export interface CoverageEvidence {
   tier: "strong" | "limited" | "none";
   failed: string[];
+  // N6: each claim's gate, and the CodeQL reference the recall gate is calibrated on.
+  quadrant?: SecurityQuadrant;
+  recall_gate?: boolean;
+  precision_gate?: boolean;
+  calibrated?: boolean;
+  reference_recall?: number | null;
+  reference_in_scope?: number;
+  reference_aegis?: number;
+  reference_codeql?: number;
   corpora: number;
   held_out_corpora: number;
   held_out_recall: number | null;

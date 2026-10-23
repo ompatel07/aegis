@@ -222,13 +222,23 @@ func Aggregate(results []*types.EngineResult) Aggregated {
 	// The second exists because after N1 a Java-only repo could score 100/A on seven
 	// Java rules: not clean, unread. Thin coverage withholds the score exactly as a
 	// degraded engine does -- no new state.
-	coverageConfident := agg.SecurityCoverage == nil || agg.SecurityCoverage.Confident
-	securityConfident := confident("semgrep", "trivy", "gitleaks") && coverageConfident
+	//
+	// N6 split the second half by claim. Coverage certifies a CLEAN result (recall) and
+	// a PROBLEM result (precision) separately; the quadrant decides which security
+	// fields may be shown (securityShown below). Withheld is N2's contract unchanged.
+	quadrant := agg.SecurityCoverage.EffectiveQuadrant()
+	securityConfident := confident("semgrep", "trivy", "gitleaks") && quadrant != types.QuadrantWithheld
 	qualityConfident := confident("quality")
 	reliabilityConfident := confident("semgrep", "quality") // reliability bugs from both
 
+	var securityRating *string
+	if securityConfident {
+		securityRating = strptr(scoring.SecurityRating(agg.Findings))
+	}
 	if !securityConfident {
 		agg.SecurityScore = nil // a degraded security engine inflates the score → not measured
+	} else {
+		agg.SecurityScore, securityRating = securityShown(quadrant, agg.SecurityScore, securityRating)
 	}
 	if !qualityConfident {
 		agg.QualityScore = nil
@@ -243,9 +253,7 @@ func Aggregate(results []*types.EngineResult) Aggregated {
 	// Ratings — nil (NULL) when the pillar is not confidently measured, so a
 	// degraded scan never shows a fabricated A (a worst-severity letter derived from
 	// an incomplete finding set understates risk exactly as the score does).
-	if securityConfident {
-		agg.SecurityRating = strptr(scoring.SecurityRating(agg.Findings))
-	}
+	agg.SecurityRating = securityRating
 	if reliabilityConfident {
 		agg.ReliabilityRating = strptr(scoring.ReliabilityRating(agg.Findings))
 	}
@@ -260,6 +268,43 @@ func Aggregate(results []*types.EngineResult) Aggregated {
 	agg.RawQuality = rawOf(byEngine["quality"])
 
 	return agg
+}
+
+// securityShown applies the N6 claim gates to a computed security score and rating.
+//
+//   - full: both shown.
+//   - problem-only (precision certified, recall not): only an UNFAVOURABLE value is
+//     shown. A favourable one (A/B) would be a clean claim our recall cannot back, so
+//     it is withheld and the scan carries the coverage's CleanLabel instead. A
+//     limited-recall repository with zero findings therefore never renders A.
+//   - clean-only (recall certified, precision not): only a FAVOURABLE value is shown.
+//     An unfavourable one would rest on findings we cannot certify as real, so it is
+//     withheld and the findings carry the coverage's PrecisionCaveat.
+//
+// Each field is judged on its own: the score by its letter grade (A >= 90, B >= 75),
+// the rating A-E by its letter.
+func securityShown(quadrant string, score *int, rating *string) (*int, *string) {
+	favourableScore := func(v int) bool { g := scoring.Grade(v); return g == "A" || g == "B" }
+	favourableRating := func(r string) bool { return r == "A" || r == "B" }
+	switch quadrant {
+	case types.QuadrantProblem:
+		if score != nil && favourableScore(*score) {
+			score = nil
+		}
+		if rating != nil && favourableRating(*rating) {
+			rating = nil
+		}
+	case types.QuadrantClean:
+		if score != nil && !favourableScore(*score) {
+			score = nil
+		}
+		if rating != nil && !favourableRating(*rating) {
+			rating = nil
+		}
+	case types.QuadrantWithheld:
+		return nil, nil
+	}
+	return score, rating
 }
 
 // rawOf marshals an engine's raw output, returning JSON null when absent.

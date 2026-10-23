@@ -87,3 +87,27 @@ func TestCoverageSentenceIsRobustToJunk(t *testing.T) {
 		}
 	}
 }
+
+// N6: the report says which claim is certified, never "measured" for half a result.
+func TestCoverageSentenceNamesTheCertifiedClaim(t *testing.T) {
+	problem := `{"summary":"Java — limited · 15% held-out recall on 2 corpora","confident":false,
+ "quadrant":"problem-only","clean_label":"No issues found in what we check · Java 15% held-out recall"}`
+	got := sastCoverageSentence(models.JSONB(problem))
+	if !strings.Contains(got, "certified") || !strings.Contains(got, "No issues found in what we check") ||
+		strings.Contains(got, "measured one") {
+		t.Errorf("problem-only sentence: %s", got)
+	}
+	clean := `{"summary":"PHP — limited · 42% held-out recall on 3 corpora","confident":false,
+ "quadrant":"clean-only","precision_caveat":"findings are not certified: PHP 27% precise"}`
+	got = sastCoverageSentence(models.JSONB(clean))
+	if !strings.Contains(got, "not certified") || !strings.Contains(got, "no unfavourable grade") {
+		t.Errorf("clean-only sentence: %s", got)
+	}
+	if coverageConfident(models.JSONB(clean)) || coverageConfident(models.JSONB(problem)) {
+		t.Error("a half-certified scan must carry the caveat in the summary's first paragraph")
+	}
+	full := `{"summary":"PHP strong","confident":true,"quadrant":"full","strong_fraction":1}`
+	if !coverageConfident(models.JSONB(full)) {
+		t.Error("full quadrant is confident")
+	}
+}

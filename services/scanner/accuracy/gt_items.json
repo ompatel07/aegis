@@ -32,7 +32,8 @@
     "rule_or_reason": "aegis-go-path-traversal",
     "rules": [
      "aegis-go-path-traversal"
-    ]
+    ],
+    "codeql": "DET"
    },
    {
     "id": "G204",
@@ -70,7 +71,8 @@
     "rule_or_reason": "aegis-go-weak-cipher",
     "rules": [
      "aegis-go-weak-cipher"
-    ]
+    ],
+    "codeql": "MISS"
    },
    {
     "id": "G402",
@@ -79,7 +81,8 @@
     "scope": "IN",
     "status": "GAP",
     "rule_or_reason": "no Go TLS-config rule",
-    "rules": []
+    "rules": [],
+    "codeql": "DET"
    },
    {
     "id": "G404",
@@ -88,7 +91,8 @@
     "scope": "IN",
     "status": "GAP",
     "rule_or_reason": "weak-random rule staged; bare `token`",
-    "rules": []
+    "rules": [],
+    "codeql": "MISS"
    },
    {
     "id": "G501b",
@@ -99,7 +103,8 @@
     "rule_or_reason": "aegis-go-weak-cipher",
     "rules": [
      "aegis-go-weak-cipher"
-    ]
+    ],
+    "codeql": "MISS"
    },
    {
     "id": "G107",
@@ -110,7 +115,8 @@
     "rule_or_reason": "aegis-go-ssrf",
     "rules": [
      "aegis-go-ssrf"
-    ]
+    ],
+    "codeql": "DET"
    },
    {
     "id": "G109",
@@ -119,7 +125,8 @@
     "scope": "IN",
     "status": "GAP",
     "rule_or_reason": "no integer-conversion rule",
-    "rules": []
+    "rules": [],
+    "codeql": "DET"
    },
    {
     "id": "G110",
@@ -128,9 +135,16 @@
     "scope": "IN",
     "status": "GAP",
     "rule_or_reason": "no decompression rule",
-    "rules": []
+    "rules": [],
+    "codeql": "MISS"
    }
-  ]
+  ],
+  "codeql": {
+   "ran": true,
+   "version": "CodeQL CLI 2.27.3 (codeql-bundle-v2.27.3)",
+   "suite": "go-security-extended.qls, default configuration",
+   "alerts": 4
+  }
  },
  "go-test-bench": {
   "language": "go",
@@ -145,7 +159,8 @@
     "scope": "IN",
     "status": "CEIL",
     "rule_or_reason": "sink receives `in string` from common.GenericHandler; source is in pkg/serve*",
-    "rules": []
+    "rules": [],
+    "codeql": "MISS"
    },
    {
     "id": "SQL Injection:sqlite3.exec",
@@ -154,7 +169,8 @@
     "scope": "IN",
     "status": "CEIL",
     "rule_or_reason": "sink receives `in string` from common.GenericHandler; source is in pkg/serve*",
-    "rules": []
+    "rules": [],
+    "codeql": "MISS"
    },
    {
     "id": "Command Injection:exec.Command",
@@ -163,7 +179,8 @@
     "scope": "IN",
     "status": "CEIL",
     "rule_or_reason": "sink receives `in string` from common.GenericHandler; source is in pkg/serve*",
-    "rules": []
+    "rules": [],
+    "codeql": "MISS"
    },
    {
     "id": "Command Injection:exec.CommandContext",
@@ -172,7 +189,8 @@
     "scope": "IN",
     "status": "CEIL",
     "rule_or_reason": "sink receives `in string` from common.GenericHandler; source is in pkg/serve*",
-    "rules": []
+    "rules": [],
+    "codeql": "MISS"
    },
    {
     "id": "Path Traversal:os.ReadFile",
@@ -181,7 +199,8 @@
     "scope": "IN",
     "status": "CEIL",
     "rule_or_reason": "sink receives `in string` from common.GenericHandler; source is in pkg/serve*",
-    "rules": []
+    "rules": [],
+    "codeql": "MISS"
    },
    {
     "id": "Path Traversal:os.Open",
@@ -190,7 +209,8 @@
     "scope": "IN",
     "status": "CEIL",
     "rule_or_reason": "sink receives `in string` from common.GenericHandler; source is in pkg/serve*",
-    "rules": []
+    "rules": [],
+    "codeql": "MISS"
    },
    {
     "id": "Path Traversal:os.WriteFile",
@@ -199,7 +219,8 @@
     "scope": "IN",
     "status": "CEIL",
     "rule_or_reason": "sink receives `in string` from common.GenericHandler; source is in pkg/serve*",
-    "rules": []
+    "rules": [],
+    "codeql": "MISS"
    },
    {
     "id": "Path Traversal:os.Create",
@@ -208,7 +229,8 @@
     "scope": "IN",
     "status": "CEIL",
     "rule_or_reason": "sink receives `in string` from common.GenericHandler; source is in pkg/serve*",
-    "rules": []
+    "rules": [],
+    "codeql": "MISS"
    },
    {
     "id": "Reflected XSS:reflectedXss",
@@ -217,7 +239,8 @@
     "scope": "IN",
     "status": "CEIL",
     "rule_or_reason": "sink receives `in string` from common.GenericHandler; source is in pkg/serve*",
-    "rules": []
+    "rules": [],
+    "codeql": "MISS"
    },
    {
     "id": "SSRF:net/http",
@@ -226,9 +249,16 @@
     "scope": "IN",
     "status": "CEIL",
     "rule_or_reason": "sink receives `in string` from common.GenericHandler; source is in pkg/serve*",
-    "rules": []
+    "rules": [],
+    "codeql": "MISS"
    }
-  ]
+  ],
+  "codeql": {
+   "ran": true,
+   "version": "CodeQL CLI 2.27.3 (codeql-bundle-v2.27.3)",
+   "suite": "go-security-extended.qls, default configuration",
+   "alerts": 18
+  }
  },
  "govwa": {
   "language": "go",
@@ -299,7 +329,11 @@
     "rule_or_reason": "",
     "rules": []
    }
-  ]
+  ],
+  "codeql": {
+   "ran": false,
+   "reason": "no license file: not an Open Source Codebase under CodeQL's terms"
+  }
  },
  "dvga-go": {
   "language": "go",
@@ -496,7 +530,8 @@
     "scope": "IN",
     "status": "GAP",
     "rule_or_reason": "no integer-conversion rule",
-    "rules": []
+    "rules": [],
+    "codeql": "MISS"
    },
    {
     "id": "integers-parseInt",
@@ -505,7 +540,8 @@
     "scope": "IN",
     "status": "GAP",
     "rule_or_reason": "no integer-conversion rule",
-    "rules": []
+    "rules": [],
+    "codeql": "MISS"
    },
    {
     "id": "symlink_attack",
@@ -514,7 +550,8 @@
     "scope": "IN",
     "status": "GAP",
     "rule_or_reason": "no symlink/TOCTOU rule",
-    "rules": []
+    "rules": [],
+    "codeql": "MISS"
    },
    {
     "id": "errors",
@@ -543,7 +580,13 @@
     "rule_or_reason": "",
     "rules": []
    }
-  ]
+  ],
+  "codeql": {
+   "ran": true,
+   "version": "CodeQL CLI 2.27.3 (codeql-bundle-v2.27.3)",
+   "suite": "go-security-extended.qls, default configuration",
+   "alerts": 8
+  }
  },
  "pygoat": {
   "language": "python",
@@ -918,7 +961,8 @@
     "rule_or_reason": "aegis-py-sql-string-construction",
     "rules": [
      "aegis-py-sql-string-construction"
-    ]
+    ],
+    "codeql": "MISS"
    },
    {
     "id": "sqli-blind-time",
@@ -929,7 +973,8 @@
     "rule_or_reason": "aegis-py-sql-string-construction",
     "rules": [
      "aegis-py-sql-string-construction"
-    ]
+    ],
+    "codeql": "MISS"
    },
    {
     "id": "sqli-union",
@@ -940,7 +985,8 @@
     "rule_or_reason": "aegis-py-sql-string-construction",
     "rules": [
      "aegis-py-sql-string-construction"
-    ]
+    ],
+    "codeql": "MISS"
    },
    {
     "id": "login-bypass",
@@ -951,7 +997,8 @@
     "rule_or_reason": "aegis-py-sql-string-construction",
     "rules": [
      "aegis-py-sql-string-construction"
-    ]
+    ],
+    "codeql": "MISS"
    },
    {
     "id": "hpp",
@@ -969,7 +1016,8 @@
     "scope": "IN",
     "status": "GAP",
     "rule_or_reason": "http.server `params` is not a modelled source",
-    "rules": []
+    "rules": [],
+    "codeql": "MISS"
    },
    {
     "id": "xss-stored",
@@ -978,7 +1026,8 @@
     "scope": "IN",
     "status": "CEIL",
     "rule_or_reason": "second-order (DB -> page)",
-    "rules": []
+    "rules": [],
+    "codeql": "MISS"
    },
    {
     "id": "xss-dom",
@@ -987,7 +1036,8 @@
     "scope": "IN",
     "status": "CEIL",
     "rule_or_reason": "client-side",
-    "rules": []
+    "rules": [],
+    "codeql": "MISS"
    },
    {
     "id": "xss-jsonp",
@@ -996,7 +1046,8 @@
     "scope": "IN",
     "status": "GAP",
     "rule_or_reason": "source not modelled",
-    "rules": []
+    "rules": [],
+    "codeql": "MISS"
    },
    {
     "id": "xxe-local",
@@ -1005,7 +1056,8 @@
     "scope": "IN",
     "status": "GAP",
     "rule_or_reason": "no XXE rule (lxml resolve_entities=True)",
-    "rules": []
+    "rules": [],
+    "codeql": "MISS"
    },
    {
     "id": "xxe-remote",
@@ -1014,7 +1066,8 @@
     "scope": "IN",
     "status": "GAP",
     "rule_or_reason": "no XXE rule",
-    "rules": []
+    "rules": [],
+    "codeql": "MISS"
    },
    {
     "id": "ssrf",
@@ -1023,7 +1076,8 @@
     "scope": "IN",
     "status": "GAP",
     "rule_or_reason": "source not modelled",
-    "rules": []
+    "rules": [],
+    "codeql": "MISS"
    },
    {
     "id": "xpath",
@@ -1032,7 +1086,8 @@
     "scope": "IN",
     "status": "GAP",
     "rule_or_reason": "no XPath rule; source",
-    "rules": []
+    "rules": [],
+    "codeql": "MISS"
    },
    {
     "id": "csrf",
@@ -1050,7 +1105,8 @@
     "scope": "IN",
     "status": "GAP",
     "rule_or_reason": "source not modelled",
-    "rules": []
+    "rules": [],
+    "codeql": "MISS"
    },
    {
     "id": "frame-spoof",
@@ -1059,7 +1115,8 @@
     "scope": "IN",
     "status": "GAP",
     "rule_or_reason": "source not modelled",
-    "rules": []
+    "rules": [],
+    "codeql": "MISS"
    },
    {
     "id": "redirect",
@@ -1068,7 +1125,8 @@
     "scope": "IN",
     "status": "GAP",
     "rule_or_reason": "no Python redirect rule; source",
-    "rules": []
+    "rules": [],
+    "codeql": "MISS"
    },
    {
     "id": "ace",
@@ -1079,7 +1137,8 @@
     "rule_or_reason": "aegis-py-shell-command-construction",
     "rules": [
      "aegis-py-shell-command-construction"
-    ]
+    ],
+    "codeql": "MISS"
    },
    {
     "id": "fpd",
@@ -1097,7 +1156,8 @@
     "scope": "IN",
     "status": "GAP",
     "rule_or_reason": "path traversal; source not modelled",
-    "rules": []
+    "rules": [],
+    "codeql": "MISS"
    },
    {
     "id": "path-traversal",
@@ -1106,7 +1166,8 @@
     "scope": "IN",
     "status": "GAP",
     "rule_or_reason": "source not modelled",
-    "rules": []
+    "rules": [],
+    "codeql": "MISS"
    },
    {
     "id": "rfi",
@@ -1115,7 +1176,8 @@
     "scope": "IN",
     "status": "GAP",
     "rule_or_reason": "source not modelled",
-    "rules": []
+    "rules": [],
+    "codeql": "MISS"
    },
    {
     "id": "header-injection",
@@ -1124,7 +1186,8 @@
     "scope": "IN",
     "status": "GAP",
     "rule_or_reason": "no header-injection rule",
-    "rules": []
+    "rules": [],
+    "codeql": "MISS"
    },
    {
     "id": "pickle",
@@ -1133,7 +1196,8 @@
     "scope": "IN",
     "status": "GAP",
     "rule_or_reason": "no deserialization rule",
-    "rules": []
+    "rules": [],
+    "codeql": "MISS"
    },
    {
     "id": "dos-memory",
@@ -1151,9 +1215,16 @@
     "scope": "IN",
     "status": "GAP",
     "rule_or_reason": "no SSTI rule; source",
-    "rules": []
+    "rules": [],
+    "codeql": "MISS"
    }
-  ]
+  ],
+  "codeql": {
+   "ran": true,
+   "version": "CodeQL CLI 2.27.3 (codeql-bundle-v2.27.3)",
+   "suite": "python-security-extended.qls, default configuration",
+   "alerts": 0
+  }
  },
  "dvgraphql": {
   "language": "python",
@@ -1387,7 +1458,8 @@
     "rule_or_reason": "aegis-py-sql-injection",
     "rules": [
      "aegis-py-sql-injection"
-    ]
+    ],
+    "codeql": "DET"
    },
    {
     "id": "xss",
@@ -1396,7 +1468,8 @@
     "scope": "IN",
     "status": "CEIL",
     "rule_or_reason": "template-side",
-    "rules": []
+    "rules": [],
+    "codeql": "MISS"
    },
    {
     "id": "brokenauth-mass",
@@ -1414,7 +1487,8 @@
     "scope": "IN",
     "status": "GAP",
     "rule_or_reason": "no session-serializer rule",
-    "rules": []
+    "rules": [],
+    "codeql": "MISS"
    },
    {
     "id": "idor",
@@ -1432,7 +1506,8 @@
     "scope": "IN",
     "status": "GAP",
     "rule_or_reason": "no Django DEBUG rule",
-    "rules": []
+    "rules": [],
+    "codeql": "MISS"
    },
    {
     "id": "exposure",
@@ -1441,7 +1516,8 @@
     "scope": "IN",
     "status": "GAP",
     "rule_or_reason": "no PASSWORD_HASHERS rule",
-    "rules": []
+    "rules": [],
+    "codeql": "MISS"
    },
    {
     "id": "access",
@@ -1459,7 +1535,8 @@
     "scope": "IN",
     "status": "GAP",
     "rule_or_reason": "no csrf_exempt rule",
-    "rules": []
+    "rules": [],
+    "codeql": "MISS"
    },
    {
     "id": "components",
@@ -1477,9 +1554,16 @@
     "scope": "IN",
     "status": "GAP",
     "rule_or_reason": "no Python open-redirect rule",
-    "rules": []
+    "rules": [],
+    "codeql": "DET"
    }
-  ]
+  ],
+  "codeql": {
+   "ran": true,
+   "version": "CodeQL CLI 2.27.3 (codeql-bundle-v2.27.3)",
+   "suite": "python-security-extended.qls, default configuration",
+   "alerts": 3
+  }
  },
  "lets-be-bad-guys": {
   "language": "python",
@@ -1505,7 +1589,8 @@
     "rule_or_reason": "aegis-py-path-traversal",
     "rules": [
      "aegis-py-path-traversal"
-    ]
+    ],
+    "codeql": "DET"
    },
    {
     "id": "injection-code",
@@ -1516,7 +1601,8 @@
     "rule_or_reason": "aegis-py-code-injection",
     "rules": [
      "aegis-py-code-injection"
-    ]
+    ],
+    "codeql": "DET"
    },
    {
     "id": "xss-form",
@@ -1525,7 +1611,8 @@
     "scope": "IN",
     "status": "CEIL",
     "rule_or_reason": "template-side",
-    "rules": []
+    "rules": [],
+    "codeql": "MISS"
    },
    {
     "id": "xss-path",
@@ -1534,7 +1621,8 @@
     "scope": "IN",
     "status": "CEIL",
     "rule_or_reason": "template-side",
-    "rules": []
+    "rules": [],
+    "codeql": "MISS"
    },
    {
     "id": "xss-query",
@@ -1543,7 +1631,8 @@
     "scope": "IN",
     "status": "CEIL",
     "rule_or_reason": "template-side",
-    "rules": []
+    "rules": [],
+    "codeql": "MISS"
    },
    {
     "id": "broken-auth",
@@ -1570,7 +1659,8 @@
     "scope": "IN",
     "status": "GAP",
     "rule_or_reason": "no Django DEBUG rule",
-    "rules": []
+    "rules": [],
+    "codeql": "MISS"
    },
    {
     "id": "exposure",
@@ -1597,7 +1687,8 @@
     "scope": "IN",
     "status": "GAP",
     "rule_or_reason": "no csrf_exempt rule",
-    "rules": []
+    "rules": [],
+    "codeql": "MISS"
    },
    {
     "id": "components",
@@ -1615,7 +1706,8 @@
     "scope": "IN",
     "status": "GAP",
     "rule_or_reason": "no Python open-redirect rule",
-    "rules": []
+    "rules": [],
+    "codeql": "DET"
    },
    {
     "id": "forward",
@@ -1624,9 +1716,16 @@
     "scope": "IN",
     "status": "GAP",
     "rule_or_reason": "no unsafe-reflection rule",
-    "rules": []
+    "rules": [],
+    "codeql": "MISS"
    }
-  ]
+  ],
+  "codeql": {
+   "ran": true,
+   "version": "CodeQL CLI 2.27.3 (codeql-bundle-v2.27.3)",
+   "suite": "python-security-extended.qls, default configuration",
+   "alerts": 4
+  }
  },
  "dvpwa-full": {
   "language": "python",
@@ -2008,7 +2107,11 @@
     "rule_or_reason": "",
     "rules": []
    }
-  ]
+  ],
+  "codeql": {
+   "ran": false,
+   "reason": "no license file: not an Open Source Codebase under CodeQL's terms"
+  }
  },
  "javavulnerablelab": {
   "language": "java",
@@ -2440,7 +2543,8 @@
     "scope": "IN",
     "status": "CEIL",
     "rule_or_reason": "Struts action -> service; JPA createQuery not a sink",
-    "rules": []
+    "rules": [],
+    "codeql": "DET"
    },
    {
     "id": "cmdi",
@@ -2449,7 +2553,8 @@
     "scope": "IN",
     "status": "GAP",
     "rule_or_reason": "Struts2 action properties are not a source",
-    "rules": []
+    "rules": [],
+    "codeql": "DET"
    },
    {
     "id": "reset-key",
@@ -2458,7 +2563,8 @@
     "scope": "IN",
     "status": "GAP",
     "rule_or_reason": "predictable token",
-    "rules": []
+    "rules": [],
+    "codeql": "MISS"
    },
    {
     "id": "cred-storage",
@@ -2467,7 +2573,8 @@
     "scope": "IN",
     "status": "GAP",
     "rule_or_reason": "Java weak-hash rule staged",
-    "rules": []
+    "rules": [],
+    "codeql": "MISS"
    },
    {
     "id": "xss-reflected",
@@ -2476,7 +2583,8 @@
     "scope": "IN",
     "status": "CEIL",
     "rule_or_reason": "JSP",
-    "rules": []
+    "rules": [],
+    "codeql": "MISS"
    },
    {
     "id": "xss-stored",
@@ -2485,7 +2593,8 @@
     "scope": "IN",
     "status": "CEIL",
     "rule_or_reason": "JSP",
-    "rules": []
+    "rules": [],
+    "codeql": "MISS"
    },
    {
     "id": "log-password",
@@ -2494,7 +2603,8 @@
     "scope": "IN",
     "status": "GAP",
     "rule_or_reason": "no sensitive-logging rule",
-    "rules": []
+    "rules": [],
+    "codeql": "DET"
    },
    {
     "id": "redirect",
@@ -2503,7 +2613,8 @@
     "scope": "IN",
     "status": "GAP",
     "rule_or_reason": "no Java redirect rule",
-    "rules": []
+    "rules": [],
+    "codeql": "MISS"
    },
    {
     "id": "idor",
@@ -2550,7 +2661,13 @@
     "rule_or_reason": "",
     "rules": []
    }
-  ]
+  ],
+  "codeql": {
+   "ran": true,
+   "version": "CodeQL CLI 2.27.3 (codeql-bundle-v2.27.3)",
+   "suite": "java-security-extended.qls, default configuration",
+   "alerts": 8
+  }
  },
  "javulna": {
   "language": "java",
@@ -6266,7 +6383,11 @@
     "rules": [],
     "rule_or_reason": ""
    }
-  ]
+  ],
+  "codeql": {
+   "ran": false,
+   "reason": "CodeQL has no PHP support"
+  }
  },
  "mutillidae": {
   "language": "php",
@@ -7730,7 +7851,11 @@
     "rules": [],
     "rule_or_reason": ""
    }
-  ]
+  ],
+  "codeql": {
+   "ran": false,
+   "reason": "CodeQL has no PHP support"
+  }
  },
  "xvwa": {
   "language": "php",
@@ -7919,6 +8044,1371 @@
     "rules": [],
     "rule_or_reason": "no SSTI rule (Twig render of a request template)"
    }
-  ]
+  ],
+  "codeql": {
+   "ran": false,
+   "reason": "CodeQL has no PHP support"
+  }
+ },
+ "dvna": {
+  "language": "javascript",
+  "commit": "9ba473add536f66ac9007966acb2a775dd31277a",
+  "documented_list": "docs/solution/*.md: one page per OWASP category, naming the vulnerable files",
+  "licence": "MIT (LICENSE)",
+  "items": [
+   {
+    "id": "sqli",
+    "item": "SQL injection (user search)",
+    "location": "core/appHandler.js:11",
+    "scope": "IN",
+    "status": "DET",
+    "rules": [
+     "aegis-js-sql-injection"
+    ],
+    "rule_or_reason": "",
+    "codeql": "DET"
+   },
+   {
+    "id": "cmdi",
+    "item": "command injection (ping)",
+    "location": "core/appHandler.js:39",
+    "scope": "IN",
+    "status": "DET",
+    "rules": [
+     "aegis-js-command-injection"
+    ],
+    "rule_or_reason": "",
+    "codeql": "DET"
+   },
+   {
+    "id": "reset-password",
+    "item": "insecure password reset",
+    "location": "core/authHandler.js",
+    "scope": "OUT:authentication",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "session-secret",
+    "item": "hard-coded session secret",
+    "location": "server.js",
+    "scope": "OUT:secrets",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "hash-disclosure",
+    "item": "password hashes in the users API",
+    "location": "core/appHandler.js",
+    "scope": "OUT:authorization",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "sensitive-logging",
+    "item": "logging of sensitive information",
+    "location": "models/index.js",
+    "scope": "IN",
+    "status": "GAP",
+    "rules": [],
+    "rule_or_reason": "no sensitive-logging rule",
+    "codeql": "MISS"
+   },
+   {
+    "id": "xxe",
+    "item": "XXE in bulk product import",
+    "location": "core/appHandler.js:235",
+    "scope": "IN",
+    "status": "DET",
+    "rules": [
+     "ajinabraham.njsscan.xml.xxe_node.node_xxe"
+    ],
+    "rule_or_reason": "",
+    "codeql": "DET"
+   },
+   {
+    "id": "users-api",
+    "item": "unauthorized access to the users API",
+    "location": "routes/app.js",
+    "scope": "OUT:authorization",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "edit-user",
+    "item": "missing authorization check on edit user",
+    "location": "core/appHandler.js",
+    "scope": "OUT:authorization",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "stack-trace",
+    "item": "stack trace sent to the client",
+    "location": "core/appHandler.js",
+    "scope": "OUT:runtime",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "x-powered-by",
+    "item": "X-Powered-By header",
+    "location": "server.js",
+    "scope": "OUT:runtime",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "xss-reflected",
+    "item": "reflected XSS in search",
+    "location": "views/app/products.ejs:20",
+    "scope": "IN",
+    "status": "CEIL",
+    "rules": [],
+    "rule_or_reason": "template-side: <%- %> in an .ejs view",
+    "codeql": "DET"
+   },
+   {
+    "id": "xss-stored",
+    "item": "stored XSS in product listing",
+    "location": "views/app/products.ejs:49",
+    "scope": "IN",
+    "status": "CEIL",
+    "rules": [],
+    "rule_or_reason": "template-side and second-order",
+    "codeql": "MISS"
+   },
+   {
+    "id": "xss-dom",
+    "item": "DOM XSS in user listing",
+    "location": "views/app/adminusers.ejs:40",
+    "scope": "IN",
+    "status": "CEIL",
+    "rules": [],
+    "rule_or_reason": "client-side innerHTML",
+    "codeql": "MISS"
+   },
+   {
+    "id": "deserialization",
+    "item": "insecure deserialization (node-serialize)",
+    "location": "core/appHandler.js:218",
+    "scope": "IN",
+    "status": "DET",
+    "rules": [
+     "ajinabraham.njsscan.eval.eval_deserialize.node_deserialize"
+    ],
+    "rule_or_reason": "",
+    "codeql": "DET"
+   },
+   {
+    "id": "mathjs",
+    "item": "mathjs remote code execution",
+    "location": "package.json",
+    "scope": "OUT:SCA",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "csrf",
+    "item": "CSRF in add/edit product and user edit",
+    "location": "routes/app.js",
+    "scope": "OUT:logic",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "redirect",
+    "item": "unvalidated redirect",
+    "location": "core/appHandler.js:188",
+    "scope": "IN",
+    "status": "DET",
+    "rules": [
+     "ajinabraham.njsscan.redirect.open_redirect.express_open_redirect"
+    ],
+    "rule_or_reason": "",
+    "codeql": "DET"
+   },
+   {
+    "id": "insufficient-logging",
+    "item": "insufficient logging",
+    "location": "server.js",
+    "scope": "OUT:logic",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   }
+  ],
+  "role": "held_out",
+  "codeql": {
+   "ran": true,
+   "version": "CodeQL CLI 2.27.3 (codeql-bundle-v2.27.3)",
+   "suite": "javascript-security-extended.qls, default configuration",
+   "alerts": 33
+  }
+ },
+ "vulnerable-node": {
+  "language": "javascript",
+  "commit": "d68f2a3c9277ece2c2feb9976052033bdecd7fbe",
+  "documented_list": "docs/labs/*.md (one lab per vulnerability, naming files) plus in-code `VULN` markers",
+  "licence": "BSD-3-Clause text (LICENSE)",
+  "items": [
+   {
+    "id": "01-bola",
+    "item": "BOLA / IDOR on orders",
+    "location": "routes/api/v1.js:40",
+    "scope": "OUT:authorization",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "02-ssrf",
+    "item": "SSRF to IMDS",
+    "location": "routes/tools.js:12",
+    "scope": "IN",
+    "status": "DET",
+    "rules": [
+     "aegis-js-ssrf"
+    ],
+    "rule_or_reason": "routes/tools.js:21",
+    "codeql": "DET"
+   },
+   {
+    "id": "03-sqli-login",
+    "item": "SQL injection (login)",
+    "location": "model/db.js:9",
+    "scope": "IN",
+    "status": "CEIL",
+    "rules": [],
+    "rule_or_reason": "SQL built in model/db.js from function arguments (cross-function)",
+    "codeql": "DET"
+   },
+   {
+    "id": "03-sqli-search",
+    "item": "SQL injection (search)",
+    "location": "model/db.js:21",
+    "scope": "IN",
+    "status": "CEIL",
+    "rules": [],
+    "rule_or_reason": "SQL built in model/db.js from function arguments (cross-function)",
+    "codeql": "DET"
+   },
+   {
+    "id": "03-sqli-sort",
+    "item": "SQL injection (ORDER BY sort)",
+    "location": "model/db.js:97",
+    "scope": "IN",
+    "status": "CEIL",
+    "rules": [],
+    "rule_or_reason": "SQL built in model/db.js from function arguments (cross-function)",
+    "codeql": "DET"
+   },
+   {
+    "id": "03b-nosql",
+    "item": "NoSQL injection (tag filter)",
+    "location": "routes/shop.js:32",
+    "scope": "IN",
+    "status": "DET",
+    "rules": [
+     "aegis-js-nosql-injection"
+    ],
+    "rule_or_reason": "routes/shop.js:41,58",
+    "codeql": "DET"
+   },
+   {
+    "id": "04-mass-assignment",
+    "item": "mass assignment to admin",
+    "location": "routes/account.js:25",
+    "scope": "OUT:authorization",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "05-xss",
+    "item": "stored XSS (reviews)",
+    "location": "views/product_detail.ejs:70",
+    "scope": "IN",
+    "status": "CEIL",
+    "rules": [],
+    "rule_or_reason": "template-side: <%- %> in an .ejs view",
+    "codeql": "MISS"
+   },
+   {
+    "id": "06-price",
+    "item": "price tampering at checkout",
+    "location": "routes/orders.js:16",
+    "scope": "OUT:logic",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "06b-csrf",
+    "item": "CSRF on profile update",
+    "location": "routes/orders.js:18",
+    "scope": "OUT:logic",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "07-jwt",
+    "item": "forgeable JWTs (weak secret)",
+    "location": "middleware/auth.js:20",
+    "scope": "OUT:secrets",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "08-pan",
+    "item": "PAN and CVV stored in clear text",
+    "location": "model/db.js:75",
+    "scope": "IN",
+    "status": "GAP",
+    "rules": [],
+    "rule_or_reason": "no cleartext-storage rule",
+    "codeql": "MISS"
+   },
+   {
+    "id": "09-debug",
+    "item": "debug mode: stack traces and SQL to the user",
+    "location": "server.js:88",
+    "scope": "IN",
+    "status": "GAP",
+    "rules": [],
+    "rule_or_reason": "no Express debug / verbose-error rule",
+    "codeql": "DET"
+   },
+   {
+    "id": "10-secrets-in-logs",
+    "item": "password in logs",
+    "location": "routes/auth.js:23",
+    "scope": "IN",
+    "status": "GAP",
+    "rules": [],
+    "rule_or_reason": "no sensitive-logging rule",
+    "codeql": "DET"
+   },
+   {
+    "id": "10-log-injection",
+    "item": "log injection",
+    "location": "routes/pages.js:19",
+    "scope": "IN",
+    "status": "GAP",
+    "rules": [],
+    "rule_or_reason": "no log-injection rule",
+    "codeql": "DET"
+   },
+   {
+    "id": "11-pipelines",
+    "item": "poisoned CI pipelines",
+    "location": ".github/workflows",
+    "scope": "OUT:CI/CD (language-independent rules)",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "12-git-secret",
+    "item": "secret in git history",
+    "location": "-",
+    "scope": "OUT:secrets",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "13-prototype-pollution",
+    "item": "prototype pollution via deep merge",
+    "location": "model/merge.js:3",
+    "scope": "IN",
+    "status": "GAP",
+    "rules": [],
+    "rule_or_reason": "no prototype-pollution rule",
+    "codeql": "DET"
+   },
+   {
+    "id": "14-redos",
+    "item": "ReDoS",
+    "location": "routes/tools.js:35",
+    "scope": "IN",
+    "status": "DET",
+    "rules": [
+     "ajinabraham.njsscan.dos.regex_injection.regex_injection_dos"
+    ],
+    "rule_or_reason": "user-controlled pattern, routes/tools.js:41",
+    "codeql": "DET"
+   },
+   {
+    "id": "15-path-traversal",
+    "item": "path traversal on download",
+    "location": "routes/extras.js:11",
+    "scope": "IN",
+    "status": "DET",
+    "rules": [
+     "aegis-js-path-traversal"
+    ],
+    "rule_or_reason": "",
+    "codeql": "DET"
+   },
+   {
+    "id": "16-cmdi",
+    "item": "command injection in diagnostics",
+    "location": "routes/extras.js:25",
+    "scope": "IN",
+    "status": "DET",
+    "rules": [
+     "aegis-js-command-injection"
+    ],
+    "rule_or_reason": "",
+    "codeql": "DET"
+   },
+   {
+    "id": "17-docker",
+    "item": "Docker deployment hardening",
+    "location": "Dockerfile",
+    "scope": "OUT:IaC",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   }
+  ],
+  "role": "held_out",
+  "codeql": {
+   "ran": true,
+   "version": "CodeQL CLI 2.27.3 (codeql-bundle-v2.27.3)",
+   "suite": "javascript-security-extended.qls, default configuration",
+   "alerts": 46
+  }
+ },
+ "dvws-node": {
+  "language": "javascript",
+  "commit": "8e2e9a52a93604cb86b72cb39c16927d4744cf25",
+  "documented_list": "CHALLENGES.md: 50 challenges, each with its endpoint (route -> controller)",
+  "licence": "GPL-3.0 (LICENSE)",
+  "items": [
+   {
+    "id": "01-sqli",
+    "item": "SQL injection (passphrase)",
+    "location": "src/controllers/passphrase.js:41",
+    "scope": "IN",
+    "status": "DET",
+    "rules": [
+     "aegis-js-sql-injection"
+    ],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "02-nosql",
+    "item": "NoSQL $where injection (note search)",
+    "location": "src/controllers/notes.js:173",
+    "scope": "IN",
+    "status": "DET",
+    "rules": [
+     "aegis-js-nosql-where-injection"
+    ],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "03-cmdi",
+    "item": "OS command injection (sysinfo)",
+    "location": "src/controllers/notes.js:78",
+    "scope": "IN",
+    "status": "DET",
+    "rules": [
+     "aegis-js-command-injection"
+    ],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "04-xxe",
+    "item": "XXE (SOAP user service)",
+    "location": "src/services/soap/user-service.js",
+    "scope": "IN",
+    "status": "GAP",
+    "rules": [],
+    "rule_or_reason": "the SOAP library's parser is not a modelled XXE sink"
+   },
+   {
+    "id": "05-xml-bomb",
+    "item": "XML bomb",
+    "location": "src/controllers/notes.js",
+    "scope": "OUT:resource consumption",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "06-ssrf",
+    "item": "SSRF (XML-RPC CheckUptime)",
+    "location": "src/services/xml-rpc/server.js:29",
+    "scope": "IN",
+    "status": "DET",
+    "rules": [
+     "ajinabraham.njsscan.ssrf.ssrf_node.node_ssrf"
+    ],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "07-deserialization",
+    "item": "insecure deserialization (export)",
+    "location": "src/controllers/passphrase.js:96",
+    "scope": "IN",
+    "status": "DET",
+    "rules": [
+     "ajinabraham.njsscan.eval.eval_deserialize.node_deserialize"
+    ],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "08-xpath",
+    "item": "XPath injection (release)",
+    "location": "src/controllers/notes.js:90",
+    "scope": "IN",
+    "status": "GAP",
+    "rules": [],
+    "rule_or_reason": "no XPath rule"
+   },
+   {
+    "id": "09-ldap",
+    "item": "LDAP injection (ldap-search)",
+    "location": "src/controllers/users.js:614",
+    "scope": "IN",
+    "status": "GAP",
+    "rules": [],
+    "rule_or_reason": "no JS LDAP finding (ldapjs filter not a modelled sink)"
+   },
+   {
+    "id": "10-path-traversal",
+    "item": "path traversal (download)",
+    "location": "src/controllers/files.js:90",
+    "scope": "IN",
+    "status": "DET",
+    "rules": [
+     "ajinabraham.njsscan.traversal.resolve_path_traversal.join_resolve_path_traversal"
+    ],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "11-soap-injection",
+    "item": "SOAP injection",
+    "location": "src/services/soap/user-service.js",
+    "scope": "IN",
+    "status": "GAP",
+    "rules": [],
+    "rule_or_reason": "no SOAP / XML-injection rule"
+   },
+   {
+    "id": "12-xml-injection-export",
+    "item": "XML injection (profile export)",
+    "location": "src/controllers/users.js",
+    "scope": "IN",
+    "status": "GAP",
+    "rules": [],
+    "rule_or_reason": "no XML-injection rule (an XSS finding at the same response is a different class)"
+   },
+   {
+    "id": "13-xml-import-mass-assignment",
+    "item": "XML import mass assignment",
+    "location": "src/controllers/users.js:301",
+    "scope": "OUT:authorization",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "14-mass-assignment",
+    "item": "mass assignment (registration)",
+    "location": "src/controllers/users.js",
+    "scope": "OUT:authorization",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "15-idor",
+    "item": "IDOR on notes",
+    "location": "src/controllers/notes.js",
+    "scope": "OUT:authorization",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "16-jwt-none",
+    "item": "JWT none algorithm",
+    "location": "-",
+    "scope": "OUT:authentication",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "17-jwt-brute",
+    "item": "JWT secret brute force",
+    "location": "-",
+    "scope": "OUT:secrets",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "18-vertical-ac",
+    "item": "vertical access control",
+    "location": "-",
+    "scope": "OUT:authorization",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "19-horizontal-ac",
+    "item": "horizontal access control",
+    "location": "-",
+    "scope": "OUT:authorization",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "20-open-redirect",
+    "item": "open redirect (logout)",
+    "location": "src/controllers/users.js:129",
+    "scope": "IN",
+    "status": "DET",
+    "rules": [
+     "ajinabraham.njsscan.redirect.open_redirect.express_open_redirect"
+    ],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "21-xss",
+    "item": "XSS (SOAP response)",
+    "location": "src/services/soap/user-service.js:60",
+    "scope": "IN",
+    "status": "DET",
+    "rules": [
+     "aegis-js-xss"
+    ],
+    "rule_or_reason": "the SOAP XML response, user-service.js:73"
+   },
+   {
+    "id": "22-csrf",
+    "item": "CSRF (admin create-user)",
+    "location": "-",
+    "scope": "OUT:logic",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "23-cors",
+    "item": "CORS misconfiguration (origin reflected with credentials)",
+    "location": "src/controllers/notes.js:30",
+    "scope": "IN",
+    "status": "GAP",
+    "rules": [],
+    "rule_or_reason": "no CORS rule"
+   },
+   {
+    "id": "24-log-pollution",
+    "item": "CRLF injection / log pollution",
+    "location": "src/controllers/users.js:145",
+    "scope": "IN",
+    "status": "GAP",
+    "rules": [],
+    "rule_or_reason": "no log-injection rule"
+   },
+   {
+    "id": "25-user-enum",
+    "item": "user enumeration",
+    "location": "-",
+    "scope": "OUT:logic",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "26-info-disclosure",
+    "item": "information disclosure",
+    "location": "-",
+    "scope": "OUT:runtime",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "27-hash-exposure",
+    "item": "password hashes exposed",
+    "location": "-",
+    "scope": "OUT:authorization",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "28-prototype-pollution",
+    "item": "prototype pollution (upload metadata)",
+    "location": "src/controllers/files.js:15",
+    "scope": "IN",
+    "status": "GAP",
+    "rules": [],
+    "rule_or_reason": "no prototype-pollution rule"
+   },
+   {
+    "id": "29-rate-limit",
+    "item": "missing rate limit",
+    "location": "-",
+    "scope": "OUT:logic",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "30-rate-limit-bypass",
+    "item": "rate limit bypass via X-Forwarded-For",
+    "location": "-",
+    "scope": "OUT:logic",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "31-hidden-api",
+    "item": "hidden API functionality",
+    "location": "-",
+    "scope": "OUT:runtime",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "32-gql-introspection",
+    "item": "GraphQL introspection",
+    "location": "-",
+    "scope": "OUT:runtime",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "33-gql-ac",
+    "item": "GraphQL access control",
+    "location": "-",
+    "scope": "OUT:authorization",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "34-gql-file-write",
+    "item": "GraphQL arbitrary file write",
+    "location": "src/graphql",
+    "scope": "IN",
+    "status": "GAP",
+    "rules": [],
+    "rule_or_reason": "GraphQL resolver arguments are not a modelled source"
+   },
+   {
+    "id": "35-gql-batching",
+    "item": "GraphQL batching brute force",
+    "location": "-",
+    "scope": "OUT:logic",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "36-gql-sensitive",
+    "item": "GraphQL sensitive data exposure",
+    "location": "-",
+    "scope": "OUT:authorization",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "37-upload",
+    "item": "unrestricted file upload",
+    "location": "src/controllers/files.js:75",
+    "scope": "IN",
+    "status": "GAP",
+    "rules": [],
+    "rule_or_reason": "no upload rule"
+   },
+   {
+    "id": "38-role-exposure",
+    "item": "role-based profile data exposure",
+    "location": "-",
+    "scope": "OUT:authorization",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "39-recovery-idor",
+    "item": "account recovery IDOR chain",
+    "location": "-",
+    "scope": "OUT:authorization",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "40-session-revocation",
+    "item": "session not revoked on password change",
+    "location": "-",
+    "scope": "OUT:authentication",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "41-cookie",
+    "item": "cookie security flags",
+    "location": "src/controllers/users.js:478",
+    "scope": "IN",
+    "status": "GAP",
+    "rules": [],
+    "rule_or_reason": "res.cookie options built by a helper; no finding"
+   },
+   {
+    "id": "42-jsonp",
+    "item": "JSONP cross-origin data exposure (callback validated)",
+    "location": "src/controllers/users.js:530",
+    "scope": "OUT:authorization",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "43-cswsh",
+    "item": "cross-site WebSocket hijacking",
+    "location": "-",
+    "scope": "OUT:authentication",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "44-ssti",
+    "item": "server-side template injection (greeter)",
+    "location": "src/routes/notes.js:19",
+    "scope": "IN",
+    "status": "DET",
+    "rules": [
+     "aegis-js-code-injection"
+    ],
+    "rule_or_reason": "the template is compiled with new Function"
+   },
+   {
+    "id": "45-yaml",
+    "item": "unsafe YAML supplier import",
+    "location": "src/controllers/integrations.js:25",
+    "scope": "IN",
+    "status": "DET",
+    "rules": [
+     "ajinabraham.njsscan.eval.eval_yaml_deserialize.yaml_deserialize"
+    ],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "46-report-path",
+    "item": "monthly report path traversal",
+    "location": "src/controllers/integrations.js:45",
+    "scope": "IN",
+    "status": "DET",
+    "rules": [
+     "aegis-js-path-traversal"
+    ],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "47-pref-mass-assignment",
+    "item": "notification preference mass assignment",
+    "location": "-",
+    "scope": "OUT:authorization",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "48-trace",
+    "item": "undocumented TRACE diagnostics",
+    "location": "-",
+    "scope": "OUT:runtime",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "49-legacy-login",
+    "item": "legacy login skips password verification",
+    "location": "-",
+    "scope": "OUT:authentication",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "50-page-size",
+    "item": "excessive report page size",
+    "location": "-",
+    "scope": "OUT:resource consumption",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   }
+  ],
+  "role": "tuning"
+ },
+ "oopssec-store": {
+  "language": "typescript",
+  "commit": "faef8cb253d47f8f744dd1b63780a16f79bb4085",
+  "documented_list": "content/vulnerabilities/*.md: 36 write-ups, each with its endpoint and the vulnerable code",
+  "licence": "MIT (LICENSE)",
+  "items": [
+   {
+    "id": "aes-cbc-padding-oracle",
+    "item": "AES-CBC padding oracle",
+    "location": "-",
+    "scope": "OUT:logic",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "ai-rules-file-backdoor",
+    "item": "AI rules-file backdoor",
+    "location": "-",
+    "scope": "OUT:SCA",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "broken-function-level-authorization",
+    "item": "broken function-level authorization",
+    "location": "-",
+    "scope": "OUT:authorization",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "broken-object-level-authorization",
+    "item": "BOLA",
+    "location": "-",
+    "scope": "OUT:authorization",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "brute-force-no-rate-limiting",
+    "item": "brute force, no rate limiting",
+    "location": "-",
+    "scope": "OUT:logic",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "client-side-price-manipulation",
+    "item": "client-side price manipulation",
+    "location": "-",
+    "scope": "OUT:logic",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "cross-site-request-forgery",
+    "item": "CSRF",
+    "location": "-",
+    "scope": "OUT:logic",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "cross-site-scripting-xss",
+    "item": "stored XSS (reviews)",
+    "location": "app/api/products/[id]/reviews/route.ts:65",
+    "scope": "IN",
+    "status": "CEIL",
+    "rules": [],
+    "rule_or_reason": "rendered client-side (React)",
+    "codeql": "MISS"
+   },
+   {
+    "id": "csrf-profile-takeover-chain",
+    "item": "CSRF profile takeover chain",
+    "location": "-",
+    "scope": "OUT:logic",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "information-disclosure-api-error",
+    "item": "information disclosure in API errors",
+    "location": "-",
+    "scope": "OUT:runtime",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "insecure-direct-object-reference",
+    "item": "IDOR",
+    "location": "-",
+    "scope": "OUT:authorization",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "insecure-password-reset",
+    "item": "insecure password reset",
+    "location": "-",
+    "scope": "OUT:authentication",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "insecure-randomness-gift-card",
+    "item": "insecure randomness (gift cards)",
+    "location": "lib/gift-card.ts:9",
+    "scope": "IN",
+    "status": "GAP",
+    "rules": [],
+    "rule_or_reason": "Math.random in a library function; weak-random rule needs a secret-shaped receiver in the same scope",
+    "codeql": "MISS"
+   },
+   {
+    "id": "jwt-algorithm-confusion",
+    "item": "JWT algorithm confusion",
+    "location": "-",
+    "scope": "OUT:authentication",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "malicious-file-upload",
+    "item": "malicious file upload",
+    "location": "app/api/admin/products/[id]/image/route.ts:83",
+    "scope": "IN",
+    "status": "GAP",
+    "rules": [],
+    "rule_or_reason": "Next.js App Router request (formData) is not a modelled source",
+    "codeql": "MISS"
+   },
+   {
+    "id": "mass-assignment",
+    "item": "mass assignment",
+    "location": "-",
+    "scope": "OUT:authorization",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "mcp-malicious-server",
+    "item": "malicious MCP server",
+    "location": "-",
+    "scope": "OUT:SCA",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "middleware-authorization-bypass",
+    "item": "middleware authorization bypass",
+    "location": "-",
+    "scope": "OUT:authorization",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "npm-supply-chain-typosquat",
+    "item": "npm typosquat",
+    "location": "-",
+    "scope": "OUT:SCA",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "open-redirect",
+    "item": "open redirect",
+    "location": "app/login/LoginForm.tsx:16",
+    "scope": "IN",
+    "status": "CEIL",
+    "rules": [],
+    "rule_or_reason": "client-side (router.push in a React component)",
+    "codeql": "MISS"
+   },
+   {
+    "id": "path-traversal",
+    "item": "path traversal (files API)",
+    "location": "app/api/files/route.ts:62",
+    "scope": "IN",
+    "status": "GAP",
+    "rules": [],
+    "rule_or_reason": "Next.js App Router request (nextUrl.searchParams) is not a modelled source",
+    "codeql": "MISS"
+   },
+   {
+    "id": "plaintext-password-in-logs",
+    "item": "plaintext password in logs",
+    "location": "app/api/auth/login/route.ts:24",
+    "scope": "IN",
+    "status": "GAP",
+    "rules": [],
+    "rule_or_reason": "no sensitive-logging rule",
+    "codeql": "MISS"
+   },
+   {
+    "id": "product-search-sql-injection",
+    "item": "SQL injection (product search)",
+    "location": "app/api/products/search/route.ts:48",
+    "scope": "IN",
+    "status": "GAP",
+    "rules": [],
+    "rule_or_reason": "Prisma $queryRawUnsafe is not a modelled sink; App Router source not modelled",
+    "codeql": "MISS"
+   },
+   {
+    "id": "prompt-injection-ai-assistant",
+    "item": "prompt injection (AI assistant)",
+    "location": "-",
+    "scope": "OUT:logic",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "public-env-variable",
+    "item": "secret in a public env variable",
+    "location": "-",
+    "scope": "OUT:secrets",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "race-condition-coupon",
+    "item": "race condition (coupon)",
+    "location": "-",
+    "scope": "OUT:logic",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "react2shell",
+    "item": "React server components RCE (dependency)",
+    "location": "-",
+    "scope": "OUT:SCA",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "second-order-sql-injection",
+    "item": "second-order SQL injection",
+    "location": "app/api/products/[id]/reviews/route.ts:65",
+    "scope": "IN",
+    "status": "CEIL",
+    "rules": [],
+    "rule_or_reason": "second-order",
+    "codeql": "MISS"
+   },
+   {
+    "id": "self-xss-profile-injection",
+    "item": "self-XSS (profile)",
+    "location": "app/api/user/profile/route.ts:72",
+    "scope": "IN",
+    "status": "CEIL",
+    "rules": [],
+    "rule_or_reason": "rendered client-side (React)",
+    "codeql": "MISS"
+   },
+   {
+    "id": "server-side-request-forgery",
+    "item": "SSRF (support)",
+    "location": "app/api/support/route.ts:16",
+    "scope": "IN",
+    "status": "GAP",
+    "rules": [],
+    "rule_or_reason": "Next.js App Router request is not a modelled source",
+    "codeql": "MISS"
+   },
+   {
+    "id": "session-fixation-weak-session-management",
+    "item": "session fixation",
+    "location": "-",
+    "scope": "OUT:authentication",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "sql-injection",
+    "item": "SQL injection (order search)",
+    "location": "app/api/orders/search/route.ts:51",
+    "scope": "IN",
+    "status": "GAP",
+    "rules": [],
+    "rule_or_reason": "Prisma $queryRawUnsafe is not a modelled sink; App Router source not modelled",
+    "codeql": "MISS"
+   },
+   {
+    "id": "weak-jwt-secret",
+    "item": "weak JWT secret",
+    "location": "-",
+    "scope": "OUT:secrets",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "weak-md5-hashing",
+    "item": "weak MD5 hashing",
+    "location": "app/api/monitoring/auth/route.ts:24",
+    "scope": "IN",
+    "status": "DET",
+    "rules": [
+     "ajinabraham.njsscan.crypto.crypto_node.node_md5"
+    ],
+    "rule_or_reason": "hashMD5 in lib/server-auth.ts:15, used for the credential",
+    "codeql": "DET"
+   },
+   {
+    "id": "x-forwarded-for-sql-injection",
+    "item": "SQL injection via X-Forwarded-For",
+    "location": "app/api/tracking/route.ts:25",
+    "scope": "IN",
+    "status": "GAP",
+    "rules": [],
+    "rule_or_reason": "Prisma $queryRawUnsafe is not a modelled sink; header source not modelled",
+    "codeql": "MISS"
+   },
+   {
+    "id": "xxe-supplier-order-import",
+    "item": "XXE (supplier order import)",
+    "location": "app/api/admin/suppliers/import-order/route.ts:65",
+    "scope": "IN",
+    "status": "DET",
+    "rules": [
+     "ajinabraham.njsscan.xml.xxe_node.node_xxe"
+    ],
+    "rule_or_reason": "",
+    "codeql": "MISS"
+   }
+  ],
+  "role": "held_out",
+  "codeql": {
+   "ran": true,
+   "version": "CodeQL CLI 2.27.3 (codeql-bundle-v2.27.3)",
+   "suite": "typescript-security-extended.qls, default configuration",
+   "alerts": 5
+  }
+ },
+ "vunapi": {
+  "language": "typescript",
+  "commit": "00e26e455403b41b75a2f97a45be2d22bcbd26dd",
+  "documented_list": "Vulnerabilities.md: each vulnerability with its endpoint (NestJS controller). Built to test API fuzzers; the auth variants duplicate the noauth code and are not counted again",
+  "licence": "MIT (LICENSE)",
+  "items": [
+   {
+    "id": "status-code",
+    "item": "wrong status code",
+    "location": "-",
+    "scope": "OUT:logic",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "kill",
+    "item": "application killable",
+    "location": "-",
+    "scope": "OUT:resource consumption",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "redos",
+    "item": "ReDoS (email check)",
+    "location": "noauth/src/api/redos/redos.controller.ts:12",
+    "scope": "IN",
+    "status": "GAP",
+    "rules": [],
+    "rule_or_reason": "NestJS decorator parameters (@Query/@Body) are not a modelled source",
+    "codeql": "DET"
+   },
+   {
+    "id": "cmdi",
+    "item": "command injection (/exec)",
+    "location": "noauth/src/api/cmdinject/cmdinject.controller.ts:13",
+    "scope": "IN",
+    "status": "GAP",
+    "rules": [],
+    "rule_or_reason": "NestJS decorator parameters (@Query/@Body) are not a modelled source",
+    "codeql": "DET"
+   },
+   {
+    "id": "sqli",
+    "item": "SQL injection (/login)",
+    "location": "noauth/src/api/login/login.service.ts",
+    "scope": "IN",
+    "status": "GAP",
+    "rules": [],
+    "rule_or_reason": "NestJS decorator parameters are not a modelled source",
+    "codeql": "MISS"
+   },
+   {
+    "id": "int-overflow",
+    "item": "integer overflow (/person/{id})",
+    "location": "-",
+    "scope": "OUT:logic",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   },
+   {
+    "id": "logic-order",
+    "item": "logical-order error (lock)",
+    "location": "-",
+    "scope": "OUT:logic",
+    "status": "n/a",
+    "rules": [],
+    "rule_or_reason": ""
+   }
+  ],
+  "role": "held_out",
+  "codeql": {
+   "ran": true,
+   "version": "CodeQL CLI 2.27.3 (codeql-bundle-v2.27.3)",
+   "suite": "typescript-security-extended.qls, default configuration",
+   "alerts": 15
+  }
  }
 }

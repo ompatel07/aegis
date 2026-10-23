@@ -39,22 +39,50 @@ func sastCoverageSentence(cm models.JSONB) string {
 		return ""
 	}
 	var c struct {
-		Confident bool    `json:"confident"`
-		Summary   string  `json:"summary"`
-		Gap       string  `json:"gap"`
-		Strong    float64 `json:"strong_fraction"`
+		Confident       bool    `json:"confident"`
+		Summary         string  `json:"summary"`
+		Gap             string  `json:"gap"`
+		Strong          float64 `json:"strong_fraction"`
+		Quadrant        string  `json:"quadrant"`
+		CleanLabel      string  `json:"clean_label"`
+		PrecisionCaveat string  `json:"precision_caveat"`
 	}
 	if err := json.Unmarshal(cm, &c); err != nil || c.Summary == "" {
 		return ""
 	}
-	if c.Confident {
+	// N6: two claims, two gates. A clean result rests on recall, a reported problem on
+	// precision, and each is certified separately; the sentence says which one is.
+	switch quadrantOf(c.Quadrant, c.Confident) {
+	case "full":
 		return fmt.Sprintf("SAST coverage: %s. %d%% of this repository's code is in languages "+
 			"Aegis covers strongly, so the security result below is a measured one.",
 			c.Summary, int(c.Strong*100+0.5))
+	case "problem-only":
+		return fmt.Sprintf("SAST coverage: %s. Reported security issues are certified, but our "+
+			"recall on this repository's languages is not, so a clean result is stated as %q and "+
+			"never as a favourable grade. Dependency CVEs, secrets, IaC and CI/CD checks ran normally.",
+			c.Summary, c.CleanLabel)
+	case "clean-only":
+		return fmt.Sprintf("SAST coverage: %s. A clean result here is a measured one, but reported "+
+			"issues are not certified (%s), so no unfavourable grade is given on them. Dependency "+
+			"CVEs, secrets, IaC and CI/CD checks ran normally.", c.Summary, c.PrecisionCaveat)
 	}
 	return fmt.Sprintf("SAST coverage: %s. The security score is reported as NOT MEASURED because %s. "+
 		"Dependency CVEs, secrets, IaC and CI/CD checks ran normally and are unaffected.",
 		c.Summary, c.Gap)
+}
+
+// quadrantOf mirrors the orchestrator's EffectiveQuadrant: a scan from before N6 has no
+// quadrant, and its confident flag decides between full and withheld.
+func quadrantOf(q string, confident bool) string {
+	switch q {
+	case "full", "problem-only", "clean-only", "withheld":
+		return q
+	}
+	if confident {
+		return "full"
+	}
+	return "withheld"
 }
 
 type RiskItem struct {
@@ -172,9 +200,9 @@ type ComplianceReport struct {
 	// J3: the closed half of the ledger -- findings that were open on this project
 	// and are now proven fixed by a later scan. Dropping it here made the field
 	// null in the API while the scanner was computing it correctly.
-	FindingsRemediated int `json:"findings_remediated"`
-	HTML                   string `json:"html"`
-	Error                  string `json:"error,omitempty"`
+	FindingsRemediated int    `json:"findings_remediated"`
+	HTML               string `json:"html"`
+	Error              string `json:"error,omitempty"`
 }
 
 // Compliance generates a compliance report for a scan by mapping its findings to a
@@ -254,9 +282,9 @@ func (s *ReportService) Compliance(ctx context.Context, scanID, userID, framewor
 			// application is written in.
 			"security_coverage": scan.SecurityCoverage,
 		},
-		"findings":               fs,
-		"remediated":             remediated,
-		"remediation_available":  remediationAvailable,
+		"findings":              fs,
+		"remediated":            remediated,
+		"remediation_available": remediationAvailable,
 	})
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, s.scannerURL+"/report/compliance", bytes.NewReader(payload))
 	if err != nil {
@@ -440,12 +468,13 @@ func coverageConfident(cm models.JSONB) bool {
 		return true
 	}
 	var c struct {
-		Confident bool `json:"confident"`
+		Confident bool   `json:"confident"`
+		Quadrant  string `json:"quadrant"`
 	}
 	if err := json.Unmarshal(cm, &c); err != nil {
 		return true
 	}
-	return c.Confident
+	return quadrantOf(c.Quadrant, c.Confident) == "full"
 }
 
 func metadataDigest(project string, scan *models.Scan, findings []models.Finding) string {
@@ -523,5 +552,3 @@ func scoreDelta(cur, prev *int) (int, bool) {
 	}
 	return *cur - *prev, true
 }
-
-

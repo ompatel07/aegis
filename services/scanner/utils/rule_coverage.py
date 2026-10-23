@@ -254,6 +254,14 @@ def summarise(language_loc: dict[str, int], unreadable: dict[str, int] | None = 
 
     strong_fraction = by_tier[TIER_STRONG] / total
     confident = strong_fraction > CONFIDENT_STRONG_FRACTION
+    # N6: two claims, two gates. A repository passes a gate when more than half its code
+    # is in languages that pass it (the N2 threshold, per gate). `confident` (both) is
+    # kept: it is exactly the "full" quadrant, and older readers rely on it.
+    recall_loc = sum(l["loc"] for l in langs if (l["evidence"] or {}).get("recall_gate"))
+    precision_loc = sum(l["loc"] for l in langs if (l["evidence"] or {}).get("precision_gate"))
+    clean_claim = recall_loc / total > CONFIDENT_STRONG_FRACTION
+    problem_claim = precision_loc / total > CONFIDENT_STRONG_FRACTION
+    quad = tier_bar.quadrant(clean_claim, problem_claim)
     return {
         "total_code_lines": total,
         "strong_fraction": round(strong_fraction, 4),
@@ -261,6 +269,15 @@ def summarise(language_loc: dict[str, int], unreadable: dict[str, int] | None = 
         "uncovered_fraction": round(by_tier[TIER_NONE] / total, 4),
         "confident": confident,
         "threshold": CONFIDENT_STRONG_FRACTION,
+        "recall_fraction": round(recall_loc / total, 4),
+        "precision_fraction": round(precision_loc / total, 4),
+        "clean_claim": clean_claim,
+        "problem_claim": problem_claim,
+        "quadrant": quad,
+        # Shown INSTEAD of a favourable grade when only the problem claim is certified.
+        "clean_label": clean_label(langs),
+        # Carried by findings when the problem claim is not certified.
+        "precision_caveat": None if problem_claim else precision_caveat(langs),
         "languages": langs,
         "summary": headline(langs),
         "gap": None if confident else gap_sentence(langs),
@@ -316,6 +333,35 @@ def headline(langs: list[dict], limit: int = 4) -> str:
         return "no application code detected"
     extra = len([l for l in langs if l["share"] >= 0.01]) - len(parts)
     return "; ".join(parts) + (f"; +{extra} more" if extra > 0 else "")
+
+
+def clean_label(langs: list[dict]) -> str:
+    """"No issues found in what we check · PHP 42% held-out recall" -- what a clean scan
+    may say when our recall is not certified: what we looked at, and how hard."""
+    parts = []
+    for l in langs:
+        if l["share"] < 0.05 or l["tier"] == TIER_NONE:
+            continue
+        ev = l.get("evidence") or {}
+        r = ev.get("held_out_recall")
+        parts.append(f"{display_name(l['language'])} " + (f"{round(r * 100)}% held-out recall" if r is not None
+                                                          else "recall not measured on a held-out corpus"))
+    return "No issues found in what we check" + (" · " + "; ".join(parts[:3]) if parts else "")
+
+
+def precision_caveat(langs: list[dict]) -> str:
+    """Why findings carry a caveat: the measured precision on real repositories."""
+    parts = []
+    for l in langs:
+        ev = l.get("evidence") or {}
+        if l["share"] < 0.05 or l["tier"] == TIER_NONE or ev.get("precision_gate"):
+            continue
+        p = ev.get("precision")
+        parts.append(f"{display_name(l['language'])} " + (f"{round(p * 100)}% precise ({ev['tp']}/{ev['tp'] + ev['fp']})"
+                                                          if p is not None else "precision not measured"))
+    return ("findings are not certified: on held-out real repositories our findings were "
+            + "; ".join(parts[:3]) + ", so some reported issues may not be real" if parts else
+            "findings are not certified as precise")
 
 
 def gap_sentence(langs: list[dict]) -> str:
