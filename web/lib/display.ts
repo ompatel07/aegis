@@ -257,3 +257,20 @@ export function excludedBundledLabel(
     excluded.files === 1 ? "" : "s"
   } excluded from SAST (${size}) — still scanned by SCA + vendored fingerprinting`;
 }
+
+// D2: semgrep cuts a large function's taint analysis short on a wall-clock limit, so
+// findings in those files can differ between scans of the same commit. Stated on every
+// scan where it happened, never silent; null when the analysis was complete.
+export function partialAnalysisLabel(
+  partial?: { files: number; sample?: string[] } | null,
+): string | null {
+  if (!partial || partial.files <= 0) return null;
+  const shown = (partial.sample ?? []).slice(0, 3);
+  const more = partial.files - shown.length;
+  const which = shown.length
+    ? ` (${shown.join(", ")}${more > 0 ? ` and ${more} more` : ""})`
+    : "";
+  return `${partial.files} file${partial.files === 1 ? " was" : "s were"} only partially analysed${which}: the analysis hit a time limit, so findings in ${
+    partial.files === 1 ? "it" : "them"
+  } can differ between scans of the same commit and some may be missed`;
+}

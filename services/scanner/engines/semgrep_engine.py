@@ -485,10 +485,79 @@ _DEFAULT_EXCLUDE_RULES: list[str] = [
 ]
 
 
+# ── Partial analysis (D2) ─────────────────────────────────────────────────────
+# Semgrep bounds every function's taint fixpoint by WALL-CLOCK time -- 0.2 s
+# (Limits_semgrep.taint_FIXPOINT_TIMEOUT; 0.15 s for constant propagation), checked
+# after 100 iterations -- and on expiry keeps the partial result. On a large function
+# the findings then depend on CPU load: Dolibarr's adherents/card.php gives the same 22
+# XSS findings on every lone run and between 0 and 7 with four concurrent copies on
+# eight CPUs, and one full Dolibarr scan hits the limit in ~145 files. No flag moves the
+# limit and re-running a file alone does not converge (docs/D2_DETERMINISM.md), so the
+# variance cannot be removed -- only bounded and disclosed. Semgrep 1.97 reports the
+# timeout nowhere but its debug log, so the scan runs with --debug while the core's own
+# log is held at warning level (SEMGREP_LOG_LEVEL), and the warnings are read back.
+# Per-file rule timeouts (--timeout) vary with load the same way and are disclosed too.
+_FIXPOINT_TIMEOUT = "Fixpoint timeout while performing"
+_FIXPOINT_FILE = re.compile(r"\bfile: (\S+?)\]?(?:\s|$)")
+_PARTIAL_SAMPLE = 25
+
+# With --debug, stderr carries matched code (`match_key = (...)` and its continuation
+# lines) -- a hardcoded-secret match puts the secret there. It must never reach a stored
+# error, so an error is built from semgrep's JSON errors, else from lines that are
+# plainly error lines, else from the exit code alone.
+_STDERR_ERROR_LINE = re.compile(
+    r"^\s*(?:\[[\d.:]+\]\[[^\]]*(?:ERROR|FATAL)|\[?(?:ERROR|FATAL)\]?[: ]|error:|fatal:|"
+    r"semgrep-core (?:exited|failed)|Fatal error|Traceback|\w*(?:Error|Exception): )")
+
+
+def partial_analysis(stderr: str, raw: dict | None, root: str) -> dict | None:
+    """Files whose analysis semgrep cut short on time in this run: a taint/constant-
+    propagation fixpoint timeout (read from the debug log) or a per-file rule timeout
+    (from the JSON errors). None when the run was complete."""
+    def rel(path: str) -> str:
+        return os.path.relpath(path, root).replace(os.sep, "/") if os.path.isabs(path) else path
+
+    fixpoints, files = 0, set()
+    for line in (stderr or "").splitlines():
+        if _FIXPOINT_TIMEOUT in line:
+            fixpoints += 1
+            m = _FIXPOINT_FILE.search(line)
+            if m:
+                files.add(rel(m.group(1)))
+    rule_timeouts = 0
+    for err in (raw or {}).get("errors", []) or []:
+        if "Timeout" in json.dumps(err.get("type")) and err.get("path"):
+            rule_timeouts += 1
+            files.add(rel(err["path"]))
+    if not fixpoints and not rule_timeouts:
+        return None
+    return {
+        "files": len(files), "fixpoint_timeouts": fixpoints, "rule_timeouts": rule_timeouts,
+        "sample": sorted(files)[:_PARTIAL_SAMPLE],
+        "reason": "semgrep stopped analysing part of these files on a time limit, so findings "
+                  "in them can differ between scans of the same commit and some may be missed",
+    }
+
+
+def _failure_message(stderr: str, stdout: str, returncode: int) -> str:
+    """A semgrep failure, described without any of the matched code --debug logs."""
+    try:
+        errs = (json.loads(stdout) if stdout.strip() else {}).get("errors") or []
+    except (ValueError, AttributeError):
+        errs = []
+    msgs = [str(e.get("message") or e.get("type")) for e in errs if isinstance(e, dict)]
+    if not msgs:
+        msgs = [l.strip() for l in (stderr or "").splitlines()
+                if _STDERR_ERROR_LINE.match(l) and "match_key" not in l]
+    return normalizer.truncate("\n".join(msgs[-20:]), 2000) or f"semgrep failed (exit code {returncode})"
+
+
 def _build_args(settings: Settings, configs: list[str], path: str,
                 extra_excludes: list[str] = ()) -> list[str]:
     """Assemble the semgrep CLI invocation for the given config list."""
-    args = [settings.semgrep_bin, "scan", "--json", "--quiet", "--metrics", "off",
+    # --debug (not --quiet): the only place semgrep 1.97 reports a fixpoint timeout.
+    # SEMGREP_LOG_LEVEL=warning (set where it runs) keeps the core's log to warnings.
+    args = [settings.semgrep_bin, "scan", "--json", "--debug", "--metrics", "off",
             "--disable-version-check", "--timeout", "60", "--max-target-bytes", "2000000",
             # Emit taint source→sink dataflow traces so findings can carry
             # steps-to-reproduce (Phase 2E Task 1). Only populated for taint rules.
@@ -598,7 +667,8 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
             _build_args(settings, cfgs, req.path, extra_excludes=asset_paths),
             cwd=req.path, timeout=settings.semgrep_timeout_seconds,
             allowed_returncodes=(0, 1),
-            env={"SEMGREP_RULES_CACHE_DIR": settings.semgrep_rules_cache},
+            env={"SEMGREP_RULES_CACHE_DIR": settings.semgrep_rules_cache,
+                 "SEMGREP_LOG_LEVEL": "warning"},
         )
 
     result = await _semgrep(configs)
@@ -616,7 +686,7 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
             and result.returncode not in (0, 1)):
         log.warning(
             "semgrep.custom_rules_failed_retrying",
-            error=normalizer.truncate(result.stderr, 1000),
+            error=_failure_message(result.stderr, result.stdout, result.returncode)[:1000],
         )
         custom_applied = False
         # DEGRADED, not clean: the third-party pack still ran, but the Aegis packs
@@ -644,7 +714,7 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
     if result.returncode not in (0, 1):
         failed = EngineResult.failed(
             Engine.SEMGREP, Pillar.SECURITY,
-            normalizer.truncate(result.stderr, 2000) or "semgrep failed",
+            _failure_message(result.stderr, result.stdout, result.returncode),
             scan_id=req.scan_id, duration_seconds=result.duration_seconds,
         )
         failed.excluded_bundled = excluded_bundled
@@ -666,6 +736,12 @@ async def run(req: ScanRequest, settings: Settings) -> EngineResult:
         shutil.rmtree(aug_taint_dir, ignore_errors=True)
 
     findings = _parse(raw, req.path)
+    partial = partial_analysis(result.stderr, raw, req.path)
+    if partial:
+        log.info("semgrep.partial_analysis", files=partial["files"],
+                 fixpoint_timeouts=partial["fixpoint_timeouts"], rule_timeouts=partial["rule_timeouts"])
+        if coverage is not None:
+            coverage["partially_analysed"] = partial
     from enrichment import enricher
 
     filtered_secrets: dict[str, int] = {}

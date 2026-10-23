@@ -64,7 +64,7 @@ func Load() (*Config, error) {
 	v.SetDefault("SCANNER_BASE_URL", "http://localhost:8000")
 	v.SetDefault("SCANNER_DEEP_URL", "")
 	v.SetDefault("DEEP_SCAN_ENABLED", false) // experimental; shelved for launch (Track 2f)
-	v.SetDefault("SCANNER_TIMEOUT_SECONDS", 900)
+	v.SetDefault("SCANNER_TIMEOUT_SECONDS", 1500) // above the scanner's 1200 s semgrep limit (D2)
 	v.SetDefault("WORKSPACE_DIR", "/tmp/aegis-workspaces")
 	v.SetDefault("MAX_REPO_SIZE_MB", 512)
 	v.SetDefault("GIT_CLONE_DEPTH", 1)

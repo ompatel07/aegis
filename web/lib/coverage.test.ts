@@ -14,6 +14,7 @@ import {
   NOT_MEASURED,
   ratingDisplay,
   scoreDisplay,
+  partialAnalysisLabel,
 } from "./display.ts";
 
 const javaOnly = {
@@ -174,4 +175,13 @@ test("pre-N6 coverage falls back to confident", () => {
   assert.equal(securityQuadrant({ confident: true }), "full");
   assert.equal(securityQuadrant({ confident: false }), "withheld");
   assert.equal(securityQuadrant(null), "full");
+});
+
+test("D2: partially analysed files are stated, and absent when the analysis was complete", () => {
+  assert.equal(partialAnalysisLabel(null), null);
+  assert.equal(partialAnalysisLabel({ files: 0, sample: [] }), null);
+  const one = partialAnalysisLabel({ files: 1, sample: ["a.php"] });
+  assert.match(one ?? "", /^1 file was only partially analysed \(a\.php\): .* differ between scans/);
+  const many = partialAnalysisLabel({ files: 145, sample: ["a.php", "b.php", "c.php", "d.php"] });
+  assert.match(many ?? "", /^145 files were only partially analysed \(a\.php, b\.php, c\.php and 142 more\)/);
 });

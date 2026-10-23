@@ -62,7 +62,9 @@ class Settings(BaseSettings):
     trivy_cache_dir: str = "/opt/aegis/cache/trivy"
 
     # ── Subprocess timeouts (seconds) ────────────────────────────────────────
-    semgrep_timeout_seconds: int = 600
+    # 1200 (D2): Dolibarr's full SAST pass takes 410-620 s on 8 CPUs, so a 600 s limit
+    # made the same commit complete on one scan and fail on the next.
+    semgrep_timeout_seconds: int = 1200
     trivy_timeout_seconds: int = 600
     gitleaks_timeout_seconds: int = 300
     quality_timeout_seconds: int = 300

@@ -203,6 +203,19 @@ type SecurityCoverage struct {
 	CleanLabel string `json:"clean_label"`
 	// PrecisionCaveat travels with findings whose precision is not certified.
 	PrecisionCaveat string `json:"precision_caveat"`
+	// PartiallyAnalysed (D2): files semgrep stopped analysing on a time limit in this
+	// run, so their findings can differ between scans of the same commit. Disclosed,
+	// never silent; nil when the analysis was complete.
+	PartiallyAnalysed *PartialAnalysis `json:"partially_analysed,omitempty"`
+}
+
+// PartialAnalysis is the scanner's semgrep_engine.partial_analysis.
+type PartialAnalysis struct {
+	Files            int      `json:"files"`
+	FixpointTimeouts int      `json:"fixpoint_timeouts"`
+	RuleTimeouts     int      `json:"rule_timeouts"`
+	Sample           []string `json:"sample"`
+	Reason           string   `json:"reason"`
 }
 
 // Coverage quadrants (scanner utils/tier_bar.py).

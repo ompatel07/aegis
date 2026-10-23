@@ -15,7 +15,7 @@ import { FindingsList } from "@/components/findings/FindingsList";
 import { Button } from "@/components/ui/button";
 import { cn, formatDate, formatDuration, gradeColor, scoreColor } from "@/lib/utils";
 import { ratingDisplay, filteredSecretsLabel, filteredSecretsTotal, excludedBundledLabel, notMeasuredReason, securityPresentation, securityQuadrant, overallState, partialQualifier, coverageLabel,
-  evidenceLabel, coverageBreakdown } from "@/lib/display";
+  evidenceLabel, coverageBreakdown, partialAnalysisLabel } from "@/lib/display";
 import type { Scan } from "@/lib/types";
 import { Download, FileText, HelpCircle } from "lucide-react";
 import { useState } from "react";
@@ -142,6 +142,11 @@ export default function ScanDetailPage() {
             {scan.security_coverage.precision_caveat ? (
               <p className="font-medium text-amber-700 dark:text-amber-400">
                 Precision caveat: {scan.security_coverage.precision_caveat}.
+              </p>
+            ) : null}
+            {partialAnalysisLabel(scan.security_coverage.partially_analysed) ? (
+              <p className="text-amber-700 dark:text-amber-400">
+                {partialAnalysisLabel(scan.security_coverage.partially_analysed)}.
               </p>
             ) : null}
             <details className="mt-1">

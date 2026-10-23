@@ -347,6 +347,14 @@ export interface Scan {
     quadrant?: SecurityQuadrant;
     clean_label?: string | null;
     precision_caveat?: string | null;
+    // D2: files semgrep stopped analysing on a time limit in this scan.
+    partially_analysed?: {
+      files: number;
+      fixpoint_timeouts: number;
+      rule_timeouts: number;
+      sample: string[];
+      reason: string;
+    } | null;
   };
 }
 

@@ -1,0 +1,932 @@
+[
+ {
+  "repo": "Dolibarr__dolibarr",
+  "runs": 3,
+  "statuses": [
+   "COMPLETED",
+   "COMPLETED",
+   "COMPLETED"
+  ],
+  "seconds": [
+   486.7,
+   614.4,
+   555.8
+  ],
+  "findings": [
+   81,
+   78,
+   81
+  ],
+  "stable": 78,
+  "unstable": 3,
+  "disclosed_files": [
+   106,
+   150,
+   120
+  ],
+  "unstable_in_disclosed": 3,
+  "undisclosed": [],
+  "identical": false,
+  "fails_every_run": false
+ },
+ {
+  "repo": "FreshRSS__FreshRSS",
+  "runs": 3,
+  "statuses": [
+   "COMPLETED",
+   "COMPLETED",
+   "COMPLETED"
+  ],
+  "seconds": [
+   18.0,
+   36.9,
+   26.4
+  ],
+  "findings": [
+   11,
+   11,
+   11
+  ],
+  "stable": 11,
+  "unstable": 0,
+  "disclosed_files": [
+   2,
+   3,
+   2
+  ],
+  "unstable_in_disclosed": 0,
+  "undisclosed": [],
+  "identical": true,
+  "fails_every_run": false
+ },
+ {
+  "repo": "chatwoot__chatwoot",
+  "runs": 3,
+  "statuses": [
+   "COMPLETED",
+   "COMPLETED",
+   "COMPLETED"
+  ],
+  "seconds": [
+   41.7,
+   76.2,
+   77.3
+  ],
+  "findings": [
+   15,
+   15,
+   15
+  ],
+  "stable": 15,
+  "unstable": 0,
+  "disclosed_files": [
+   0,
+   0,
+   0
+  ],
+  "unstable_in_disclosed": 0,
+  "undisclosed": [],
+  "identical": true,
+  "fails_every_run": false
+ },
+ {
+  "repo": "cmp-ansible",
+  "runs": 3,
+  "statuses": [
+   "COMPLETED",
+   "COMPLETED",
+   "COMPLETED"
+  ],
+  "seconds": [
+   19.8,
+   34.5,
+   25.3
+  ],
+  "findings": [
+   7,
+   7,
+   7
+  ],
+  "stable": 7,
+  "unstable": 0,
+  "disclosed_files": [
+   0,
+   0,
+   0
+  ],
+  "unstable_in_disclosed": 0,
+  "undisclosed": [],
+  "identical": true,
+  "fails_every_run": false
+ },
+ {
+  "repo": "cmp-cobra",
+  "runs": 3,
+  "statuses": [
+   "COMPLETED",
+   "COMPLETED",
+   "COMPLETED"
+  ],
+  "seconds": [
+   7.2,
+   11.7,
+   8.4
+  ],
+  "findings": [
+   2,
+   2,
+   2
+  ],
+  "stable": 2,
+  "unstable": 0,
+  "disclosed_files": [
+   0,
+   0,
+   0
+  ],
+  "unstable_in_disclosed": 0,
+  "undisclosed": [],
+  "identical": true,
+  "fails_every_run": false
+ },
+ {
+  "repo": "cmp-consul",
+  "runs": 3,
+  "statuses": [
+   "COMPLETED",
+   "COMPLETED",
+   "COMPLETED"
+  ],
+  "seconds": [
+   37.6,
+   63.1,
+   50.0
+  ],
+  "findings": [
+   19,
+   19,
+   19
+  ],
+  "stable": 19,
+  "unstable": 0,
+  "disclosed_files": [
+   0,
+   0,
+   0
+  ],
+  "unstable_in_disclosed": 0,
+  "undisclosed": [],
+  "identical": true,
+  "fails_every_run": false
+ },
+ {
+  "repo": "cmp-django",
+  "runs": 3,
+  "statuses": [
+   "COMPLETED",
+   "COMPLETED",
+   "COMPLETED"
+  ],
+  "seconds": [
+   17.9,
+   30.3,
+   25.2
+  ],
+  "findings": [
+   73,
+   73,
+   73
+  ],
+  "stable": 73,
+  "unstable": 0,
+  "disclosed_files": [
+   0,
+   0,
+   0
+  ],
+  "unstable_in_disclosed": 0,
+  "undisclosed": [],
+  "identical": true,
+  "fails_every_run": false
+ },
+ {
+  "repo": "cmp-express",
+  "runs": 3,
+  "statuses": [
+   "COMPLETED",
+   "COMPLETED",
+   "COMPLETED"
+  ],
+  "seconds": [
+   10.3,
+   15.7,
+   13.1
+  ],
+  "findings": [
+   0,
+   0,
+   0
+  ],
+  "stable": 0,
+  "unstable": 0,
+  "disclosed_files": [
+   0,
+   0,
+   0
+  ],
+  "unstable_in_disclosed": 0,
+  "undisclosed": [],
+  "identical": true,
+  "fails_every_run": false
+ },
+ {
+  "repo": "cmp-fastapi",
+  "runs": 3,
+  "statuses": [
+   "COMPLETED",
+   "COMPLETED",
+   "COMPLETED"
+  ],
+  "seconds": [
+   10.3,
+   15.9,
+   10.4
+  ],
+  "findings": [
+   0,
+   0,
+   0
+  ],
+  "stable": 0,
+  "unstable": 0,
+  "disclosed_files": [
+   0,
+   0,
+   0
+  ],
+  "unstable_in_disclosed": 0,
+  "undisclosed": [],
+  "identical": true,
+  "fails_every_run": false
+ },
+ {
+  "repo": "cmp-flask",
+  "runs": 3,
+  "statuses": [
+   "COMPLETED",
+   "COMPLETED",
+   "COMPLETED"
+  ],
+  "seconds": [
+   6.6,
+   11.4,
+   6.7
+  ],
+  "findings": [
+   0,
+   0,
+   0
+  ],
+  "stable": 0,
+  "unstable": 0,
+  "disclosed_files": [
+   0,
+   0,
+   0
+  ],
+  "unstable_in_disclosed": 0,
+  "undisclosed": [],
+  "identical": true,
+  "fails_every_run": false
+ },
+ {
+  "repo": "cmp-gin",
+  "runs": 3,
+  "statuses": [
+   "COMPLETED",
+   "COMPLETED",
+   "COMPLETED"
+  ],
+  "seconds": [
+   7.3,
+   11.8,
+   7.0
+  ],
+  "findings": [
+   5,
+   5,
+   5
+  ],
+  "stable": 5,
+  "unstable": 0,
+  "disclosed_files": [
+   0,
+   0,
+   0
+  ],
+  "unstable_in_disclosed": 0,
+  "undisclosed": [],
+  "identical": true,
+  "fails_every_run": false
+ },
+ {
+  "repo": "cmp-guava",
+  "runs": 3,
+  "statuses": [
+   "COMPLETED",
+   "COMPLETED",
+   "COMPLETED"
+  ],
+  "seconds": [
+   28.6,
+   46.1,
+   26.6
+  ],
+  "findings": [
+   0,
+   0,
+   0
+  ],
+  "stable": 0,
+  "unstable": 0,
+  "disclosed_files": [
+   0,
+   2,
+   1
+  ],
+  "unstable_in_disclosed": 0,
+  "undisclosed": [],
+  "identical": true,
+  "fails_every_run": false
+ },
+ {
+  "repo": "cmp-jackson",
+  "runs": 3,
+  "statuses": [
+   "COMPLETED",
+   "COMPLETED",
+   "COMPLETED"
+  ],
+  "seconds": [
+   11.7,
+   19.8,
+   11.6
+  ],
+  "findings": [
+   0,
+   0,
+   0
+  ],
+  "stable": 0,
+  "unstable": 0,
+  "disclosed_files": [
+   0,
+   0,
+   0
+  ],
+  "unstable_in_disclosed": 0,
+  "undisclosed": [],
+  "identical": true,
+  "fails_every_run": false
+ },
+ {
+  "repo": "cmp-kafka",
+  "runs": 3,
+  "statuses": [
+   "COMPLETED",
+   "COMPLETED",
+   "COMPLETED"
+  ],
+  "seconds": [
+   45.7,
+   83.7,
+   50.7
+  ],
+  "findings": [
+   10,
+   10,
+   10
+  ],
+  "stable": 10,
+  "unstable": 0,
+  "disclosed_files": [
+   0,
+   2,
+   0
+  ],
+  "unstable_in_disclosed": 0,
+  "undisclosed": [],
+  "identical": true,
+  "fails_every_run": false
+ },
+ {
+  "repo": "cmp-nest",
+  "runs": 3,
+  "statuses": [
+   "COMPLETED",
+   "COMPLETED",
+   "COMPLETED"
+  ],
+  "seconds": [
+   25.5,
+   37.6,
+   22.2
+  ],
+  "findings": [
+   2,
+   2,
+   2
+  ],
+  "stable": 2,
+  "unstable": 0,
+  "disclosed_files": [
+   0,
+   0,
+   0
+  ],
+  "unstable_in_disclosed": 0,
+  "undisclosed": [],
+  "identical": true,
+  "fails_every_run": false
+ },
+ {
+  "repo": "cmp-netty",
+  "runs": 3,
+  "statuses": [
+   "COMPLETED",
+   "COMPLETED",
+   "COMPLETED"
+  ],
+  "seconds": [
+   22.8,
+   42.5,
+   22.0
+  ],
+  "findings": [
+   17,
+   17,
+   17
+  ],
+  "stable": 17,
+  "unstable": 0,
+  "disclosed_files": [
+   0,
+   0,
+   0
+  ],
+  "unstable_in_disclosed": 0,
+  "undisclosed": [],
+  "identical": true,
+  "fails_every_run": false
+ },
+ {
+  "repo": "cmp-nextauth",
+  "runs": 3,
+  "statuses": [
+   "COMPLETED",
+   "COMPLETED",
+   "COMPLETED"
+  ],
+  "seconds": [
+   16.4,
+   24.5,
+   16.6
+  ],
+  "findings": [
+   11,
+   11,
+   11
+  ],
+  "stable": 11,
+  "unstable": 0,
+  "disclosed_files": [
+   0,
+   0,
+   0
+  ],
+  "unstable_in_disclosed": 0,
+  "undisclosed": [],
+  "identical": true,
+  "fails_every_run": false
+ },
+ {
+  "repo": "cmp-prisma",
+  "runs": 3,
+  "statuses": [
+   "COMPLETED",
+   "COMPLETED",
+   "COMPLETED"
+  ],
+  "seconds": [
+   252.6,
+   426.5,
+   265.9
+  ],
+  "findings": [
+   58,
+   56,
+   58
+  ],
+  "stable": 56,
+  "unstable": 2,
+  "disclosed_files": [
+   1,
+   1,
+   1
+  ],
+  "unstable_in_disclosed": 2,
+  "undisclosed": [],
+  "identical": false,
+  "fails_every_run": false
+ },
+ {
+  "repo": "cmp-react",
+  "runs": 3,
+  "statuses": [
+   "COMPLETED",
+   "COMPLETED",
+   "COMPLETED"
+  ],
+  "seconds": [
+   410.8,
+   532.5,
+   373.8
+  ],
+  "findings": [
+   36,
+   36,
+   36
+  ],
+  "stable": 36,
+  "unstable": 0,
+  "disclosed_files": [
+   7,
+   11,
+   8
+  ],
+  "unstable_in_disclosed": 0,
+  "undisclosed": [],
+  "identical": true,
+  "fails_every_run": false
+ },
+ {
+  "repo": "cmp-spring",
+  "runs": 3,
+  "statuses": [
+   "COMPLETED",
+   "COMPLETED",
+   "COMPLETED"
+  ],
+  "seconds": [
+   9.7,
+   7.7,
+   7.2
+  ],
+  "findings": [
+   2,
+   2,
+   2
+  ],
+  "stable": 2,
+  "unstable": 0,
+  "disclosed_files": [
+   0,
+   0,
+   0
+  ],
+  "unstable_in_disclosed": 0,
+  "undisclosed": [],
+  "identical": true,
+  "fails_every_run": false
+ },
+ {
+  "repo": "cmp-terraform",
+  "runs": 3,
+  "statuses": [
+   "COMPLETED",
+   "COMPLETED",
+   "COMPLETED"
+  ],
+  "seconds": [
+   32.4,
+   23.8,
+   21.0
+  ],
+  "findings": [
+   2,
+   2,
+   2
+  ],
+  "stable": 2,
+  "unstable": 0,
+  "disclosed_files": [
+   0,
+   0,
+   0
+  ],
+  "unstable_in_disclosed": 0,
+  "undisclosed": [],
+  "identical": true,
+  "fails_every_run": false
+ },
+ {
+  "repo": "cmp-vault",
+  "runs": 3,
+  "statuses": [
+   "COMPLETED",
+   "COMPLETED",
+   "COMPLETED"
+  ],
+  "seconds": [
+   71.0,
+   59.3,
+   51.3
+  ],
+  "findings": [
+   25,
+   25,
+   25
+  ],
+  "stable": 25,
+  "unstable": 0,
+  "disclosed_files": [
+   0,
+   0,
+   0
+  ],
+  "unstable_in_disclosed": 0,
+  "undisclosed": [],
+  "identical": true,
+  "fails_every_run": false
+ },
+ {
+  "repo": "getredash__redash",
+  "runs": 3,
+  "statuses": [
+   "COMPLETED",
+   "COMPLETED",
+   "COMPLETED"
+  ],
+  "seconds": [
+   23.9,
+   23.6,
+   19.0
+  ],
+  "findings": [
+   20,
+   20,
+   20
+  ],
+  "stable": 20,
+  "unstable": 0,
+  "disclosed_files": [
+   0,
+   0,
+   0
+  ],
+  "unstable_in_disclosed": 0,
+  "undisclosed": [],
+  "identical": true,
+  "fails_every_run": false
+ },
+ {
+  "repo": "jellyfin__jellyfin",
+  "runs": 3,
+  "statuses": [
+   "COMPLETED",
+   "COMPLETED",
+   "COMPLETED"
+  ],
+  "seconds": [
+   9.3,
+   7.8,
+   7.5
+  ],
+  "findings": [
+   1,
+   1,
+   1
+  ],
+  "stable": 1,
+  "unstable": 0,
+  "disclosed_files": [
+   0,
+   0,
+   0
+  ],
+  "unstable_in_disclosed": 0,
+  "undisclosed": [],
+  "identical": true,
+  "fails_every_run": false
+ },
+ {
+  "repo": "librenms__librenms",
+  "runs": 3,
+  "statuses": [
+   "COMPLETED",
+   "COMPLETED",
+   "COMPLETED"
+  ],
+  "seconds": [
+   45.4,
+   34.0,
+   33.2
+  ],
+  "findings": [
+   26,
+   26,
+   26
+  ],
+  "stable": 26,
+  "unstable": 0,
+  "disclosed_files": [
+   1,
+   1,
+   1
+  ],
+  "unstable_in_disclosed": 0,
+  "undisclosed": [],
+  "identical": true,
+  "fails_every_run": false
+ },
+ {
+  "repo": "mastodon__mastodon",
+  "runs": 3,
+  "statuses": [
+   "COMPLETED",
+   "COMPLETED",
+   "COMPLETED"
+  ],
+  "seconds": [
+   77.9,
+   64.7,
+   60.4
+  ],
+  "findings": [
+   0,
+   0,
+   0
+  ],
+  "stable": 0,
+  "unstable": 0,
+  "disclosed_files": [
+   0,
+   0,
+   0
+  ],
+  "unstable_in_disclosed": 0,
+  "undisclosed": [],
+  "identical": true,
+  "fails_every_run": false
+ },
+ {
+  "repo": "n8n-io__n8n",
+  "runs": 3,
+  "statuses": [
+   "FAILED",
+   "FAILED",
+   "FAILED"
+  ],
+  "seconds": [
+   1221.0,
+   1217.0,
+   1214.1
+  ],
+  "findings": [
+   0,
+   0,
+   0
+  ],
+  "stable": 0,
+  "unstable": 0,
+  "disclosed_files": [
+   0,
+   0,
+   0
+  ],
+  "unstable_in_disclosed": 0,
+  "undisclosed": [],
+  "identical": false,
+  "fails_every_run": true
+ },
+ {
+  "repo": "nilsteampassnet__TeamPass",
+  "runs": 3,
+  "statuses": [
+   "COMPLETED",
+   "COMPLETED",
+   "COMPLETED"
+  ],
+  "seconds": [
+   602.8,
+   419.1,
+   471.2
+  ],
+  "findings": [
+   28,
+   28,
+   28
+  ],
+  "stable": 28,
+  "unstable": 0,
+  "disclosed_files": [
+   30,
+   19,
+   22
+  ],
+  "unstable_in_disclosed": 0,
+  "undisclosed": [],
+  "identical": true,
+  "fails_every_run": false
+ },
+ {
+  "repo": "nocodb__nocodb",
+  "runs": 3,
+  "statuses": [
+   "COMPLETED",
+   "COMPLETED",
+   "COMPLETED"
+  ],
+  "seconds": [
+   519.7,
+   295.7,
+   313.0
+  ],
+  "findings": [
+   25,
+   25,
+   25
+  ],
+  "stable": 25,
+  "unstable": 0,
+  "disclosed_files": [
+   6,
+   1,
+   1
+  ],
+  "unstable_in_disclosed": 0,
+  "undisclosed": [],
+  "identical": true,
+  "fails_every_run": false
+ },
+ {
+  "repo": "nopSolutions__nopCommerce",
+  "runs": 3,
+  "statuses": [
+   "COMPLETED",
+   "COMPLETED",
+   "COMPLETED"
+  ],
+  "seconds": [
+   126.3,
+   54.1,
+   58.5
+  ],
+  "findings": [
+   1,
+   1,
+   1
+  ],
+  "stable": 1,
+  "unstable": 0,
+  "disclosed_files": [
+   1,
+   0,
+   0
+  ],
+  "unstable_in_disclosed": 0,
+  "undisclosed": [],
+  "identical": true,
+  "fails_every_run": false
+ },
+ {
+  "repo": "spring-petclinic",
+  "runs": 3,
+  "statuses": [
+   "COMPLETED",
+   "COMPLETED",
+   "COMPLETED"
+  ],
+  "seconds": [
+   13.3,
+   6.2,
+   6.8
+  ],
+  "findings": [
+   2,
+   2,
+   2
+  ],
+  "stable": 2,
+  "unstable": 0,
+  "disclosed_files": [
+   0,
+   0,
+   0
+  ],
+  "unstable_in_disclosed": 0,
+  "undisclosed": [],
+  "identical": true,
+  "fails_every_run": false
+ }
+]
