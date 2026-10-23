@@ -115,3 +115,25 @@ def test_no_filter_means_no_adjustment(tmp_path):
     out, adjustments = E._augmented_taint_dir(str(tmp_path), rules_dir)
     assert adjustments == []
     assert out is None
+
+
+def test_project_escapers_sanitize_stored_xss_too(tmp_path):
+    """P3 split XSS into reflected and stored. Both escape output the same way, so a
+    project escaper must sanitize both, while the PHP_SELF filter (request data) stays
+    a reflected-only adjustment."""
+    import yaml
+
+    _write(tmp_path, "lib/esc.php", "<?php function esc_out($s) { return htmlspecialchars($s, ENT_QUOTES); }")
+    _write(tmp_path, "htdocs/waf.inc.php", DOLIBARR_SHAPE)
+    rules_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(E.__file__))),
+                             "rules", "taint")
+    out, _ = E._augmented_taint_dir(str(tmp_path), rules_dir)
+    with open(os.path.join(out, "php.yaml"), encoding="utf-8") as fh:
+        rules = {r["id"]: r for r in yaml.safe_load(fh)["rules"]}
+    for rid in ("aegis-php-xss", "aegis-php-stored-xss"):
+        sans = [str(p.get("pattern", "")) for s in rules[rid]["pattern-sanitizers"]
+                for p in s.get("pattern-either", [])]
+        assert "esc_out(...)" in sans, (rid, sans)
+    stored_sources = [str(p.get("pattern", "")) for s in rules["aegis-php-stored-xss"]["pattern-sources"]
+                      for p in s.get("pattern-either", [])]
+    assert "mysqli_fetch_assoc(...)" in stored_sources and not any("_SERVER" in p for p in stored_sources)

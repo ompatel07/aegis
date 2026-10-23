@@ -403,13 +403,16 @@ def _augmented_taint_dir(root: str, base_dir: str) -> tuple[str | None, list[dic
         dropped_sources: list[str] = []
         adjustments: list[dict] = []
         for rule in doc.get("rules", []):
-            if rule.get("id") != "aegis-php-xss":
+            # Reflected and stored XSS (split in P3) escape output the same way, so a
+            # project escaper sanitizes both; the PHP_SELF filter concerns request
+            # data, which only the reflected rule reads.
+            if rule.get("id") not in ("aegis-php-xss", "aegis-php-stored-xss"):
                 continue
             for san in rule.get("pattern-sanitizers", []) or []:
                 pe = san.get("pattern-either")
                 if isinstance(pe, list):
                     pe.extend(extra)
-            if php_self_filter:
+            if php_self_filter and rule.get("id") == "aegis-php-xss":
                 # Drop PHP_SELF as a source for this scan. Only that source: every
                 # other source ($_GET, $_POST, …) is untouched, so a real XSS in the
                 # same file still fires.
