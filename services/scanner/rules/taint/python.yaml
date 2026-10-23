@@ -519,35 +519,48 @@ rules:
       independent-implementation-of: "behaviour described by Bandit B608 (hardcoded SQL expressions)"
       references:
         - https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html
-    patterns:
-      - pattern-either:
-          # Built inline in the call: cur.execute("... %s" % value)
-          - patterns:
-              - pattern-either:
-                  - pattern: $C.execute($SQL, ...)
-                  - pattern: $C.executemany($SQL, ...)
-                  - pattern: text($SQL)
-                  - pattern: sqlalchemy.text($SQL)
-              - metavariable-pattern:
-                  metavariable: $SQL
-                  patterns:
-                    - pattern-either:
-                        - pattern: $A % $B
-                        - pattern: $A.format(...)
-                        - pattern: $A + $B
-                        - pattern: f"..."
-              - focus-metavariable: $SQL
-          # Built into a variable first, executed later (possibly elsewhere).
-          # Requires real SQL STRUCTURE -- verb plus its clause -- not merely a
-          # SQL-ish word, so a log line like "update %s failed" does not match.
-          - patterns:
-              - pattern-either:
-                  - pattern: $Q = $A % $B
-                  - pattern: $Q = $A.format(...)
-                  - pattern: $Q = $A + $B
-              - metavariable-regex:
-                  metavariable: $A
-                  regex: (?is).*(\bselect\b.*\bfrom\b|\binsert\s+into\b|\bupdate\b.*\bset\b|\bdelete\s+from\b|\bcreate\s+table\b|\bdrop\s+table\b).*
+    # P3: a SQL statement assembled by formatting, reported only where it REACHES a DB
+    # call (taint, within the function). Before P3 the rule also fired on any formatted
+    # SQL-looking assignment, executed or not, and on any call named execute() -- the
+    # tuning half's cmp-kafka FPs were shell commands handed to a helper called
+    # execute(). So a string reaching execute() must show SQL structure (a verb with its
+    # clause); one reaching SQLAlchemy's text() is SQL by definition and needs none --
+    # text("title = '%s'" % f) is a WHERE fragment, and an injection (dvgraphql).
+    mode: taint
+    pattern-sources:
+      - label: SQL
+        patterns:
+          - pattern-either:
+              - pattern: $A % $B
+              - pattern: $A.format(...)
+              - pattern: $A + $B
+          - metavariable-regex:
+              metavariable: $A
+              regex: (?is).*(\bselect\b.*\bfrom\b|\binsert\s+into\b|\bupdate\b.*\bset\b|\bdelete\s+from\b|\b(?:create|drop|alter|truncate)\s+(?:\w+\s+){0,3}?(?:table|database|schema|index|view|extension|collation|sequence|trigger|function)\b).*
+      - label: SQL
+        patterns:
+          - pattern: f"..."
+          - pattern-regex: (?is).*(\bselect\b.*\bfrom\b|\binsert\s+into\b|\bupdate\b.*\bset\b|\bdelete\s+from\b|\b(?:create|drop|alter|truncate)\s+(?:\w+\s+){0,3}?(?:table|database|schema|index|view|extension|collation|sequence|trigger|function)\b).*
+      - label: FORMATTED
+        pattern-either:
+          - pattern: $A % $B
+          - pattern: $A.format(...)
+          - pattern: $A + $B
+          - pattern: f"..."
+    pattern-sinks:
+      - requires: SQL
+        patterns:
+          - pattern-either:
+              - pattern: $C.execute($SQL, ...)
+              - pattern: $C.executemany($SQL, ...)
+              - pattern: $C.executescript($SQL, ...)
+          - focus-metavariable: $SQL
+      - requires: FORMATTED
+        patterns:
+          - pattern-either:
+              - pattern: text($SQL)
+              - pattern: sqlalchemy.text($SQL)
+          - focus-metavariable: $SQL
 
   - id: aegis-py-shell-command-construction
     languages: [python]

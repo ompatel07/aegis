@@ -184,9 +184,39 @@ def sql_fstring_bad(con, extension):
 
 
 def sql_assign_then_execute_bad(cur, student):
-    # ruleid: aegis-py-sql-string-construction
     q = "INSERT INTO students (name) VALUES ('%(name)s')" % {"name": student}
+    # reported where the statement reaches the database
+    # ruleid: aegis-py-sql-string-construction
     cur.execute(q)
+
+
+def sql_text_fragment_bad(query, f):
+    # SQLAlchemy text() is SQL by definition: a formatted WHERE fragment is injectable
+    # ruleid: aegis-py-sql-string-construction
+    return query.filter(text("title = '%s' or content = '%s'" % (f, f)))
+
+
+def sql_text_static_ok(query):
+    # ok: aegis-py-sql-string-construction
+    return query.filter(text("title = :t"))
+
+
+def sql_built_never_executed_ok(table):
+    # formatted SQL that this code never executes: no evidence it reaches a database
+    # ok: aegis-py-sql-string-construction
+    sql = "SELECT * FROM %s WHERE id = 1" % table
+    return sql
+
+
+def sql_shell_command_to_an_execute_helper_ok(execute, tag):
+    # a helper NAMED execute running a shell command: not SQL
+    # ok: aegis-py-sql-string-construction
+    execute(f"git tag -d {tag}")
+
+
+def sql_shell_command_to_a_method_named_execute_ok(runner, branch):
+    # ok: aegis-py-sql-string-construction
+    runner.execute("git checkout %s" % branch)
 
 
 def sql_bind_params_ok(cur, name):
