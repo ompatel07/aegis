@@ -201,6 +201,13 @@ def sql_text_static_ok(query):
     return query.filter(text("title = :t"))
 
 
+def sql_fstring_non_sql_beside_real_sql_ok(con, name):
+    # this file holds real SELECT ... FROM statements elsewhere; that must not make an
+    # unrelated f-string SQL (redash's duckdb INSTALL / LOAD of an extension)
+    # ok: aegis-py-sql-string-construction
+    con.execute(f"LOAD {name}")
+
+
 def sql_built_never_executed_ok(table):
     # formatted SQL that this code never executes: no evidence it reaches a database
     # ok: aegis-py-sql-string-construction

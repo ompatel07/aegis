@@ -538,9 +538,15 @@ rules:
               metavariable: $A
               regex: (?is).*(\bselect\b.*\bfrom\b|\binsert\s+into\b|\bupdate\b.*\bset\b|\bdelete\s+from\b|\b(?:create|drop|alter|truncate)\s+(?:\w+\s+){0,3}?(?:table|database|schema|index|view|extension|collation|sequence|trigger|function)\b).*
       - label: SQL
+        # the f-string's OWN text: a pattern-regex beside it would match file-wide
         patterns:
-          - pattern: f"..."
-          - pattern-regex: (?is).*(\bselect\b.*\bfrom\b|\binsert\s+into\b|\bupdate\b.*\bset\b|\bdelete\s+from\b|\b(?:create|drop|alter|truncate)\s+(?:\w+\s+){0,3}?(?:table|database|schema|index|view|extension|collation|sequence|trigger|function)\b).*
+          - pattern: $FSTR
+          - metavariable-pattern:
+              metavariable: $FSTR
+              pattern: f"..."
+          - metavariable-regex:
+              metavariable: $FSTR
+              regex: (?is).*(\bselect\b.*\bfrom\b|\binsert\s+into\b|\bupdate\b.*\bset\b|\bdelete\s+from\b|\b(?:create|drop|alter|truncate)\s+(?:\w+\s+){0,3}?(?:table|database|schema|index|view|extension|collation|sequence|trigger|function)\b).*
       - label: FORMATTED
         pattern-either:
           - pattern: $A % $B
