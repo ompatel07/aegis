@@ -1,0 +1,78 @@
+# Pass P3 (2026-10-23) -- STAGED, NOT SHIPPED (see README.md and docs/PRECISION_P3.md).
+rules:
+  # ── Stored XSS (P3) ──────────────────────────────────────────────────────────
+  # Split from aegis-php-xss: data read back from the database and echoed without
+  # escaping. Whether it is exploitable depends on who can write the row, which the
+  # code here does not show, so it is lower severity and LOW confidence, and it is
+  # STAGED: measured in P3 on a random sample of its held-out real-repository
+  # findings at 6 TP / 53 FP (10 %, 95% interval 4.7-20.5 %): most of what it reports is
+  # an id, an amount or an already-escaped helper (docs/PRECISION_P3.md §C).
+  - id: aegis-php-stored-xss
+    mode: taint
+    languages: [php]
+    severity: WARNING
+    message: >-
+      A value read back from the database is echoed into the HTML response without
+      escaping. If any user can write that value, this is stored XSS: the script
+      runs in the browser of everyone who views the page. Escape output with
+      htmlspecialchars(..., ENT_QUOTES) or htmlentities() at the point of output,
+      whatever its source.
+    metadata:
+      cwe:
+        - "CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"
+      owasp:
+        - "A03:2021 - Injection"
+      category: security
+      subcategory: [vuln]
+      confidence: LOW
+      likelihood: LOW
+      impact: MEDIUM
+      technology: [php]
+      references:
+        - https://owasp.org/www-community/attacks/xss/#stored-xss-attacks
+    pattern-sources:
+      - pattern-either:
+          # PHP's database read APIs: mysqli (procedural and object), PDO, pgsql
+          - pattern: mysqli_fetch_assoc(...)
+          - pattern: mysqli_fetch_array(...)
+          - pattern: mysqli_fetch_row(...)
+          - pattern: mysqli_fetch_object(...)
+          - pattern: mysqli_fetch_all(...)
+          - pattern: $R->fetch_assoc(...)
+          - pattern: $R->fetch_array(...)
+          - pattern: $R->fetch_row(...)
+          - pattern: $R->fetch_object(...)
+          - pattern: $R->fetch_all(...)
+          - pattern: $S->fetch(...)
+          - pattern: $S->fetchAll(...)
+          - pattern: $S->fetchColumn(...)
+          - pattern: $S->fetchObject(...)
+          - pattern: pg_fetch_assoc(...)
+          - pattern: pg_fetch_array(...)
+          - pattern: pg_fetch_row(...)
+          - pattern: pg_fetch_object(...)
+          - pattern: pg_fetch_result(...)
+    pattern-sanitizers:
+      - pattern-either:
+          - pattern: htmlspecialchars(...)
+          - pattern: htmlentities(...)
+          - pattern: strip_tags(...)
+          - pattern: urlencode(...)
+          - pattern: rawurlencode(...)
+          - pattern: json_encode(...)
+          - pattern: intval(...)
+          - pattern: floatval(...)
+          - pattern: (int)$X
+          - pattern: (float)$X
+          - pattern: count(...)
+          - pattern: number_format(...)
+          - pattern: round(...)
+    pattern-sinks:
+      - patterns:
+          - pattern-either:
+              - pattern: echo $SINK;
+              - pattern: print $SINK;
+              - pattern: print($SINK);
+              - pattern: printf($SINK, ...);
+          - focus-metavariable: $SINK
+

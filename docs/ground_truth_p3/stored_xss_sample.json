@@ -1,0 +1,310 @@
+{
+ "seed": "79b3fa0905a3f2e17fc2fd862a23a6b51661f3e8",
+ "population": 2515,
+ "by_repo": {
+  "Dolibarr__dolibarr": 2514,
+  "nilsteampassnet__TeamPass": 1
+ },
+ "sample": [
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/accountancy/admin/card.php",
+   "line": 306
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/accountancy/admin/productaccount.php",
+   "line": 775
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/accountancy/admin/subaccount.php",
+   "line": 467
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/accountancy/customer/index.php",
+   "line": 560
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/accountancy/customer/lines.php",
+   "line": 725
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/accountancy/customer/list.php",
+   "line": 846
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/accountancy/expensereport/lines.php",
+   "line": 620
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/accountancy/expensereport/list.php",
+   "line": 636
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/admin/system/dolibarr.php",
+   "line": 632
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/admin/translation.php",
+   "line": 508
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/comm/index.php",
+   "line": 325
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/compta/bank/account_statement_document.php",
+   "line": 186
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/compta/bank/line.php",
+   "line": 573
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/compta/bank/line.php",
+   "line": 578
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/compta/bank/releve.php",
+   "line": 384
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/compta/bank/various_payment/list.php",
+   "line": 889
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/compta/localtax/index.php",
+   "line": 151
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/compta/localtax/list.php",
+   "line": 135
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/compta/paymentbybanktransfer/index.php",
+   "line": 334
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/compta/paymentbybanktransfer/index.php",
+   "line": 336
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/compta/prelevement/demandes.php",
+   "line": 361
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/compta/prelevement/index.php",
+   "line": 196
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/compta/prelevement/orders_list.php",
+   "line": 526
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/compta/resultat/projects.php",
+   "line": 921
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/compta/stats/byratecountry.php",
+   "line": 365
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/compta/stats/casoc.php",
+   "line": 745
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/compta/stats/supplier_turnover_by_thirdparty.php",
+   "line": 723
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/compta/tva/list.php",
+   "line": 635
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/contrat/index.php",
+   "line": 504
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/core/lib/admin.lib.php",
+   "line": 527
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/core/lib/project.lib.php",
+   "line": 2909
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/expedition/shipment.php",
+   "line": 841
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/expensereport/index.php",
+   "line": 265
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/expensereport/list.php",
+   "line": 939
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/expensereport/payment/card.php",
+   "line": 219
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/expensereport/payment/payment.php",
+   "line": 245
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/fichinter/card-rec.php",
+   "line": 460
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/fichinter/index.php",
+   "line": 240
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/fichinter/index.php",
+   "line": 391
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/fourn/facture/paiement.php",
+   "line": 535
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/hrm/index.php",
+   "line": 306
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/hrm/index.php",
+   "line": 462
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/install/upgrade2.php",
+   "line": 1186
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/margin/checkMargins.php",
+   "line": 370
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/margin/customerMargins.php",
+   "line": 442
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/margin/productMargins.php",
+   "line": 415
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/opensurvey/exportcsv.php",
+   "line": 149
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/product/stats/commande.php",
+   "line": 303
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/product/stats/supplier_proposal.php",
+   "line": 285
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/product/stock/card.php",
+   "line": 861
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/product/stock/replenish.php",
+   "line": 1016
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/product/stock/stockatdate.php",
+   "line": 766
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/product/stock/stockatdate.php",
+   "line": 804
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/reception/dispatch.php",
+   "line": 807
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/societe/consumption.php",
+   "line": 775
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/takepos/index.php",
+   "line": 1779
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/user/list.php",
+   "line": 1141
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/user/notify/card.php",
+   "line": 355
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/user/perms.php",
+   "line": 662
+  },
+  {
+   "corpus": "Dolibarr__dolibarr",
+   "file": "htdocs/user/perms.php",
+   "line": 749
+  }
+ ]
+}
