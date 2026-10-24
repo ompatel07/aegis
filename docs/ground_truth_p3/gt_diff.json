@@ -1,0 +1,1652 @@
+{
+ "dvwa": {
+  "language": "php",
+  "role": "tuning",
+  "lost": [],
+  "gained": [],
+  "items": [
+   {
+    "id": "sqli",
+    "rules": [
+     "aegis-php-sql-injection"
+    ],
+    "location": "vulnerabilities/sqli/source/low.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "sqli_blind",
+    "rules": [
+     "aegis-php-sql-injection"
+    ],
+    "location": "vulnerabilities/sqli_blind/source/low.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "exec",
+    "rules": [
+     "aegis-php-command-injection"
+    ],
+    "location": "vulnerabilities/exec/source/low.php",
+    "before": true,
+    "after": true
+   }
+  ]
+ },
+ "bwapp": {
+  "language": "php",
+  "role": "held_out",
+  "lost": [],
+  "gained": [
+   [
+    "aegis-php-stored-xss",
+    "app/ba_forgotten.php",
+    301
+   ],
+   [
+    "aegis-php-stored-xss",
+    "app/htmli_stored.php",
+    296
+   ],
+   [
+    "aegis-php-stored-xss",
+    "app/htmli_stored.php",
+    297
+   ],
+   [
+    "aegis-php-stored-xss",
+    "app/htmli_stored.php",
+    298
+   ],
+   [
+    "aegis-php-stored-xss",
+    "app/htmli_stored.php",
+    313
+   ],
+   [
+    "aegis-php-stored-xss",
+    "app/htmli_stored.php",
+    314
+   ],
+   [
+    "aegis-php-stored-xss",
+    "app/htmli_stored.php",
+    315
+   ],
+   [
+    "aegis-php-stored-xss",
+    "app/htmli_stored.php",
+    316
+   ],
+   [
+    "aegis-php-stored-xss",
+    "app/insecure_crypt_storage_1.php",
+    70
+   ],
+   [
+    "aegis-php-stored-xss",
+    "app/secret.php",
+    45
+   ],
+   [
+    "aegis-php-stored-xss",
+    "app/secret_html.php",
+    107
+   ],
+   [
+    "aegis-php-stored-xss",
+    "app/sm_mitm_2.php",
+    177
+   ],
+   [
+    "aegis-php-stored-xss",
+    "app/sqli_13-ps.php",
+    107
+   ],
+   [
+    "aegis-php-stored-xss",
+    "app/sqli_17.php",
+    202
+   ],
+   [
+    "aegis-php-stored-xss",
+    "app/sqli_17.php",
+    203
+   ],
+   [
+    "aegis-php-stored-xss",
+    "app/sqli_2-ps.php",
+    107
+   ],
+   [
+    "aegis-php-stored-xss",
+    "app/sqli_7.php",
+    219
+   ],
+   [
+    "aegis-php-stored-xss",
+    "app/sqli_7.php",
+    220
+   ],
+   [
+    "aegis-php-stored-xss",
+    "app/sqli_7.php",
+    221
+   ],
+   [
+    "aegis-php-stored-xss",
+    "app/sqli_7.php",
+    238
+   ],
+   [
+    "aegis-php-stored-xss",
+    "app/sqli_7.php",
+    239
+   ],
+   [
+    "aegis-php-stored-xss",
+    "app/sqli_7.php",
+    240
+   ],
+   [
+    "aegis-php-stored-xss",
+    "app/sqli_7.php",
+    241
+   ],
+   [
+    "aegis-php-stored-xss",
+    "app/sqli_7.php",
+    256
+   ],
+   [
+    "aegis-php-stored-xss",
+    "app/sqli_7.php",
+    257
+   ],
+   [
+    "aegis-php-stored-xss",
+    "app/sqli_7.php",
+    258
+   ],
+   [
+    "aegis-php-stored-xss",
+    "app/sqli_7.php",
+    259
+   ],
+   [
+    "aegis-php-stored-xss",
+    "app/xss_stored_1.php",
+    298
+   ],
+   [
+    "aegis-php-stored-xss",
+    "app/xss_stored_1.php",
+    299
+   ],
+   [
+    "aegis-php-stored-xss",
+    "app/xss_stored_1.php",
+    300
+   ],
+   [
+    "aegis-php-stored-xss",
+    "app/xss_stored_1.php",
+    317
+   ],
+   [
+    "aegis-php-stored-xss",
+    "app/xss_stored_1.php",
+    318
+   ],
+   [
+    "aegis-php-stored-xss",
+    "app/xss_stored_1.php",
+    319
+   ],
+   [
+    "aegis-php-stored-xss",
+    "app/xss_stored_1.php",
+    320
+   ],
+   [
+    "aegis-php-stored-xss",
+    "app/xss_stored_1.php",
+    335
+   ],
+   [
+    "aegis-php-stored-xss",
+    "app/xss_stored_1.php",
+    336
+   ],
+   [
+    "aegis-php-stored-xss",
+    "app/xss_stored_1.php",
+    337
+   ],
+   [
+    "aegis-php-stored-xss",
+    "app/xss_stored_1.php",
+    338
+   ],
+   [
+    "aegis-php-stored-xss",
+    "app/xss_stored_4.php",
+    168
+   ],
+   [
+    "aegis-php-stored-xss",
+    "app/xss_stored_4.php",
+    169
+   ],
+   [
+    "aegis-php-stored-xss",
+    "app/xss_stored_4.php",
+    170
+   ]
+  ],
+  "items": [
+   {
+    "id": "htmli_get.php",
+    "rules": [
+     "aegis-php-xss"
+    ],
+    "location": "app/htmli_get.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "htmli_post.php",
+    "rules": [
+     "aegis-php-xss"
+    ],
+    "location": "app/htmli_post.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "htmli_current_url.php",
+    "rules": [
+     "aegis-php-xss"
+    ],
+    "location": "app/htmli_current_url.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "iframei.php",
+    "rules": [
+     "aegis-php-xss"
+    ],
+    "location": "app/iframei.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "ldapi.php",
+    "rules": [
+     "aegis-php-ldap-injection"
+    ],
+    "location": "app/ldapi.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "commandi.php",
+    "rules": [
+     "aegis-php-command-injection"
+    ],
+    "location": "app/commandi.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "commandi_blind.php",
+    "rules": [
+     "aegis-php-command-injection"
+    ],
+    "location": "app/commandi_blind.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "sqli_1.php",
+    "rules": [
+     "aegis-php-sql-injection"
+    ],
+    "location": "app/sqli_1.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "sqli_2.php",
+    "rules": [
+     "aegis-php-sql-injection"
+    ],
+    "location": "app/sqli_2.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "sqli_6.php",
+    "rules": [
+     "aegis-php-sql-injection"
+    ],
+    "location": "app/sqli_6.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "sqli_13.php",
+    "rules": [
+     "aegis-php-sql-injection"
+    ],
+    "location": "app/sqli_13.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "sqli_9.php",
+    "rules": [
+     "aegis-php-sql-injection"
+    ],
+    "location": "app/sqli_9.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "sqli_3.php",
+    "rules": [
+     "aegis-php-sql-injection"
+    ],
+    "location": "app/sqli_3.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "sqli_16.php",
+    "rules": [
+     "aegis-php-sql-injection"
+    ],
+    "location": "app/sqli_16.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "sqli_11.php",
+    "rules": [
+     "aegis-php-sql-injection"
+    ],
+    "location": "app/sqli_11.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "sqli_7.php",
+    "rules": [
+     "aegis-php-sql-injection"
+    ],
+    "location": "app/sqli_7.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "sqli_12.php",
+    "rules": [
+     "aegis-php-sql-injection"
+    ],
+    "location": "app/sqli_12.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "sqli_17.php",
+    "rules": [
+     "aegis-php-sql-injection"
+    ],
+    "location": "app/sqli_17.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "sqli_4.php",
+    "rules": [
+     "aegis-php-sql-injection"
+    ],
+    "location": "app/sqli_4.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "sqli_15.php",
+    "rules": [
+     "aegis-php-sql-injection"
+    ],
+    "location": "app/sqli_15.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "sqli_14.php",
+    "rules": [
+     "aegis-php-sql-injection"
+    ],
+    "location": "app/sqli_14.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "sqli_10-1.php",
+    "rules": [
+     "aegis-php-sql-injection"
+    ],
+    "location": "app/sqli_10-1.php",
+    "before": false,
+    "after": false
+   },
+   {
+    "id": "sqli_8-1.php",
+    "rules": [
+     "aegis-php-sql-injection"
+    ],
+    "location": "app/sqli_8-1.php",
+    "before": false,
+    "after": false
+   },
+   {
+    "id": "xss_get.php",
+    "rules": [
+     "aegis-php-xss"
+    ],
+    "location": "app/xss_get.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "xss_post.php",
+    "rules": [
+     "aegis-php-xss"
+    ],
+    "location": "app/xss_post.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "xss_json.php",
+    "rules": [
+     "aegis-php-xss"
+    ],
+    "location": "app/xss_json.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "xss_ajax_2-1.php",
+    "rules": [
+     "aegis-php-xss"
+    ],
+    "location": "app/xss_ajax_2-1.php",
+    "before": false,
+    "after": false
+   },
+   {
+    "id": "xss_ajax_1-1.php",
+    "rules": [
+     "aegis-php-xss"
+    ],
+    "location": "app/xss_ajax_1-1.php",
+    "before": false,
+    "after": false
+   },
+   {
+    "id": "xss_back_button.php",
+    "rules": [
+     "aegis-php-xss"
+    ],
+    "location": "app/xss_back_button.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "xss_eval.php",
+    "rules": [
+     "aegis-php-xss"
+    ],
+    "location": "app/xss_eval.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "xss_href-1.php",
+    "rules": [
+     "aegis-php-xss"
+    ],
+    "location": "app/xss_href-1.php",
+    "before": false,
+    "after": false
+   },
+   {
+    "id": "xss_login.php",
+    "rules": [
+     "aegis-php-xss"
+    ],
+    "location": "app/xss_login.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "xss_php_self.php",
+    "rules": [
+     "aegis-php-xss"
+    ],
+    "location": "app/xss_php_self.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "xss_referer.php",
+    "rules": [
+     "aegis-php-xss"
+    ],
+    "location": "app/xss_referer.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "xss_user_agent.php",
+    "rules": [
+     "aegis-php-xss"
+    ],
+    "location": "app/xss_user_agent.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "rlfi.php",
+    "rules": [
+     "aegis-php-path-traversal"
+    ],
+    "location": "app/rlfi.php",
+    "before": true,
+    "after": true
+   }
+  ]
+ },
+ "mutillidae": {
+  "language": "php",
+  "role": "held_out",
+  "lost": [],
+  "gained": [
+   [
+    "aegis-php-stored-xss",
+    "src/captured-data.php",
+    148
+   ],
+   [
+    "aegis-php-stored-xss",
+    "src/edit-account-profile.php",
+    251
+   ],
+   [
+    "aegis-php-stored-xss",
+    "src/edit-account-profile.php",
+    258
+   ],
+   [
+    "aegis-php-stored-xss",
+    "src/edit-account-profile.php",
+    267
+   ],
+   [
+    "aegis-php-stored-xss",
+    "src/edit-account-profile.php",
+    275
+   ],
+   [
+    "aegis-php-stored-xss",
+    "src/edit-account-profile.php",
+    283
+   ],
+   [
+    "aegis-php-stored-xss",
+    "src/edit-account-profile.php",
+    292
+   ],
+   [
+    "aegis-php-stored-xss",
+    "src/edit-account-profile.php",
+    298
+   ],
+   [
+    "aegis-php-stored-xss",
+    "src/edit-account-profile.php",
+    311
+   ],
+   [
+    "aegis-php-stored-xss",
+    "src/hints-page-wrapper.php",
+    66
+   ],
+   [
+    "aegis-php-stored-xss",
+    "src/hints-page-wrapper.php",
+    71
+   ],
+   [
+    "aegis-php-stored-xss",
+    "src/includes/hints/hints-menu-wrapper.inc",
+    39
+   ],
+   [
+    "aegis-php-stored-xss",
+    "src/includes/pop-up-help-context-generator.php",
+    32
+   ],
+   [
+    "aegis-php-stored-xss",
+    "src/pen-test-tool-lookup-ajax.php",
+    226
+   ],
+   [
+    "aegis-php-stored-xss",
+    "src/pen-test-tool-lookup.php",
+    260
+   ],
+   [
+    "aegis-php-stored-xss",
+    "src/show-log.php",
+    113
+   ],
+   [
+    "aegis-php-stored-xss",
+    "src/user-info.php",
+    217
+   ],
+   [
+    "aegis-php-stored-xss",
+    "src/user-info.php",
+    218
+   ],
+   [
+    "aegis-php-stored-xss",
+    "src/user-info.php",
+    219
+   ],
+   [
+    "aegis-php-stored-xss",
+    "src/user-info.php",
+    220
+   ],
+   [
+    "aegis-php-stored-xss",
+    "src/user-info.php",
+    221
+   ],
+   [
+    "aegis-php-stored-xss",
+    "src/user-info.php",
+    222
+   ],
+   [
+    "aegis-php-stored-xss",
+    "src/user-info.php",
+    223
+   ],
+   [
+    "aegis-php-stored-xss",
+    "src/user-poll.php",
+    241
+   ],
+   [
+    "aegis-php-stored-xss",
+    "src/view-account-profile.php",
+    133
+   ],
+   [
+    "aegis-php-stored-xss",
+    "src/view-account-profile.php",
+    137
+   ],
+   [
+    "aegis-php-stored-xss",
+    "src/view-account-profile.php",
+    141
+   ],
+   [
+    "aegis-php-stored-xss",
+    "src/view-account-profile.php",
+    145
+   ],
+   [
+    "aegis-php-stored-xss",
+    "src/view-account-profile.php",
+    149
+   ],
+   [
+    "aegis-php-stored-xss",
+    "src/view-account-profile.php",
+    153
+   ],
+   [
+    "aegis-php-stored-xss",
+    "src/view-account-profile.php",
+    161
+   ],
+   [
+    "aegis-php-stored-xss",
+    "src/view-account-profile.php",
+    165
+   ],
+   [
+    "aegis-php-stored-xss",
+    "src/view-someones-blog.php",
+    112
+   ],
+   [
+    "aegis-php-stored-xss",
+    "src/view-someones-blog.php",
+    207
+   ]
+  ],
+  "items": [
+   {
+    "id": "arbitrary-file-inclusion.php#xss-page",
+    "rules": [
+     "aegis-php-xss"
+    ],
+    "location": "src/arbitrary-file-inclusion.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "back-button-discussion.php#xss-referer",
+    "rules": [
+     "aegis-php-xss"
+    ],
+    "location": "src/back-button-discussion.php",
+    "before": false,
+    "after": false
+   },
+   {
+    "id": "conference-room-lookup.php#ldap",
+    "rules": [
+     "aegis-php-ldap-injection"
+    ],
+    "location": "src/conference-room-lookup.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "dns-lookup.php#xss",
+    "rules": [
+     "aegis-php-xss"
+    ],
+    "location": "src/dns-lookup.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "dns-lookup.php#cmdi",
+    "rules": [
+     "aegis-php-command-injection"
+    ],
+    "location": "src/dns-lookup.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "document-viewer.php#xss",
+    "rules": [
+     "aegis-php-xss"
+    ],
+    "location": "src/document-viewer.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "document-viewer.php#frame",
+    "rules": [
+     "aegis-php-xss"
+    ],
+    "location": "src/document-viewer.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "echo.php#xss",
+    "rules": [
+     "aegis-php-xss"
+    ],
+    "location": "src/echo.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "echo.php#cmdi",
+    "rules": [
+     "aegis-php-command-injection"
+    ],
+    "location": "src/echo.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "edit-account-profile.php#xss",
+    "rules": [
+     "aegis-php-xss"
+    ],
+    "location": "src/edit-account-profile.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "footer.php#xss-ua",
+    "rules": [
+     "aegis-php-xss"
+    ],
+    "location": "src/footer.php",
+    "before": false,
+    "after": false
+   },
+   {
+    "id": "pen-test-tool-lookup.php#json",
+    "rules": [
+     "aegis-php-xss"
+    ],
+    "location": "src/pen-test-tool-lookup.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "register.php#xss",
+    "rules": [
+     "aegis-php-xss"
+    ],
+    "location": "src/register.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "repeater.php#xss",
+    "rules": [
+     "aegis-php-xss"
+    ],
+    "location": "src/repeater.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "set-background-color.php#xss",
+    "rules": [
+     "aegis-php-xss"
+    ],
+    "location": "src/set-background-color.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "source-viewer.php#xss",
+    "rules": [
+     "aegis-php-xss"
+    ],
+    "location": "src/source-viewer.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "styling.php#xss",
+    "rules": [
+     "aegis-php-xss"
+    ],
+    "location": "src/styling.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "text-file-viewer.php#file",
+    "rules": [
+     "aegis-php-path-traversal"
+    ],
+    "location": "src/text-file-viewer.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "text-file-viewer.php#xss",
+    "rules": [
+     "aegis-php-xss"
+    ],
+    "location": "src/text-file-viewer.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "upload-file.php#xss",
+    "rules": [
+     "aegis-php-xss"
+    ],
+    "location": "src/upload-file.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "user-info.php#xss-stored",
+    "rules": [
+     "aegis-php-xss"
+    ],
+    "location": "src/user-info.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "user-info.php#xss-user",
+    "rules": [
+     "aegis-php-xss"
+    ],
+    "location": "src/user-info.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "user-info-xpath.php#xss-stored",
+    "rules": [
+     "aegis-php-xss"
+    ],
+    "location": "src/user-info-xpath.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "user-info-xpath.php#xss-user",
+    "rules": [
+     "aegis-php-xss"
+    ],
+    "location": "src/user-info-xpath.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "user-poll.php#xss",
+    "rules": [
+     "aegis-php-xss"
+    ],
+    "location": "src/user-poll.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "view-someones-blog.php#xss",
+    "rules": [
+     "aegis-php-xss"
+    ],
+    "location": "src/view-someones-blog.php",
+    "before": true,
+    "after": true
+   }
+  ]
+ },
+ "xvwa": {
+  "language": "php",
+  "role": "held_out",
+  "lost": [],
+  "gained": [
+   [
+    "aegis-php-stored-xss",
+    "vulnerabilities/idor/home.php",
+    34
+   ],
+   [
+    "aegis-php-stored-xss",
+    "vulnerabilities/missfunc/home.php",
+    36
+   ],
+   [
+    "aegis-php-stored-xss",
+    "vulnerabilities/sqli/home.php",
+    39
+   ],
+   [
+    "aegis-php-stored-xss",
+    "vulnerabilities/sqli/home.php",
+    67
+   ],
+   [
+    "aegis-php-stored-xss",
+    "vulnerabilities/sqli/home.php",
+    68
+   ],
+   [
+    "aegis-php-stored-xss",
+    "vulnerabilities/sqli/home.php",
+    69
+   ],
+   [
+    "aegis-php-stored-xss",
+    "vulnerabilities/sqli/home.php",
+    70
+   ],
+   [
+    "aegis-php-stored-xss",
+    "vulnerabilities/sqli/home.php",
+    71
+   ],
+   [
+    "aegis-php-stored-xss",
+    "vulnerabilities/sqli_blind/home.php",
+    37
+   ],
+   [
+    "aegis-php-stored-xss",
+    "vulnerabilities/sqli_blind/home.php",
+    71
+   ],
+   [
+    "aegis-php-stored-xss",
+    "vulnerabilities/sqli_blind/home.php",
+    72
+   ],
+   [
+    "aegis-php-stored-xss",
+    "vulnerabilities/sqli_blind/home.php",
+    73
+   ],
+   [
+    "aegis-php-stored-xss",
+    "vulnerabilities/sqli_blind/home.php",
+    74
+   ],
+   [
+    "aegis-php-stored-xss",
+    "vulnerabilities/sqli_blind/home.php",
+    75
+   ],
+   [
+    "aegis-php-stored-xss",
+    "vulnerabilities/stored_xss/home.php",
+    61
+   ],
+   [
+    "aegis-php-stored-xss",
+    "vulnerabilities/stored_xss/home.php",
+    62
+   ],
+   [
+    "aegis-php-stored-xss",
+    "vulnerabilities/stored_xss/home.php",
+    63
+   ]
+  ],
+  "items": [
+   {
+    "id": "sqli",
+    "rules": [
+     "aegis-php-sql-injection"
+    ],
+    "location": "vulnerabilities/sqli/home.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "sqli_blind",
+    "rules": [
+     "aegis-php-sql-injection"
+    ],
+    "location": "vulnerabilities/sqli_blind/home.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "cmdi",
+    "rules": [
+     "aegis-php-command-injection"
+    ],
+    "location": "vulnerabilities/cmdi/home.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "reflected_xss",
+    "rules": [
+     "aegis-php-xss"
+    ],
+    "location": "vulnerabilities/reflected_xss/home.php",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "fi",
+    "rules": [
+     "aegis-php-path-traversal"
+    ],
+    "location": "vulnerabilities/fi/home.php",
+    "before": true,
+    "after": true
+   }
+  ]
+ },
+ "dsvw": {
+  "language": "python",
+  "role": "held_out",
+  "lost": [],
+  "gained": [],
+  "items": [
+   {
+    "id": "sqli-blind-bool",
+    "rules": [
+     "aegis-py-sql-string-construction"
+    ],
+    "location": "dsvw.py:22",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "sqli-blind-time",
+    "rules": [
+     "aegis-py-sql-string-construction"
+    ],
+    "location": "dsvw.py:22",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "sqli-union",
+    "rules": [
+     "aegis-py-sql-string-construction"
+    ],
+    "location": "dsvw.py:22",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "login-bypass",
+    "rules": [
+     "aegis-py-sql-string-construction"
+    ],
+    "location": "dsvw.py:61",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "ace",
+    "rules": [
+     "aegis-py-shell-command-construction"
+    ],
+    "location": "dsvw.py:31",
+    "before": true,
+    "after": true
+   }
+  ]
+ },
+ "django-nv": {
+  "language": "python",
+  "role": "held_out",
+  "lost": [],
+  "gained": [],
+  "items": [
+   {
+    "id": "injection",
+    "rules": [
+     "aegis-py-sql-injection"
+    ],
+    "location": "taskManager/views.py:184",
+    "before": true,
+    "after": true
+   }
+  ]
+ },
+ "lets-be-bad-guys": {
+  "language": "python",
+  "role": "held_out",
+  "lost": [],
+  "gained": [],
+  "items": [
+   {
+    "id": "injection-file",
+    "rules": [
+     "aegis-py-path-traversal"
+    ],
+    "location": "views.py:42",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "injection-code",
+    "rules": [
+     "aegis-py-code-injection"
+    ],
+    "location": "views.py:72",
+    "before": true,
+    "after": true
+   }
+  ]
+ },
+ "dvgraphql": {
+  "language": "python",
+  "role": "tuning",
+  "lost": [
+   [
+    "aegis-py-sql-string-construction",
+    "core/views.py",
+    320
+   ]
+  ],
+  "gained": [],
+  "items": [
+   {
+    "id": "sqli",
+    "rules": [
+     "aegis-py-sql-string-construction"
+    ],
+    "location": "core/views.py:320",
+    "before": true,
+    "after": false
+   }
+  ]
+ },
+ "dvpwa-full": {
+  "language": "python",
+  "role": "tuning",
+  "lost": [
+   [
+    "aegis-py-sql-string-construction",
+    "sqli/dao/student.py",
+    42
+   ]
+  ],
+  "gained": [
+   [
+    "aegis-py-sql-string-construction",
+    "sqli/dao/student.py",
+    45
+   ]
+  ],
+  "items": [
+   {
+    "id": "sqli",
+    "rules": [
+     "aegis-py-sql-string-construction"
+    ],
+    "location": "sqli/dao/student.py:42",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "md5",
+    "rules": [
+     "aegis-py-weak-hash-credential"
+    ],
+    "location": "sqli/dao/user.py:41",
+    "before": true,
+    "after": true
+   }
+  ]
+ },
+ "pygoat": {
+  "language": "python",
+  "role": "tuning",
+  "lost": [],
+  "gained": [
+   [
+    "aegis-py-sql-string-construction",
+    "dockerized_labs/sql_injection_lab/app.py",
+    57
+   ]
+  ],
+  "items": [
+   {
+    "id": "cmd-lab1",
+    "rules": [
+     "aegis-py-command-injection"
+    ],
+    "location": "command_injection_lab/app.py:29",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "cmd-lab2",
+    "rules": [
+     "aegis-py-code-injection"
+    ],
+    "location": "command_injection_lab/app.py:49",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "crypto-lab1",
+    "rules": [
+     "aegis-py-weak-hash-credential"
+    ],
+    "location": "crypto_failure_lab/app.py:38",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "crypto-lab2",
+    "rules": [
+     "aegis-py-weak-hash-credential"
+    ],
+    "location": "crypto_failure_lab/app.py:25",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "insec-des",
+    "rules": [
+     "aegis-py-unsafe-deserialization"
+    ],
+    "location": "insec_des_lab/main.py:40",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "integrity-lab1",
+    "rules": [
+     "aegis-py-unsafe-deserialization"
+    ],
+    "location": "software_integrity_lab/app.py:44",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "a9-yaml",
+    "rules": [
+     "aegis-py-unsafe-deserialization"
+    ],
+    "location": "a9_uckv_lab/app.py:62",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "sqli",
+    "rules": [
+     "aegis-py-sql-injection"
+    ],
+    "location": "sql_injection_lab/app.py:57",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "ssrf-lab1",
+    "rules": [
+     "aegis-py-path-traversal"
+    ],
+    "location": "ssrf_lab/app.py:22",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "ssrf-lab2",
+    "rules": [
+     "aegis-py-ssrf"
+    ],
+    "location": "ssrf_lab/app.py:37",
+    "before": true,
+    "after": true
+   }
+  ]
+ },
+ "dvna": {
+  "language": "javascript",
+  "role": "held_out",
+  "lost": [],
+  "gained": [],
+  "items": [
+   {
+    "id": "sqli",
+    "rules": [
+     "aegis-js-sql-injection"
+    ],
+    "location": "core/appHandler.js:11",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "cmdi",
+    "rules": [
+     "aegis-js-command-injection"
+    ],
+    "location": "core/appHandler.js:39",
+    "before": true,
+    "after": true
+   }
+  ]
+ },
+ "vulnerable-node": {
+  "language": "javascript",
+  "role": "held_out",
+  "lost": [],
+  "gained": [],
+  "items": [
+   {
+    "id": "02-ssrf",
+    "rules": [
+     "aegis-js-ssrf"
+    ],
+    "location": "routes/tools.js:12",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "03b-nosql",
+    "rules": [
+     "aegis-js-nosql-injection"
+    ],
+    "location": "routes/shop.js:32",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "15-path-traversal",
+    "rules": [
+     "aegis-js-path-traversal"
+    ],
+    "location": "routes/extras.js:11",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "16-cmdi",
+    "rules": [
+     "aegis-js-command-injection"
+    ],
+    "location": "routes/extras.js:25",
+    "before": true,
+    "after": true
+   }
+  ]
+ },
+ "dvws-node": {
+  "language": "javascript",
+  "role": "tuning",
+  "lost": [
+   [
+    "aegis-js-xss",
+    "src/controllers/passphrase.js",
+    62
+   ]
+  ],
+  "gained": [],
+  "items": [
+   {
+    "id": "01-sqli",
+    "rules": [
+     "aegis-js-sql-injection"
+    ],
+    "location": "src/controllers/passphrase.js:41",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "02-nosql",
+    "rules": [
+     "aegis-js-nosql-where-injection"
+    ],
+    "location": "src/controllers/notes.js:173",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "03-cmdi",
+    "rules": [
+     "aegis-js-command-injection"
+    ],
+    "location": "src/controllers/notes.js:78",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "21-xss",
+    "rules": [
+     "aegis-js-xss"
+    ],
+    "location": "src/services/soap/user-service.js:60",
+    "before": false,
+    "after": false
+   },
+   {
+    "id": "44-ssti",
+    "rules": [
+     "aegis-js-code-injection"
+    ],
+    "location": "src/routes/notes.js:19",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "46-report-path",
+    "rules": [
+     "aegis-js-path-traversal"
+    ],
+    "location": "src/controllers/integrations.js:45",
+    "before": true,
+    "after": true
+   }
+  ]
+ },
+ "nodegoat": {
+  "language": "javascript",
+  "role": "tuning",
+  "lost": [],
+  "gained": [],
+  "items": [
+   {
+    "id": "GT1",
+    "rules": [
+     "aegis-js-code-injection"
+    ],
+    "location": "app/routes/contributions.js:32",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "GT2",
+    "rules": [
+     "aegis-js-nosql-where-injection"
+    ],
+    "location": "app/data/allocations-dao.js:78",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "GT7",
+    "rules": [
+     "aegis-js-redos-nested-quantifier"
+    ],
+    "location": "app/routes/profile.js:59",
+    "before": true,
+    "after": true
+   }
+  ]
+ },
+ "juice-shop": {
+  "language": "typescript",
+  "role": "tuning",
+  "lost": [],
+  "gained": [],
+  "items": [
+   {
+    "id": "dbSchemaChallenge",
+    "rules": [
+     "aegis-js-sql-injection"
+    ],
+    "location": "routes/search.ts:23",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "forgedReviewChallenge",
+    "rules": [
+     "aegis-js-nosql-injection"
+    ],
+    "location": "routes/updateProductReviews.ts:16",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "loginAdminChallenge",
+    "rules": [
+     "aegis-js-sql-injection"
+    ],
+    "location": "routes/login.ts:34",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "loginBenderChallenge",
+    "rules": [
+     "aegis-js-sql-injection"
+    ],
+    "location": "routes/login.ts:34",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "loginJimChallenge",
+    "rules": [
+     "aegis-js-sql-injection"
+    ],
+    "location": "routes/login.ts:34",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "noSqlReviewsChallenge",
+    "rules": [
+     "aegis-js-nosql-injection"
+    ],
+    "location": "routes/updateProductReviews.ts:18",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "unionSqlInjectionChallenge",
+    "rules": [
+     "aegis-js-sql-injection"
+    ],
+    "location": "routes/search.ts:23",
+    "before": true,
+    "after": true
+   }
+  ]
+ },
+ "oopssec-store": {
+  "language": "typescript",
+  "role": "held_out",
+  "lost": [
+   [
+    "aegis-js-redos-nested-quantifier",
+    "packages/create-oss-store/bin/create-oss-store.js",
+    31
+   ]
+  ],
+  "gained": [],
+  "items": []
+ },
+ "vunapi": {
+  "language": "typescript",
+  "role": "held_out",
+  "lost": [],
+  "gained": [],
+  "items": []
+ }
+}

@@ -38,6 +38,8 @@ Two numbers are two different things, and this file keeps them apart:
 | **N4 — ground truth for Java / Python / Go** | 24 candidate corpora checked; the 17 that publish a located vulnerability list scanned through `/scan/sast` and scored item by item (470 documented items); every one of the 118 findings hand-triaged | 2026-10-22 | N4 (after N3) | semgrep 1.97.0; 79 Aegis rules shipped (6 of them silent-clean, not counted) + 89 njsscan; 9 staged |
 | **N5 — the STRONG bar, computed** | holdout drawn and committed before any rule change (`bee2e15`); 3 PHP ground-truth corpora added (25 in all); every corpus re-scanned on the frozen N5 rules through `/scan/sast`; the 34-repository real corpus re-scanned before and after; **every one of 1,048 security findings triaged** | 2026-10-23 | N5 (after `bee2e15`) | semgrep 1.97.0; 81 Aegis rules shipped (6 silent-clean, not counted) + 89 njsscan; 9 staged |
 | **N6 — clean and problem claims, gated apart** | gates, real-vs-stress split, seeded real-repo precision holdout, CodeQL-parity recall floor and JS/TS holdout committed before computing (`42413ce`); 5 JS/TS ground-truth corpora added (30 in all); CodeQL CLI 2.27.3 `security-extended` run on every OSI-licensed held-out corpus of a supported language; **every one of 1,196 security findings triaged** | 2026-10-23 | N6 (after `42413ce`) | semgrep 1.97.0; rules unchanged from N5; CodeQL 2.27.3 as the reference |
+| **D2 — repeat-scan determinism** | the 31-repository real corpus re-cloned at recorded commits, each scanned **three times** through the product's engine; cause found (Semgrep's 0.2 s wall-clock taint fixpoint limit), detection and disclosure added, whole-scan limit 600 → 1200 s | 2026-10-23 | `0eebdf2` | semgrep 1.97.0 |
+| **P3 — real-code precision, tuning vs held-out** | both gates on the Wilson 95 % lower bound (`d902e54`, re-tier before any rule edit); every tuning-half FP root-caused; fixes written from the tuning half only; held-out precision before / after on findings stable across three scans; recall re-measured on every PHP / Python / JS / TS ground-truth corpus; `aegis-php-stored-xss` measured on a seeded sample fixed before the draw (`8af478b`) | 2026-10-24 | P3 (`d902e54` → docs) | semgrep 1.97.0; 81 Aegis rules shipped + 89 njsscan (1 more constrained); 10 staged |
 | **P2 taint audit** | per-rule audit + FP fixes to `rules/taint/`, verified on minimal reproductions of each V1 FP shape | 2026-08-31 | `ad0dd66`+P2 | semgrep 1.97.0 |
 
 "P1"/"P2" = precision passes. P1 deleted the `ai-code-*` pack and suppressed
@@ -86,6 +88,27 @@ signal in every path — including documentation paths — and is regression-tes
 
 ## SAST (semgrep)
 
+### Headline — precision on held-out real repositories (P3, 2026-10-24)
+
+The SAST precision figure that counts is measured on **ordinary open-source projects no
+rule was written or tuned on** — the held-out half of a 31-repository real corpus, split
+before any fix — on findings that appear in every one of three scans of the commit, with
+the 95 % interval. A language's reported problems are certified only if the interval's
+**lower bound** is at least 70 %. **None is.**
+
+| language | held-out real-code precision | 95 % interval |
+|---|---|---|
+| PHP | 17 / 64 = 27 % | 17 – 38 % |
+| Python | 1 / 5 = 20 % | 4 – 62 % |
+| JavaScript | 0 / 11 = 0 % (+15 uncertain) | 0 – 26 % |
+| TypeScript | 0 / 6 = 0 % | 0 – 39 % |
+| Go | 4 / 5 = 80 % | 38 – 96 % |
+| Java | no finding on the 31 repositories | — |
+
+Every other per-rule precision figure in this file that was measured on the rules' own
+development repositories is a **TUNING-SET** figure and is labelled so (CORRECTION 13).
+Record: `docs/PRECISION_P3.md`.
+
 ### Benchmark — withdrawn from the headline (N2, 2026-10-21)
 
 **Aegis makes no SAST benchmark claim.** The OWASP Benchmark comparison that stood here
@@ -133,7 +156,7 @@ Java rules in `docs/RULE_REMOVAL_N1.md` §E first.
 | metric | value | corpus | date / commit | confidence |
 |---|---|---|---|---|
 | **Actionable findings, before → after Part A** | **266 → 180** crit+high (removed 188 `ai-code-*`: 86 high + 102 medium) | V1 / P1 replay | 2026-08-31 / `ad0dd66` | exact (mechanical) |
-| **`aegis-*` taint FPs root-caused & fixed** | **5 of 7** V1 findings (n = 7) | V1 + minimal reproductions | 2026-08-31 / `ad0dd66`+P2 | high per verdict, **wide interval** on n=7 |
+| **`aegis-*` taint FPs root-caused & fixed** | **5 of 7** V1 findings (n = 7) — **tuning set**: fixed and re-checked on the same findings | V1 + minimal reproductions | 2026-08-31 / `ad0dd66`+P2 | high per verdict, **wide interval** on n=7 |
 
 **Per-rule audit (P2).** The cascadia FP was not a one-off: it traced to two
 structural defects — a sink keying on a bare method name with an unbound receiver,
@@ -184,7 +207,7 @@ rules are gone**; njsscan's `node_secret`/`node_password` survived N1, were meas
 1 TP in 50 findings across the four name-based credential rules, and were not shipped
 from N2b on (CORRECTION 12). Hardcoded credentials are the secrets pillar's job.
 
-### Per-language SAST — what ships (N1, 2026-09-19; status column N6, 2026-10-23)
+### Per-language SAST — what ships (N1, 2026-09-19; status column P3, 2026-10-24)
 
 Since N1 there are no registry rules to be "additive over": for most languages our own packs
 **are** the whole of SAST. Measured on V2's 15 repositories, each cloned once and scanned with the
@@ -193,14 +216,14 @@ hand-triage (§C.4):
 
 | language | what runs | SAST findings kept (V2, before → after) | documented-vuln evidence | status |
 |---|---|---|---|---|
-| **PHP** | `aegis-php-*` (5 taint rules + N3's 4: weak random, weak password hash, weak cipher, session cookie) | 247 → 45 (18 %) on the 4 repos that completed before; **Dolibarr now completes: 2,649** | DVWA 3/6 unchanged; M1: 25 of 31 DVWA findings TP | **N6: clean-only** — recall certified (held-out 68/160 = 42 %; uncalibrated, CodeQL has no PHP), precision not (**18/67 = 27 % on held-out real repositories**). Dolibarr caveat stands: `aegis-php-xss` fired 2,362 times there at N1 |
-| **JS / TS** | `aegis-js-*` (11) + **njsscan** (89 of 114 since N2b, LGPL-3.0; javascript rules run on `.ts` too) | JavaScript 323 → 103 (32 %), TypeScript 173 → 130 (75 %) at N1; N2b then removed 446 of the 475 njsscan findings on these corpora | NodeGoat 5/7 unchanged; juice-shop 9 → **7**/25 (directory listing lost); both unchanged by N2b | **N6: withheld** — held-out recall JS 10/23 vs CodeQL 18/23, TS 2/17 vs CodeQL 3/17; precision on held-out real repositories JS 0/15 (+36 uncertain), TS 0/10 |
-| **Java** | `aegis-java-*` (7 taint, intraprocedural + 3 N3/N4 weakness rules) | 60 → 6 (10 %) | WebGoat 6/6 unchanged; **N4: 31/209 in scope (15 %) on 6 corpora** | **N6: withheld** — held-out recall 0/8 vs CodeQL 3/8 on dvja (java-sec-code has no license, so CodeQL did not run); **no finding at all on the 31 real repositories**, so precision is unmeasured. Stress precision 76/90 = 84 % |
-| **Python** | `aegis-py-*` (8 taint + 4 H1 pattern + N3's session cookie) | 78 → 19 (24 %) | dvpwa 1/1 unchanged; **N4: 18/72 in scope (25 %) on 6 corpora** | **N6: clean-only** — recall certified (8/38 vs CodeQL 5/38; the pass rests on DSVW, where CodeQL raised nothing), precision not (**1/19 = 5 %** on held-out real repositories; `aegis-py-sql-string-construction` 6 TP / 101 FP on real code) |
-| **Go** | `aegis-go-*` (7 taint + 3 N3/N4 weakness rules) | no Go repo in V2 | **N4: 5/35 in scope (14 %) on 5 corpora** | **N6: problem-only** — precision certified (4/5 on held-out real repositories; interval 38–96 %), recall not (parity with CodeQL, 4/21 each, but documented detections in 1 corpus) |
+| **PHP** | `aegis-php-*` (5 taint rules + N3's 4: weak random, weak password hash, weak cipher, session cookie) | 247 → 45 (18 %) on the 4 repos that completed before; **Dolibarr now completes: 2,649** | DVWA 3/6 unchanged; M1: 25 of 31 DVWA findings TP | **P3: clean-only** — recall certified (held-out 68/160 = 42 %, lower bound 35 %; uncalibrated, CodeQL has no PHP), precision not (**17/64 = 27 %, 17–38 %, on held-out real repositories**). `aegis-php-xss` is reflected XSS only; stored XSS was measured at 6/59 and **is not shipped** (P3) |
+| **JS / TS** | `aegis-js-*` (11) + **njsscan** (89 of 114 since N2b, LGPL-3.0; javascript rules run on `.ts` too) | JavaScript 323 → 103 (32 %), TypeScript 173 → 130 (75 %) at N1; N2b then removed 446 of the 475 njsscan findings on these corpora | NodeGoat 5/7 unchanged; juice-shop 9 → **7**/25 (directory listing lost); both unchanged by N2b | **P3: withheld** — held-out recall JS 10/23 vs CodeQL 18/23, TS 2/17 vs CodeQL 3/17; precision on held-out real repositories JS 0/11 (+15 uncertain), TS 0/6 — no held-out true positive in either |
+| **Java** | `aegis-java-*` (7 taint, intraprocedural + 3 N3/N4 weakness rules) | 60 → 6 (10 %) | WebGoat 6/6 unchanged; **N4: 31/209 in scope (15 %) on 6 corpora** | **P3: withheld** — held-out recall 0/8 vs CodeQL 3/8 on dvja (java-sec-code has no license, so CodeQL did not run); **no finding at all on the 31 real repositories**, so precision is unmeasured. Stress precision 76/90 = 84 % |
+| **Python** | `aegis-py-*` (8 taint + 4 H1 pattern + N3's session cookie) | 78 → 19 (24 %) | dvpwa 1/1 unchanged; **N4: 18/72 in scope (25 %) on 6 corpora** | **P3: withheld** — recall 8/38 (lower bound 11 %) no longer clears CodeQL's 5/38 = 13 % on the interval; precision **1/5 = 20 %, 4–62 %** on held-out real repositories (was 1/19: `aegis-py-sql-string-construction` now reports only where formatted SQL reaches a DB call) |
+| **Go** | `aegis-go-*` (7 taint + 3 N3/N4 weakness rules) | no Go repo in V2 | **N4: 5/35 in scope (14 %) on 5 corpora** | **P3: withheld** — precision 4/5 on held-out real repositories, lower bound 38 %: five findings certify nothing; recall not (parity with CodeQL, 4/21 each, but documented detections in 1 corpus) |
 | **Ruby** | none | 582 → **0** | — | **no application-code SAST** |
 | **C#** | none | 26 → **0** | — | **no application-code SAST** |
-| **(any) CI/CD** | `aegis-cicd-*` (3) | 37 → 37 | H2: 32/32 TP | unchanged; the only SAST that fires on Ruby and C# repos |
+| **(any) CI/CD** | `aegis-cicd-*` (3) | 37 → 37 | H2: 32/32 TP — **tuning set** (the repositories the rules were written and gated on) | unchanged; the only SAST that fires on Ruby and C# repos |
 | **Dockerfile / Terraform / k8s** | Trivy misconfig | registry duplicates removed | — | unchanged (Trivy) |
 
 **The honest position.** Before N1 this section argued our packs added value *on top of* the
@@ -214,7 +237,12 @@ measured loss, is `docs/RULE_REMOVAL_N1.md` §E.
 
 Weak random, weak hash, weak cipher/key size, insecure cookie, trust boundary: 28 rules
 written from CWE definitions and API docs, gated on real code. Measured on 39 real
-repositories (V2's 15, F1's DVWA/WebGoat/dvpwa, 21 more), every finding hand-triaged:
+repositories (V2's 15, F1's DVWA/WebGoat/dvpwa, 21 more), every finding hand-triaged.
+
+> **TUNING-SET figures (relabelled in P3).** The 53 / 0 below was measured on the same
+> repositories the rules were gated on: the 41 false positives found there were removed
+> by constraints written from them. It shows the rules fit that corpus, not how they do
+> on code they were not tuned on. The held-out measure is the precision gate (§ P3).
 
 | shipped rule | real-repo TP / FP | where |
 |---|--:|---|
@@ -656,7 +684,8 @@ the numbers above trustworthy.
       been excluded at run time), and **constrained 5**, each verified on the same files to
       remove its false positives and keep its true positives. On the corpus: 475 findings →
       29; **TP rate 4.5 % → 59.3 %** (16/27, uncertain excluded; 55.2 % counting them as
-      false). 5 true positives were lost with dropped rules; none was a documented
+      false) — *a **tuning-set** figure (P3): the prune and the constraints were chosen
+      on this corpus and measured on it*. 5 true positives were lost with dropped rules; none was a documented
       vulnerability.
     - **Ground truth unchanged: 22/45**, item by item. NodeGoat's open redirect and SSRF
       are still caught, and only by njsscan rules (`express_open_redirect`, `node_ssrf`).
@@ -670,6 +699,33 @@ the numbers above trustworthy.
       and the only thing a prune could trip was a rule-count floor. Tiers are now tied to
       the shipped rules their ground-truth evidence rests on (`STRONG_EVIDENCE`).
     Full record: `docs/NJSSCAN_TRIAGE_N2B.md`.
+
+13. **Our per-rule precision figures were measured on the code the rules were tuned on.**
+    Passes H1, H2, N2b, N3 and P2 wrote or fixed rules on a set of repositories, then
+    reported precision **on those same repositories**: H1's "17 findings, 17 true
+    positives" for the Python pack, H2's 32/32 for the CI/CD rules, N2b's 59 % for
+    njsscan after the prune, N3's "53 / 0" for the weakness rules (after removing the 41
+    false positives found there), P2's "5 of 7 FPs fixed". A rule tuned on a corpus will
+    look good on it. Those numbers are now labelled **TUNING-SET** wherever they appear.
+    They describe fit, not accuracy on a customer's code.
+    - **The figure that counts** is precision on real repositories no rule was written or
+      tuned on — the held-out half of the 31-repository corpus, split before any fix (N6),
+      on findings that appear in every repeat scan (D2), judged on the lower bound of the
+      95 % interval (P3). On that measure **no language is above 27 %** except Go at 4/5,
+      whose interval (38–96 %) certifies nothing (see the headline at the top of § SAST).
+    - **H1's 17/17 did not hold up even on its own repositories.** 13 of the 17 were
+      redash's `aegis-py-sql-string-construction` findings; N5's line-by-line triage judged
+      those false — SQL built from internal identifiers, with no request input.
+    - **P3 fixed what the tuning half explained**, from each false positive's mechanism
+      (Python SQL text that is never executed, separator-anchored regexes, `Array.find`,
+      JSON-typed responses, a header rule that took any function for a request handler).
+      The same fixes removed false positives on the held-out half too, and lost no
+      documented vulnerability; but held-out precision stayed far below the gate,
+      because what remains there are findings the tuning half held no example of.
+    - **Two claims N6 made were withdrawn on the interval alone**, before any rule edit:
+      Python's clean claim (8/38 recall vs CodeQL's 5/38; lower bound 11 %) and Go's
+      problem claim (4/5).
+    Full record: `docs/PRECISION_P3.md`; determinism: `docs/D2_DETERMINISM.md`.
 
 ---
 

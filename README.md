@@ -22,15 +22,19 @@ third-party commercial rule sets (the Semgrep-registry packs were removed on 202
   vulnerabilities in apps no rule was written from must be at least GitHub CodeQL's on the
   same apps (or 25 % where CodeQL cannot run, as for PHP, labelled uncalibrated);
 - a reported **problem** needs **precision**: at least 70 % of our findings on ordinary
-  open-source projects must be real.
+  open-source projects no rule was tuned on must be real.
 
-**As of 2026-10-23:**
-- **PHP and Python earn the clean claim but not the problem claim** (real-code precision
-  27 % and 5 %). A clean result there is shown; findings carry a precision caveat and no
-  bad grade.
-- **Go earns the problem claim only.**
-- **Java, JavaScript and TypeScript earn neither**, so their security score is "Not
-  measured".
+Both are judged on the **lower bound of the 95 % confidence interval**, not the bare rate,
+so a handful of findings cannot certify anything
+([`docs/PRECISION_P3.md`](docs/PRECISION_P3.md)).
+
+**As of 2026-10-24:**
+- **PHP earns the clean claim only** (held-out recall 42 %, lower bound 35 %; real-code
+  precision 27 %). A clean result is shown; findings carry a precision caveat and no bad
+  grade.
+- **Python, Go, Java, JavaScript and TypeScript earn neither**, so their security score is
+  "Not measured". Python's recall (8/38) and Go's precision (4/5) passed on the bare rate
+  in N6 and do not on the interval.
 - Ruby and C# have no application-code SAST beyond the language-independent CI/CD rules.
 
 **Every scan shows, next to each language, its measured recall**: held-out recall where a

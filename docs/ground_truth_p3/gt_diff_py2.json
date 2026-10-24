@@ -1,0 +1,257 @@
+{
+ "dsvw": {
+  "language": "python",
+  "role": "held_out",
+  "lost": [],
+  "gained": [],
+  "items": [
+   {
+    "id": "sqli-blind-bool",
+    "rules": [
+     "aegis-py-sql-string-construction"
+    ],
+    "location": "dsvw.py:22",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "sqli-blind-time",
+    "rules": [
+     "aegis-py-sql-string-construction"
+    ],
+    "location": "dsvw.py:22",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "sqli-union",
+    "rules": [
+     "aegis-py-sql-string-construction"
+    ],
+    "location": "dsvw.py:22",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "login-bypass",
+    "rules": [
+     "aegis-py-sql-string-construction"
+    ],
+    "location": "dsvw.py:61",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "ace",
+    "rules": [
+     "aegis-py-shell-command-construction"
+    ],
+    "location": "dsvw.py:31",
+    "before": true,
+    "after": true
+   }
+  ]
+ },
+ "django-nv": {
+  "language": "python",
+  "role": "held_out",
+  "lost": [],
+  "gained": [],
+  "items": [
+   {
+    "id": "injection",
+    "rules": [
+     "aegis-py-sql-injection"
+    ],
+    "location": "taskManager/views.py:184",
+    "before": true,
+    "after": true
+   }
+  ]
+ },
+ "lets-be-bad-guys": {
+  "language": "python",
+  "role": "held_out",
+  "lost": [],
+  "gained": [],
+  "items": [
+   {
+    "id": "injection-file",
+    "rules": [
+     "aegis-py-path-traversal"
+    ],
+    "location": "views.py:42",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "injection-code",
+    "rules": [
+     "aegis-py-code-injection"
+    ],
+    "location": "views.py:72",
+    "before": true,
+    "after": true
+   }
+  ]
+ },
+ "dvgraphql": {
+  "language": "python",
+  "role": "tuning",
+  "lost": [],
+  "gained": [],
+  "items": [
+   {
+    "id": "sqli",
+    "rules": [
+     "aegis-py-sql-string-construction"
+    ],
+    "location": "core/views.py:320",
+    "before": true,
+    "after": true
+   }
+  ]
+ },
+ "dvpwa-full": {
+  "language": "python",
+  "role": "tuning",
+  "lost": [
+   [
+    "aegis-py-sql-string-construction",
+    "sqli/dao/student.py",
+    42
+   ]
+  ],
+  "gained": [
+   [
+    "aegis-py-sql-string-construction",
+    "sqli/dao/student.py",
+    45
+   ]
+  ],
+  "items": [
+   {
+    "id": "sqli",
+    "rules": [
+     "aegis-py-sql-string-construction"
+    ],
+    "location": "sqli/dao/student.py:42",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "md5",
+    "rules": [
+     "aegis-py-weak-hash-credential"
+    ],
+    "location": "sqli/dao/user.py:41",
+    "before": true,
+    "after": true
+   }
+  ]
+ },
+ "pygoat": {
+  "language": "python",
+  "role": "tuning",
+  "lost": [],
+  "gained": [
+   [
+    "aegis-py-sql-string-construction",
+    "dockerized_labs/sql_injection_lab/app.py",
+    57
+   ]
+  ],
+  "items": [
+   {
+    "id": "cmd-lab1",
+    "rules": [
+     "aegis-py-command-injection"
+    ],
+    "location": "command_injection_lab/app.py:29",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "cmd-lab2",
+    "rules": [
+     "aegis-py-code-injection"
+    ],
+    "location": "command_injection_lab/app.py:49",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "crypto-lab1",
+    "rules": [
+     "aegis-py-weak-hash-credential"
+    ],
+    "location": "crypto_failure_lab/app.py:38",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "crypto-lab2",
+    "rules": [
+     "aegis-py-weak-hash-credential"
+    ],
+    "location": "crypto_failure_lab/app.py:25",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "insec-des",
+    "rules": [
+     "aegis-py-unsafe-deserialization"
+    ],
+    "location": "insec_des_lab/main.py:40",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "integrity-lab1",
+    "rules": [
+     "aegis-py-unsafe-deserialization"
+    ],
+    "location": "software_integrity_lab/app.py:44",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "a9-yaml",
+    "rules": [
+     "aegis-py-unsafe-deserialization"
+    ],
+    "location": "a9_uckv_lab/app.py:62",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "sqli",
+    "rules": [
+     "aegis-py-sql-injection"
+    ],
+    "location": "sql_injection_lab/app.py:57",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "ssrf-lab1",
+    "rules": [
+     "aegis-py-path-traversal"
+    ],
+    "location": "ssrf_lab/app.py:22",
+    "before": true,
+    "after": true
+   },
+   {
+    "id": "ssrf-lab2",
+    "rules": [
+     "aegis-py-ssrf"
+    ],
+    "location": "ssrf_lab/app.py:37",
+    "before": true,
+    "after": true
+   }
+  ]
+ }
+}

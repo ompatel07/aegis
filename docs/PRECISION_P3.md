@@ -89,3 +89,89 @@ from the code. Decision, on the Wilson 95% interval of TP / (TP + FP):
 - otherwise, upper bound ≥ 50 %: it ships **silent-clean**;
 - upper bound < 50 % (most of its findings are false, with 95 % confidence): it does
   **not ship** -- it moves to `rules_staging/`.
+
+## C. Results — held-out before and after, with intervals
+
+Before: the D2 scans (three product scans per repository, N6's rules). After: three
+product scans per repository with P3's rules (`/workspaces/_p3after`; n8n left out — it
+fails every scan, D2), with `aegis-py-sql-string-construction`'s findings re-measured in
+three further runs after its f-string fix (`py_rule_runs.py`; every other rule
+unchanged). Stable findings, by location; `p3_ledger.py`. **The gate is the held-out
+row.**
+
+| language | held-out before | held-out after | tuning before | tuning after |
+|---|---|---|---|---|
+| PHP | 17/64 = 27 % [17 %, 38 %] (+3 unstable) | **17/64 = 27 % [17 %, 38 %]** (+3 unstable) | 1/8 | 1/8 |
+| Python | 1/19 = 5 % [1 %, 25 %] | **1/5 = 20 % [4 %, 62 %]** | 1/89 | 1/42 |
+| JavaScript | 0/14 = 0 % [0 %, 22 %] (+22 uncertain) | **0/11 = 0 % [0 %, 26 %]** (+15 uncertain) | 4/15 | 4/11 |
+| TypeScript | 0/8 = 0 % [0 %, 32 %] (+2 unstable) | **0/6 = 0 % [0 %, 39 %]** | 1/20 | 1/6 |
+| Go | 4/5 = 80 % [38 %, 96 %] | **4/5 = 80 % [38 %, 96 %]** | 0/1 | 0/1 |
+| Java | no finding | no finding | — | — |
+
+**What moved, and what did not.**
+- **The fixes removed false positives on the held-out half too**, so they were not
+  only fitted to the tuning half: Python 14 fewer (redash and librenms SQL text that is
+  never executed, or a `LOAD` that is not SQL), JavaScript 3 fewer and 7 fewer
+  uncertain (the separator-anchored ReDoS shape), TypeScript 4 fewer (3 ReDoS, 1 header
+  injection; the net is 2 because prisma's two `node_sha1` findings, unstable in the
+  before scans, were stable in the after scans — no rule change involved). No held-out
+  true positive was lost.
+- **But held-out precision did not move to anything a gate can use.** Every language is
+  as far below 70 % as before: there is **no held-out true positive at all** in
+  JavaScript or TypeScript, Python's single TP over 5 findings has a lower bound of 4 %,
+  and PHP is unchanged — its FPs are `aegis-php-xss` and `aegis-php-sql-injection` on
+  Dolibarr / librenms / TeamPass, and the tuning half held no finding of either rule to
+  learn from. The rates went up because findings went away, not because Aegis found more
+  real problems.
+- **No quadrant changed** from Part A.
+
+**Recall, re-measured** (`gt_diff.py` over every PHP / Python / JS / TS ground-truth
+corpus, old vs new rule files): **no documented item lost**, held-out or tuning.
+Held-out recall is unchanged: PHP 68/160, Python 8/38, JavaScript 10/23, TypeScript 2/17,
+Go 4/21, Java 0/8. DSVW's recall did not drop: its injections are formatted SQL handed
+straight to `cursor.execute()`. Stress precision (teaching corpora, reported only):
+JavaScript 73/152 → 73/150, Python 49/50 → 50/51, others unchanged.
+
+**`aegis-php-stored-xss`, measured on its own** (sample fixed in §C.0): 60 of its 2,515
+stable held-out findings (Dolibarr 2,514, TeamPass 1), read in source
+(`stored_xss_verdicts.py`): **6 TP, 53 FP, 1 uncertain — 6/59 = 10.2 %, [4.7 %, 20.5 %]**.
+The upper bound is under 50 %, so it **does not ship** (`rules_staging/php_stored_xss.yaml`).
+What it mostly reports is an id, an amount, a date, a status label, or the output of a
+helper that already escapes (Dolibarr's `getNomUrl`, `textwithtooltip`). Its 6 TPs are
+real stored values printed raw — an accounting code, a project ref, a bank-statement
+number, a product label, a country label, a recruitment candidate's name from the public
+application form — and even those are an upper bound: Dolibarr's request WAF may refuse
+the payload on the way in. Stored XSS is therefore **not covered**, and says so.
+
+**Quadrants on the 20 V2 / F1 repositories** (`docs/ground_truth_n6/quadrant_count.py`,
+P3 gates): V2 **5 clean-only, 10 withheld**; F1 **1 clean-only, 4 withheld** — the same as
+N6. The PHP repositories keep the clean claim; no V2 / F1 repository is majority Python
+or Go, so the two claims Part A withdrew change no repository there.
+
+**Measurement notes.**
+- *A rule defect found while confirming verdicts.* The first P3 Python rule tested an
+  f-string's SQL structure with a file-wide regex, so `con.execute(f"LOAD {name}")` in a
+  file that also held a real SELECT was "SQL" (redash). It was a defect in what the rule
+  says, fixed with a fixture that fails on the old version (`68d77a7`), and only that
+  rule was re-measured.
+- *Unit.* A finding is one location (rule, file, line); N6 counted per-column duplicates
+  on minified one-line files (D2 §3).
+- *Defaults.* A moved finding takes N5's per-repository verdict for its rule only where
+  the source shows the same statement; the four held-out Python FPs were re-read
+  (`fix_column_name()`-sanitised identifiers, bound values, an operator's CLI argument).
+
+## D. What changed in `docs/ACCURACY.md`
+
+- A **headline** at the top of § SAST: held-out real-repository precision per language,
+  stable findings, Wilson 95 % interval. No language clears the gate.
+- **TUNING-SET labels** on every per-rule precision figure measured on the rules' own
+  development repositories: N3's 53 / 0, H2's 32 / 32, N2b's 59.3 %, P2's 5 of 7 (H1's
+  17 / 17 lives only in its commit message and is addressed in the correction).
+- The per-language **status column** moved to P3.
+- **CORRECTION 13**, in plain words: the per-rule figures described fit, not accuracy;
+  H1's 17 / 17 rested mostly on redash findings later triaged false; Python's clean claim
+  and Go's problem claim are withdrawn on the interval.
+
+Evidence files: `p3_before_entries.json`, `p3_after_entries.json` (ledger rows),
+`gt_diff.json`, `gt_diff_py2.json` (ground truth, old vs new rules),
+`stored_xss_sample.json` + `stored_xss_verdicts.py`.

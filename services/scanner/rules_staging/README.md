@@ -46,6 +46,12 @@ a true positive -- docs/GROUND_TRUTH_N4.md):
 | `aegis-js-session-trust-boundary`, `aegis-py-session-trust-boundary`, `aegis-go-session-trust-boundary`, `aegis-php-session-trust-boundary` | the privilege branch matches on session-key **names** (`$PRIV`); never fired |
 | `aegis-java-session-trust-boundary` | one OWASP Benchmark FP, plus the `$PRIV` name branch |
 
+## Staged in P3 (2026-10-24)
+
+| rule | why it stays |
+|---|---|
+| `aegis-php-stored-xss` (`php_stored_xss.yaml`) | split from `aegis-php-xss` so stored XSS is measured instead of excluded; on a seeded random sample of 60 of its 2,515 stable findings on the held-out real repositories, **6 TP / 53 FP / 1 uncertain (10 %, 95 % interval 4.7–20.5 %)** -- mostly ids, amounts and already-escaped helper output. By the rule fixed before the draw (upper bound < 50 %), it does not ship (`docs/PRECISION_P3.md` §C) |
+
 ## Promotion
 
 A staged rule moves to `rules/taint/` as PROVEN when it has true positives on real
