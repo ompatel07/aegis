@@ -34,8 +34,10 @@ THE PRECISION GATE (certifies a reported problem)
   finding of the language's shipped rules on the HELD-OUT half of the REAL-repository
   corpus. UNCERTAIN is excluded from the rate (N2b) and reported; an UNTRIAGED finding
   fails the gate, and so does a language with no triaged finding there (a problem claim
-  with no evidence is not certified). Teaching corpora are built to trap tools: their precision is reported as
-  a stress figure and gates nothing.
+  with no evidence is not certified). A finding that is not in every repeat scan of its
+  commit (D2, `"stable": false`) is counted apart and kept out of the rate. Teaching
+  corpora are built to trap tools: their precision is reported as a stress figure and
+  gates nothing.
 
 WHY A LOWER BOUND (P3)
 ----------------------
@@ -117,6 +119,7 @@ class Counts:
     fp: int = 0
     uncertain: int = 0
     untriaged: int = 0
+    unstable: int = 0   # D2: not in every repeat scan of its commit; reported, not rated
 
     def add(self, verdict: str | None) -> None:
         if verdict == "TP":
@@ -224,7 +227,8 @@ class LanguageEvidence:
     def as_dict(self) -> dict:
         r = lambda x: None if x is None else round(x, 4)
         ci = lambda w: None if w is None else [round(w[0], 4), round(w[1], 4)]
-        c = lambda k: {"tp": k.tp, "fp": k.fp, "uncertain": k.uncertain, "precision": r(k.precision),
+        c = lambda k: {"tp": k.tp, "fp": k.fp, "uncertain": k.uncertain, "unstable": k.unstable,
+                       "precision": r(k.precision),
                        "precision_interval": ci(k.precision_interval)}
         return {
             "language": self.language, "tier": self.tier, "quadrant": self.quadrant,
@@ -243,7 +247,7 @@ class LanguageEvidence:
             "reference_aegis_interval": ci(self.reference_aegis_interval),
             "precision": r(self.precision), "precision_interval": ci(self.real.precision_interval),
             "tp": self.tp, "fp": self.fp,
-            "uncertain": self.uncertain, "untriaged": self.untriaged,
+            "uncertain": self.uncertain, "untriaged": self.untriaged, "unstable": self.real.unstable,
             "real_tuning": c(self.real_tuning), "stress": c(self.stress),
         }
 
@@ -292,7 +296,11 @@ def evaluate(gt: dict, triage: list[dict], shipped: dict[str, set[str]],
         if ev is None or ev.language not in shipped.get(t.get("rule"), ()):
             continue  # a rule that no longer ships is not evidence either way
         if t.get("kind") == REAL:
-            (ev.real if t.get("role") == HELD_OUT else ev.real_tuning).add(t.get("verdict"))
+            counts = ev.real if t.get("role") == HELD_OUT else ev.real_tuning
+            if t.get("stable") is False:
+                counts.unstable += 1
+            else:
+                counts.add(t.get("verdict"))
         else:
             ev.stress.add(t.get("verdict"))
 

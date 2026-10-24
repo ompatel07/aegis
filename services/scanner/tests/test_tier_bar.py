@@ -203,6 +203,15 @@ def test_an_untriaged_real_finding_fails_the_precision_gate():
     assert ev.precision_failed == ["precision: 1 real-repo finding(s) untriaged"]
 
 
+def test_a_finding_not_in_every_repeat_scan_is_counted_apart():
+    """D2: a finding that moves between scans of one commit is not a measurement."""
+    gt, _ = _passing()
+    unstable = [dict(t, stable=False) for t in _triage(tp=0, fp=500)]
+    ev = _ev(gt, _triage(tp=750, fp=250) + unstable)
+    assert ev.precision == 0.75 and ev.precision_ok and ev.real.unstable == 500
+    assert ev.as_dict()["unstable"] == 500
+
+
 def test_uncertain_is_reported_but_not_in_the_rate():
     gt, _ = _passing()
     ev = _ev(gt, _triage(tp=750, fp=250, unc=40))
