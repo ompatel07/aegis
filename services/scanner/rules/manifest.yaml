@@ -1,4 +1,4 @@
-pinned_at: '2026-10-21'
+pinned_at: '2026-10-23'
 source_policy: upstream-git-only
 refresh_cadence: monthly, reviewed — see scripts/vendor_rules.py docstring
 permitted_licences:
@@ -11,7 +11,7 @@ packs:
   upstream_commit: b6ade853818a0c2a4fde36a1c5740b663e758ad2
   upstream_path: njsscan/rules/semantic_grep
   file: vendor/nodejsscan.yaml
-  sha256: 852b63456da4a336524b9f88bd5ef1122100ae1d80aa9981f49dc56e3c79ab6f
+  sha256: 3f2f4cabcd1f73b848042fdbf3bdf4c9f8ecb90d769fc6809d0575f947b79bc7
   rules: 89
   upstream_rules: 114
   excluded: 25
@@ -46,6 +46,7 @@ packs:
   - ajinabraham.njsscan.dos.regex_injection.regex_injection_dos
   - ajinabraham.njsscan.eval.eval_node.eval_nodejs
   - ajinabraham.njsscan.eval.eval_require.eval_require
+  - ajinabraham.njsscan.headers.header_injection.generic_header_injection
   - ajinabraham.njsscan.traversal.express_hbs_lfr.express_lfr_warning
   licenses:
     LGPL-3.0-or-later: 89

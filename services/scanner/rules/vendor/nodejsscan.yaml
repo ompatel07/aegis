@@ -3897,6 +3897,7 @@ rules:
     - pattern: '$RES.writeHead(..., { $X: <... $REQ.$QUERY.$FOO ...> }, ...)
 
         '
+  - *id001
   message: If user input is not properly sanitized, an attacker can insert malicious
     data into response headers.  This can lead to HTTP response splitting, where an
     attacker injects additional headers or even full HTTP responses,  potentially
@@ -3915,6 +3916,8 @@ rules:
     cwe: cwe-644
     license: LGPL-3.0-or-later
     source: https://github.com/ajinabraham/njsscan/blob/b6ade853818a0c2a4fde36a1c5740b663e758ad2/njsscan/rules/semantic_grep/headers/header_injection.yaml
+    aegis-modified: '2026-10-23 Aegis Pass P3: $REQ must be named req/request (was:
+      any 2-parameter function)'
 - id: ajinabraham.njsscan.headers.header_xss_protection.header_xss_generic
   patterns:
   - pattern-either:

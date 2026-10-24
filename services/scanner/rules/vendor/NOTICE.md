@@ -11,8 +11,8 @@ Aegis ships exactly **one** third-party rule pack. Everything else under
 | Author | Ajin Abraham |
 | Licence | **GNU LGPL-3.0-or-later** — `LICENSES/nodejsscan-LGPL-3.0.txt` (upstream `LICENSE`, verbatim). LGPL-3.0 is a set of additional permissions on top of the GNU GPL-3.0, whose text is included as `LICENSES/GPL-3.0.txt` |
 | Built from upstream commit | `b6ade853818a0c2a4fde36a1c5740b663e758ad2` (2026-08-10), `njsscan/rules/semantic_grep/` |
-| Rules | **89** of upstream's 114 (25 not shipped, 5 modified — see below) |
-| Modifications | **This is a modified version of njsscan's rules** (modified by Aegis, 2026-10-22, Pass N2b). Listed in full below. In addition, on every rule: the id is namespaced `ajinabraham.njsscan.<dir>.<file>.<id>` (the form these rules have always had in Aegis findings), and `metadata.license` / `metadata.source` record the upstream licence and file |
+| Rules | **89** of upstream's 114 (25 not shipped, 6 modified — see below) |
+| Modifications | **This is a modified version of njsscan's rules** (modified by Aegis, 2026-10-22, Pass N2b, and 2026-10-23, Pass P3). Listed in full below. In addition, on every rule: the id is namespaced `ajinabraham.njsscan.<dir>.<file>.<id>` (the form these rules have always had in Aegis findings), and `metadata.license` / `metadata.source` record the upstream licence and file |
 
 ### Modified by Aegis, 2026-10-22 (Pass N2b)
 
@@ -50,7 +50,16 @@ positive of that mechanism removed, every true positive kept.
 | `traversal.express_hbs_lfr.express_lfr_warning` | same (it matched `process.env` as request data) | 0 TP / 2 FP → 0 / 0 |
 | `database.nosql_find_injection.node_nosqli_injection` | sink becomes `$OBJ.findOne($QUERY, ...)` **not** `findOne({..., where: $W, ...})` — the Sequelize/TypeORM shape. Upstream's `pattern-not-sinks` Sequelize exclusion is not a key semgrep implements, so it never applied | 2 TP / 15 FP → 2 TP / 1 FP |
 
-Logic, messages, severities and upstream metadata of the other 84 rules are
+### Modified by Aegis, 2026-10-23 (Pass P3)
+
+Under the same notice, one more rule is constrained. The measurement is the
+real-repository tuning half in `docs/PRECISION_P3.md` §B.
+
+| Rule | Change | Measured |
+|---|---|---|
+| `headers.header_injection.generic_header_injection` | the N2b constraint above: `$REQ =~ (?i)^(req\|request)$` — before, any 2-parameter function was a request handler, so a compiler pass's `state.set(id, ...)` was a response header | tuning half 0 TP / 8 FP → 0 / 0 |
+
+Logic, messages, severities and upstream metadata of the other 83 rules are
 unchanged.
 
 **Provenance.** Before N1 this file was a copy fetched through the Semgrep

@@ -126,8 +126,8 @@ def _not_orm_where(rule: dict) -> None:
     ]}]
 
 
-# rule id -> (what changed, how). Each verified on the N2b corpus: every FP of the
-# mechanism removed, every TP kept.
+# rule id -> (what changed, how[, which pass, when N2b's]). Each verified on the corpus it
+# was measured on: every FP of the mechanism removed, every TP kept.
 CONSTRAINED = {
     "ajinabraham.njsscan.eval.eval_node.eval_nodejs":
         ("$REQ must be named req/request (was: any 2-parameter function)", _require_req_named),
@@ -135,6 +135,12 @@ CONSTRAINED = {
         ("$REQ must be named req/request (was: any 2-parameter function)", _require_req_named),
     "ajinabraham.njsscan.dos.regex_injection.regex_injection_dos":
         ("$REQ must be named req/request (was: any 2-parameter function)", _require_req_named),
+    # P3 (2026-10-23), from the real-repository TUNING half: 8 of 8 findings false, every
+    # one the same mechanism -- `state.set(instr.id, ...)` in a compiler pass read as a
+    # response header because any 2-parameter function was a request handler.
+    "ajinabraham.njsscan.headers.header_injection.generic_header_injection":
+        ("$REQ must be named req/request (was: any 2-parameter function)", _require_req_named,
+         "2026-10-23 Aegis Pass P3"),
     "ajinabraham.njsscan.traversal.express_hbs_lfr.express_lfr_warning":
         ("$REQ must be named req/request (was: any object, e.g. process.env)", _require_req_named),
     "ajinabraham.njsscan.database.nosql_find_injection.node_nosqli_injection":
@@ -164,9 +170,9 @@ def apply_n2b(rules: list[dict]) -> tuple[list[dict], list[str]]:
             dropped.append(r["id"])
             continue
         if r["id"] in CONSTRAINED:
-            what, fn = CONSTRAINED[r["id"]]
+            what, fn, *by = CONSTRAINED[r["id"]]
             fn(r)
-            r["metadata"]["aegis-modified"] = f"{_N2B} Aegis Pass N2b: {what}"
+            r["metadata"]["aegis-modified"] = f"{by[0] if by else _N2B + ' Aegis Pass N2b'}: {what}"
         kept.append(r)
     return kept, dropped
 

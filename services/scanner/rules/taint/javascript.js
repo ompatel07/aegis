@@ -83,9 +83,49 @@ function nosqlBad(users, req) {
   return users.findOne({ username: req.body.username, password: req.body.password });
 }
 
+function nosqlArrayFindOk(jobs, req) {
+  // ok: aegis-js-nosql-injection
+  return jobs.find((j) => j.data.syncId === req.query.syncId);
+}
+
+function nosqlArrayFindFnOk(jobs, req) {
+  // ok: aegis-js-nosql-injection
+  return jobs.find(function (j) { return j.id === req.params.id; });
+}
+
+function nosqlFindBad(users, req) {
+  // ruleid: aegis-js-nosql-injection
+  return users.find({ name: req.query.name });
+}
+
 function nosqlOk(users, req) {
   // ok: aegis-js-nosql-injection
   return users.findOne({ username: String(req.body.username) });
+}
+
+function xssJsonTypedOk(req, res) {
+  res.set("Content-type", "application/json");
+  const map = { name: req.query.name };
+  // ok: aegis-js-xss
+  res.write(JSON.stringify(map));
+}
+
+function xssJsonHeaderOk(req, res) {
+  res.setHeader("Content-Type", "application/problem+json; charset=utf-8");
+  // ok: aegis-js-xss
+  res.end(JSON.stringify({ q: req.query.q }));
+}
+
+function xssJsonStringifyAsHtmlBad(req, res) {
+  // Express sends a string body as text/html: JSON does not escape "<"
+  // ruleid: aegis-js-xss
+  res.send(JSON.stringify({ q: req.query.q }));
+}
+
+function xssTypedHtmlBad(req, res) {
+  res.set("Content-Type", "text/html");
+  // ruleid: aegis-js-xss
+  res.send("<p>" + req.query.q + "</p>");
 }
 
 // ── LDAP injection ───────────────────────────────────────────────────────────
@@ -172,6 +212,25 @@ function redosStarBad(x) {
   // ruleid: aegis-js-redos-nested-quantifier
   const re = /(a*)*b/;
   return re.test(x);
+}
+
+function redosSeparatorOk(name) {
+  // a mandatory separator on every repetition: linear, not catastrophic
+  // ok: aegis-js-redos-nested-quantifier
+  const RULE_NAME = /^[a-z]+(-[a-z]+)*$/;
+  // ok: aegis-js-redos-nested-quantifier
+  const DOMAIN = /^([a-z0-9]+(-[a-z0-9]+)*\.)+[a-z]{2,}$/;
+  // ok: aegis-js-redos-nested-quantifier
+  const IDENT = /^[A-Za-z_][\w$]*(?:\.[A-Za-z_][\w$]*)*$/;
+  return RULE_NAME.test(name) && DOMAIN.test(name) && IDENT.test(name);
+}
+
+function redosClassBad(x) {
+  // ruleid: aegis-js-redos-nested-quantifier
+  const re = /^([a-z0-9]+)*$/;
+  // ruleid: aegis-js-redos-nested-quantifier
+  const re2 = /(?:\s*)+$/;
+  return re.test(x) || re2.test(x);
 }
 
 function redosOk(req) {

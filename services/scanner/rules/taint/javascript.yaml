@@ -89,6 +89,26 @@ rules:
               - pattern: $RES.end($H)
               - pattern: $EL.innerHTML = $H
               - pattern: document.write($H)
+          # P3: a body sent after the handler declared the response JSON is not
+          # rendered as HTML, so it cannot carry script (the tuning half's cmp-react
+          # FPs: res.set('Content-type', 'application/json') then res.write(JSON...)).
+          # Only an EXPLICIT JSON type counts: Express's res.send(string) defaults to
+          # text/html, so res.send(JSON.stringify(input)) on its own still fires.
+          - pattern-not-inside: |
+              $R.set("=~/(?i)^content-type$/", "=~/(?i)^application\/([\w.-]+\+)?json\b/", ...);
+              ...
+          - pattern-not-inside: |
+              $R.setHeader("=~/(?i)^content-type$/", "=~/(?i)^application\/([\w.-]+\+)?json\b/", ...);
+              ...
+          - pattern-not-inside: |
+              $R.header("=~/(?i)^content-type$/", "=~/(?i)^application\/([\w.-]+\+)?json\b/", ...);
+              ...
+          - pattern-not-inside: |
+              $R.type("json");
+              ...
+          - pattern-not-inside: |
+              $R.writeHead($CODE, {..., "Content-Type": "=~/(?i)^application\/([\w.-]+\+)?json\b/", ...});
+              ...
           - focus-metavariable: $H
 
   # ── React XSS via dangerouslySetInnerHTML ────────────────────────────────────
@@ -317,6 +337,14 @@ rules:
               - pattern: $COLL.deleteOne($Q, ...)
               - pattern: $COLL.deleteMany($Q, ...)
               - pattern: $COLL.remove($Q, ...)
+          # A MongoDB filter is a document. Array.prototype.find / findLast take a
+          # predicate FUNCTION, which no query engine parses (P3: every tuning-half
+          # finding of this rule was arr.find((x) => x.id === req.params.id)).
+          - metavariable-pattern:
+              metavariable: $Q
+              patterns:
+                - pattern-not: (...) => $BODY
+                - pattern-not: function (...) { ... }
           - focus-metavariable: $Q
 
   # ── LDAP injection ───────────────────────────────────────────────────────────
@@ -456,5 +484,11 @@ rules:
       - pattern: $RE
       - metavariable-regex:
           metavariable: $RE
-          # a group whose last element is quantified, immediately re-quantified
-          regex: ^/.*\([^()]*[+*]\)[+*].*/[gimsuy]*$
+          # A group that is ONE quantified atom, re-quantified: (X+)+ (X*)* (X+)* (X*)+,
+          # optionally non-capturing. Only then can the inner and outer repetition
+          # split the same input in exponentially many ways. A group with any other
+          # mandatory element -- (-[a-z]+)*, (?:[._][a-z0-9]+)*, (\.\w+)+ -- needs that
+          # element on every repetition, so the split is unique and matching is linear
+          # (P3: every tuning-half finding of this rule was that shape).
+          # atom: an escape, a character class, or one literal character.
+          regex: ^/.*\((?:\?:)?(?:\\.|\[(?:\\.|[^\]\\])*\]|[^()|\\\[\]])[+*]\)[+*].*/[gimsuy]*$
