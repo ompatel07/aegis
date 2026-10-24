@@ -37,20 +37,16 @@ SCANNER = os.path.join(ROOT, "services", "scanner")
 # ── Accepted advisories ──────────────────────────────────────────────────────
 # id -> (package, why it is tolerated, what would change it)
 NPM_ACCEPTED: dict[str, tuple[str, str, str]] = {
-    "GHSA-vfj7-8cjw-p6xm": (
-        "braces",
-        "Stack-exhaustion DoS through deeply nested glob patterns. No fixed version "
-        "exists at any release (<=3.0.3 is the whole package history). It reaches us "
-        "ONLY through tailwindcss@3.4.15's build-time file watcher (chokidar) and glob "
-        "matcher (micromatch) -- verified with `npm ls braces`. Tailwind runs at build "
-        "time over glob patterns WE author in tailwind.config.ts, against paths in our "
-        "own repository; no attacker-supplied value reaches it. Exploiting it would "
-        "require write access to the repository or the build config, at which point "
-        "the glob is not the weakness.",
-        "Fixed by tailwindcss 4.x, which replaces chokidar/micromatch. That is a "
-        "CSS-first-config migration (theme variables move out of tailwind.config.ts) "
-        "whose result cannot be verified without looking at the rendered UI, so it is "
-        "deliberately a separate pass rather than a blind upgrade inside N2.",
+    "GHSA-mrhx-c7xc-m3w5": (
+        "zod",
+        "Memory exhaustion while validating an oversized constrained collection. zod runs "
+        "only in the browser, in one place: the new-project form's schema "
+        "(web/components/projects/NewProjectModal.tsx), validating what the signed-in user "
+        "types into that form. No server code imports it and no other user's data reaches "
+        "it, so the worst case is a user exhausting their own browser tab.",
+        "Fixed only in zod 4.6.6, a major version (v4 changes the schema API and error "
+        "shapes). Upgrade in a web pass that can exercise the form; any server-side use of "
+        "zod, or validating data that is not the user's own input, would end the exception.",
     ),
 }
 
@@ -82,6 +78,16 @@ PIP_ACCEPTED: dict[str, tuple[str, str, str]] = {
         "changes findings, and N1 established that it must not land in a pass that also "
         "changes rules -- N2 Part C changes aegis-php-xss, so a regression would be "
         "unattributable. It belongs in a pass that bumps semgrep and re-measures.",
+    ),
+    "GHSA-xmj3-9gf7-h52w": (
+        "setuptools",
+        "A path escape through namespace_packages.txt during LEGACY wheel installation on "
+        "Windows. Fixed in 84.1.0, which we cannot install for the same reason as "
+        "PYSEC-2026-3447 above (setuptools >= 81 removed pkg_resources, which semgrep 1.97.0 "
+        "imports). Not reachable: the scanner image is Linux, installs only its own pinned "
+        "requirements at build time, and never installs a wheel at runtime -- let alone one "
+        "from a customer repository (Aegis never installs or runs scanned code).",
+        "Fixed by the same semgrep upgrade that lifts the setuptools < 81 pin.",
     ),
     "CVE-2026-114603": (
         "opentelemetry-api",

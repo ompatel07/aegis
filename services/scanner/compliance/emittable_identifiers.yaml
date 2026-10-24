@@ -68,9 +68,9 @@ declared:
   - A08:2021
   - A10:2021
 observed:
-  as_of: '2026-10-22'
-  rule_set_pinned_at: '2026-10-21'
-  corpus_findings: 11436
+  as_of: '2026-10-24'
+  rule_set_pinned_at: '2026-10-23'
+  corpus_findings: 12729
   excluded_findings_from_removed_rules: 3221
   cwe:
   - CWE-1050
@@ -101,6 +101,7 @@ observed:
   - CWE-295
   - CWE-297
   - CWE-328
+  - CWE-338
   - CWE-345
   - CWE-346
   - CWE-348

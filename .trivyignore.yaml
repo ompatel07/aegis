@@ -28,17 +28,13 @@ misconfigurations:
       /var/run/postgresql and /tmp (Postgres) and /tmp (Redis), then deploy-test.
 
 vulnerabilities:
-  - id: CVE-2026-93687
+  - id: CVE-2023-54404
     paths:
       - "web/package-lock.json"
     statement: >-
-      braces <=3.0.3 stack-exhaustion DoS -- the same advisory npm reports as
-      GHSA-vfj7-8cjw-p6xm, which scripts/check_dependency_audits.py accepts with the full
-      reasoning. No fixed version exists at any release. It reaches us only through
-      tailwindcss 3's build-time file watcher (chokidar) and glob matcher (micromatch),
-      over glob patterns we author ourselves against paths in our own repository; no
-      attacker-supplied value reaches it. Fixed by tailwindcss 4, a CSS-first-config
-      migration whose result cannot be verified without looking at the rendered UI, so it
-      is a separate pass rather than a blind upgrade. Listed here as well because Trivy
-      keys on the CVE alias while npm keys on the GHSA id -- one exception, two
-      identifiers, and both are named rather than either being a blanket severity skip.
+      zod < 4.6.6 memory exhaustion on oversized constrained collections -- the same
+      advisory npm reports as GHSA-mrhx-c7xc-m3w5, which scripts/check_dependency_audits.py
+      accepts with the full reasoning. zod runs only in the browser, validating the signed-in
+      user's own input to the new-project form; no server code imports it. The fix is a
+      major version (zod 4), to be taken in a web pass that can exercise the form. Named
+      under both identifiers because Trivy keys on the CVE and npm on the GHSA.
